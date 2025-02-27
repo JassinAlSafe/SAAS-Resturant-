@@ -1,6 +1,6 @@
-# Restaurant Inventory Management System
+# ShelfWise: Smart Inventory Management
 
-A modern, responsive web application for managing restaurant inventory, tracking sales, and generating reports.
+A modern, responsive web application for managing restaurant and food business inventory, tracking sales, and generating reports.
 
 ## Features
 
@@ -8,6 +8,7 @@ A modern, responsive web application for managing restaurant inventory, tracking
 - **Inventory Management**: Add, edit, and track ingredients with reorder alerts
 - **Sales Entry**: Record daily sales with automatic inventory deduction
 - **Reports & Analytics**: View sales trends and inventory usage
+- **Dark Mode**: Fully customizable light and dark themes
 
 ## Tech Stack
 
@@ -16,6 +17,7 @@ A modern, responsive web application for managing restaurant inventory, tracking
 - **Charts**: Chart.js with React-Chartjs-2
 - **Icons**: React Icons
 - **Date Handling**: date-fns
+- **Theming**: next-themes for dark mode support
 
 ## Getting Started
 
@@ -30,8 +32,8 @@ A modern, responsive web application for managing restaurant inventory, tracking
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/restaurant-inventory.git
-cd restaurant-inventory
+git clone https://github.com/yourusername/shelfwise.git
+cd shelfwise
 ```
 
 2. Install dependencies
@@ -88,7 +90,7 @@ yarn dev
 ## Project Structure
 
 ```
-restaurant-inventory/
+shelfwise/
 ├── src/
 │   ├── app/                  # Next.js App Router
 │   │   ├── dashboard/        # Dashboard page
@@ -98,10 +100,12 @@ restaurant-inventory/
 │   │   ├── layout.tsx        # Root layout component
 │   │   └── page.tsx          # Root page (redirects to dashboard)
 │   ├── components/           # Reusable components
+│   │   ├── ui/               # UI components
 │   │   ├── AlertCard.tsx     # Alert card component
 │   │   ├── Card.tsx          # Card component
-│   │   ├── MobileNav.tsx     # Mobile navigation component
-│   │   ├── Sidebar.tsx       # Sidebar navigation component
+│   │   ├── theme-provider.tsx # Theme provider component
+│   │   ├── theme-toggle.tsx  # Theme toggle component
+│   │   ├── layout/           # Layout components
 │   │   └── StatCard.tsx      # Statistics card component
 │   └── lib/                  # Utilities and types
 │       ├── supabase.ts       # Supabase client
@@ -131,3 +135,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Supabase](https://supabase.io/)
 - [Chart.js](https://www.chartjs.org/)
 - [React Icons](https://react-icons.github.io/react-icons/)
+- [next-themes](https://github.com/pacocoursey/next-themes)
