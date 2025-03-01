@@ -25,18 +25,20 @@ const Card = ({
   return (
     <ShadcnCard
       className={cn(
-        "transition-all duration-200 hover:shadow-md rounded-xl border-[1.5px]",
+        "transition-all duration-200 bg-card border-border/40 shadow-sm hover:shadow-md rounded-xl border",
         className
       )}
     >
       {title && (
-        <CardHeader className="pb-2">
-          <CardTitle className={cn("text-sm font-medium", titleClassName)}>
+        <CardHeader className="pb-3 px-6 pt-5">
+          <CardTitle className={cn("text-base font-medium", titleClassName)}>
             {title}
           </CardTitle>
         </CardHeader>
       )}
-      <CardContent className={cn(title ? "pt-0" : "", contentClassName)}>
+      <CardContent
+        className={cn("px-6 pb-5", title ? "pt-0" : "pt-5", contentClassName)}
+      >
         {children}
       </CardContent>
     </ShadcnCard>

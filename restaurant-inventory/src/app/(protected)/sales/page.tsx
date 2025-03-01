@@ -182,15 +182,15 @@ export default function SalesEntry() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Sales Entry</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold">Sales Entry</h1>
+          <p className="text-sm text-muted-foreground">
             Record daily sales from X-report and auto-update inventory
           </p>
         </div>
 
         <div className="mt-4 md:mt-0 flex items-center space-x-2">
           <div className="flex items-center space-x-2">
-            <FiCalendar className="text-slate-500" />
+            <FiCalendar className="text-muted-foreground" />
             <Input
               type="date"
               value={dateString}
@@ -212,7 +212,7 @@ export default function SalesEntry() {
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch className="h-5 w-5 text-slate-400" />
+                  <FiSearch className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <Input
                   type="text"

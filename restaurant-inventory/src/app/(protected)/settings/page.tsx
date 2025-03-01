@@ -105,8 +105,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Settings</h1>
-        <p className="text-slate-600">
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">
           Manage your account settings and preferences
         </p>
       </div>
@@ -145,11 +145,10 @@ export default function SettingsPage() {
                     id="email"
                     value={user?.email || ""}
                     disabled
-                    className="bg-slate-50"
+                    className="bg-muted"
                   />
-                  <p className="text-xs text-slate-500">
-                    Your email address is associated with your account and
-                    cannot be changed.
+                  <p className="text-xs text-muted-foreground">
+                    Your email address cannot be changed
                   </p>
                 </div>
 
@@ -231,9 +230,15 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-slate-500 py-8">
-                Notification settings coming soon.
-              </p>
+              {isLoading ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Loading notification settings...
+                </p>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  Notification settings coming soon.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -247,9 +252,15 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-center text-slate-500 py-8">
-                User preferences settings coming soon.
-              </p>
+              {isLoading ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Loading preferences...
+                </p>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  User preferences settings coming soon.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -80,19 +80,19 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <Card className="border-slate-200 shadow-lg">
+        <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-sm">
                 <span className="text-lg font-bold">R</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-slate-800">
+            <CardTitle className="text-2xl font-bold text-center">
               Create an Account
             </CardTitle>
-            <CardDescription className="text-center text-slate-500">
+            <CardDescription className="text-center">
               Sign up to access the restaurant inventory system
             </CardDescription>
           </CardHeader>
@@ -165,7 +165,7 @@ export default function SignupPage() {
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link
                 href="/login"

@@ -262,12 +262,12 @@ export default function RecipesPage() {
             <Button
               variant="ghost"
               onClick={() => setIsFormOpen(false)}
-              className="text-slate-600 hover:text-slate-900"
+              className="text-muted-foreground hover:text-foreground"
             >
               <FiChevronLeft className="mr-2 h-4 w-4" />
               Back to Recipes
             </Button>
-            <h1 className="text-2xl font-bold text-slate-800 mt-2">
+            <h1 className="text-2xl font-bold mt-2">
               {currentDish ? "Edit Recipe" : "Add New Recipe"}
             </h1>
           </div>
@@ -283,10 +283,8 @@ export default function RecipesPage() {
         <>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">
-                Recipe Management
-              </h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-2xl font-bold">Recipe Management</h1>
+              <p className="text-sm text-muted-foreground">
                 Manage your restaurant recipes and their ingredients
               </p>
             </div>
@@ -305,7 +303,7 @@ export default function RecipesPage() {
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch className="h-5 w-5 text-slate-400" />
+                  <FiSearch className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <Input
                   type="text"
@@ -335,7 +333,7 @@ export default function RecipesPage() {
                     <TableRow>
                       <TableCell
                         colSpan={4}
-                        className="text-center py-8 text-slate-500"
+                        className="text-center py-8 text-muted-foreground"
                       >
                         No recipes found. Add your first recipe to get started.
                       </TableCell>

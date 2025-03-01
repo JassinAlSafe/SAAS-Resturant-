@@ -43,19 +43,19 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <Card className="border-slate-200 shadow-lg">
+        <Card className="border shadow-lg">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-sm">
                 <span className="text-lg font-bold">R</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-slate-800">
+            <CardTitle className="text-2xl font-bold text-center">
               Reset Password
             </CardTitle>
-            <CardDescription className="text-center text-slate-500">
+            <CardDescription className="text-center">
               Enter your email to receive a password reset link
             </CardDescription>
           </CardHeader>
