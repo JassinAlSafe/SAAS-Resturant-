@@ -5,6 +5,7 @@ import { InventoryItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useCurrency } from "@/lib/currency-context";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +70,9 @@ export default function InventoryItemModal({
   item,
   customCategories = [],
 }: InventoryItemModalProps) {
+  // Get currency from context
+  const { currency } = useCurrency();
+
   // Combine default categories with any custom ones from the database
   const allCategories = useMemo(() => {
     return [...new Set([...COMMON_CATEGORIES, ...customCategories])].sort();
@@ -309,7 +313,7 @@ export default function InventoryItemModal({
 
             <div className="space-y-2">
               <Label htmlFor="cost">
-                Cost ($) <span className="text-red-500">*</span>
+                Cost ({currency.symbol}) <span className="text-red-500">*</span>
                 <span className="block text-xs text-muted-foreground">
                   Cost per {unit}
                 </span>

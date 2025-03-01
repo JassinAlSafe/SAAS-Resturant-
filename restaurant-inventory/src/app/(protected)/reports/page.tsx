@@ -26,6 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCurrency } from "@/lib/currency-context";
+import { CurrencySelector } from "@/components/currency-selector";
 
 // Register ChartJS components
 ChartJS.register(
@@ -44,6 +46,9 @@ export default function Reports() {
   const [activeTab, setActiveTab] = useState("sales");
   const [dateRange, setDateRange] = useState("week");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Get currency formatter
+  const { formatCurrency } = useCurrency();
 
   // Simulate fetching data from API
   useEffect(() => {
@@ -140,33 +145,35 @@ export default function Reports() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Reports & Analytics
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          View sales trends and inventory usage
-        </p>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Reports & Analytics
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            View insights and performance metrics
+          </p>
+        </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6">
-        <Button
-          variant={activeTab === "sales" ? "default" : "ghost"}
-          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-          data-state={activeTab === "sales" ? "active" : "inactive"}
-          onClick={() => setActiveTab("sales")}
-        >
-          Sales Analytics
-        </Button>
-        <Button
-          variant={activeTab === "inventory" ? "default" : "ghost"}
-          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-          data-state={activeTab === "inventory" ? "active" : "inactive"}
-          onClick={() => setActiveTab("inventory")}
-        >
-          Inventory Usage
-        </Button>
+        <div className="flex items-center gap-2 mt-4 md:mt-0">
+          <CurrencySelector />
+          <Button
+            variant={activeTab === "sales" ? "default" : "ghost"}
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            data-state={activeTab === "sales" ? "active" : "inactive"}
+            onClick={() => setActiveTab("sales")}
+          >
+            Sales Analytics
+          </Button>
+          <Button
+            variant={activeTab === "inventory" ? "default" : "ghost"}
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+            data-state={activeTab === "inventory" ? "active" : "inactive"}
+            onClick={() => setActiveTab("inventory")}
+          >
+            Inventory Usage
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Selector */}
@@ -250,7 +257,9 @@ export default function Reports() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Sales
                 </p>
-                <p className="text-2xl font-semibold mt-1">$10,500</p>
+                <p className="text-2xl font-semibold mt-1">
+                  {formatCurrency(10500)}
+                </p>
                 <p className="text-xs text-green-600 mt-2">
                   +12% from last period
                 </p>
@@ -260,7 +269,9 @@ export default function Reports() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Average Daily Sales
                 </p>
-                <p className="text-2xl font-semibold mt-1">$1,500</p>
+                <p className="text-2xl font-semibold mt-1">
+                  {formatCurrency(1500)}
+                </p>
                 <p className="text-xs text-green-600 mt-2">
                   +8% from last period
                 </p>
@@ -280,7 +291,9 @@ export default function Reports() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Average Order Value
                 </p>
-                <p className="text-2xl font-semibold mt-1">$25</p>
+                <p className="text-2xl font-semibold mt-1">
+                  {formatCurrency(25)}
+                </p>
                 <p className="text-xs text-red-600 mt-2">
                   -3% from last period
                 </p>

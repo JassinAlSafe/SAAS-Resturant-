@@ -12,6 +12,8 @@ import Card from "@/components/Card";
 import { InventoryItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCurrency } from "@/lib/currency-context";
+import { CurrencySelector } from "@/components/currency-selector";
 import {
   Table,
   TableBody,
@@ -53,6 +55,9 @@ export default function Inventory() {
 
   // Notifications
   const { success, error } = useNotificationHelpers();
+
+  // Get currency formatter
+  const { formatCurrency } = useCurrency();
 
   // Fetch items and categories
   const fetchInventory = async () => {
@@ -232,10 +237,13 @@ export default function Inventory() {
             </p>
           </div>
 
-          <Button className="mt-4 md:mt-0" size="sm" onClick={openAddModal}>
-            <FiPlus className="mr-2" />
-            Add Item
-          </Button>
+          <div className="flex items-center gap-2 mt-4 md:mt-0">
+            <CurrencySelector />
+            <Button className="mt-0" size="sm" onClick={openAddModal}>
+              <FiPlus className="mr-2" />
+              Add Item
+            </Button>
+          </div>
         </div>
 
         <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -279,6 +287,7 @@ export default function Inventory() {
         </div>
 
         <div className="flex gap-2 mt-4 md:mt-0">
+          <CurrencySelector />
           <Button variant="outline" size="sm" onClick={fetchInventory}>
             <FiRefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -386,7 +395,7 @@ export default function Inventory() {
                       <TableCell>
                         {item.reorderLevel} {item.unit}
                       </TableCell>
-                      <TableCell>${item.cost.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(item.cost)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button

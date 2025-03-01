@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrency } from "@/lib/currency-context";
+import { CurrencySelector } from "@/components/currency-selector";
 
 export default function SalesEntry() {
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -36,6 +38,9 @@ export default function SalesEntry() {
   const [salesEntries, setSalesEntries] = useState<{ [key: string]: number }>(
     {}
   );
+
+  // Get currency formatter
+  const { formatCurrency } = useCurrency();
 
   // Update selectedDate when dateString changes
   useEffect(() => {
@@ -182,13 +187,14 @@ export default function SalesEntry() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Sales Entry</h1>
-          <p className="text-sm text-slate-500">
-            Record daily sales from X-report and auto-update inventory
+          <h1 className="text-2xl font-bold text-gray-800">Sales Management</h1>
+          <p className="text-sm text-muted-foreground">
+            Record and track your sales
           </p>
         </div>
 
-        <div className="mt-4 md:mt-0 flex items-center space-x-2">
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <CurrencySelector />
           <div className="flex items-center space-x-2">
             <FiCalendar className="text-slate-500" />
             <Input
@@ -240,7 +246,7 @@ export default function SalesEntry() {
                   {filteredDishes.map((dish) => (
                     <TableRow key={dish.id}>
                       <TableCell className="font-medium">{dish.name}</TableCell>
-                      <TableCell>${dish.price.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(dish.price)}</TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -256,8 +262,9 @@ export default function SalesEntry() {
                         />
                       </TableCell>
                       <TableCell>
-                        $
-                        {((salesEntries[dish.id] || 0) * dish.price).toFixed(2)}
+                        {formatCurrency(
+                          dish.price * (salesEntries[dish.id] || 0)
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -267,7 +274,7 @@ export default function SalesEntry() {
 
             <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between">
               <div className="text-lg font-bold">
-                Total: ${calculateTotal().toFixed(2)}
+                Total: {formatCurrency(calculateTotal())}
               </div>
               <Button
                 className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700"
@@ -301,7 +308,9 @@ export default function SalesEntry() {
                           {sale.dishName}
                         </TableCell>
                         <TableCell>{sale.quantity}</TableCell>
-                        <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {formatCurrency(sale.totalAmount)}
+                        </TableCell>
                         <TableCell>
                           {format(new Date(sale.date), "PPP")}
                         </TableCell>

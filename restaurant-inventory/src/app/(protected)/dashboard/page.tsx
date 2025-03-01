@@ -23,6 +23,8 @@ import { DashboardStats, StockAlert } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { useCurrency } from "@/lib/currency-context";
+import { CurrencySelector } from "@/components/currency-selector";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -44,6 +46,9 @@ export default function Dashboard() {
     { month: "May", sales: 16300 },
     { month: "Jun", sales: 17500 },
   ]);
+
+  // Get currency formatter
+  const { formatCurrency } = useCurrency();
 
   // Check if user is authenticated
   useEffect(() => {
@@ -163,12 +168,13 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Welcome to ShelfWise</h1>
+        <CurrencySelector />
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Inventory Value"
-          value={`$${stats.totalInventoryValue.toLocaleString()}`}
+          value={formatCurrency(stats.totalInventoryValue)}
           icon={<FiPackage className="h-5 w-5 text-primary" />}
         />
         <StatCard
@@ -182,15 +188,15 @@ export default function Dashboard() {
         />
         <StatCard
           title="Monthly Sales"
-          value={`$${stats.monthlySales.toLocaleString()}`}
+          value={formatCurrency(stats.monthlySales)}
           icon={<FiDollarSign className="h-5 w-5 text-green-600" />}
         />
         <StatCard
           title="Sales Growth"
           value={`${stats.salesGrowth}%`}
-          icon={<FiTrendingUp className="h-5 w-5 text-primary" />}
+          icon={<FiTrendingUp className="h-5 w-5 text-blue-600" />}
           trend={{
-            value: 2.4,
+            value: 2.5,
             isPositive: true,
           }}
         />

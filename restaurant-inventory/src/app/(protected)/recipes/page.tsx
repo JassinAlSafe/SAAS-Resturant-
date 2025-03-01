@@ -28,6 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useCurrency } from "@/lib/currency-context";
+import { CurrencySelector } from "@/components/currency-selector";
 
 export default function RecipesPage() {
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -38,6 +40,9 @@ export default function RecipesPage() {
   const [currentDish, setCurrentDish] = useState<Dish | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [dishToDelete, setDishToDelete] = useState<Dish | null>(null);
+
+  // Get currency formatter
+  const { formatCurrency } = useCurrency();
 
   // Simulate fetching data from API
   useEffect(() => {
@@ -283,21 +288,24 @@ export default function RecipesPage() {
         <>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">
+              <h1 className="text-2xl font-bold text-gray-800">
                 Recipe Management
               </h1>
-              <p className="text-sm text-slate-500">
-                Manage your restaurant recipes and their ingredients
+              <p className="text-sm text-muted-foreground">
+                {dishes.length} recipes in your collection
               </p>
             </div>
 
-            <Button
-              className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700"
-              onClick={handleAddDish}
-            >
-              <FiPlus className="mr-2 h-4 w-4" />
-              Add Recipe
-            </Button>
+            <div className="flex gap-2 mt-4 md:mt-0">
+              <CurrencySelector />
+              <Button
+                className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700"
+                onClick={handleAddDish}
+              >
+                <FiPlus className="mr-2 h-4 w-4" />
+                Add Recipe
+              </Button>
+            </div>
           </div>
 
           {/* Search */}
@@ -346,7 +354,7 @@ export default function RecipesPage() {
                         <TableCell className="font-medium">
                           {dish.name}
                         </TableCell>
-                        <TableCell>${dish.price.toFixed(2)}</TableCell>
+                        <TableCell>{formatCurrency(dish.price)}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {dish.ingredients.map((ing, index) => (

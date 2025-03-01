@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { FiPlus, FiTrash2, FiSave } from "react-icons/fi";
 import { Card } from "@/components/ui/card";
+import { useCurrency } from "@/lib/currency-context";
 
 interface RecipeFormProps {
   dish?: Dish;
@@ -40,6 +41,9 @@ export default function RecipeForm({
   const [recipeIngredients, setRecipeIngredients] = useState<DishIngredient[]>(
     dish?.ingredients || []
   );
+
+  // Get currency from context
+  const { currency } = useCurrency();
 
   // Function to add a new ingredient to the recipe
   const addIngredient = () => {
@@ -129,7 +133,7 @@ export default function RecipeForm({
                 htmlFor="price"
                 className="text-sm font-medium text-slate-700"
               >
-                Price ($)
+                Price ({currency.symbol})
               </label>
               <Input
                 id="price"
