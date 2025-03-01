@@ -1,5 +1,5 @@
-// Ingredient interface
-export interface Ingredient {
+// Inventory Item interface
+export interface InventoryItem {
     id: string;
     name: string;
     category: string;
@@ -10,6 +10,9 @@ export interface Ingredient {
     createdAt: string;
     updatedAt: string;
 }
+
+// Alias for backward compatibility
+export type Ingredient = InventoryItem;
 
 // Dish interface
 export interface Dish {
