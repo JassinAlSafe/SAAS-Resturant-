@@ -38,21 +38,21 @@
     --chart-4: 0 0% 65%;
     --chart-5: 0 0% 80%;
 
-    /* Sidebar - Inspired by the shared design */
-    --sidebar: 60 10% 98%;
-    --sidebar-foreground: 0 0% 25%;
-    --sidebar-primary: 120 30% 35%;
+    /* Sidebar - Clean grayscale theme */
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 0% 10%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 120 20% 95%;
-    --sidebar-accent-foreground: 120 30% 30%;
-    --sidebar-border: 60 10% 92%;
-    --sidebar-ring: 120 30% 35%;
-    --sidebar-background: 60 10% 98%;
-    --sidebar-hover: 120 15% 95%;
-    --sidebar-active: 120 20% 92%;
-    --sidebar-active-text: 120 30% 30%;
-    --sidebar-icon: 120 15% 35%;
-    --sidebar-icon-active: 120 40% 35%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 80%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-hover: 0 0% 95%;
+    --sidebar-active: 0 0% 95%;
+    --sidebar-active-text: 0 0% 10%;
+    --sidebar-icon: 0 0% 50%;
+    --sidebar-icon-active: 0 0% 10%;
     --sidebar-muted: 0 0% 60%;
   }
 
@@ -85,21 +85,21 @@
     --chart-4: 0 0% 55%;
     --chart-5: 0 0% 40%;
 
-    /* Sidebar - Dark version inspired by the shared design */
-    --sidebar: 210 15% 12%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 120 20% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 15% 16%;
-    --sidebar-accent-foreground: 120 20% 70%;
-    --sidebar-border: 210 15% 18%;
-    --sidebar-ring: 120 20% 50%;
-    --sidebar-background: 210 15% 10%;
-    --sidebar-hover: 210 15% 18%;
-    --sidebar-active: 120 15% 20%;
-    --sidebar-active-text: 120 20% 70%;
-    --sidebar-icon: 120 10% 60%;
-    --sidebar-icon-active: 120 30% 60%;
+    /* Sidebar - Dark grayscale version */
+    --sidebar: 0 0% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 90%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 70%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-hover: 0 0% 15%;
+    --sidebar-active: 0 0% 20%;
+    --sidebar-active-text: 0 0% 100%;
+    --sidebar-icon: 0 0% 70%;
+    --sidebar-icon-active: 0 0% 100%;
     --sidebar-muted: 0 0% 60%;
   }
 
@@ -127,7 +127,6 @@
 
 .sidebar-item-active {
   @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
-  @apply border-l-2 border-[hsl(var(--sidebar-primary))];
 }
 
 .sidebar-item-icon {
@@ -142,4 +141,39 @@
   @apply bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-primary))];
   @apply hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-primary))];
   @apply transition-all duration-200 shadow-sm;
+}
+
+/* Tooltip styles for sidebar */
+.sidebar-tooltip {
+  @apply z-50 px-4 py-2 bg-[#333] text-white rounded-md shadow-lg;
+  @apply transition-opacity duration-200;
+}
+
+/* Expanded sidebar menu item */
+.sidebar-expanded-item {
+  @apply flex items-center gap-3 px-4 py-3 w-full rounded-md transition-all duration-200;
+  @apply hover:bg-[hsl(var(--sidebar-hover))];
+}
+
+.sidebar-expanded-item.active {
+  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
+}
+
+/* Collapsed sidebar styles */
+.sidebar-collapsed {
+  @apply w-16 transition-all duration-300 ease-in-out;
+}
+
+.sidebar-expanded {
+  @apply w-64 transition-all duration-300 ease-in-out;
+}
+
+/* Hover menu for collapsed sidebar */
+.sidebar-hover-menu {
+  @apply absolute left-16 bg-[#333] rounded-md py-2 px-4 shadow-lg z-50;
+  @apply opacity-0 pointer-events-none transition-opacity duration-200;
+}
+
+.sidebar-item:hover .sidebar-hover-menu {
+  @apply opacity-100 pointer-events-auto;
 }

@@ -6,6 +6,7 @@ import {
   PackageIcon,
   BarChart2Icon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   MenuIcon,
   LogOutIcon,
   ShoppingCartIcon,
@@ -14,6 +15,7 @@ import {
   SearchIcon,
   BellIcon,
   RefreshCwIcon,
+  HelpCircleIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -34,6 +36,39 @@ const sidebarStyles = `
   .main-content {
     width: 100% !important;
   }
+  
+  /* Improve spacing for navigation items */
+  .nav-item {
+    margin-bottom: 8px;
+  }
+  
+  /* Add gap for settings and help section */
+  .nav-item-settings, .nav-item-help {
+    margin-top: 24px;
+    position: relative;
+  }
+  
+  /* Add separator line above settings */
+  .nav-item-settings:before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Custom styling for the user profile */
+  .user-profile {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: auto;
+  }
+  
+  /* Smooth transitions */
+  .sidebar-transition {
+    transition: all 0.3s ease;
+  }
 `;
 
 // Navigation items with their paths and icons
@@ -43,7 +78,18 @@ const navItems = [
   { name: "Recipes", href: "/recipes", icon: BookOpenIcon },
   { name: "Sales", href: "/sales", icon: ShoppingCartIcon },
   { name: "Reports", href: "/reports", icon: BarChart2Icon },
-  { name: "Settings", href: "/settings", icon: SettingsIcon },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: SettingsIcon,
+    className: "nav-item-settings",
+  },
+  {
+    name: "Help",
+    href: "/help",
+    icon: HelpCircleIcon,
+    className: "nav-item-help",
+  },
 ];
 
 // Navigation component with active state detection
@@ -52,48 +98,51 @@ function Navigation({ sidebarContext }: { sidebarContext: any }) {
   const { open } = sidebarContext;
 
   return (
-    <ul className="px-3 flex flex-col gap-1">
+    <ul className="flex flex-col w-full px-4">
       {navItems.map((item) => {
         const isActive =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
 
         return (
-          <li key={item.href} className="my-1.5 group/menu-item relative">
+          <li key={item.href} className={`nav-item ${item.className || ""}`}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link
                   href={item.href}
-                  className={`sidebar-item flex items-center ${
-                    open ? "justify-start" : "justify-center"
-                  } rounded-md px-3 py-2.5 transition-colors ${
-                    isActive
-                      ? "sidebar-item-active"
-                      : "hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-foreground))]"
-                  }`}
+                  className={`
+                    sidebar-transition
+                    ${
+                      open
+                        ? "sidebar-expanded-item"
+                        : "flex items-center justify-center h-10 w-10 mx-auto rounded-md"
+                    }
+                    ${
+                      isActive
+                        ? open
+                          ? "active bg-gray-100 text-gray-900"
+                          : "bg-gray-100"
+                        : ""
+                    }
+                  `}
                 >
                   <Icon
-                    className={`h-5 w-5 ${open ? "mr-3" : ""} ${
-                      isActive
-                        ? "sidebar-item-icon-active"
-                        : "sidebar-item-icon"
+                    className={`h-5 w-5 ${
+                      isActive ? "text-gray-900" : "text-gray-500"
                     }`}
                   />
                   {open && (
-                    <span
-                      className={`font-medium text-sm truncate ${
-                        isActive
-                          ? "text-[hsl(var(--sidebar-active-text))]"
-                          : "text-[hsl(var(--sidebar-foreground))]"
-                      }`}
-                    >
+                    <span className="text-sm font-medium text-gray-900 ml-3">
                       {item.name}
                     </span>
                   )}
                 </Link>
               </TooltipTrigger>
               {!open && (
-                <TooltipContent side="right" className="font-medium">
+                <TooltipContent
+                  side="right"
+                  className="font-medium sidebar-tooltip"
+                >
                   {item.name}
                 </TooltipContent>
               )}
@@ -119,61 +168,45 @@ function UserProfile({ sidebarContext }: { sidebarContext: any }) {
   };
 
   return (
-    <div className="p-3 border-t border-[hsl(var(--sidebar-border))]">
-      <div className="flex items-center justify-center">
-        <div
-          className={`${
-            open
-              ? "flex items-center w-full"
-              : "flex flex-col items-center w-full"
-          }`}
-        >
-          <div className="h-8 w-8 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[hsl(var(--sidebar-primary-foreground))] shadow-sm flex-shrink-0">
-            <span className="text-xs font-semibold">
-              {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
-            </span>
-          </div>
-          {open && (
-            <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium truncate text-[hsl(var(--sidebar-foreground))]">
-                {profile?.name || "User"}
-              </p>
-              <p className="text-xs text-[hsl(var(--sidebar-muted))] truncate">
-                {profile?.email || "user@example.com"}
-              </p>
-            </div>
-          )}
+    <div className="user-profile px-4 py-4">
+      <div className="flex items-center">
+        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 shadow-sm flex-shrink-0">
+          <span className="text-sm font-semibold">
+            {profile?.name ? profile.name.charAt(0).toUpperCase() : "S"}
+          </span>
         </div>
-      </div>
-      <div
-        className={`mt-3 flex ${open ? "justify-between" : "justify-center"}`}
-      >
-        {open ? (
-          <>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center gap-2 text-xs text-[hsl(var(--sidebar-muted))] hover:text-[hsl(var(--sidebar-foreground))] p-2 rounded-md hover:bg-[hsl(var(--sidebar-hover))] transition-colors"
-            >
-              <LogOutIcon size={14} />
-              <span>Log out</span>
-            </button>
-            <ThemeToggle />
-          </>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center text-xs text-[hsl(var(--sidebar-muted))] hover:text-[hsl(var(--sidebar-foreground))] p-2 rounded-md hover:bg-[hsl(var(--sidebar-hover))] transition-colors"
-                >
-                  <LogOutIcon size={14} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Log out</TooltipContent>
-            </Tooltip>
-            <ThemeToggle />
+        {open && (
+          <div className="ml-3 overflow-hidden">
+            <p className="text-sm font-medium truncate text-gray-900">
+              {profile?.name || "Sebastian Ekstrand"}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {profile?.email || "Region West, CU Frontend 2"}
+            </p>
           </div>
+        )}
+        {open && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto text-gray-400 hover:text-gray-700"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="12" cy="5" r="1" />
+              <circle cx="12" cy="19" r="1" />
+            </svg>
+          </Button>
         )}
       </div>
     </div>
@@ -183,7 +216,7 @@ function UserProfile({ sidebarContext }: { sidebarContext: any }) {
 // Main sidebar layout component
 function SidebarLayout() {
   // Since we removed SidebarProvider, we need to manage state directly
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(true); // Default to open for wider sidebar
   const children = React.useContext(SidebarChildrenContext);
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
@@ -234,58 +267,51 @@ function SidebarLayout() {
         {/* Style tag to fix sidebar width issue */}
         <style dangerouslySetInnerHTML={{ __html: sidebarStyles }} />
 
-        {/* Icon-only sidebar - always visible on desktop */}
-        <div className="hidden md:flex flex-col w-16 h-full border-r border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar))] flex-shrink-0">
+        {/* Sidebar - desktop version */}
+        <div
+          className={`hidden md:flex flex-col h-full border-r border-gray-200 bg-white flex-shrink-0 sidebar-transition relative ${
+            open ? "w-72" : "w-20"
+          }`}
+        >
           {/* Logo */}
-          <div className="flex justify-center py-4">
-            <div className="w-10 h-10 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[hsl(var(--sidebar-primary-foreground))]">
-              <span className="text-sm font-bold">S</span>
-            </div>
+          <div className="flex items-center h-16 px-4 border-b border-gray-200">
+            {open ? (
+              <div className="flex items-center">
+                <span className="text-2xl font-bold text-gray-900">
+                  ShelfWise
+                </span>
+                <span className="text-sm text-gray-500 ml-2">Inventory</span>
+              </div>
+            ) : (
+              <div className="w-full flex justify-center">
+                <span className="text-2xl font-bold text-gray-900">S</span>
+              </div>
+            )}
           </div>
 
-          {/* Navigation Icons */}
-          <div className="flex flex-col items-center gap-5 mt-4 flex-1">
-            {navItems.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
-              const Icon = item.icon;
-
-              return (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={item.href}
-                      className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors ${
-                        isActive
-                          ? "bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-icon-active))]"
-                          : "text-[hsl(var(--sidebar-icon))] hover:bg-[hsl(var(--sidebar-hover))]"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="font-medium">
-                    {item.name}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
+          {/* Navigation - with more spacing between items */}
+          <div className="flex-1 py-6">
+            <Navigation sidebarContext={sidebarContext} />
           </div>
 
-          {/* User profile */}
-          <div className="mt-auto flex flex-col items-center gap-4 pb-6">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-10 h-10 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[hsl(var(--sidebar-primary-foreground))] cursor-pointer">
-                  <span className="text-xs font-semibold">
-                    {profile?.name ? profile.name.charAt(0).toUpperCase() : "J"}
-                  </span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {profile?.name || "User Profile"}
-              </TooltipContent>
-            </Tooltip>
+          {/* User profile - positioned at bottom */}
+          <UserProfile sidebarContext={sidebarContext} />
+
+          {/* Toggle button - positioned on the right edge of the sidebar */}
+          <div className="absolute -right-4 top-20 z-10">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full h-8 w-8 border border-gray-200 bg-white shadow-sm flex items-center justify-center"
+              onClick={() => setOpen(!open)}
+              aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              {open ? (
+                <ChevronLeftIcon size={16} />
+              ) : (
+                <ChevronRightIcon size={16} />
+              )}
+            </Button>
           </div>
         </div>
 
@@ -321,9 +347,9 @@ function SidebarLayout() {
               </Button>
 
               {/* User avatar (mobile only) */}
-              <div className="md:hidden w-8 h-8 rounded-full bg-[hsl(var(--sidebar-primary))] flex items-center justify-center text-[hsl(var(--sidebar-primary-foreground))]">
+              <div className="md:hidden w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
                 <span className="text-xs font-semibold">
-                  {profile?.name ? profile.name.charAt(0).toUpperCase() : "J"}
+                  {profile?.name ? profile.name.charAt(0).toUpperCase() : "S"}
                 </span>
               </div>
             </div>
@@ -339,7 +365,7 @@ function SidebarLayout() {
         <div className="md:hidden fixed bottom-4 right-4 z-50">
           <Button
             onClick={() => sidebarContext.toggleSidebar()}
-            className="w-12 h-12 rounded-full bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] flex items-center justify-center shadow-lg"
+            className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center shadow-lg"
           >
             <MenuIcon size={24} />
           </Button>
@@ -348,24 +374,37 @@ function SidebarLayout() {
         {/* Mobile sidebar */}
         {isMobile && openMobile && (
           <div className="fixed inset-0 z-50 bg-black/50">
-            <div className="fixed inset-y-0 left-0 w-64 bg-[hsl(var(--sidebar))] p-4">
-              <div className="flex items-center justify-between h-14 border-b border-[hsl(var(--sidebar-border))]">
-                <h1 className="text-lg font-bold truncate text-[hsl(var(--sidebar-primary))]">
-                  ShelfWise
-                </h1>
+            <div className="fixed inset-y-0 left-0 w-72 bg-white p-0">
+              {/* Logo */}
+              <div className="flex items-center h-16 px-4 border-b border-gray-200">
+                <div className="flex items-center">
+                  <span className="text-2xl font-bold text-gray-900">
+                    ShelfWise
+                  </span>
+                  <span className="text-sm text-gray-500 ml-2">Inventory</span>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setOpenMobile(false)}
+                  className="ml-auto text-gray-400"
                 >
                   <ChevronLeftIcon />
                 </Button>
               </div>
-              <div className="py-3 flex-1 overflow-y-auto">
-                <Navigation sidebarContext={sidebarContext} />
+
+              {/* Navigation */}
+              <div className="py-6">
+                <Navigation
+                  sidebarContext={{ ...sidebarContext, open: true }}
+                />
               </div>
-              <div className="mt-auto">
-                <UserProfile sidebarContext={sidebarContext} />
+
+              {/* User profile */}
+              <div className="absolute bottom-0 left-0 right-0">
+                <UserProfile
+                  sidebarContext={{ ...sidebarContext, open: true }}
+                />
               </div>
             </div>
           </div>
