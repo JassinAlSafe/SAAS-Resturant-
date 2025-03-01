@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
+import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ export default function SignupPage() {
   const router = useRouter();
   const { signUp } = useAuth();
   const { error: showError, success: showSuccess } = useNotificationHelpers();
+  const { startTransition } = useTransition();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +71,9 @@ export default function SignupPage() {
           "Your account has been created successfully. Redirecting to login page..."
         );
         setTimeout(() => {
-          router.push("/login");
+          startTransition(() => {
+            router.push("/login");
+          }, "signup");
         }, 3000);
       }
     } catch (error: any) {

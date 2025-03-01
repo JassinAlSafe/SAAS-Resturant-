@@ -29,6 +29,19 @@ import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useTransition } from "@/components/ui/transition";
+import { useRouter } from "next/navigation";
+
+// Define the SidebarContext type
+type SidebarContextType = {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  state: "expanded" | "collapsed";
+  isMobile: boolean;
+  openMobile: boolean;
+  setOpenMobile: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleSidebar: () => void;
+};
 
 // Add CSS to fix the sidebar width issue
 const sidebarStyles = `
@@ -93,9 +106,32 @@ const navItems = [
 ];
 
 // Navigation component with active state detection
-function Navigation({ sidebarContext }: { sidebarContext: any }) {
+function Navigation({
+  sidebarContext,
+}: {
+  sidebarContext: SidebarContextType;
+}) {
   const pathname = usePathname();
   const { open } = sidebarContext;
+  const { signOut } = useAuth();
+  const { startTransition } = useTransition();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      startTransition(() => {
+        signOut()
+          .then(() => {
+            router.push("/login");
+          })
+          .catch((error) => {
+            console.error("Error signing out:", error);
+          });
+      }, "logout");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <ul className="flex flex-col w-full px-4">
@@ -150,22 +186,48 @@ function Navigation({ sidebarContext }: { sidebarContext: any }) {
           </li>
         );
       })}
+
+      {/* Logout button as a navigation item */}
+      <li className="nav-item mt-8 border-t border-gray-200 pt-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleLogout}
+              className={`
+                sidebar-transition
+                ${
+                  open
+                    ? "sidebar-expanded-item text-red-600 hover:bg-red-50"
+                    : "flex items-center justify-center h-10 w-10 mx-auto rounded-md text-red-600 hover:bg-red-50"
+                }
+              `}
+            >
+              <LogOutIcon className="h-5 w-5" />
+              {open && <span className="text-sm font-medium ml-3">Logout</span>}
+            </button>
+          </TooltipTrigger>
+          {!open && (
+            <TooltipContent
+              side="right"
+              className="font-medium sidebar-tooltip"
+            >
+              Logout
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </li>
     </ul>
   );
 }
 
 // User profile component
-function UserProfile({ sidebarContext }: { sidebarContext: any }) {
+function UserProfile({
+  sidebarContext,
+}: {
+  sidebarContext: SidebarContextType;
+}) {
   const { open } = sidebarContext;
-  const { profile, signOut } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+  const { profile } = useAuth();
 
   return (
     <div className="user-profile px-4 py-4">
@@ -185,29 +247,6 @@ function UserProfile({ sidebarContext }: { sidebarContext: any }) {
             </p>
           </div>
         )}
-        {open && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto text-gray-400 hover:text-gray-700"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="12" cy="5" r="1" />
-              <circle cx="12" cy="19" r="1" />
-            </svg>
-          </Button>
-        )}
       </div>
     </div>
   );
@@ -218,8 +257,7 @@ function SidebarLayout() {
   // Since we removed SidebarProvider, we need to manage state directly
   const [open, setOpen] = React.useState(true); // Default to open for wider sidebar
   const children = React.useContext(SidebarChildrenContext);
-  const pathname = usePathname();
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const [isMobile, setIsMobile] = React.useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
@@ -242,7 +280,7 @@ function SidebarLayout() {
   }, []);
 
   // Create a mock useSidebar context for components that need it
-  const sidebarContext = {
+  const sidebarContext: SidebarContextType = {
     open,
     setOpen,
     state: open ? "expanded" : "collapsed",
@@ -251,14 +289,6 @@ function SidebarLayout() {
     setOpenMobile,
     toggleSidebar: () =>
       isMobile ? setOpenMobile(!openMobile) : setOpen(!open),
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut?.();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
   };
 
   return (

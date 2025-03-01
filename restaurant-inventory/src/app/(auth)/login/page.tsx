@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
+import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,14 +26,28 @@ export default function LoginPage() {
   const router = useRouter();
   const { signIn } = useAuth();
   const { error: showError } = useNotificationHelpers();
+  const { startTransition } = useTransition();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
-      router.push("/dashboard");
+      const result = await signIn(email, password);
+      const isEmailConfirmed = result?.isEmailConfirmed ?? true;
+
+      if (!isEmailConfirmed) {
+        showError(
+          "Email Not Confirmed",
+          "Please confirm your email before logging in."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      startTransition(() => {
+        router.push("/dashboard");
+      }, "login");
     } catch (error: any) {
       // Check if the error is related to email confirmation
       if (error.message?.includes("Email not confirmed")) {
@@ -46,7 +61,6 @@ export default function LoginPage() {
           error.message || "Failed to sign in"
         );
       }
-    } finally {
       setIsLoading(false);
     }
   };

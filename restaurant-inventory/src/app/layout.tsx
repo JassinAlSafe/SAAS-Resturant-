@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { NotificationContainer } from "@/components/ui/notification";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TransitionProvider } from "@/components/ui/transition";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,8 +30,10 @@ export default function RootLayout({
         >
           <AuthProvider>
             <NotificationProvider>
-              {children}
-              <NotificationContainer />
+              <TransitionProvider>
+                {children}
+                <NotificationContainer />
+              </TransitionProvider>
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
