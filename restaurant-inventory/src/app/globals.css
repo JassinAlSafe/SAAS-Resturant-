@@ -38,16 +38,22 @@
     --chart-4: 0 0% 65%;
     --chart-5: 0 0% 80%;
 
-    /* Sidebar */
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 0 0% 26%;
-    --sidebar-primary: 0 0% 0%;
+    /* Sidebar - Inspired by the shared design */
+    --sidebar: 60 10% 98%;
+    --sidebar-foreground: 0 0% 25%;
+    --sidebar-primary: 120 30% 35%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 0%;
-    --sidebar-background: 0 0% 100%;
+    --sidebar-accent: 120 20% 95%;
+    --sidebar-accent-foreground: 120 30% 30%;
+    --sidebar-border: 60 10% 92%;
+    --sidebar-ring: 120 30% 35%;
+    --sidebar-background: 60 10% 98%;
+    --sidebar-hover: 120 15% 95%;
+    --sidebar-active: 120 20% 92%;
+    --sidebar-active-text: 120 30% 30%;
+    --sidebar-icon: 120 15% 35%;
+    --sidebar-icon-active: 120 40% 35%;
+    --sidebar-muted: 0 0% 60%;
   }
 
   .dark {
@@ -79,16 +85,22 @@
     --chart-4: 0 0% 55%;
     --chart-5: 0 0% 40%;
 
-    /* Sidebar */
-    --sidebar: 0 0% 5%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 0 0% 100%;
-    --sidebar-background: 0 0% 0%;
+    /* Sidebar - Dark version inspired by the shared design */
+    --sidebar: 210 15% 12%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 120 20% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 16%;
+    --sidebar-accent-foreground: 120 20% 70%;
+    --sidebar-border: 210 15% 18%;
+    --sidebar-ring: 120 20% 50%;
+    --sidebar-background: 210 15% 10%;
+    --sidebar-hover: 210 15% 18%;
+    --sidebar-active: 120 15% 20%;
+    --sidebar-active-text: 120 20% 70%;
+    --sidebar-icon: 120 10% 60%;
+    --sidebar-icon-active: 120 30% 60%;
+    --sidebar-muted: 0 0% 60%;
   }
 
   * {
@@ -106,4 +118,28 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add custom sidebar styles */
+.sidebar-item {
+  @apply transition-all duration-200;
+}
+
+.sidebar-item-active {
+  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
+  @apply border-l-2 border-[hsl(var(--sidebar-primary))];
+}
+
+.sidebar-item-icon {
+  @apply text-[hsl(var(--sidebar-icon))];
+}
+
+.sidebar-item-icon-active {
+  @apply text-[hsl(var(--sidebar-icon-active))];
+}
+
+.sidebar-toggle-button {
+  @apply bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-primary))];
+  @apply hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-primary))];
+  @apply transition-all duration-200 shadow-sm;
 }
