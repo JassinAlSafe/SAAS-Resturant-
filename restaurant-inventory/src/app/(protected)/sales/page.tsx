@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiPlus, FiCalendar, FiSearch, FiSave } from "react-icons/fi";
+import {
+  FiPlus,
+  FiCalendar,
+  FiSearch,
+  FiSave,
+  FiFileText,
+  FiBarChart2,
+  FiMessageSquare,
+} from "react-icons/fi";
 import Card from "@/components/Card";
 import { Dish, Sale } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -25,6 +33,10 @@ import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrency } from "@/lib/currency-context";
 import { CurrencySelector } from "@/components/currency-selector";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import SaleNotesModal from "@/components/sales/SaleNotesModal";
 
 export default function SalesEntry() {
   const [dishes, setDishes] = useState<Dish[]>([]);
@@ -38,6 +50,12 @@ export default function SalesEntry() {
   const [salesEntries, setSalesEntries] = useState<{ [key: string]: number }>(
     {}
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showInventoryImpact, setShowInventoryImpact] = useState(false);
+
+  // Notes modal state
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   // Get currency formatter
   const { formatCurrency } = useCurrency();
@@ -166,13 +184,104 @@ export default function SalesEntry() {
     }, 0);
   };
 
+  // Calculate inventory impact for a dish
+  const calculateInventoryImpact = (dishId: string, quantity: number) => {
+    const dish = dishes.find((d) => d.id === dishId);
+    if (!dish) return [];
+
+    return dish.ingredients.map((ingredient) => {
+      const ingredientItem = dishes
+        .flatMap((d) => d.ingredients)
+        .find((ing) => ing.ingredientId === ingredient.ingredientId);
+
+      return {
+        ingredientId: ingredient.ingredientId,
+        name: getIngredientName(ingredient.ingredientId),
+        quantityUsed: ingredient.quantity * quantity,
+        unit: getIngredientUnit(ingredient.ingredientId),
+      };
+    });
+  };
+
+  // Get ingredient name by id
+  const getIngredientName = (id: string) => {
+    // In a real app, this would fetch from the ingredients list
+    const ingredientNames: { [key: string]: string } = {
+      "1": "Tomatoes",
+      "2": "Chicken Breast",
+      "3": "Mozzarella Cheese",
+      "4": "Olive Oil",
+      "5": "Basil",
+      "6": "Flour",
+      "7": "Eggs",
+      "8": "Onions",
+    };
+    return ingredientNames[id] || "Unknown Ingredient";
+  };
+
+  // Get ingredient unit by id
+  const getIngredientUnit = (id: string) => {
+    // In a real app, this would fetch from the ingredients list
+    const ingredientUnits: { [key: string]: string } = {
+      "1": "kg",
+      "2": "kg",
+      "3": "kg",
+      "4": "L",
+      "5": "kg",
+      "6": "kg",
+      "7": "pcs",
+      "8": "kg",
+    };
+    return ingredientUnits[id] || "unit";
+  };
+
   // Submit sales
   const handleSubmitSales = () => {
     // In a real app, this would be an API call to Supabase
-    alert(
-      "Sales submitted successfully! Inventory will be updated automatically."
-    );
-    setSalesEntries({});
+    setIsSubmitting(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      // Create new sales records
+      const newSales = Object.entries(salesEntries)
+        .map(([dishId, quantity]) => {
+          const dish = dishes.find((d) => d.id === dishId);
+          if (!dish || quantity <= 0) return null;
+
+          return {
+            id: `s${Date.now()}-${dishId}`,
+            dishId,
+            dishName: dish.name,
+            quantity,
+            totalAmount: dish.price * quantity,
+            date: dateString,
+            createdAt: new Date().toISOString(),
+          };
+        })
+        .filter(Boolean) as Sale[];
+
+      // Add new sales to the list
+      setSales([...newSales, ...sales]);
+
+      // Show success message
+      toast({
+        title: "Sales recorded successfully",
+        description: "Inventory has been updated based on recipe ingredients.",
+        action: (
+          <ToastAction altText="View Inventory">View Inventory</ToastAction>
+        ),
+      });
+
+      // Reset form
+      setSalesEntries({});
+      setIsSubmitting(false);
+    }, 1500);
+  };
+
+  // Open notes modal for a specific sale
+  const openNotesModal = (sale: Sale) => {
+    setSelectedSale(sale);
+    setIsNotesModalOpen(true);
   };
 
   if (isLoading) {
@@ -187,9 +296,11 @@ export default function SalesEntry() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Sales Management</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            X-Report & Sales Entry
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Record and track your sales
+            Record daily sales and automatically update inventory
           </p>
         </div>
 
@@ -209,8 +320,14 @@ export default function SalesEntry() {
 
       <Tabs defaultValue="entry" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="entry">New Sales Entry</TabsTrigger>
-          <TabsTrigger value="history">Sales History</TabsTrigger>
+          <TabsTrigger value="entry" className="flex items-center gap-2">
+            <FiFileText className="h-4 w-4" />
+            New X-Report Entry
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <FiBarChart2 className="h-4 w-4" />
+            Sales History
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="entry">
@@ -228,6 +345,16 @@ export default function SalesEntry() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInventoryImpact(!showInventoryImpact)}
+                className="whitespace-nowrap"
+              >
+                {showInventoryImpact
+                  ? "Hide Inventory Impact"
+                  : "Show Inventory Impact"}
+              </Button>
             </div>
           </Card>
 
@@ -245,7 +372,36 @@ export default function SalesEntry() {
                 <TableBody>
                   {filteredDishes.map((dish) => (
                     <TableRow key={dish.id}>
-                      <TableCell className="font-medium">{dish.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {dish.name}
+                        {dish.ingredients.length > 0 && (
+                          <div className="text-xs text-slate-500 mt-1">
+                            Uses {dish.ingredients.length} ingredients
+                          </div>
+                        )}
+                        {showInventoryImpact && salesEntries[dish.id] > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs font-medium text-slate-700 mb-1">
+                              Inventory impact:
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {calculateInventoryImpact(
+                                dish.id,
+                                salesEntries[dish.id]
+                              ).map((impact, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  -{impact.quantityUsed} {impact.unit}{" "}
+                                  {impact.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{formatCurrency(dish.price)}</TableCell>
                       <TableCell>
                         <Input
@@ -279,17 +435,64 @@ export default function SalesEntry() {
               <Button
                 className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700"
                 onClick={handleSubmitSales}
-                disabled={Object.keys(salesEntries).length === 0}
+                disabled={
+                  Object.keys(salesEntries).length === 0 || isSubmitting
+                }
               >
-                <FiSave className="mr-2 h-4 w-4" />
-                Submit Sales & Update Inventory
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  <>
+                    <FiSave className="mr-2 h-4 w-4" />
+                    Submit X-Report & Update Inventory
+                  </>
+                )}
               </Button>
             </div>
           </Card>
         </TabsContent>
 
         <TabsContent value="history">
-          <Card>
+          <Card className="mb-6">
+            <div className="p-4 bg-slate-50 rounded-lg mb-4">
+              <h3 className="font-medium text-slate-800 mb-2">
+                Sales Summary for {format(selectedDate, "PPP")}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <div className="text-sm text-slate-500">Total Items Sold</div>
+                  <div className="text-xl font-bold">
+                    {filteredSales.reduce(
+                      (sum, sale) => sum + sale.quantity,
+                      0
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <div className="text-sm text-slate-500">Total Revenue</div>
+                  <div className="text-xl font-bold">
+                    {formatCurrency(
+                      filteredSales.reduce(
+                        (sum, sale) => sum + sale.totalAmount,
+                        0
+                      )
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white p-3 rounded-md shadow-sm">
+                  <div className="text-sm text-slate-500">
+                    Unique Dishes Sold
+                  </div>
+                  <div className="text-xl font-bold">
+                    {new Set(filteredSales.map((sale) => sale.dishId)).size}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -298,6 +501,7 @@ export default function SalesEntry() {
                     <TableHead>Quantity Sold</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -314,12 +518,23 @@ export default function SalesEntry() {
                         <TableCell>
                           {format(new Date(sale.date), "PPP")}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openNotesModal(sale)}
+                            className="h-8 w-8 p-0"
+                            title="View/Add Notes"
+                          >
+                            <FiMessageSquare className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="text-center py-8 text-slate-500"
                       >
                         No sales records found for this date
@@ -332,6 +547,15 @@ export default function SalesEntry() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Notes Modal */}
+      {selectedSale && (
+        <SaleNotesModal
+          isOpen={isNotesModalOpen}
+          onClose={() => setIsNotesModalOpen(false)}
+          sale={selectedSale}
+        />
+      )}
     </div>
   );
 }

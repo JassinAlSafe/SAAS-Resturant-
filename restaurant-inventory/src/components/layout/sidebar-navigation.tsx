@@ -17,6 +17,11 @@ import {
   RefreshCwIcon,
   HelpCircleIcon,
   Truck,
+  ShoppingBagIcon,
+  MessageSquareIcon,
+  UsersIcon,
+  CreditCardIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -32,6 +37,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTransition } from "@/components/ui/transition";
 import { useRouter } from "next/navigation";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 // Define the SidebarContext type
 type SidebarContextType = {
@@ -87,25 +97,70 @@ const sidebarStyles = `
 
 // Navigation items with their paths and icons
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-  { name: "Inventory", href: "/inventory", icon: PackageIcon },
-  { name: "Suppliers", href: "/suppliers", icon: Truck },
-  { name: "Recipes", href: "/recipes", icon: BookOpenIcon },
-  { name: "Sales", href: "/sales", icon: ShoppingCartIcon },
-  { name: "Reports", href: "/reports", icon: BarChart2Icon },
   {
-    name: "Settings",
-    href: "/settings",
+    name: "Dashboard",
+    href: "/dashboard",
+    icon: HomeIcon,
+  },
+  {
+    name: "Inventory Management",
+    icon: PackageIcon,
+    items: [
+      { name: "Inventory", href: "/inventory", icon: PackageIcon },
+      { name: "Suppliers", href: "/suppliers", icon: Truck },
+      { name: "Shopping List", href: "/shopping-list", icon: ShoppingBagIcon },
+    ],
+  },
+  {
+    name: "Menu & Sales",
+    icon: ShoppingCartIcon,
+    items: [
+      { name: "Recipes", href: "/recipes", icon: BookOpenIcon },
+      { name: "Sales", href: "/sales", icon: ShoppingCartIcon },
+    ],
+  },
+  {
+    name: "Analytics",
+    icon: BarChart2Icon,
+    items: [
+      { name: "Reports", href: "/reports", icon: BarChart2Icon },
+      { name: "Notes", href: "/notes", icon: MessageSquareIcon },
+    ],
+  },
+  {
+    name: "Administration",
     icon: SettingsIcon,
     className: "nav-item-settings",
-  },
-  {
-    name: "Help",
-    href: "/help",
-    icon: HelpCircleIcon,
-    className: "nav-item-help",
+    items: [
+      { name: "Users", href: "/users", icon: UsersIcon },
+      { name: "Billing", href: "/billing", icon: CreditCardIcon },
+      { name: "Settings", href: "/settings", icon: SettingsIcon },
+      { name: "Help", href: "/help", icon: HelpCircleIcon },
+    ],
   },
 ];
+
+// Define types for navigation items
+type NavItemWithChildren = {
+  name: string;
+  icon: React.ElementType;
+  items: NavItem[];
+  className?: string;
+};
+
+type NavItemWithHref = {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  className?: string;
+};
+
+type NavItem = NavItemWithHref | NavItemWithChildren;
+
+// Helper function to check if a NavItem has children
+const hasChildren = (item: NavItem): item is NavItemWithChildren => {
+  return "items" in item && Array.isArray(item.items);
+};
 
 // Navigation component with active state detection
 function Navigation({
@@ -118,6 +173,46 @@ function Navigation({
   const { signOut } = useAuth();
   const { startTransition } = useTransition();
   const router = useRouter();
+  const [expandedSections, setExpandedSections] = React.useState<
+    Record<string, boolean>
+  >({});
+
+  // Check if any child item is active
+  const isChildActive = (items: NavItem[]): boolean => {
+    return items.some((item) => {
+      if (hasChildren(item)) {
+        return isChildActive(item.items);
+      }
+      return pathname === item.href || pathname.startsWith(`${item.href}/`);
+    });
+  };
+
+  // Toggle section expansion
+  const toggleSection = (name: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [name]: !prev[name],
+    }));
+  };
+
+  // Initialize expanded sections based on active path
+  React.useEffect(() => {
+    const newExpandedSections: Record<string, boolean> = {};
+
+    navItems.forEach((item) => {
+      if (hasChildren(item)) {
+        const shouldExpand = isChildActive(item.items);
+        if (shouldExpand) {
+          newExpandedSections[item.name] = true;
+        }
+      }
+    });
+
+    setExpandedSections((prev) => ({
+      ...prev,
+      ...newExpandedSections,
+    }));
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -135,35 +230,27 @@ function Navigation({
     }
   };
 
-  return (
-    <ul className="flex flex-col w-full px-4">
-      {navItems.map((item) => {
-        const isActive =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const Icon = item.icon;
+  const renderNavItem = (item: NavItem, depth = 0): React.ReactNode => {
+    if (hasChildren(item)) {
+      const isExpanded = expandedSections[item.name] || false;
+      const isActive = isChildActive(item.items);
+      const Icon = item.icon;
 
-        return (
-          <li key={item.href} className={`nav-item ${item.className || ""}`}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href={item.href}
-                  className={`
-                    sidebar-transition
-                    ${
-                      open
-                        ? "sidebar-expanded-item"
-                        : "flex items-center justify-center h-10 w-10 mx-auto rounded-md"
-                    }
-                    ${
-                      isActive
-                        ? open
-                          ? "active bg-gray-100 text-gray-900"
-                          : "bg-gray-100"
-                        : ""
-                    }
-                  `}
-                >
+      return (
+        <li key={item.name} className={`nav-item ${item.className || ""}`}>
+          <Collapsible
+            open={isExpanded}
+            onOpenChange={() => toggleSection(item.name)}
+          >
+            <CollapsibleTrigger asChild>
+              <button
+                className={`
+                  w-full flex items-center justify-between px-2 py-2 rounded-md
+                  ${isActive ? "bg-gray-100 text-gray-900" : ""}
+                  ${open ? "" : "justify-center"}
+                `}
+              >
+                <div className="flex items-center">
                   <Icon
                     className={`h-5 w-5 ${
                       isActive ? "text-gray-900" : "text-gray-500"
@@ -174,20 +261,89 @@ function Navigation({
                       {item.name}
                     </span>
                   )}
-                </Link>
-              </TooltipTrigger>
-              {!open && (
+                </div>
+                {open && (
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform ${
+                      isExpanded ? "transform rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </button>
+            </CollapsibleTrigger>
+
+            {!open && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="sr-only">{item.name}</span>
+                </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="font-medium sidebar-tooltip"
                 >
                   {item.name}
                 </TooltipContent>
+              </Tooltip>
+            )}
+
+            <CollapsibleContent>
+              {open && (
+                <ul className="pl-7 mt-1 space-y-1">
+                  {item.items.map((childItem) =>
+                    renderNavItem(childItem, depth + 1)
+                  )}
+                </ul>
               )}
-            </Tooltip>
-          </li>
-        );
-      })}
+            </CollapsibleContent>
+          </Collapsible>
+        </li>
+      );
+    } else {
+      const isActive =
+        pathname === item.href || pathname.startsWith(`${item.href}/`);
+      const Icon = item.icon;
+
+      return (
+        <li key={item.href} className={`nav-item ${item.className || ""}`}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href={item.href}
+                className={`
+                  sidebar-transition flex items-center px-2 py-2 rounded-md
+                  ${open ? "" : "justify-center"}
+                  ${isActive ? "bg-gray-100 text-gray-900" : ""}
+                `}
+              >
+                <Icon
+                  className={`h-5 w-5 ${
+                    isActive ? "text-gray-900" : "text-gray-500"
+                  }`}
+                />
+                {open && (
+                  <span className="text-sm font-medium text-gray-900 ml-3">
+                    {item.name}
+                  </span>
+                )}
+              </Link>
+            </TooltipTrigger>
+            {!open && (
+              <TooltipContent
+                side="right"
+                className="font-medium sidebar-tooltip"
+              >
+                {item.name}
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </li>
+      );
+    }
+  };
+
+  return (
+    <ul className="flex flex-col w-full px-4">
+      {navItems.map((item) => renderNavItem(item))}
 
       {/* Logout button as a navigation item */}
       <li className="nav-item mt-8 border-t border-gray-200 pt-4">
@@ -199,13 +355,17 @@ function Navigation({
                 sidebar-transition
                 ${
                   open
-                    ? "sidebar-expanded-item text-red-600 hover:bg-red-50"
-                    : "flex items-center justify-center h-10 w-10 mx-auto rounded-md text-red-600 hover:bg-red-50"
+                    ? "sidebar-expanded-item"
+                    : "flex items-center justify-center h-10 w-10 mx-auto rounded-md"
                 }
               `}
             >
-              <LogOutIcon className="h-5 w-5" />
-              {open && <span className="text-sm font-medium ml-3">Logout</span>}
+              <LogOutIcon className="h-5 w-5 text-gray-500" />
+              {open && (
+                <span className="text-sm font-medium text-gray-900 ml-3">
+                  Logout
+                </span>
+              )}
             </button>
           </TooltipTrigger>
           {!open && (

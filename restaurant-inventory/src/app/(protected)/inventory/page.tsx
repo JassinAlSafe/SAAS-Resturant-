@@ -7,6 +7,7 @@ import {
   FiTrash2,
   FiSearch,
   FiRefreshCw,
+  FiShoppingBag,
 } from "react-icons/fi";
 import Card from "@/components/Card";
 import { InventoryItem } from "@/lib/types";
@@ -34,6 +35,7 @@ import { useNotificationHelpers } from "@/lib/notification-context";
 import InventoryItemModal from "@/components/inventory/InventoryItemModal";
 import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export default function Inventory() {
   // State
@@ -292,6 +294,12 @@ export default function Inventory() {
             <FiRefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
+          <Link href="/shopping-list">
+            <Button variant="outline" size="sm">
+              <FiShoppingBag className="mr-2 h-4 w-4" />
+              Shopping List
+            </Button>
+          </Link>
           <Button size="sm" onClick={openAddModal}>
             <FiPlus className="mr-2" />
             Add Item

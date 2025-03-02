@@ -14,8 +14,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FiSave, FiLock } from "react-icons/fi";
+import { FiSave, FiLock, FiHome } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
+import BusinessProfileForm from "@/components/settings/BusinessProfileForm";
 
 export default function SettingsPage() {
   const { user, profile } = useAuth();
@@ -115,6 +116,7 @@ export default function SettingsPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="business">Business</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
         </TabsList>
@@ -220,6 +222,19 @@ export default function SettingsPage() {
               </form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="business">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FiHome className="h-5 w-5" />
+              <span>Business Profile & Preferences</span>
+            </h2>
+            <p className="text-muted-foreground">
+              Configure your restaurant's details and customize your experience
+            </p>
+          </div>
+          {user && <BusinessProfileForm userId={user.id} />}
         </TabsContent>
 
         <TabsContent value="notifications">

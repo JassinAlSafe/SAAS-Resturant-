@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FiAlertCircle } from "react-icons/fi";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EntityNotes from "@/components/EntityNotes";
 
 interface SupplierModalProps {
   isOpen: boolean;
@@ -106,133 +108,271 @@ export default function SupplierModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[550px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>
-              {supplier ? "Edit Supplier" : "Add New Supplier"}
-            </DialogTitle>
-            <DialogDescription>
-              {supplier
-                ? "Update your supplier's information below."
-                : "Fill in the details to add a new supplier."}
-            </DialogDescription>
-          </DialogHeader>
+        {supplier ? (
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details">
+              <form onSubmit={handleSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Edit Supplier</DialogTitle>
+                  <DialogDescription>
+                    Update your supplier's information below.
+                  </DialogDescription>
+                </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            {/* Supplier Name */}
-            <div className="grid gap-2">
-              <Label htmlFor="name" className="required">
-                Supplier Name
-              </Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setName(e.target.value)
-                }
-                className={errors.name ? "border-red-500" : ""}
-                autoFocus
-              />
-              {errors.name && (
-                <div className="text-red-500 text-sm flex items-center gap-1">
-                  <FiAlertCircle className="h-4 w-4" />
-                  {errors.name}
+                <div className="grid gap-4 py-4">
+                  {/* Supplier Name */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className="required">
+                      Supplier Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setName(e.target.value)
+                      }
+                      className={errors.name ? "border-red-500" : ""}
+                      autoFocus
+                    />
+                    {errors.name && (
+                      <div className="text-red-500 text-sm flex items-center gap-1">
+                        <FiAlertCircle className="h-4 w-4" />
+                        {errors.name}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Contact Name */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="contactName">Contact Person</Label>
+                    <Input
+                      id="contactName"
+                      value={contactName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setContactName(e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Email & Phone (side by side) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setEmail(e.target.value)
+                        }
+                        className={errors.email ? "border-red-500" : ""}
+                        placeholder="supplier@example.com"
+                      />
+                      {errors.email && (
+                        <div className="text-red-500 text-sm flex items-center gap-1">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.email}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setPhone(e.target.value)
+                        }
+                        className={errors.phone ? "border-red-500" : ""}
+                        placeholder="+1 (234) 567-8901"
+                      />
+                      {errors.phone && (
+                        <div className="text-red-500 text-sm flex items-center gap-1">
+                          <FiAlertCircle className="h-4 w-4" />
+                          {errors.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Textarea
+                      id="address"
+                      value={address}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setAddress(e.target.value)
+                      }
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setNotes(e.target.value)
+                      }
+                      placeholder="Additional details about this supplier..."
+                      rows={3}
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Contact Name */}
-            <div className="grid gap-2">
-              <Label htmlFor="contactName">Contact Person</Label>
-              <Input
-                id="contactName"
-                value={contactName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setContactName(e.target.value)
-                }
+                <DialogFooter>
+                  <Button variant="outline" type="button" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update Supplier</Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+            <TabsContent value="notes" className="py-4">
+              <EntityNotes
+                entityType="supplier"
+                entityId={supplier.id}
+                entityName={supplier.name}
               />
-            </div>
+              <div className="flex justify-end mt-6">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Add New Supplier</DialogTitle>
+              <DialogDescription>
+                Fill in the details to add a new supplier.
+              </DialogDescription>
+            </DialogHeader>
 
-            {/* Email & Phone (side by side) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid gap-4 py-4">
+              {/* Supplier Name */}
               <div className="grid gap-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="name" className="required">
+                  Supplier Name
+                </Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
+                  id="name"
+                  value={name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setEmail(e.target.value)
+                    setName(e.target.value)
                   }
-                  className={errors.email ? "border-red-500" : ""}
-                  placeholder="supplier@example.com"
+                  className={errors.name ? "border-red-500" : ""}
+                  autoFocus
                 />
-                {errors.email && (
+                {errors.name && (
                   <div className="text-red-500 text-sm flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
-                    {errors.email}
+                    {errors.name}
                   </div>
                 )}
               </div>
 
+              {/* Contact Name */}
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="contactName">Contact Person</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
+                  id="contactName"
+                  value={contactName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setPhone(e.target.value)
+                    setContactName(e.target.value)
                   }
-                  className={errors.phone ? "border-red-500" : ""}
-                  placeholder="+1 (234) 567-8901"
                 />
-                {errors.phone && (
-                  <div className="text-red-500 text-sm flex items-center gap-1">
-                    <FiAlertCircle className="h-4 w-4" />
-                    {errors.phone}
-                  </div>
-                )}
+              </div>
+
+              {/* Email & Phone (side by side) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(e.target.value)
+                    }
+                    className={errors.email ? "border-red-500" : ""}
+                    placeholder="supplier@example.com"
+                  />
+                  {errors.email && (
+                    <div className="text-red-500 text-sm flex items-center gap-1">
+                      <FiAlertCircle className="h-4 w-4" />
+                      {errors.email}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPhone(e.target.value)
+                    }
+                    className={errors.phone ? "border-red-500" : ""}
+                    placeholder="+1 (234) 567-8901"
+                  />
+                  {errors.phone && (
+                    <div className="text-red-500 text-sm flex items-center gap-1">
+                      <FiAlertCircle className="h-4 w-4" />
+                      {errors.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setAddress(e.target.value)
+                  }
+                  rows={2}
+                />
+              </div>
+
+              {/* Notes */}
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setNotes(e.target.value)
+                  }
+                  placeholder="Additional details about this supplier..."
+                  rows={3}
+                />
               </div>
             </div>
 
-            {/* Address */}
-            <div className="grid gap-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={address}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setAddress(e.target.value)
-                }
-                rows={2}
-              />
-            </div>
-
-            {/* Notes */}
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setNotes(e.target.value)
-                }
-                placeholder="Additional details about this supplier..."
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {supplier ? "Update Supplier" : "Add Supplier"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">Add Supplier</Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

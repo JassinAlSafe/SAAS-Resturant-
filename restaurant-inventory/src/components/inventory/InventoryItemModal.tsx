@@ -13,6 +13,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTabs,
+  DialogTabsContent,
+  DialogTabsList,
+  DialogTabsTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -31,6 +35,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { supplierService } from "@/lib/services/supplier-service";
+import EntityNotes from "@/components/EntityNotes";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Common units for inventory items
 const COMMON_UNITS = [
@@ -215,248 +221,520 @@ export default function InventoryItemModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">
-              Name <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Tomatoes, Cleaning Spray, Napkins"
-              autoFocus
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
-          </div>
+        {item ? (
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+            </TabsList>
+            <TabsContent value="details">
+              <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Tomatoes, Cleaning Spray, Napkins"
+                    autoFocus
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
+                </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">
-              Category <span className="text-red-500">*</span>
-            </Label>
-            {!showCustomCategory ? (
-              <>
-                <Select
-                  value={category}
-                  onValueChange={(value) => {
-                    if (value === "custom") {
-                      setShowCustomCategory(true);
-                    } else {
-                      setCategory(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">
-                      + Add Custom Category
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
-            ) : (
-              <div className="flex gap-2">
-                <Input
-                  id="customCategory"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                  placeholder="Enter custom category"
-                  className="flex-1"
-                  autoFocus
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowCustomCategory(false);
-                    setCustomCategory("");
-                  }}
-                >
-                  Cancel
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="category">
+                    Category <span className="text-red-500">*</span>
+                  </Label>
+                  {!showCustomCategory ? (
+                    <>
+                      <Select
+                        value={category}
+                        onValueChange={(value) => {
+                          if (value === "custom") {
+                            setShowCustomCategory(true);
+                          } else {
+                            setCategory(value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allCategories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom">
+                            + Add Custom Category
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        id="customCategory"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="Enter custom category"
+                        className="flex-1"
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowCustomCategory(false);
+                          setCustomCategory("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                  {errors.category && (
+                    <p className="text-sm text-red-500">{errors.category}</p>
+                  )}
+                </div>
+
+                {/* Quantity and Unit */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">
+                      Current Quantity <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                    />
+                    {errors.quantity && (
+                      <p className="text-sm text-red-500">{errors.quantity}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="unit">
+                      Unit <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={unit} onValueChange={setUnit}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMMON_UNITS.map((u) => (
+                          <SelectItem key={u} value={u}>
+                            {u}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Reorder Level and Cost */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reorderLevel">
+                      Reorder Alert Level{" "}
+                      <span className="text-red-500">*</span>
+                      <span className="block text-xs text-muted-foreground">
+                        You&apos;ll be alerted when stock falls below this level
+                      </span>
+                    </Label>
+                    <Input
+                      id="reorderLevel"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={reorderLevel}
+                      onChange={(e) => setReorderLevel(e.target.value)}
+                    />
+                    {errors.reorderLevel && (
+                      <p className="text-sm text-red-500">
+                        {errors.reorderLevel}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cost">
+                      Cost ({currency.symbol}){" "}
+                      <span className="text-red-500">*</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Cost per {unit}
+                      </span>
+                    </Label>
+                    <Input
+                      id="cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={cost}
+                      onChange={(e) => setCost(e.target.value)}
+                    />
+                    {errors.cost && (
+                      <p className="text-sm text-red-500">{errors.cost}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Expiry Date and Supplier */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="expiryDate">
+                      Expiry Date
+                      <span className="block text-xs text-muted-foreground">
+                        When this item will expire
+                      </span>
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !expiryDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {expiryDate ? (
+                            format(expiryDate, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={expiryDate}
+                          onSelect={setExpiryDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {expiryDate && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-auto p-0 text-xs text-muted-foreground"
+                        onClick={() => setExpiryDate(undefined)}
+                      >
+                        Clear date
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier">
+                      Supplier
+                      <span className="block text-xs text-muted-foreground">
+                        Who supplies this item
+                      </span>
+                    </Label>
+                    <Select value={supplierId} onValueChange={setSupplierId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {isLoadingSuppliers ? (
+                          <SelectItem value="loading" disabled>
+                            Loading suppliers...
+                          </SelectItem>
+                        ) : (
+                          suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <DialogFooter className="pt-4">
+                  <Button type="button" variant="outline" onClick={onClose}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    {item ? "Update Item" : "Add Item"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+            <TabsContent value="notes" className="py-4">
+              <EntityNotes
+                entityType="inventory"
+                entityId={item.id}
+                entityName={item.name}
+              />
+              <div className="flex justify-end mt-6">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Close
                 </Button>
               </div>
-            )}
-            {errors.category && (
-              <p className="text-sm text-red-500">{errors.category}</p>
-            )}
-          </div>
-
-          {/* Quantity and Unit */}
-          <div className="grid grid-cols-2 gap-4">
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="quantity">
-                Current Quantity <span className="text-red-500">*</span>
+              <Label htmlFor="name">
+                Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="quantity"
-                type="number"
-                min="0"
-                step="0.01"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Tomatoes, Cleaning Spray, Napkins"
+                autoFocus
               />
-              {errors.quantity && (
-                <p className="text-sm text-red-500">{errors.quantity}</p>
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
               )}
             </div>
 
+            {/* Category */}
             <div className="space-y-2">
-              <Label htmlFor="unit">
-                Unit <span className="text-red-500">*</span>
+              <Label htmlFor="category">
+                Category <span className="text-red-500">*</span>
               </Label>
-              <Select value={unit} onValueChange={setUnit}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_UNITS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Reorder Level and Cost */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="reorderLevel">
-                Reorder Alert Level <span className="text-red-500">*</span>
-                <span className="block text-xs text-muted-foreground">
-                  You&apos;ll be alerted when stock falls below this level
-                </span>
-              </Label>
-              <Input
-                id="reorderLevel"
-                type="number"
-                min="0"
-                step="0.01"
-                value={reorderLevel}
-                onChange={(e) => setReorderLevel(e.target.value)}
-              />
-              {errors.reorderLevel && (
-                <p className="text-sm text-red-500">{errors.reorderLevel}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cost">
-                Cost ({currency.symbol}) <span className="text-red-500">*</span>
-                <span className="block text-xs text-muted-foreground">
-                  Cost per {unit}
-                </span>
-              </Label>
-              <Input
-                id="cost"
-                type="number"
-                min="0"
-                step="0.01"
-                value={cost}
-                onChange={(e) => setCost(e.target.value)}
-              />
-              {errors.cost && (
-                <p className="text-sm text-red-500">{errors.cost}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Expiry Date and Supplier */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="expiryDate">
-                Expiry Date
-                <span className="block text-xs text-muted-foreground">
-                  When this item will expire
-                </span>
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !expiryDate && "text-muted-foreground"
-                    )}
+              {!showCustomCategory ? (
+                <>
+                  <Select
+                    value={category}
+                    onValueChange={(value) => {
+                      if (value === "custom") {
+                        setShowCustomCategory(true);
+                      } else {
+                        setCategory(value);
+                      }
+                    }}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {expiryDate ? (
-                      format(expiryDate, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={expiryDate}
-                    onSelect={setExpiryDate}
-                    initialFocus
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">
+                        + Add Custom Category
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    id="customCategory"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Enter custom category"
+                    className="flex-1"
+                    autoFocus
                   />
-                </PopoverContent>
-              </Popover>
-              {expiryDate && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-1 h-auto p-0 text-xs text-muted-foreground"
-                  onClick={() => setExpiryDate(undefined)}
-                >
-                  Clear date
-                </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCustomCategory(false);
+                      setCustomCategory("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              {errors.category && (
+                <p className="text-sm text-red-500">{errors.category}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="supplier">
-                Supplier
-                <span className="block text-xs text-muted-foreground">
-                  Who supplies this item
-                </span>
-              </Label>
-              <Select value={supplierId} onValueChange={setSupplierId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {isLoadingSuppliers ? (
-                    <SelectItem value="loading" disabled>
-                      Loading suppliers...
-                    </SelectItem>
-                  ) : (
-                    suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            {/* Quantity and Unit */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">
+                  Current Quantity <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                />
+                {errors.quantity && (
+                  <p className="text-sm text-red-500">{errors.quantity}</p>
+                )}
+              </div>
 
-          <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">{item ? "Update Item" : "Add Item"}</Button>
-          </DialogFooter>
-        </form>
+              <div className="space-y-2">
+                <Label htmlFor="unit">
+                  Unit <span className="text-red-500">*</span>
+                </Label>
+                <Select value={unit} onValueChange={setUnit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_UNITS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Reorder Level and Cost */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reorderLevel">
+                  Reorder Alert Level <span className="text-red-500">*</span>
+                  <span className="block text-xs text-muted-foreground">
+                    You&apos;ll be alerted when stock falls below this level
+                  </span>
+                </Label>
+                <Input
+                  id="reorderLevel"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={reorderLevel}
+                  onChange={(e) => setReorderLevel(e.target.value)}
+                />
+                {errors.reorderLevel && (
+                  <p className="text-sm text-red-500">{errors.reorderLevel}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost">
+                  Cost ({currency.symbol}){" "}
+                  <span className="text-red-500">*</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Cost per {unit}
+                  </span>
+                </Label>
+                <Input
+                  id="cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                />
+                {errors.cost && (
+                  <p className="text-sm text-red-500">{errors.cost}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Expiry Date and Supplier */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expiryDate">
+                  Expiry Date
+                  <span className="block text-xs text-muted-foreground">
+                    When this item will expire
+                  </span>
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !expiryDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {expiryDate ? (
+                        format(expiryDate, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={expiryDate}
+                      onSelect={setExpiryDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {expiryDate && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-auto p-0 text-xs text-muted-foreground"
+                    onClick={() => setExpiryDate(undefined)}
+                  >
+                    Clear date
+                  </Button>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="supplier">
+                  Supplier
+                  <span className="block text-xs text-muted-foreground">
+                    Who supplies this item
+                  </span>
+                </Label>
+                <Select value={supplierId} onValueChange={setSupplierId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {isLoadingSuppliers ? (
+                      <SelectItem value="loading" disabled>
+                        Loading suppliers...
+                      </SelectItem>
+                    ) : (
+                      suppliers.map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">{item ? "Update Item" : "Add Item"}</Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

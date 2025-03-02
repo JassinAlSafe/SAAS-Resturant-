@@ -4,9 +4,11 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { CurrencyProvider } from "@/lib/currency-context";
+import { PermissionProvider } from "@/lib/permission-context";
 import { NotificationContainer } from "@/components/ui/notification";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TransitionProvider } from "@/components/ui/transition";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,10 +34,13 @@ export default function RootLayout({
           <AuthProvider>
             <NotificationProvider>
               <CurrencyProvider>
-                <TransitionProvider>
-                  {children}
-                  <NotificationContainer />
-                </TransitionProvider>
+                <PermissionProvider>
+                  <TransitionProvider>
+                    {children}
+                    <NotificationContainer />
+                    <Toaster />
+                  </TransitionProvider>
+                </PermissionProvider>
               </CurrencyProvider>
             </NotificationProvider>
           </AuthProvider>
