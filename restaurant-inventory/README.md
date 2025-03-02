@@ -1,39 +1,81 @@
-# ShelfWise: Smart Inventory Management
+# Restaurant Inventory Management System
 
-A modern, responsive web application for managing restaurant and food business inventory, tracking sales, and generating reports.
+A comprehensive inventory management system for restaurants, built with Next.js, TypeScript, and Supabase.
 
 ## Features
 
-- **Dashboard**: Overview of inventory status, sales, and alerts
-- **Inventory Management**: Add, edit, and track ingredients with reorder alerts
-- **Sales Entry**: Record daily sales with automatic inventory deduction
-- **Reports & Analytics**: View sales trends and inventory usage
-- **Dark Mode**: Fully customizable light and dark themes
+### Inventory Management
 
-## Tech Stack
+- Track inventory items with detailed information (name, category, quantity, unit, reorder level, cost)
+- Add, edit, and delete inventory items
+- Filter and search inventory items
+- Low stock alerts for items below reorder levels
 
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL database with RESTful API)
-- **Charts**: Chart.js with React-Chartjs-2
-- **Icons**: React Icons
-- **Date Handling**: date-fns
-- **Theming**: next-themes for dark mode support
+### NEW: Expiry Date Tracking
+
+- Track expiry dates for perishable inventory items
+- Dashboard widget showing expired and soon-to-expire items
+- Color-coded alerts based on expiry timeframe (expired, critical, warning)
+- Quick navigation to manage expiring items
+
+### NEW: Supplier Management
+
+- Maintain a database of suppliers with contact information
+- Associate inventory items with specific suppliers
+- Add, edit, and delete supplier records
+- Search and filter supplier information
+
+### Recipe Management
+
+- Create and manage recipes with ingredient requirements
+- Calculate recipe costs based on ingredient prices
+- Track recipe usage and popularity
+
+### Sales Tracking
+
+- Record sales data for menu items
+- View sales trends and analytics
+- Generate reports on popular items and revenue
+
+### User Management
+
+- Role-based access control (admin, manager, staff)
+- Secure authentication with Supabase Auth
+- User profile management
+
+## Technology Stack
+
+- **Frontend**: Next.js, React, TypeScript, TailwindCSS, Shadcn UI
+- **Backend**: Supabase (PostgreSQL, Auth, Storage)
+- **State Management**: React Context API
+- **Styling**: TailwindCSS with custom components
+- **Deployment**: Vercel
+
+## Database Schema
+
+The application uses a PostgreSQL database with the following main tables:
+
+- `ingredients`: Stores inventory items with quantities, costs, categories, expiry dates, and supplier references
+- `suppliers`: Stores supplier information including contact details
+- `recipes`: Stores recipe information
+- `recipe_ingredients`: Junction table for recipe-ingredient relationships
+- `sales`: Records sales data
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.x or higher
+- Node.js (v14 or later)
 - npm or yarn
-- Supabase account and project
+- Supabase account
 
 ### Installation
 
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/shelfwise.git
-cd shelfwise
+git clone https://github.com/yourusername/restaurant-inventory.git
+cd restaurant-inventory
 ```
 
 2. Install dependencies
@@ -45,39 +87,14 @@ yarn install
 ```
 
 3. Set up environment variables
-   Copy the `.env.example` file to `.env.local` and update with your Supabase credentials:
+   Create a `.env.local` file in the root directory with the following variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-4. Set up the database
-   You have two options:
-
-   a. Using the SQL Editor in Supabase:
-
-   - Follow the instructions in `SETUP_DATABASE.md`
-
-   b. Using the setup script:
-
-   ```bash
-   npm run setup-db
-   # or
-   yarn setup-db
-   ```
-
-5. Verify database setup
-
-   ```bash
-   npm run check-db
-   # or
-   yarn check-db
-   ```
-
-6. Run the development server
+4. Run the development server
 
 ```bash
 npm run dev
@@ -85,44 +102,7 @@ npm run dev
 yarn dev
 ```
 
-7. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Project Structure
-
-```
-shelfwise/
-├── src/
-│   ├── app/                  # Next.js App Router
-│   │   ├── dashboard/        # Dashboard page
-│   │   ├── inventory/        # Inventory management page
-│   │   ├── sales/            # Sales entry page
-│   │   ├── reports/          # Reports and analytics page
-│   │   ├── layout.tsx        # Root layout component
-│   │   └── page.tsx          # Root page (redirects to dashboard)
-│   ├── components/           # Reusable components
-│   │   ├── ui/               # UI components
-│   │   ├── AlertCard.tsx     # Alert card component
-│   │   ├── Card.tsx          # Card component
-│   │   ├── theme-provider.tsx # Theme provider component
-│   │   ├── theme-toggle.tsx  # Theme toggle component
-│   │   ├── layout/           # Layout components
-│   │   └── StatCard.tsx      # Statistics card component
-│   └── lib/                  # Utilities and types
-│       ├── supabase.ts       # Supabase client
-│       ├── supabase-schema.sql # Database schema
-│       └── types.ts          # TypeScript interfaces
-├── public/                   # Static assets
-├── check-database.js         # Script to verify database setup
-├── setup-database.js         # Script to set up database tables
-├── SETUP_DATABASE.md         # Manual database setup instructions
-├── .env.example              # Example environment variables
-├── .env.local                # Environment variables (create this file)
-└── package.json              # Project dependencies
-```
-
-## Deployment
-
-This application can be deployed on Vercel, Netlify, or any other platform that supports Next.js.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## License
 

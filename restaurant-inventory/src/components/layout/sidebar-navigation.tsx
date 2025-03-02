@@ -16,6 +16,7 @@ import {
   BellIcon,
   RefreshCwIcon,
   HelpCircleIcon,
+  Truck,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -88,6 +89,7 @@ const sidebarStyles = `
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
   { name: "Inventory", href: "/inventory", icon: PackageIcon },
+  { name: "Suppliers", href: "/suppliers", icon: Truck },
   { name: "Recipes", href: "/recipes", icon: BookOpenIcon },
   { name: "Sales", href: "/sales", icon: ShoppingCartIcon },
   { name: "Reports", href: "/reports", icon: BarChart2Icon },

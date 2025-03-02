@@ -6,13 +6,11 @@ import {
   FiAlertTriangle,
   FiDollarSign,
   FiTrendingUp,
-  FiRefreshCw,
-  FiMonitor,
-  FiUsers,
-  FiHome,
   FiShoppingBag,
+  FiHome,
   FiBarChart2,
   FiSettings,
+  FiUsers,
 } from "react-icons/fi";
 import StatCard from "@/components/StatCard";
 import AlertCard from "@/components/AlertCard";
@@ -25,6 +23,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/lib/currency-context";
 import { CurrencySelector } from "@/components/currency-selector";
+import ExpiryAlerts from "@/components/dashboard/ExpiryAlerts";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -38,7 +37,7 @@ export default function Dashboard() {
 
   const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [salesData, setSalesData] = useState([
+  const [salesData] = useState([
     { month: "Jan", sales: 12400 },
     { month: "Feb", sales: 13800 },
     { month: "Mar", sales: 15200 },
@@ -144,14 +143,6 @@ export default function Dashboard() {
     fetchData();
   };
 
-  const categoryData = [
-    { name: "Meat", value: 35 },
-    { name: "Produce", value: 25 },
-    { name: "Dairy", value: 15 },
-    { name: "Dry Goods", value: 15 },
-    { name: "Beverages", value: 10 },
-  ];
-
   // If still loading auth or not authenticated, show loading state
   if (authLoading || !user) {
     return (
@@ -255,9 +246,9 @@ export default function Dashboard() {
                 id: "5",
                 name: "Beverages",
                 count: 10,
-                change: 2,
-                icon: <FiPackage className="h-5 w-5 text-white" />,
-                color: "bg-purple-500",
+                change: 0,
+                icon: <FiSettings className="h-5 w-5 text-white" />,
+                color: "bg-red-500",
               },
             ]}
           />
@@ -266,30 +257,19 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card title="Low Stock Alerts">
-            <div className="space-y-4">
-              {stockAlerts.length > 0 ? (
-                stockAlerts.map((alert) => (
-                  <AlertCard
-                    key={alert.id}
-                    title={alert.name}
-                    description={`Current stock: ${alert.currentStock} ${alert.unit} (Min: ${alert.minStock} ${alert.unit})`}
-                    category={alert.category}
-                    severity={
-                      alert.currentStock < alert.minStock / 2
-                        ? "high"
-                        : "medium"
-                    }
-                  />
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground">
-                  No low stock alerts at this time.
-                </p>
-              )}
-            </div>
-          </Card>
+          <AlertCard
+            title="Low Stock Alerts"
+            alerts={stockAlerts}
+            isLoading={isLoading}
+            onRefresh={handleRefresh}
+          />
         </div>
+        <div>
+          <ExpiryAlerts />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div>
           <Card title="Quick Links">
             <div className="space-y-2">

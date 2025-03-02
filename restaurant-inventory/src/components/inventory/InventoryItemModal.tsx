@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, Supplier } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { supplierService } from "@/lib/services/supplier-service";
 
 // Common units for inventory items
 const COMMON_UNITS = [
@@ -87,7 +97,31 @@ export default function InventoryItemModal({
   const [cost, setCost] = useState("0");
   const [customCategory, setCustomCategory] = useState("");
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
+  const [supplierId, setSupplierId] = useState<string | undefined>(undefined);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+
+  // Fetch suppliers when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchSuppliers();
+    }
+  }, [isOpen]);
+
+  // Fetch suppliers from the API
+  const fetchSuppliers = async () => {
+    setIsLoadingSuppliers(true);
+    try {
+      const data = await supplierService.getSuppliers();
+      setSuppliers(data);
+    } catch (error) {
+      console.error("Failed to load suppliers:", error);
+    } finally {
+      setIsLoadingSuppliers(false);
+    }
+  };
 
   // Initialize form with item data if editing
   useEffect(() => {
@@ -98,6 +132,8 @@ export default function InventoryItemModal({
       setUnit(item.unit);
       setReorderLevel(item.reorderLevel.toString());
       setCost(item.cost.toString());
+      setExpiryDate(item.expiryDate ? new Date(item.expiryDate) : undefined);
+      setSupplierId(item.supplierId || "none");
     } else {
       // Reset form for new item
       setName("");
@@ -108,6 +144,8 @@ export default function InventoryItemModal({
       setCost("0");
       setCustomCategory("");
       setShowCustomCategory(false);
+      setExpiryDate(undefined);
+      setSupplierId("none");
     }
     setErrors({});
   }, [item, isOpen, allCategories]);
@@ -149,6 +187,7 @@ export default function InventoryItemModal({
     }
 
     const finalCategory = showCustomCategory ? customCategory : category;
+    const finalSupplierId = supplierId === "none" ? undefined : supplierId;
 
     onSave({
       name,
@@ -157,6 +196,8 @@ export default function InventoryItemModal({
       unit,
       reorderLevel: Number(reorderLevel),
       cost: Number(cost),
+      expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : undefined,
+      supplierId: finalSupplierId,
     });
   };
 
@@ -295,7 +336,7 @@ export default function InventoryItemModal({
               <Label htmlFor="reorderLevel">
                 Reorder Alert Level <span className="text-red-500">*</span>
                 <span className="block text-xs text-muted-foreground">
-                  You'll be alerted when stock falls below this level
+                  You&apos;ll be alerted when stock falls below this level
                 </span>
               </Label>
               <Input
@@ -329,6 +370,83 @@ export default function InventoryItemModal({
               {errors.cost && (
                 <p className="text-sm text-red-500">{errors.cost}</p>
               )}
+            </div>
+          </div>
+
+          {/* Expiry Date and Supplier */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="expiryDate">
+                Expiry Date
+                <span className="block text-xs text-muted-foreground">
+                  When this item will expire
+                </span>
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !expiryDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {expiryDate ? (
+                      format(expiryDate, "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={expiryDate}
+                    onSelect={setExpiryDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {expiryDate && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 h-auto p-0 text-xs text-muted-foreground"
+                  onClick={() => setExpiryDate(undefined)}
+                >
+                  Clear date
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier">
+                Supplier
+                <span className="block text-xs text-muted-foreground">
+                  Who supplies this item
+                </span>
+              </Label>
+              <Select value={supplierId} onValueChange={setSupplierId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {isLoadingSuppliers ? (
+                    <SelectItem value="loading" disabled>
+                      Loading suppliers...
+                    </SelectItem>
+                  ) : (
+                    suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

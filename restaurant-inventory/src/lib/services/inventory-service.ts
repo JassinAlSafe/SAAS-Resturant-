@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
-import { InventoryItem, Ingredient } from '@/lib/types';
+import { InventoryItem, IngredientRow } from '@/lib/types';
+
+
 
 export const inventoryService = {
     /**
@@ -9,7 +11,7 @@ export const inventoryService = {
         try {
             const { data, error } = await supabase
                 .from('ingredients')
-                .select('*')
+                .select('*, suppliers(*)')
                 .order('name');
 
             if (error) {
@@ -18,7 +20,7 @@ export const inventoryService = {
             }
 
             // Transform the data to match our InventoryItem interface
-            return data.map((item: any) => ({
+            return data.map((item: IngredientRow) => ({
                 id: item.id,
                 name: item.name,
                 category: item.category,
@@ -26,11 +28,55 @@ export const inventoryService = {
                 unit: item.unit,
                 reorderLevel: item.reorder_level,
                 cost: item.cost,
+                expiryDate: item.expiry_date || undefined,
+                supplierId: item.supplier_id || undefined,
                 createdAt: item.created_at,
                 updatedAt: item.updated_at
             }));
         } catch (error) {
             console.error('Error in getItems:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Get soon to expire items
+     */
+    async getSoonToExpireItems(daysThreshold: number = 7): Promise<InventoryItem[]> {
+        try {
+            const today = new Date();
+            const thresholdDate = new Date();
+            thresholdDate.setDate(today.getDate() + daysThreshold);
+
+            const { data, error } = await supabase
+                .from('ingredients')
+                .select('*')
+                .not('expiry_date', 'is', null)
+                .lte('expiry_date', thresholdDate.toISOString().split('T')[0])
+                .gte('expiry_date', today.toISOString().split('T')[0])
+                .order('expiry_date');
+
+            if (error) {
+                console.error('Error fetching expiring items:', error);
+                throw error;
+            }
+
+            // Transform the data to match our InventoryItem interface
+            return data.map((item: IngredientRow) => ({
+                id: item.id,
+                name: item.name,
+                category: item.category,
+                quantity: item.quantity,
+                unit: item.unit,
+                reorderLevel: item.reorder_level,
+                cost: item.cost,
+                expiryDate: item.expiry_date,
+                supplierId: item.supplier_id || undefined,
+                createdAt: item.created_at,
+                updatedAt: item.updated_at
+            }));
+        } catch (error) {
+            console.error('Error in getSoonToExpireItems:', error);
             return [];
         }
     },
@@ -49,7 +95,9 @@ export const inventoryService = {
                     quantity: item.quantity,
                     unit: item.unit,
                     reorder_level: item.reorderLevel,
-                    cost: item.cost
+                    cost: item.cost,
+                    expiry_date: item.expiryDate || null,
+                    supplier_id: item.supplierId || null
                 })
                 .select()
                 .single();
@@ -68,6 +116,8 @@ export const inventoryService = {
                 unit: data.unit,
                 reorderLevel: data.reorder_level,
                 cost: data.cost,
+                expiryDate: data.expiry_date || null,
+                supplierId: data.supplier_id || null,
                 createdAt: data.created_at,
                 updatedAt: data.updated_at
             };
@@ -83,13 +133,15 @@ export const inventoryService = {
     async updateItem(id: string, updates: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>>): Promise<InventoryItem | null> {
         try {
             // Convert to snake_case for the database
-            const dbUpdates: any = {};
+            const dbUpdates: Record<string, unknown> = {};
             if (updates.name !== undefined) dbUpdates.name = updates.name;
             if (updates.category !== undefined) dbUpdates.category = updates.category;
             if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
             if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
             if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
             if (updates.cost !== undefined) dbUpdates.cost = updates.cost;
+            if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
+            if (updates.supplierId !== undefined) dbUpdates.supplier_id = updates.supplierId;
 
             const { data, error } = await supabase
                 .from('ingredients')
@@ -112,6 +164,8 @@ export const inventoryService = {
                 unit: data.unit,
                 reorderLevel: data.reorder_level,
                 cost: data.cost,
+                expiryDate: data.expiry_date || null,
+                supplierId: data.supplier_id || null,
                 createdAt: data.created_at,
                 updatedAt: data.updated_at
             };
@@ -159,7 +213,7 @@ export const inventoryService = {
             }
 
             // Extract unique categories
-            const categories = [...new Set(data.map((item: any) => item.category))];
+            const categories = [...new Set(data.map((item: { category: string }) => item.category))];
             return categories;
         } catch (error) {
             console.error('Error in getCategories:', error);
@@ -169,7 +223,7 @@ export const inventoryService = {
 
     // Alias methods for backward compatibility
     getIngredients: function () { return this.getItems(); },
-    addIngredient: function (data: any) { return this.addItem(data); },
-    updateIngredient: function (id: string, data: any) { return this.updateItem(id, data); },
+    addIngredient: function (data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>) { return this.addItem(data); },
+    updateIngredient: function (id: string, data: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>>) { return this.updateItem(id, data); },
     deleteIngredient: function (id: string) { return this.deleteItem(id); }
 }; 

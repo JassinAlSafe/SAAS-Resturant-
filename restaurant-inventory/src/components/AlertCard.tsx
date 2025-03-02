@@ -1,8 +1,13 @@
-import { FiAlertTriangle, FiCheckCircle, FiExternalLink } from "react-icons/fi";
+import { FiAlertTriangle, FiRefreshCw, FiExternalLink } from "react-icons/fi";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import Card from "@/components/Card";
+import { Button } from "@/components/ui/button";
+import { StockAlert } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface AlertCardProps {
+// Props for individual alert items
+interface AlertItemProps {
   title: string;
   description: string;
   category: string;
@@ -10,13 +15,22 @@ interface AlertCardProps {
   className?: string;
 }
 
-const AlertCard = ({
+// Props for the main AlertCard component
+export interface AlertCardProps {
+  title: string;
+  alerts?: StockAlert[];
+  isLoading?: boolean;
+  onRefresh?: () => void;
+}
+
+// Individual alert item component
+const AlertItem = ({
   title,
   description,
   category,
   severity,
   className = "",
-}: AlertCardProps) => {
+}: AlertItemProps) => {
   const getSeverityColor = () => {
     switch (severity) {
       case "high":
@@ -79,6 +93,70 @@ const AlertCard = ({
         </span>
       </div>
     </div>
+  );
+};
+
+// Main AlertCard component
+const AlertCard = ({
+  title,
+  alerts = [],
+  isLoading = false,
+  onRefresh,
+}: AlertCardProps) => {
+  if (isLoading) {
+    return (
+      <Card>
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-9 w-9 rounded" />
+        </div>
+        <div className="p-4">
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="font-medium">{title}</h3>
+        {onRefresh && (
+          <Button size="sm" variant="ghost" onClick={onRefresh}>
+            <FiRefreshCw className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      <div className="p-4">
+        <div className="space-y-4">
+          {alerts.length > 0 ? (
+            alerts.map((alert) => (
+              <AlertItem
+                key={alert.id}
+                title={alert.name}
+                description={`Current stock: ${alert.currentStock} ${alert.unit} (Min: ${alert.minStock} ${alert.unit})`}
+                category={alert.category}
+                severity={
+                  alert.currentStock < alert.minStock / 2 ? "high" : "medium"
+                }
+              />
+            ))
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <FiAlertTriangle className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+              <p>No low stock alerts at this time.</p>
+              <p className="text-sm mt-1">
+                All inventory items are above their reorder levels.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 };
 

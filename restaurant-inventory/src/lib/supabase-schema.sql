@@ -9,6 +9,7 @@ alter table if exists public.ingredients enable row level security;
 alter table if exists public.dishes enable row level security;
 alter table if exists public.dish_ingredients enable row level security;
 alter table if exists public.sales enable row level security;
+alter table if exists public.suppliers enable row level security;
 
 -- Create tables
 -- Profiles table (for users)
@@ -17,6 +18,19 @@ create table if not exists public.profiles (
   email text not null unique,
   name text,
   role text check (role in ('admin', 'manager', 'staff')) not null default 'staff',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Suppliers table
+create table if not exists public.suppliers (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  contact_name text,
+  email text,
+  phone text,
+  address text,
+  notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -30,6 +44,8 @@ create table if not exists public.ingredients (
   unit text not null,
   reorder_level numeric not null default 0,
   cost numeric not null default 0,
+  expiry_date date,
+  supplier_id uuid references public.suppliers on delete set null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -64,6 +80,8 @@ create table if not exists public.sales (
 
 -- Create indexes for performance
 create index if not exists ingredients_category_idx on public.ingredients (category);
+create index if not exists ingredients_expiry_date_idx on public.ingredients (expiry_date);
+create index if not exists ingredients_supplier_id_idx on public.ingredients (supplier_id);
 create index if not exists sales_date_idx on public.sales (date);
 create index if not exists dish_ingredients_dish_id_idx on public.dish_ingredients (dish_id);
 create index if not exists dish_ingredients_ingredient_id_idx on public.dish_ingredients (ingredient_id);
@@ -224,6 +242,33 @@ create policy "Admins and managers can delete sales"
     )
   );
 
+-- Suppliers policies
+create policy "Anyone can view suppliers"
+  on public.suppliers for select
+  to authenticated
+  using (true);
+
+create policy "Staff can insert suppliers"
+  on public.suppliers for insert
+  to authenticated
+  with check (true);
+
+create policy "Staff can update suppliers"
+  on public.suppliers for update
+  to authenticated
+  using (true);
+
+create policy "Admins and managers can delete suppliers"
+  on public.suppliers for delete
+  to authenticated
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid()
+      and role in ('admin', 'manager')
+    )
+  );
+
 -- Create triggers
 -- Update updated_at timestamp
 create or replace function public.handle_updated_at()
@@ -246,5 +291,10 @@ create trigger handle_updated_at
 
 create trigger handle_updated_at
   before update on public.dishes
+  for each row
+  execute function public.handle_updated_at();
+
+create trigger handle_updated_at
+  before update on public.suppliers
   for each row
   execute function public.handle_updated_at(); 

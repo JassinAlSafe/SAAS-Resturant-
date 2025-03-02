@@ -7,12 +7,41 @@ export interface InventoryItem {
     unit: string;
     reorderLevel: number;
     cost: number;
+    expiryDate?: string; // Optional expiry date in ISO format
+    supplierId?: string; // Optional reference to supplier
     createdAt: string;
     updatedAt: string;
 }
 
+export interface IngredientRow {
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    reorder_level: number;
+    cost: number;
+    expiry_date?: string;
+    supplier_id?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 // Alias for backward compatibility
 export type Ingredient = InventoryItem;
+
+// Supplier interface
+export interface Supplier {
+    id: string;
+    name: string;
+    contactName: string;
+    email: string;
+    phone: string;
+    address: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 // Dish interface
 export interface Dish {

@@ -1,3 +1,5 @@
+"use client";
+
 import { createBrowserClient } from '@supabase/ssr';
 
 // Initialize the Supabase client
@@ -12,22 +14,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create the Supabase client
-let supabase;
+let supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
+// Handle errors safely
 try {
-    supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
-
     // Test the connection
-    supabase.auth.getSession().then(({ error }) => {
-        if (error) {
-            console.error('Error connecting to Supabase:', error);
+    supabase.auth.getSession().then((result) => {
+        if (result.error) {
+            console.error('Error connecting to Supabase:', result.error);
         } else {
             console.log('Supabase client initialized successfully');
         }
     });
 } catch (error) {
     console.error('Error initializing Supabase client:', error);
-    // Provide a fallback client that will log errors instead of crashing
+    // If there was an error, recreate the client
     supabase = createBrowserClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
 }
 

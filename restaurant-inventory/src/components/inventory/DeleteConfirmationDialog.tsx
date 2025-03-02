@@ -11,12 +11,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type DeleteConfirmationDialogProps = {
+export type DeleteConfirmationDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  itemName: string;
+  itemName?: string;
   itemType?: string;
+  title?: string;
+  description?: string;
 };
 
 export default function DeleteConfirmationDialog({
@@ -25,15 +27,32 @@ export default function DeleteConfirmationDialog({
   onConfirm,
   itemName,
   itemType = "inventory item",
+  title,
+  description,
 }: DeleteConfirmationDialogProps) {
+  // Default title and description if not provided
+  const dialogTitle = title || "Are you sure?";
+  const dialogDescription =
+    description ||
+    `This will permanently delete the ${itemType} ${
+      itemName ? `<strong>${itemName}</strong>` : ""
+    }.
+     This action cannot be undone.`;
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete the {itemType}{" "}
-            <strong>{itemName}</strong>. This action cannot be undone.
+            {description ? (
+              description
+            ) : (
+              <>
+                This will permanently delete the {itemType}{" "}
+                <strong>{itemName}</strong>. This action cannot be undone.
+              </>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
