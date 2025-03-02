@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FiPlus,
   FiEdit2,
@@ -8,6 +8,7 @@ import {
   FiSearch,
   FiRefreshCw,
   FiShoppingBag,
+  FiCheck,
 } from "react-icons/fi";
 import Card from "@/components/Card";
 import { InventoryItem } from "@/lib/types";
@@ -36,11 +37,15 @@ import InventoryItemModal from "@/components/inventory/InventoryItemModal";
 import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { useApiRequest } from "@/lib/hooks/useApiRequest";
+import { ApiError } from "@/components/ui/api-error";
+import { useInventorySubscription } from "@/lib/hooks/useInventorySubscription";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToExcel, formatInventoryForExport } from "@/lib/utils/export";
 
 export default function Inventory() {
   // State
   const [items, setItems] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState<string[]>([]);
@@ -56,31 +61,74 @@ export default function Inventory() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
 
   // Notifications
-  const { success, error } = useNotificationHelpers();
+  const { success, error: showError } = useNotificationHelpers();
 
   // Get currency formatter
   const { formatCurrency } = useCurrency();
 
-  // Fetch items and categories
-  const fetchInventory = async () => {
-    setIsLoading(true);
-    try {
-      // Get all inventory items
-      const fetchedItems = await inventoryService.getItems();
-      setItems(fetchedItems);
-
-      // Get all categories
-      const fetchedCategories = await inventoryService.getCategories();
-      setCategories(fetchedCategories);
-    } catch (err) {
-      console.error("Error fetching inventory data:", err);
-      error(
+  // Use our enhanced API request hook for inventory items
+  const {
+    isLoading: isLoadingItems,
+    error: itemsError,
+    execute: fetchItems,
+    retry: retryFetchItems,
+  } = useApiRequest<InventoryItem[]>(inventoryService.getItems, {
+    onSuccess: (data) => {
+      setItems(data);
+    },
+    onError: (err) => {
+      console.error("Error fetching inventory items:", err);
+      showError(
         "Failed to load inventory",
         "There was an error loading your inventory data."
       );
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  // Use our enhanced API request hook for categories
+  const {
+    isLoading: isLoadingCategories,
+    error: categoriesError,
+    execute: fetchCategories,
+    retry: retryFetchCategories,
+  } = useApiRequest<string[]>(inventoryService.getCategories, {
+    onSuccess: (data) => {
+      setCategories(data);
+    },
+    onError: (err) => {
+      console.error("Error fetching categories:", err);
+    },
+  });
+
+  // Use our inventory subscription hook for real-time updates
+  const {
+    isSubscriptionLoading,
+    subscriptionError,
+    isSubscribed,
+    retrySubscription,
+  } = useInventorySubscription({
+    onItemsChanged: (updatedItems) => {
+      setItems(updatedItems);
+
+      // Update categories if needed
+      const uniqueCategories = [
+        ...new Set(updatedItems.map((item) => item.category)),
+      ];
+      if (
+        uniqueCategories.length !== categories.length ||
+        !uniqueCategories.every((cat) => categories.includes(cat))
+      ) {
+        fetchCategories();
+      }
+    },
+  });
+
+  // Combined loading state
+  const isLoading = isLoadingItems || isLoadingCategories;
+
+  // Fetch inventory and categories
+  const fetchInventory = async () => {
+    await Promise.all([fetchItems(), fetchCategories()]);
   };
 
   // Handle adding a new inventory item
@@ -104,7 +152,7 @@ export default function Inventory() {
       }
     } catch (err) {
       console.error("Error adding inventory item:", err);
-      error("Failed to add item", "Please try again.");
+      showError("Failed to add item", "Please try again.");
     }
   };
 
@@ -135,7 +183,7 @@ export default function Inventory() {
       }
     } catch (err) {
       console.error("Error updating inventory item:", err);
-      error("Failed to update item", "Please try again.");
+      showError("Failed to update item", "Please try again.");
     }
   };
 
@@ -157,7 +205,7 @@ export default function Inventory() {
       }
     } catch (err) {
       console.error("Error deleting inventory item:", err);
-      error("Failed to delete item", "Please try again.");
+      showError("Failed to delete item", "Please try again.");
     }
   };
 
@@ -194,6 +242,41 @@ export default function Inventory() {
     fetchInventory();
   }, []);
 
+  // Inside the component, add the export handler function
+  const handleExportInventory = async () => {
+    try {
+      // If no items are currently filtered/displayed, fetch all items for export
+      let dataToExport = filteredItems;
+
+      if (
+        (dataToExport.length === 0 && searchTerm.trim() !== "") ||
+        selectedCategory !== "all"
+      ) {
+        // Only fetch all items if we have filters but no results
+        dataToExport = items;
+      }
+
+      if (dataToExport.length === 0) {
+        // If still no items, fetch fresh from API
+        const freshItems = await inventoryService.getItems();
+        dataToExport = freshItems;
+      }
+
+      // Format and export
+      const formattedData = formatInventoryForExport(dataToExport);
+      exportToExcel(formattedData, "Inventory", "Inventory Items");
+
+      // Show success notification
+      success("Export Complete", "Inventory data has been exported to Excel.");
+    } catch (error) {
+      console.error("Error exporting inventory:", error);
+      showError(
+        "Export Failed",
+        "There was an error exporting your inventory data."
+      );
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -225,6 +308,30 @@ export default function Inventory() {
     );
   }
 
+  // Show error states if any
+  if (itemsError) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Inventory Management
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Track and manage your restaurant inventory
+            </p>
+          </div>
+        </div>
+
+        <ApiError
+          title="Inventory Data Error"
+          message={itemsError}
+          onRetry={retryFetchItems}
+        />
+      </div>
+    );
+  }
+
   // Empty state for new users
   if (items.length === 0) {
     return (
@@ -247,6 +354,14 @@ export default function Inventory() {
             </Button>
           </div>
         </div>
+
+        {categoriesError && (
+          <ApiError
+            title="Categories Error"
+            message={categoriesError}
+            onRetry={retryFetchCategories}
+          />
+        )}
 
         <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <div className="bg-primary/10 p-6 rounded-full mb-6">
@@ -284,67 +399,78 @@ export default function Inventory() {
             Inventory Management
           </h1>
           <p className="text-sm text-muted-foreground">
-            {items.length} items in your inventory
+            Track and manage your restaurant inventory
           </p>
         </div>
 
-        <div className="flex gap-2 mt-4 md:mt-0">
+        <div className="flex items-center gap-2 mt-4 md:mt-0">
           <CurrencySelector />
-          <Button variant="outline" size="sm" onClick={fetchInventory}>
-            <FiRefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Link href="/shopping-list">
-            <Button variant="outline" size="sm">
-              <FiShoppingBag className="mr-2 h-4 w-4" />
-              Shopping List
-            </Button>
-          </Link>
-          <Button size="sm" onClick={openAddModal}>
+
+          {/* Add Export Button */}
+          <ExportButton
+            onExport={handleExportInventory}
+            label="Export Excel"
+            tooltipText="Download inventory as Excel file"
+            variant="outline"
+          />
+
+          <Button className="mt-0" size="sm" onClick={openAddModal}>
             <FiPlus className="mr-2" />
             Add Item
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
+      {categoriesError && (
+        <ApiError
+          title="Categories Error"
+          message={categoriesError}
+          onRetry={retryFetchCategories}
+        />
+      )}
+
+      {subscriptionError && (
+        <ApiError
+          title="Real-time Updates Error"
+          message={subscriptionError}
+          onRetry={retrySubscription}
+        />
+      )}
+
+      {isSubscribed && (
+        <div className="bg-green-50 border border-green-200 rounded-md px-4 py-2 mb-4 text-sm flex items-center text-green-700">
+          <FiCheck className="mr-2" />
+          <span>
+            Real-time updates active. Inventory changes will appear
+            automatically.
+          </span>
+        </div>
+      )}
+
       <Card className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center gap-4 p-4">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiSearch className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <Input
-              type="text"
-              className="pl-10"
-              placeholder="Search inventory..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="w-full md:w-48">
-            <Select
-              value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Input
+            placeholder="Search inventory..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1"
+          />
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
-      {/* Inventory Table */}
       <Card>
         <div className="overflow-x-auto">
           <Table>

@@ -119,7 +119,7 @@ export default function SupplierModal({
                 <DialogHeader>
                   <DialogTitle>Edit Supplier</DialogTitle>
                   <DialogDescription>
-                    Update your supplier's information below.
+                    Update your supplier&apos;s information below.
                   </DialogDescription>
                 </DialogHeader>
 

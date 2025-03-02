@@ -1,23 +1,15 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { InventoryItem, Supplier } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useCurrency } from "@/lib/currency-context";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTabs,
-  DialogTabsContent,
-  DialogTabsList,
-  DialogTabsTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -25,51 +17,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { COMMON_CATEGORIES, COMMON_UNITS } from "@/lib/constants";
+import { supplierService } from "@/lib/services/supplier-service";
+import { useCurrency } from "@/lib/currency-context";
+import { InventoryItem, Supplier } from "@/lib/types";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { supplierService } from "@/lib/services/supplier-service";
 import EntityNotes from "@/components/EntityNotes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Common units for inventory items
-const COMMON_UNITS = [
-  "kg",
-  "g",
-  "L",
-  "ml",
-  "pcs",
-  "bunch",
-  "can",
-  "bottle",
-  "box",
-  "pack",
-  "case",
-];
-
-// Common categories for restaurant inventory
-const COMMON_CATEGORIES = [
-  "Produce",
-  "Meat",
-  "Seafood",
-  "Dairy",
-  "Pantry",
-  "Herbs",
-  "Spices",
-  "Beverages",
-  "Bakery",
-  "Frozen",
-  "Cleaning",
-  "Disposables",
-  "Equipment",
-  "Other",
-];
 
 type InventoryItemModalProps = {
   isOpen: boolean;
@@ -445,7 +409,10 @@ export default function InventoryItemModal({
                         Who supplies this item
                       </span>
                     </Label>
-                    <Select value={supplierId} onValueChange={setSupplierId}>
+                    <Select
+                      value={supplierId || "none"}
+                      onValueChange={setSupplierId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a supplier" />
                       </SelectTrigger>
@@ -705,7 +672,10 @@ export default function InventoryItemModal({
                     Who supplies this item
                   </span>
                 </Label>
-                <Select value={supplierId} onValueChange={setSupplierId}>
+                <Select
+                  value={supplierId || "none"}
+                  onValueChange={setSupplierId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a supplier" />
                   </SelectTrigger>

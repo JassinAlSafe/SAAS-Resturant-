@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiBarChart2, FiPieChart, FiCalendar } from "react-icons/fi";
+import {
+  FiBarChart2,
+  FiPieChart,
+  FiCalendar,
+  FiDownload,
+} from "react-icons/fi";
 import Card from "@/components/Card";
 import {
   Chart as ChartJS,
@@ -28,6 +33,9 @@ import {
 } from "@/components/ui/table";
 import { useCurrency } from "@/lib/currency-context";
 import { CurrencySelector } from "@/components/currency-selector";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToExcel } from "@/lib/utils/export";
+import { toast } from "sonner";
 
 // Register ChartJS components
 ChartJS.register(
@@ -135,6 +143,114 @@ export default function Reports() {
     ],
   };
 
+  // Add export handlers for sales and inventory reports
+  const handleExportSalesReport = async () => {
+    try {
+      // Format data for export based on the current tab and date range
+      const salesReportData = [
+        {
+          Date: "Header Row",
+          Revenue: "Values in your currency",
+          Orders: "Count",
+          "Average Order": "Values in your currency",
+        },
+        ...salesData.labels.map((date, index) => ({
+          Date: date,
+          Revenue: formatCurrency(salesData.datasets[0].data[index]),
+          Orders: Math.floor(salesData.datasets[0].data[index] / 25), // Approximate order count
+          "Average Order": formatCurrency(
+            salesData.datasets[0].data[index] /
+              Math.floor(salesData.datasets[0].data[index] / 25)
+          ),
+        })),
+      ];
+
+      // Add top dishes data
+      const topDishesRows = [
+        { Dish: "Top Dishes", Percentage: "% of Sales" },
+        ...topDishesData.labels.map((dish, index) => ({
+          Dish: dish,
+          Percentage: `${topDishesData.datasets[0].data[index]}%`,
+        })),
+      ];
+
+      // Export data to Excel
+      exportToExcel(
+        [
+          ...salesReportData,
+          { Date: "", Revenue: "", Orders: "", "Average Order": "" },
+          ...topDishesRows,
+        ],
+        "Sales_Report",
+        `Sales Report - ${
+          dateRange === "week"
+            ? "Last 7 Days"
+            : dateRange === "month"
+            ? "Last 30 Days"
+            : "Last 90 Days"
+        }`
+      );
+
+      toast.success("Sales report has been exported to Excel.");
+    } catch (error) {
+      console.error("Error exporting sales report:", error);
+      toast.error("There was an error exporting your sales report.");
+    }
+  };
+
+  const handleExportInventoryReport = async () => {
+    try {
+      // Format data for export based on inventory usage
+      const inventoryReportData = [
+        {
+          Date: "Header Row",
+          ...inventoryUsageData.datasets
+            .map((dataset) => dataset.label)
+            .reduce((acc, label) => {
+              acc[label] = "Amount Used";
+              return acc;
+            }, {} as Record<string, string>),
+        },
+        ...inventoryUsageData.labels.map((date, dateIndex) => {
+          const rowData: Record<string, string> = { Date: date };
+
+          inventoryUsageData.datasets.forEach((dataset) => {
+            rowData[dataset.label] = `${dataset.data[dateIndex]} kg`;
+          });
+
+          return rowData;
+        }),
+      ];
+
+      // Export data to Excel
+      exportToExcel(
+        inventoryReportData,
+        "Inventory_Usage_Report",
+        `Inventory Usage - ${
+          dateRange === "week"
+            ? "Last 7 Days"
+            : dateRange === "month"
+            ? "Last 30 Days"
+            : "Last 90 Days"
+        }`
+      );
+
+      toast.success("Inventory usage report has been exported to Excel.");
+    } catch (error) {
+      console.error("Error exporting inventory report:", error);
+      toast.error("There was an error exporting your inventory report.");
+    }
+  };
+
+  // Handler that calls the appropriate export function based on active tab
+  const handleExportReport = () => {
+    if (activeTab === "sales") {
+      handleExportSalesReport();
+    } else if (activeTab === "inventory") {
+      handleExportInventoryReport();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -157,6 +273,14 @@ export default function Reports() {
 
         <div className="flex items-center gap-2 mt-4 md:mt-0">
           <CurrencySelector />
+          <ExportButton
+            onExport={handleExportReport}
+            label="Export Report"
+            tooltipText={`Export ${
+              activeTab === "sales" ? "sales" : "inventory"
+            } report to Excel`}
+            variant="outline"
+          />
           <Button
             variant={activeTab === "sales" ? "default" : "ghost"}
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"

@@ -1,7 +1,23 @@
 import { supabase } from '@/lib/supabase';
 import { InventoryItem, IngredientRow } from '@/lib/types';
 
+/**
+ * Custom error class for inventory service
+ */
+export class InventoryServiceError extends Error {
+    code?: string;
+    details?: string;
 
+    constructor(message: string, options?: { code?: string, details?: string }) {
+        super(message);
+        this.name = 'InventoryServiceError';
+        this.code = options?.code;
+        this.details = options?.details;
+
+        // This is needed for instanceof checks in TypeScript
+        Object.setPrototypeOf(this, InventoryServiceError.prototype);
+    }
+}
 
 export const inventoryService = {
     /**
@@ -9,6 +25,11 @@ export const inventoryService = {
      */
     async getItems(): Promise<InventoryItem[]> {
         try {
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                throw new InventoryServiceError('Supabase client is not initialized');
+            }
+
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('*, suppliers(*)')
@@ -16,7 +37,15 @@ export const inventoryService = {
 
             if (error) {
                 console.error('Error fetching inventory items:', error);
-                throw error;
+                throw new InventoryServiceError('Failed to fetch inventory items', {
+                    code: error.code,
+                    details: error.details || error.message
+                });
+            }
+
+            if (!data) {
+                console.warn('No data returned from inventory query');
+                return [];
             }
 
             // Transform the data to match our InventoryItem interface
@@ -35,7 +64,16 @@ export const inventoryService = {
             }));
         } catch (error) {
             console.error('Error in getItems:', error);
-            return [];
+
+            // If it's already our custom error type, just rethrow it
+            if (error instanceof InventoryServiceError) {
+                throw error;
+            }
+
+            // Otherwise wrap in our custom error
+            throw new InventoryServiceError(
+                error instanceof Error ? error.message : 'Unknown error occurred'
+            );
         }
     },
 
@@ -44,21 +82,33 @@ export const inventoryService = {
      */
     async getSoonToExpireItems(daysThreshold: number = 7): Promise<InventoryItem[]> {
         try {
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                throw new InventoryServiceError('Supabase client is not initialized');
+            }
+
             const today = new Date();
             const thresholdDate = new Date();
             thresholdDate.setDate(today.getDate() + daysThreshold);
 
             const { data, error } = await supabase
                 .from('ingredients')
-                .select('*')
+                .select('*, suppliers(*)')
                 .not('expiry_date', 'is', null)
-                .lte('expiry_date', thresholdDate.toISOString().split('T')[0])
-                .gte('expiry_date', today.toISOString().split('T')[0])
+                .lte('expiry_date', thresholdDate.toISOString())
                 .order('expiry_date');
 
             if (error) {
-                console.error('Error fetching expiring items:', error);
-                throw error;
+                console.error('Error fetching soon to expire items:', error);
+                throw new InventoryServiceError('Failed to fetch expiring items', {
+                    code: error.code,
+                    details: error.details || error.message
+                });
+            }
+
+            if (!data) {
+                console.warn('No data returned from soon to expire query');
+                return [];
             }
 
             // Transform the data to match our InventoryItem interface
@@ -70,14 +120,23 @@ export const inventoryService = {
                 unit: item.unit,
                 reorderLevel: item.reorder_level,
                 cost: item.cost,
-                expiryDate: item.expiry_date,
+                expiryDate: item.expiry_date || undefined,
                 supplierId: item.supplier_id || undefined,
                 createdAt: item.created_at,
                 updatedAt: item.updated_at
             }));
         } catch (error) {
             console.error('Error in getSoonToExpireItems:', error);
-            return [];
+
+            // If it's already our custom error type, just rethrow it
+            if (error instanceof InventoryServiceError) {
+                throw error;
+            }
+
+            // Otherwise wrap in our custom error
+            throw new InventoryServiceError(
+                error instanceof Error ? error.message : 'Unknown error occurred'
+            );
         }
     },
 
@@ -86,6 +145,11 @@ export const inventoryService = {
      */
     async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
         try {
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                throw new InventoryServiceError('Supabase client is not initialized');
+            }
+
             // Convert to snake_case for the database
             const { data, error } = await supabase
                 .from('ingredients')
@@ -104,7 +168,14 @@ export const inventoryService = {
 
             if (error) {
                 console.error('Error adding inventory item:', error);
-                throw error;
+                throw new InventoryServiceError('Failed to add inventory item', {
+                    code: error.code,
+                    details: error.details || error.message
+                });
+            }
+
+            if (!data) {
+                throw new InventoryServiceError('No data returned after adding item');
             }
 
             // Transform the response to match our InventoryItem interface
@@ -123,7 +194,16 @@ export const inventoryService = {
             };
         } catch (error) {
             console.error('Error in addItem:', error);
-            return null;
+
+            // If it's already our custom error type, just rethrow it
+            if (error instanceof InventoryServiceError) {
+                throw error;
+            }
+
+            // Otherwise wrap in our custom error
+            throw new InventoryServiceError(
+                error instanceof Error ? error.message : 'Unknown error occurred'
+            );
         }
     },
 

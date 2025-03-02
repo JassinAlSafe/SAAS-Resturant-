@@ -21,6 +21,8 @@ const mockSubscriptionPlans: SubscriptionPlan[] = [
         ],
         monthlyPrice: 29.99,
         yearlyPrice: 299.99,
+        price: 299.99,  // Default to yearly price
+        interval: "yearly",
         currency: "USD",
         isPopular: false,
         priority: 1
@@ -39,6 +41,8 @@ const mockSubscriptionPlans: SubscriptionPlan[] = [
         ],
         monthlyPrice: 59.99,
         yearlyPrice: 599.99,
+        price: 599.99,  // Default to yearly price
+        interval: "yearly",
         currency: "USD",
         isPopular: true,
         priority: 2
@@ -58,6 +62,8 @@ const mockSubscriptionPlans: SubscriptionPlan[] = [
         ],
         monthlyPrice: 119.99,
         yearlyPrice: 1199.99,
+        price: 1199.99,  // Default to yearly price
+        interval: "yearly",
         currency: "USD",
         isPopular: false,
         priority: 3
@@ -78,7 +84,27 @@ const mockSubscription: Subscription = {
     billingInterval: "yearly",
     trialEnd: null,
     pausedAt: null,
-    resumesAt: null
+    resumesAt: null,
+    plan: {
+        id: "plan_pro",
+        name: "Professional",
+        description: "Ideal for growing restaurants with more needs",
+        features: [
+            "Unlimited inventory items",
+            "Advanced reporting & analytics",
+            "Up to 5 user accounts",
+            "Priority email support",
+            "Menu planning tools",
+            "Supplier management"
+        ],
+        monthlyPrice: 59.99,
+        yearlyPrice: 599.99,
+        price: 599.99,
+        interval: "yearly",
+        currency: "USD",
+        isPopular: true,
+        priority: 2
+    }
 };
 
 // Mock payment methods
@@ -211,14 +237,32 @@ export const subscriptionService = {
     // Get subscription for a user
     getSubscription: async (userId: string): Promise<Subscription> => {
         // In a real app, we would fetch from an API
-        return simulateApiCall({ ...mockSubscription, userId });
+        const subscription = { ...mockSubscription, userId };
+
+        // Add the complete plan object to the subscription
+        const plan = mockSubscriptionPlans.find(p => p.id === subscription.planId);
+
+        return simulateApiCall({
+            ...subscription,
+            plan: plan || {
+                id: "unknown",
+                name: "Unknown Plan",
+                description: "Plan details unavailable",
+                features: [],
+                monthlyPrice: 0,
+                yearlyPrice: 0,
+                currency: "USD",
+                isPopular: false,
+                priority: 0
+            }
+        });
     },
 
     // Change subscription plan
     changePlan: async (
         userId: string,
         planId: string,
-        billingInterval: "monthly" | "yearly"
+        billingInterval: "monthly" | "yearly" = "yearly"
     ): Promise<Subscription> => {
         // In a real app, we would call an API to change the plan
         const plan = mockSubscriptionPlans.find(p => p.id === planId);
@@ -231,6 +275,11 @@ export const subscriptionService = {
             userId,
             planId,
             billingInterval,
+            plan: {
+                ...plan,
+                price: billingInterval === "monthly" ? plan.monthlyPrice : plan.yearlyPrice,
+                interval: billingInterval
+            },
             updatedAt: new Date().toISOString()
         };
 
@@ -239,12 +288,13 @@ export const subscriptionService = {
 
     // Cancel subscription
     cancelSubscription: async (
-        subscriptionId: string,
-        cancelAtPeriodEnd: boolean
+        userId: string,
+        cancelAtPeriodEnd: boolean = true
     ): Promise<Subscription> => {
         // In a real app, we would call an API to cancel the subscription
         const updatedSubscription: Subscription = {
             ...mockSubscription,
+            userId,
             cancelAtPeriodEnd,
             updatedAt: new Date().toISOString()
         };

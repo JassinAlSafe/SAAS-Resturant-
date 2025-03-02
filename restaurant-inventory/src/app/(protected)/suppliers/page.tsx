@@ -27,6 +27,8 @@ import { useNotificationHelpers } from "@/lib/notification-context";
 import SupplierModal from "@/components/suppliers/SupplierModal";
 import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExportButton } from "@/components/ui/export-button";
+import { exportToExcel, formatSuppliersForExport } from "@/lib/utils/export";
 
 export default function Suppliers() {
   // State
@@ -181,6 +183,35 @@ export default function Suppliers() {
       supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Add the export handler function inside the component
+  const handleExportSuppliers = async () => {
+    try {
+      // If we have suppliers in state, use those
+      let dataToExport = suppliers;
+
+      // If there are no suppliers or we need fresh data, fetch suppliers
+      if (!dataToExport || dataToExport.length === 0) {
+        const freshData = await supplierService.getAllSuppliers();
+        dataToExport = freshData;
+      }
+
+      if (dataToExport.length === 0) {
+        error("Nothing to Export", "You don't have any suppliers to export.");
+        return;
+      }
+
+      // Format and export the data
+      const formattedData = formatSuppliersForExport(dataToExport);
+      exportToExcel(formattedData, "Suppliers", "Supplier List");
+
+      // Show success notification
+      success("Export Complete", "Suppliers have been exported to Excel.");
+    } catch (err) {
+      console.error("Error exporting suppliers:", err);
+      error("Export Failed", "There was an error exporting your suppliers.");
+    }
+  };
+
   // Loading skeleton
   if (isLoading) {
     return (
@@ -214,20 +245,19 @@ export default function Suppliers() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Supplier Management
-          </h1>
+          <h1 className="text-2xl font-bold">Suppliers</h1>
           <p className="text-sm text-muted-foreground">
-            {suppliers.length} suppliers in your database
+            Manage your suppliers and vendor contacts
           </p>
         </div>
-
-        <div className="flex gap-2 mt-4 md:mt-0">
-          <Button variant="outline" size="sm" onClick={fetchSuppliers}>
-            <FiRefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button size="sm" onClick={openAddModal}>
+        <div className="flex gap-2 items-center mt-4 md:mt-0">
+          <ExportButton
+            onExport={handleExportSuppliers}
+            label="Export Excel"
+            tooltipText="Download suppliers as Excel file"
+            variant="outline"
+          />
+          <Button onClick={openAddModal} size="sm">
             <FiPlus className="mr-2" />
             Add Supplier
           </Button>

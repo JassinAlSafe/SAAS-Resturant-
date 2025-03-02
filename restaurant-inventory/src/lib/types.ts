@@ -77,7 +77,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'admin' | 'manager' | 'staff';
+    role: 'admin' | 'manager' | 'staff' | 'owner';
 }
 
 // Dashboard stats interface
@@ -155,6 +155,8 @@ export interface SubscriptionPlan {
     features: string[];
     monthlyPrice: number;
     yearlyPrice: number;
+    price?: number; // Price based on selected interval
+    interval?: string; // "monthly" or "yearly"
     currency: string;
     isPopular?: boolean;
     priority: number;
@@ -164,6 +166,7 @@ export interface Subscription {
     id: string;
     userId: string;
     planId: string;
+    plan?: SubscriptionPlan;
     status: "active" | "canceled" | "incomplete" | "incomplete_expired" | "past_due" | "trialing" | "unpaid" | "paused";
     currentPeriodStart: string;
     currentPeriodEnd: string;

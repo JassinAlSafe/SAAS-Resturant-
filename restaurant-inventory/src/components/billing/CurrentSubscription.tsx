@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Subscription, SubscriptionPlan } from "@/lib/types";
+import { useState } from "react";
+import { Subscription } from "@/lib/types";
 import {
   Card,
   CardContent,
@@ -35,7 +35,7 @@ import {
 
 interface CurrentSubscriptionProps {
   subscription: Subscription;
-  onSubscriptionChange: () => void;
+  onSubscriptionChange: (updatedSubscription: Subscription) => void;
 }
 
 export function CurrentSubscription({
@@ -43,10 +43,46 @@ export function CurrentSubscription({
   onSubscriptionChange,
 }: CurrentSubscriptionProps) {
   const { formatCurrency } = useCurrency();
-  const { success, error } = useNotificationHelpers();
+  const { success, error: showError } = useNotificationHelpers();
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isPauseDialogOpen, setIsPauseDialogOpen] = useState(false);
+
+  // Safety check - if subscription is null or undefined, show error
+  if (!subscription) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Plan</CardTitle>
+          <CardDescription>Subscription data unavailable</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-6">
+            <FiAlertCircle className="text-amber-500 mr-2" />
+            <p>Unable to load subscription details. Please try again later.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Make sure subscription.plan exists, return early if not
+  if (!subscription.plan) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Plan</CardTitle>
+          <CardDescription>Plan details unavailable</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-6">
+            <FiAlertCircle className="text-amber-500 mr-2" />
+            <p>Unable to load plan details. Please try again later.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Calculate days remaining in the current period
   const daysRemaining = differenceInDays(
@@ -73,10 +109,10 @@ export function CurrentSubscription({
         "Subscription Canceled",
         "Your subscription will be canceled at the end of the current billing period."
       );
-      onSubscriptionChange();
+      onSubscriptionChange(subscription);
     } catch (err) {
       console.error("Error canceling subscription:", err);
-      error(
+      showError(
         "Cancellation Failed",
         "There was a problem canceling your subscription. Please try again."
       );
@@ -95,10 +131,10 @@ export function CurrentSubscription({
         "Subscription Resumed",
         "Your subscription will continue after the current billing period."
       );
-      onSubscriptionChange();
+      onSubscriptionChange(subscription);
     } catch (err) {
       console.error("Error resuming subscription:", err);
-      error(
+      showError(
         "Resume Failed",
         "There was a problem resuming your subscription. Please try again."
       );
@@ -116,10 +152,10 @@ export function CurrentSubscription({
         "Subscription Paused",
         "Your subscription has been paused and will resume automatically in 30 days."
       );
-      onSubscriptionChange();
+      onSubscriptionChange(subscription);
     } catch (err) {
       console.error("Error pausing subscription:", err);
-      error(
+      showError(
         "Pause Failed",
         "There was a problem pausing your subscription. Please try again."
       );
@@ -172,7 +208,7 @@ export function CurrentSubscription({
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold">
-                {formatCurrency(subscription.plan.price)}
+                {formatCurrency(subscription.plan.price ?? 0)}
                 <span className="text-sm font-normal text-muted-foreground">
                   /{subscription.plan.interval}
                 </span>
@@ -238,7 +274,7 @@ export function CurrentSubscription({
                     )}
                   </strong>
                   . You will be charged{" "}
-                  {formatCurrency(subscription.plan.price)}.
+                  {formatCurrency(subscription.plan.price ?? 0)}.
                 </div>
               </div>
             )}
@@ -352,7 +388,8 @@ export function CurrentSubscription({
             <AlertDialogDescription>
               Are you sure you want to pause your subscription? Your
               subscription will be paused immediately and will automatically
-              resume in 30 days. You won't be charged during the pause period.
+              resume in 30 days. You won&apos;t be charged during the pause
+              period.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FiCheck, FiX } from "react-icons/fi";
+import { FiCheck, FiX, FiInfo } from "react-icons/fi";
 import { useCurrency } from "@/lib/currency-context";
 import { subscriptionService } from "@/lib/services/subscription-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
@@ -27,8 +27,8 @@ import {
 
 interface PlanSelectorProps {
   plans: SubscriptionPlan[];
-  currentSubscription: Subscription;
-  onSubscriptionChange: () => void;
+  currentSubscription: Subscription | null;
+  onSubscriptionChange: (subscription: Subscription) => void;
 }
 
 export function PlanSelector({
@@ -37,12 +37,14 @@ export function PlanSelector({
   onSubscriptionChange,
 }: PlanSelectorProps) {
   const { formatCurrency } = useCurrency();
-  const { success, error } = useNotificationHelpers();
+  const { success, error: showError } = useNotificationHelpers();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+
+  // Safe default to monthly if no current subscription
   const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">(
-    currentSubscription.plan.interval === "yearly" ? "yearly" : "monthly"
+    currentSubscription?.plan?.interval === "yearly" ? "yearly" : "monthly"
   );
 
   // Filter plans by billing interval
@@ -63,22 +65,23 @@ export function PlanSelector({
 
   // Handle plan change confirmation
   const handleConfirmPlanChange = async () => {
-    if (!selectedPlanId) return;
+    if (!selectedPlanId || !currentSubscription) return;
 
     setIsLoading(true);
     try {
-      await subscriptionService.changePlan(
+      const updatedSubscription = await subscriptionService.changePlan(
         currentSubscription.userId,
-        selectedPlanId
+        selectedPlanId,
+        billingInterval
       );
       success(
         "Plan Changed",
         "Your subscription plan has been updated successfully."
       );
-      onSubscriptionChange();
+      onSubscriptionChange(updatedSubscription);
     } catch (err) {
       console.error("Error changing plan:", err);
-      error(
+      showError(
         "Plan Change Failed",
         "There was a problem updating your subscription plan. Please try again."
       );
@@ -134,7 +137,7 @@ export function PlanSelector({
             {/* Plan cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {sortedPlans.map((plan) => {
-                const isCurrentPlan = currentSubscription.planId === plan.id;
+                const isCurrentPlan = currentSubscription?.planId === plan.id;
 
                 return (
                   <Card
@@ -156,7 +159,7 @@ export function PlanSelector({
 
                     <CardContent className="space-y-6">
                       <div className="text-3xl font-bold">
-                        {formatCurrency(plan.price)}
+                        {formatCurrency(plan.price ?? 0)}
                         <span className="text-sm font-normal text-muted-foreground">
                           /{billingInterval}
                         </span>
@@ -197,22 +200,30 @@ export function PlanSelector({
           <AlertDialogHeader>
             <AlertDialogTitle>Change Subscription Plan</AlertDialogTitle>
             <AlertDialogDescription>
-              {selectedPlan && (
+              {selectedPlan && currentSubscription?.plan && (
                 <>
                   Are you sure you want to change your subscription to the{" "}
                   <strong>{selectedPlan.name}</strong> plan?
-                  {selectedPlan.price > currentSubscription.plan.price ? (
+                  {selectedPlan.price >
+                  (currentSubscription.plan.price ?? 0) ? (
                     <div className="mt-2">
                       You will be charged the difference immediately and your
                       billing date will remain the same.
                     </div>
-                  ) : selectedPlan.price < currentSubscription.plan.price ? (
+                  ) : selectedPlan.price <
+                    (currentSubscription.plan.price ?? 0) ? (
                     <div className="mt-2">
-                      Your plan will be downgraded immediately. You'll receive a
-                      prorated credit for your current billing period.
+                      Your plan will be downgraded immediately. You&apos;ll
+                      receive a prorated credit for your current billing period.
                     </div>
                   ) : null}
                 </>
+              )}
+              {(!selectedPlan || !currentSubscription?.plan) && (
+                <div className="flex items-center gap-2">
+                  <FiInfo className="text-blue-500" />
+                  <span>Confirm to change your subscription plan.</span>
+                </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
