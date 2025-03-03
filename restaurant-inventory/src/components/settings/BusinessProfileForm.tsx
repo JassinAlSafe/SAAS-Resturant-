@@ -5,7 +5,6 @@ import { BusinessProfile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -27,6 +26,8 @@ import { useNotificationHelpers } from "@/lib/notification-context";
 import { businessProfileService } from "@/lib/services/business-profile-service";
 import { CURRENCIES, CurrencyCode, useCurrency } from "@/lib/currency-context";
 import Image from "next/image";
+import { useBusinessProfile } from "@/lib/business-profile-context";
+import { SetupStorageBucket } from "./SetupStorageBucket";
 
 interface BusinessProfileFormProps {
   userId: string;
@@ -46,8 +47,13 @@ const businessTypes = [
 export default function BusinessProfileForm({
   userId,
 }: BusinessProfileFormProps) {
-  const { success: showSuccess, error: showError } = useNotificationHelpers();
+  const {
+    success: showSuccess,
+    error: showError,
+    info: showInfo,
+  } = useNotificationHelpers();
   const { setCurrency } = useCurrency();
+  const { refreshProfile } = useBusinessProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,7 +105,10 @@ export default function BusinessProfileForm({
         setEmail(fetchedProfile.email);
         setWebsite(fetchedProfile.website || "");
         setOperatingHours(fetchedProfile.operatingHours);
-        setDefaultCurrency(fetchedProfile.defaultCurrency);
+
+        if (fetchedProfile.defaultCurrency) {
+          setDefaultCurrency(fetchedProfile.defaultCurrency as CurrencyCode);
+        }
 
         if (fetchedProfile.logo) {
           setLogoPreview(fetchedProfile.logo);
@@ -126,6 +135,19 @@ export default function BusinessProfileForm({
     setIsLoading(true);
 
     try {
+      console.log("Submitting profile update with:", {
+        name,
+        type,
+        address,
+        city,
+        state,
+        zipCode,
+        country,
+        phone,
+        email,
+        website,
+      });
+
       const updatedProfile = await businessProfileService.updateBusinessProfile(
         userId,
         {
@@ -151,7 +173,9 @@ export default function BusinessProfileForm({
       console.error("Error updating business profile:", error);
       showError(
         "Update Failed",
-        "There was a problem updating your business profile."
+        error instanceof Error
+          ? `There was a problem updating your business profile: ${error.message}`
+          : "There was a problem updating your business profile. Please check your connection and try again."
       );
     } finally {
       setIsLoading(false);
@@ -230,32 +254,177 @@ export default function BusinessProfileForm({
 
   // Handle logo upload
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    if (!e.target.files || e.target.files.length === 0) {
+      return;
+    }
 
-    // Preview the selected image
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setLogoPreview(e.target.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+    const file = e.target.files[0];
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    if (fileSizeMB > 5) {
+      showError("Upload Failed", "Image size must be less than 5MB.");
+      return;
+    }
+
+    // Validate file type
+    const validTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+      "image/svg+xml",
+    ];
+    if (!validTypes.includes(file.type)) {
+      showError(
+        "Invalid File Type",
+        `File type "${file.type}" is not supported. Please use PNG, JPEG, GIF, WebP, or SVG.`
+      );
+      return;
+    }
 
     setIsLoading(true);
+    showInfo("Uploading...", "Please wait while we upload your logo.");
+
+    // Check the bucket status first to ensure everything is set up
     try {
+      // Check storage status first
+      const statusResponse = await fetch("/api/check-storage-status");
+      const statusData = await statusResponse.json();
+
+      if (!statusData.bucketExists) {
+        showInfo(
+          "Setting up storage...",
+          "Storage bucket not found. Setting up storage system..."
+        );
+
+        // Set up storage bucket with force=true to ensure policies are correct
+        const setupResponse = await fetch(
+          "/api/setup-storage-bucket?force=true"
+        );
+        if (!setupResponse.ok) {
+          const setupError = await setupResponse.json();
+          throw new Error(
+            `Storage setup failed: ${
+              setupError.error || setupError.message || "Unknown error"
+            }`
+          );
+        }
+
+        showInfo(
+          "Storage setup complete",
+          "Storage system is now ready. Proceeding with logo upload..."
+        );
+      }
+
+      // Now try to upload the logo
       const updatedProfile = await businessProfileService.uploadLogo(
         userId,
         file
       );
+
       setProfile(updatedProfile);
-      showSuccess("Logo Uploaded", "Your business logo has been updated.");
-    } catch (error) {
-      console.error("Error uploading logo:", error);
-      showError(
-        "Upload Failed",
-        "There was a problem uploading your business logo."
+      setLogoPreview(updatedProfile.logo || null);
+      showSuccess(
+        "Logo Updated",
+        "Your restaurant logo has been updated and will now appear in the sidebar navigation."
       );
+
+      // Refresh the profile context to update the sidebar
+      await refreshProfile();
+    } catch (error: unknown) {
+      console.error("Error uploading logo:", error);
+
+      // Check if it's a bucket-related error
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      // Extract more useful information from the error message
+      const isStorageError =
+        errorMessage.includes("bucket") || errorMessage.includes("storage");
+
+      const isPermissionError =
+        errorMessage.includes("row-level security policy") ||
+        errorMessage.includes("Unauthorized") ||
+        errorMessage.includes("permission");
+
+      const isConnectionError =
+        errorMessage.includes("network") ||
+        errorMessage.includes("connection") ||
+        errorMessage.includes("Failed to fetch");
+
+      // Show appropriate error message based on the error type
+      if (isConnectionError) {
+        showError(
+          "Connection Error",
+          "Could not connect to the server. Please check your internet connection and try again."
+        );
+      } else if (isPermissionError) {
+        // Try to fix the permissions issue
+        try {
+          showInfo(
+            "Fixing permissions...",
+            "We're fixing storage permissions. This may take a moment..."
+          );
+
+          // Check policies
+          const policiesResponse = await fetch("/api/check-storage-policies");
+          if (!policiesResponse.ok) {
+            console.error(
+              "Failed to check policies:",
+              await policiesResponse.text()
+            );
+          }
+
+          // Force update the policies
+          const setupResponse = await fetch(
+            "/api/setup-storage-bucket?force=true"
+          );
+          if (!setupResponse.ok) {
+            throw new Error("Failed to update storage policies");
+          }
+
+          showInfo(
+            "Permissions updated",
+            "Storage permissions have been updated. Trying to upload again..."
+          );
+
+          // Wait a bit for policies to take effect
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          // Try again with the upload
+          const updatedProfile = await businessProfileService.uploadLogo(
+            userId,
+            file
+          );
+
+          setProfile(updatedProfile);
+          setLogoPreview(updatedProfile.logo || null);
+          showSuccess(
+            "Logo Updated",
+            "Your restaurant logo has been updated successfully!"
+          );
+
+          // Refresh the profile context to update the sidebar
+          await refreshProfile();
+          return;
+        } catch (retryError) {
+          console.error("Error fixing permissions:", retryError);
+          showError(
+            "Permission Error",
+            "You don't have permission to upload files. This is likely an issue with the storage configuration. Please contact support."
+          );
+        }
+      } else if (isStorageError) {
+        showError(
+          "Storage Error",
+          "There was a problem with the storage system. Please try again later or contact support if the issue persists."
+        );
+      } else {
+        showError(
+          "Upload Failed",
+          `There was a problem uploading your logo: ${errorMessage}`
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -290,7 +459,7 @@ export default function BusinessProfileForm({
           <CardHeader>
             <CardTitle>Business Information</CardTitle>
             <CardDescription>
-              Update your restaurant's basic information
+              Update your restaurant&apos;s basic information
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -429,85 +598,109 @@ export default function BusinessProfileForm({
       {/* Operating Hours */}
       <TabsContent value="hours">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FiClock className="h-5 w-5" />
-              <span>Operating Hours</span>
-            </CardTitle>
-            <CardDescription>
-              Set your restaurant's opening and closing times
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+              <FiClock className="h-5 w-5 text-gray-600" />
+            </div>
+            <div className="ml-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span>Operating Hours</span>
+              </CardTitle>
+              <CardDescription>
+                Set your restaurant&apos;s opening and closing times. Overnight
+                hours (e.g., 22:00 to 02:00) are supported.
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {Object.entries(operatingHours).map(([day, hours]) => (
-                <div
-                  key={day}
-                  className="grid grid-cols-12 items-center gap-4 py-2 border-b border-gray-100"
-                >
-                  <div className="col-span-3 font-medium capitalize">{day}</div>
-                  <div className="col-span-3">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id={`${day}-closed`}
-                        checked={!hours.closed}
-                        onCheckedChange={(checked) =>
-                          handleHoursUpdate(
-                            day as keyof BusinessProfile["operatingHours"],
-                            "closed",
-                            !checked
-                          )
-                        }
-                      />
-                      <Label htmlFor={`${day}-closed`}>
-                        {hours.closed ? "Closed" : "Open"}
-                      </Label>
+              {Object.entries(operatingHours)
+                .sort(([dayA], [dayB]) => {
+                  // Define the order of days starting with Monday
+                  const dayOrder = {
+                    monday: 0,
+                    tuesday: 1,
+                    wednesday: 2,
+                    thursday: 3,
+                    friday: 4,
+                    saturday: 5,
+                    sunday: 6,
+                  };
+                  return (
+                    dayOrder[dayA as keyof typeof dayOrder] -
+                    dayOrder[dayB as keyof typeof dayOrder]
+                  );
+                })
+                .map(([day, hours]) => (
+                  <div
+                    key={day}
+                    className="grid grid-cols-12 items-center gap-4 py-2 border-b border-gray-100"
+                  >
+                    <div className="col-span-3 font-medium capitalize">
+                      {day}
+                    </div>
+                    <div className="col-span-3">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id={`${day}-closed`}
+                          checked={!hours.closed}
+                          onCheckedChange={(checked) =>
+                            handleHoursUpdate(
+                              day as keyof BusinessProfile["operatingHours"],
+                              "closed",
+                              !checked
+                            )
+                          }
+                        />
+                        <Label htmlFor={`${day}-closed`}>
+                          {hours.closed ? "Closed" : "Open"}
+                        </Label>
+                      </div>
+                    </div>
+                    <div className="col-span-6">
+                      {!hours.closed && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label htmlFor={`${day}-open`} className="sr-only">
+                              Opening Time
+                            </Label>
+                            <Input
+                              id={`${day}-open`}
+                              type="time"
+                              value={hours.open}
+                              onChange={(e) =>
+                                handleHoursUpdate(
+                                  day as keyof BusinessProfile["operatingHours"],
+                                  "open",
+                                  e.target.value
+                                )
+                              }
+                              disabled={hours.closed}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`${day}-close`} className="sr-only">
+                              Closing Time
+                            </Label>
+                            <Input
+                              id={`${day}-close`}
+                              type="time"
+                              value={hours.close}
+                              onChange={(e) =>
+                                handleHoursUpdate(
+                                  day as keyof BusinessProfile["operatingHours"],
+                                  "close",
+                                  e.target.value
+                                )
+                              }
+                              disabled={hours.closed}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="col-span-6">
-                    {!hours.closed && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label htmlFor={`${day}-open`} className="sr-only">
-                            Opening Time
-                          </Label>
-                          <Input
-                            id={`${day}-open`}
-                            type="time"
-                            value={hours.open}
-                            onChange={(e) =>
-                              handleHoursUpdate(
-                                day as keyof BusinessProfile["operatingHours"],
-                                "open",
-                                e.target.value
-                              )
-                            }
-                            disabled={hours.closed}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`${day}-close`} className="sr-only">
-                            Closing Time
-                          </Label>
-                          <Input
-                            id={`${day}-close`}
-                            type="time"
-                            value={hours.close}
-                            onChange={(e) =>
-                              handleHoursUpdate(
-                                day as keyof BusinessProfile["operatingHours"],
-                                "close",
-                                e.target.value
-                              )
-                            }
-                            disabled={hours.closed}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -515,25 +708,27 @@ export default function BusinessProfileForm({
 
       {/* Appearance */}
       <TabsContent value="appearance">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Logo Upload */}
+        <div className="space-y-6">
+          {/* Logo Upload Card */}
           <Card>
             <CardHeader>
               <CardTitle>Restaurant Logo</CardTitle>
               <CardDescription>
-                Upload your restaurant's logo for branding
+                Upload your restaurant logo to display in the sidebar and
+                reports
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center space-y-4">
-                <div className="w-40 h-40 border rounded-md flex items-center justify-center overflow-hidden bg-gray-50">
+              <div className="space-y-4">
+                <div className="border rounded-md p-4 flex justify-center items-center bg-gray-50 h-40">
                   {logoPreview ? (
-                    <div className="relative w-full h-full">
+                    <div className="relative h-full max-w-full max-h-full">
                       <Image
                         src={logoPreview}
-                        alt="Restaurant logo"
-                        fill
-                        style={{ objectFit: "contain" }}
+                        alt="Restaurant Logo"
+                        className="object-contain max-h-full"
+                        width={150}
+                        height={150}
                       />
                     </div>
                   ) : (
@@ -562,7 +757,10 @@ export default function BusinessProfileForm({
             </CardContent>
           </Card>
 
-          {/* Currency Settings */}
+          {/* Storage Bucket Setup Card */}
+          <SetupStorageBucket />
+
+          {/* Currency Settings Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

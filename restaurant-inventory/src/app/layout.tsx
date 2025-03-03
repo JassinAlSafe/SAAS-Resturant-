@@ -8,6 +8,7 @@ import { PermissionProvider } from "@/lib/permission-context";
 import { NotificationContainer } from "@/components/ui/notification";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { BusinessProfileProvider } from "@/lib/business-profile-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,15 +32,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <NotificationProvider>
+            <BusinessProfileProvider>
               <CurrencyProvider>
-                <PermissionProvider>
+                <NotificationProvider>
                   {children}
                   <NotificationContainer />
                   <Toaster />
-                </PermissionProvider>
+                </NotificationProvider>
               </CurrencyProvider>
-            </NotificationProvider>
+            </BusinessProfileProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

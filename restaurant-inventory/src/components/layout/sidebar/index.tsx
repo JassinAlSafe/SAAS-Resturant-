@@ -20,10 +20,19 @@ function SidebarLayout() {
   const { isMobile, isTablet } = useSafeMediaQueries();
   const { updateLastInteraction } = useSidebarStore();
 
-  // Update last interaction time on user activity
+  // Use a ref to track last update time for throttling
+  const lastUpdateRef = React.useRef<number>(Date.now());
+  const throttleTimeMs = 5000; // Only update at most once every 5 seconds
+
+  // Update last interaction time on user activity, but throttled
   React.useEffect(() => {
     const handleActivity = () => {
-      updateLastInteraction();
+      const now = Date.now();
+      // Only update if enough time has passed since last update
+      if (now - lastUpdateRef.current > throttleTimeMs) {
+        updateLastInteraction();
+        lastUpdateRef.current = now;
+      }
     };
 
     // Add event listeners for user activity
@@ -38,7 +47,7 @@ function SidebarLayout() {
       window.removeEventListener("touchstart", handleActivity);
       window.removeEventListener("click", handleActivity);
     };
-  }, [updateLastInteraction]);
+  }, [updateLastInteraction, throttleTimeMs]);
 
   return (
     <TooltipProvider>
