@@ -54,75 +54,6 @@ type SidebarContextType = {
   toggleSidebar: () => void;
 };
 
-// Add CSS to fix the sidebar width issue
-const sidebarStyles = `
-  /* Ensure the main content takes full width */
-  .main-content {
-    width: 100% !important;
-  }
-  
-  /* Improve spacing for navigation items */
-  .nav-item {
-    margin-bottom: 8px;
-  }
-  
-  /* Add gap for settings and help section */
-  .nav-item-settings, .nav-item-help {
-    margin-top: 24px;
-    position: relative;
-  }
-  
-  /* Add separator line above settings */
-  .nav-item-settings:before {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: rgba(0, 0, 0, 0.1);
-    dark:background-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  /* Custom styling for the user profile */
-  .user-profile {
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
-    dark:border-top: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: auto;
-    padding-top: 12px;
-  }
-  
-  /* Smooth transitions */
-  .sidebar-transition {
-    transition: all 0.3s ease;
-  }
-  
-  /* Mobile optimizations */
-  @media (max-width: 1024px) {
-    .sidebar-container {
-      width: 100%;
-      max-width: 280px;
-    }
-    
-    .nav-item button, .nav-item a {
-      padding: 12px 16px;
-    }
-    
-    .mobile-sidebar-overlay {
-      background-color: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-    }
-    
-    .mobile-sidebar-toggle {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 50;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-  }
-`;
-
 // Navigation items with their paths and icons
 const navItems = [
   {
@@ -450,7 +381,7 @@ function SidebarLayout() {
   // Get the saved sidebar state from localStorage when component mounts
   React.useEffect(() => {
     // Only read local storage on desktop
-    if (!isMobile) {
+    if (!isMobile && typeof window !== "undefined") {
       const savedState = localStorage.getItem("sidebar_state");
       if (savedState) {
         setOpen(savedState === "true");
@@ -470,7 +401,9 @@ function SidebarLayout() {
       const newState = !open;
       setOpen(newState);
       // Save sidebar state to localStorage for desktop
-      localStorage.setItem("sidebar_state", String(newState));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("sidebar_state", String(newState));
+      }
     }
   };
 
@@ -491,9 +424,9 @@ function SidebarLayout() {
         {/* For desktop: normal sidebar */}
         {!isMobile && (
           <div
-            className={`sidebar-container sidebar-transition ${
+            className={`fixed top-0 left-0 h-full z-30 transition-all duration-200 ease-in-out ${
               open ? "w-64" : "w-16"
-            } h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 z-30 fixed top-0 left-0`}
+            } bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800`}
           >
             <div className="flex flex-col h-full">
               <div className="p-4 flex items-center justify-between">
@@ -507,9 +440,7 @@ function SidebarLayout() {
                   size="icon"
                   onClick={toggleSidebar}
                   aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-                  className={`${
-                    open ? "ml-auto" : "mx-auto"
-                  } hover:bg-gray-100 dark:hover:bg-gray-800`}
+                  className={open ? "ml-auto" : "mx-auto"}
                 >
                   {open ? (
                     <ChevronLeftIcon size={18} />
@@ -528,7 +459,7 @@ function SidebarLayout() {
         {isMobile && openMobile && (
           <div className="fixed inset-0 z-40 flex">
             <div
-              className="fixed inset-0 bg-black/50 mobile-sidebar-overlay transition-opacity"
+              className="fixed inset-0 bg-black/50 transition-opacity"
               onClick={() => setOpenMobile(false)}
             />
             <div className="fixed inset-y-0 left-0 w-full max-w-[280px] bg-white dark:bg-gray-950 shadow-xl flex flex-col h-full z-50">
@@ -558,7 +489,7 @@ function SidebarLayout() {
         {/* Mobile toggle button - only visible on mobile */}
         {isMobile && !openMobile && (
           <Button
-            className="mobile-sidebar-toggle rounded-full p-3 bg-primary text-white shadow-lg"
+            className="fixed bottom-4 right-4 z-50 rounded-full p-3 bg-primary text-white shadow-lg"
             onClick={() => setOpenMobile(true)}
             aria-label="Open menu"
           >
@@ -567,34 +498,28 @@ function SidebarLayout() {
         )}
 
         {/* Main content */}
-        <div className="flex-1 h-screen overflow-hidden">
-          <div
-            className={`main-content h-full overflow-auto bg-gray-50 dark:bg-gray-900 transition-all duration-200 ease-in-out ${
-              !isMobile ? (open ? "ml-64" : "ml-16") : ""
-            }`}
-          >
-            <div className="min-h-full">
-              {isMobile && (
-                <div className="p-4 flex items-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-                  <div className="text-lg font-semibold">
-                    Restaurant Inventory
-                  </div>
-                  <div className="ml-auto">
-                    <ThemeToggle />
-                  </div>
-                </div>
-              )}
-              {!isMobile && (
-                <div className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center">
-                  <div className="flex-1" />
-                  <div className="flex items-center gap-2">
-                    <ThemeToggle />
-                  </div>
-                </div>
-              )}
-              <main className="p-4 md:p-6">{children}</main>
+        <div
+          className={`flex-1 h-screen overflow-auto bg-gray-50 dark:bg-gray-900 ${
+            !isMobile ? (open ? "ml-64" : "ml-16") : ""
+          } transition-all duration-200 ease-in-out`}
+        >
+          {isMobile && (
+            <div className="p-4 flex items-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+              <div className="text-lg font-semibold">Restaurant Inventory</div>
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
             </div>
-          </div>
+          )}
+          {!isMobile && (
+            <div className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center">
+              <div className="flex-1" />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+              </div>
+            </div>
+          )}
+          <main className="p-4 md:p-6">{children}</main>
         </div>
       </div>
     </TooltipProvider>

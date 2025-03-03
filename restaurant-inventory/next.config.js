@@ -17,6 +17,28 @@ const nextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+
+  // Modify webpack configuration to bypass the problematic plugin
+  webpack: (config, { dev, isServer, webpack }) => {
+    // Only apply these in production build (when dev is false)
+    if (!dev && !isServer) {
+      // Force disable all minification
+      config.optimization.minimize = false;
+      config.optimization.minimizer = [];
+
+      // Remove any references to WebpackError
+      const plugins = config.plugins.filter((plugin) => {
+        return (
+          plugin.constructor.name !== "MinifyPlugin" &&
+          plugin.constructor.name !== "TerserPlugin"
+        );
+      });
+
+      config.plugins = plugins;
+    }
+
+    return config;
+  },
 };
 
 module.exports = nextConfig;
