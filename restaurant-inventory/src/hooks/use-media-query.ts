@@ -25,9 +25,13 @@ export const useMediaQueries = () => {
 
 // SSR-friendly media query hook with fallback
 export const useSafeMediaQueries = () => {
-    // For SSR, default to desktop view and then update once client-side
+    // We need to call hooks unconditionally at the top level
+    const mediaQueries = useMediaQueries();
+
+    // For SSR, check if client-side and return appropriate values
     const isClient = typeof window === 'object';
 
+    // If we're not in a client environment (SSR), return desktop defaults
     if (!isClient) {
         return {
             isMobile: false,
@@ -38,7 +42,8 @@ export const useSafeMediaQueries = () => {
         };
     }
 
-    return useMediaQueries();
+    // Otherwise return the actual media queries
+    return mediaQueries;
 };
 
 export default useSafeMediaQueries; 

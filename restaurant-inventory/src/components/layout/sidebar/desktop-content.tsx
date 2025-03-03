@@ -1,12 +1,13 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { HomeIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, Menu } from "lucide-react";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 import { HeaderSearch } from "./header-search";
 
@@ -15,7 +16,7 @@ interface DesktopContentProps {
 }
 
 export function DesktopContent({ children }: DesktopContentProps) {
-  const { isOpen } = useSidebarStore();
+  const { isOpen, toggle } = useSidebarStore();
   const pathname = usePathname();
 
   // Generate breadcrumb items from pathname
@@ -43,44 +44,56 @@ export function DesktopContent({ children }: DesktopContentProps) {
   return (
     <div
       className={cn(
-        "min-h-screen bg-gray-50 dark:bg-gray-900",
-        "transition-all duration-300 ease-in-out",
-        isOpen ? "ml-64" : "ml-16"
+        "h-screen overflow-auto w-full",
+        "transition-all duration-500 ease-in-out"
       )}
+      style={{
+        marginLeft: isOpen ? "16rem" : "4rem",
+        width: "calc(100vw - " + (isOpen ? "16rem" : "4rem") + ")",
+      }}
     >
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-4 flex items-center h-14">
-        <div className="flex-1" />
-        <div className="flex items-center gap-2">
-          <HeaderSearch />
+      <header className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 flex items-center h-14 px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggle}
+          className="mr-2"
+          aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        <div className="flex-1">
+          {/* Breadcrumb navigation */}
+          <div className="flex items-center text-sm">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.path}>
+                {index > 0 && (
+                  <ChevronRightIcon size={14} className="mx-1 text-gray-400" />
+                )}
+                {index === breadcrumbs.length - 1 ? (
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">
+                    {crumb.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={crumb.path}
+                    className="text-gray-500 hover:text-primary transition-colors duration-200"
+                  >
+                    {crumb.label}
+                  </Link>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
           <ThemeToggle />
         </div>
       </header>
 
-      {/* Breadcrumb navigation */}
-      <div className="px-4 py-2 flex items-center text-sm text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-        <HomeIcon size={14} className="mr-2" />
-        {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={crumb.path}>
-            {index > 0 && (
-              <ChevronRightIcon size={14} className="mx-1 text-gray-400" />
-            )}
-            {index === breadcrumbs.length - 1 ? (
-              <span className="text-gray-700 dark:text-gray-300">
-                {crumb.label}
-              </span>
-            ) : (
-              <Link
-                href={crumb.path}
-                className="hover:text-primary transition-colors duration-200"
-              >
-                {crumb.label}
-              </Link>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-
-      <main className="p-4 md:p-6">{children}</main>
+      <main className="min-h-screen pt-4 px-6">{children}</main>
     </div>
   );
 }

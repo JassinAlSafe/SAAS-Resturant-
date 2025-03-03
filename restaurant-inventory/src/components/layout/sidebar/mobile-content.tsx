@@ -40,7 +40,7 @@ export function MobileContent({ children }: MobileContentProps) {
   const currentPage = breadcrumbs[breadcrumbs.length - 1]?.label || "Dashboard";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-4 flex items-center h-14">
         <div className="text-lg font-semibold truncate flex items-center">
           <span className="text-primary mr-1">R</span>

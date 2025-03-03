@@ -6,6 +6,7 @@ type SidebarState = {
     isOpen: boolean;
     openMobile: boolean;
     expandedSections: Record<string, boolean>;
+    lastInteraction: number;
 
     // Actions
     toggle: () => void;
@@ -15,6 +16,7 @@ type SidebarState = {
     toggleSection: (section: string) => void;
     setExpandedSections: (sections: Record<string, boolean>) => void;
     resetExpandedSections: () => void;
+    updateLastInteraction: () => void;
 };
 
 export const useSidebarStore = create<SidebarState>()(
@@ -24,25 +26,51 @@ export const useSidebarStore = create<SidebarState>()(
             isOpen: true,
             openMobile: false,
             expandedSections: {},
+            lastInteraction: Date.now(),
 
             // Actions
-            toggle: () => set((state) => ({ isOpen: !state.isOpen })),
-            setOpen: (open) => set({ isOpen: open }),
-            toggleMobile: () => set((state) => ({ openMobile: !state.openMobile })),
-            setMobileOpen: (open) => set({ openMobile: open }),
+            toggle: () => set((state) => ({
+                isOpen: !state.isOpen,
+                lastInteraction: Date.now()
+            })),
+            setOpen: (open) => set({
+                isOpen: open,
+                lastInteraction: Date.now()
+            }),
+            toggleMobile: () => set((state) => ({
+                openMobile: !state.openMobile,
+                lastInteraction: Date.now()
+            })),
+            setMobileOpen: (open) => set({
+                openMobile: open,
+                lastInteraction: Date.now()
+            }),
             toggleSection: (section) =>
                 set((state) => ({
                     expandedSections: {
                         ...state.expandedSections,
                         [section]: !state.expandedSections[section]
-                    }
+                    },
+                    lastInteraction: Date.now()
                 })),
-            setExpandedSections: (sections) => set({ expandedSections: sections }),
-            resetExpandedSections: () => set({ expandedSections: {} }),
+            setExpandedSections: (sections) => set({
+                expandedSections: sections,
+                lastInteraction: Date.now()
+            }),
+            resetExpandedSections: () => set({
+                expandedSections: {},
+                lastInteraction: Date.now()
+            }),
+            updateLastInteraction: () => set({
+                lastInteraction: Date.now()
+            }),
         }),
         {
             name: 'sidebar-storage', // unique name for localStorage
-            partialize: (state) => ({ isOpen: state.isOpen, expandedSections: state.expandedSections }),
+            partialize: (state) => ({
+                isOpen: state.isOpen,
+                expandedSections: state.expandedSections
+            }),
         }
     )
 ); 

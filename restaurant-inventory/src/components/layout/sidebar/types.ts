@@ -10,7 +10,7 @@ export type NavItemWithChildren = {
 export type NavItemWithHref = {
     name: string;
     href: string;
-    icon: React.ElementType;
+    icon?: React.ElementType;
     className?: string;
 };
 

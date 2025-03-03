@@ -15,8 +15,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
-import useSafeMediaQueries from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import useSafeMediaQueries from "@/hooks/use-media-query";
 
 import { NavItem, hasChildren } from "./types";
 import { navItems } from "./nav-items";
@@ -25,7 +25,7 @@ export function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen } = useSidebarStore();
-  const { isMobile } = useSafeMediaQueries();
+  const { isMobile, isTablet } = useSafeMediaQueries();
   const navRef = React.useRef<HTMLDivElement>(null);
 
   // Track if sections are collapsed
@@ -109,6 +109,26 @@ export function Navigation() {
     return shortcuts[path] || null;
   };
 
+  // Initialize expanded sections based on active path
+  React.useEffect(() => {
+    const newCollapsedSections = { ...collapsedSections };
+    let hasChanges = false;
+
+    navItems.forEach((item) => {
+      if (hasChildren(item)) {
+        const shouldExpand = isChildActive(item.items);
+        if (shouldExpand && collapsedSections[item.name]) {
+          newCollapsedSections[item.name] = false;
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setCollapsedSections(newCollapsedSections);
+    }
+  }, [pathname, collapsedSections]);
+
   // Render a navigation item based on its properties
   const renderNavItem = (item: NavItem): React.ReactNode => {
     // If the item has children, render it as a collapsible section
@@ -117,12 +137,7 @@ export function Navigation() {
       const isCollapsed = collapsedSections[item.name] ?? false;
 
       return (
-        <div key={item.name} className="group relative">
-          {/* Section connector line for visual grouping */}
-          {isOpen && !isCollapsed && (
-            <div className="absolute left-3 top-8 bottom-2 w-px bg-border/40 -z-10" />
-          )}
-
+        <div key={item.name} className={cn("mb-1", item.className)}>
           <Collapsible
             open={!isCollapsed}
             onOpenChange={() => toggleSection(item.name)}
@@ -130,25 +145,25 @@ export function Navigation() {
           >
             <CollapsibleTrigger
               className={cn(
-                "flex w-full items-center px-2 py-1.5 text-sm transition-colors",
-                "hover:bg-accent/50 rounded-md group relative",
-                isActive && "text-primary font-medium"
+                "flex w-full items-center rounded-md px-3 py-2 text-sm",
+                "hover:bg-accent/30 transition-colors duration-150",
+                isActive ? "text-primary font-medium" : "text-foreground/70"
               )}
             >
               {item.icon && (
                 <item.icon
                   className={cn(
-                    "mr-2 h-4 w-4",
-                    isActive ? "text-primary" : "text-muted-foreground"
+                    "mr-3 h-[18px] w-[18px]",
+                    isActive ? "text-primary" : "text-muted-foreground/60"
                   )}
                 />
               )}
-              {isOpen && (
+              {(isOpen || isMobile || isTablet) && (
                 <>
                   <span className="flex-1 truncate">{item.name}</span>
                   <ChevronDownIcon
                     className={cn(
-                      "ml-1 h-4 w-4 transition-transform text-muted-foreground",
+                      "h-4 w-4 text-muted-foreground/50 transition-transform duration-200",
                       !isCollapsed ? "rotate-0" : "-rotate-90"
                     )}
                   />
@@ -158,11 +173,13 @@ export function Navigation() {
 
             <CollapsibleContent
               className={cn(
-                "pl-8 pr-2 transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down",
-                isOpen ? "mt-1" : "mt-0"
+                "transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down",
+                isOpen || isMobile || isTablet ? "pl-8" : "pl-0"
               )}
             >
-              {item.items.map((child) => renderNavItem(child))}
+              <div className="space-y-1 py-1 relative">
+                {item.items.map((child) => renderNavItem(child))}
+              </div>
             </CollapsibleContent>
           </Collapsible>
         </div>
@@ -174,28 +191,41 @@ export function Navigation() {
       pathname === item.href || pathname.startsWith(item.href + "/");
     const shortcutKey = getShortcutKey(item.href);
 
+    // Check if this is a child item (no icon needed for children)
+    const isChildItem = !hasChildren(item) && !item.icon;
+
     const itemContent = (
       <div
         className={cn(
-          "group flex w-full items-center rounded-md px-2 py-1.5 text-sm transition-colors",
-          "hover:bg-accent/50 hover:translate-x-1 duration-200",
-          isActive &&
-            "bg-accent font-medium text-accent-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-sm before:bg-primary"
+          "flex w-full items-center rounded-md px-3 py-1.5 text-sm",
+          "transition-colors duration-150",
+          isActive ? "text-primary font-medium" : "text-foreground/70",
+          isChildItem ? "pl-4" : "", // Reduced padding for child items
+          isChildItem ? "hover:bg-accent/20" : "hover:bg-accent/30", // Lighter hover for child items
+          item.className
         )}
       >
-        {item.icon && (
+        {isChildItem && (
+          <div
+            className={cn(
+              "mr-2 w-1 h-1 rounded-full",
+              isActive ? "bg-primary" : "bg-muted-foreground/30"
+            )}
+          ></div>
+        )}
+        {item.icon && !isChildItem && (
           <item.icon
             className={cn(
-              "mr-2 h-4 w-4",
-              isActive ? "text-primary" : "text-muted-foreground"
+              "mr-3 h-[18px] w-[18px]",
+              isActive ? "text-primary" : "text-muted-foreground/60"
             )}
           />
         )}
-        {isOpen && (
+        {(isOpen || isMobile || isTablet) && (
           <>
             <span className="flex-1 truncate">{item.name}</span>
             {shortcutKey && (
-              <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-70 group-hover:inline-flex">
+              <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted/50 px-1.5 font-mono text-[10px] font-medium opacity-60 group-hover:inline-flex">
                 {shortcutKey}
               </kbd>
             )}
@@ -205,25 +235,21 @@ export function Navigation() {
     );
 
     // Wrap in Link if href exists
-    return isOpen ? (
-      <Link
-        key={item.name}
-        href={item.href}
-        className={cn("relative", isActive && "relative")}
-      >
+    return isOpen || isMobile || isTablet ? (
+      <Link key={item.name} href={item.href} className="group relative block">
         {itemContent}
       </Link>
     ) : (
       <Tooltip key={item.name} delayDuration={0}>
         <TooltipTrigger asChild>
-          <Link href={item.href} className="relative">
+          <Link href={item.href} className="block mb-1">
             {itemContent}
           </Link>
         </TooltipTrigger>
         <TooltipContent side="right" className="flex items-center gap-2">
           {item.name}
           {shortcutKey && (
-            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+            <kbd className="pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
               {shortcutKey}
             </kbd>
           )}
@@ -232,76 +258,16 @@ export function Navigation() {
     );
   };
 
-  // Render a navigation item for mobile display
-  const renderMobileNavItem = (item: NavItem): React.ReactNode => {
-    if (hasChildren(item)) {
-      return (
-        <div key={item.name} className="mb-2">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {item.name}
-          </div>
-          <div className="space-y-1">
-            {item.items.map((child) => renderMobileNavItem(child))}
-          </div>
-        </div>
-      );
-    }
-
-    const isActive =
-      pathname === item.href || pathname.startsWith(item.href + "/");
-    const shortcutKey = getShortcutKey(item.href);
-
-    return (
-      <Link
-        key={item.name}
-        href={item.href}
-        className={cn(
-          "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/50",
-          isActive &&
-            "bg-accent font-medium text-accent-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-r-sm before:bg-primary"
-        )}
-      >
-        {item.icon && (
-          <item.icon
-            className={cn(
-              "h-4 w-4",
-              isActive ? "text-primary" : "text-muted-foreground"
-            )}
-          />
-        )}
-        <span>{item.name}</span>
-        {shortcutKey && (
-          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-70">
-            {shortcutKey}
-          </kbd>
-        )}
-      </Link>
-    );
-  };
-
   return (
-    <>
-      {/* Desktop navigation */}
-      <div
-        ref={navRef}
-        className={cn(
-          "hide-scrollbar relative flex flex-col gap-1 overflow-y-auto py-2",
-          isOpen ? "px-3" : "px-2",
-          showScrollIndicator && "mask-bottom-fade"
-        )}
-      >
-        {navItems.map((item) => renderNavItem(item))}
-        {showScrollIndicator && (
-          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-        )}
-      </div>
-
-      {/* Mobile navigation when the sidebar is collapsed but shown on mobile */}
-      {isMobile && !isOpen && (
-        <div className="flex flex-col gap-1 p-2 overflow-y-auto">
-          {navItems.map((item) => renderMobileNavItem(item))}
-        </div>
+    <div
+      ref={navRef}
+      className={cn(
+        "py-2 px-2 space-y-1",
+        showScrollIndicator &&
+          "relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-6 after:bg-gradient-to-t after:from-background after:to-transparent after:pointer-events-none"
       )}
-    </>
+    >
+      {navItems.map((item) => renderNavItem(item))}
+    </div>
   );
 }

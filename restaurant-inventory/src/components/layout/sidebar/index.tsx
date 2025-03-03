@@ -3,6 +3,8 @@
 import * as React from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import useSafeMediaQueries from "@/hooks/use-media-query";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
+import { cn } from "@/lib/utils";
 
 import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileSidebar } from "./mobile-sidebar";
@@ -16,19 +18,48 @@ const SidebarChildrenContext = React.createContext<React.ReactNode>(null);
 function SidebarLayout() {
   const children = React.useContext(SidebarChildrenContext);
   const { isMobile, isTablet } = useSafeMediaQueries();
+  const { updateLastInteraction } = useSidebarStore();
+
+  // Update last interaction time on user activity
+  React.useEffect(() => {
+    const handleActivity = () => {
+      updateLastInteraction();
+    };
+
+    // Add event listeners for user activity
+    window.addEventListener("mousemove", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("touchstart", handleActivity);
+    window.addEventListener("click", handleActivity);
+
+    return () => {
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      window.removeEventListener("click", handleActivity);
+    };
+  }, [updateLastInteraction]);
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-screen w-full">
-        {isMobile || isTablet ? <MobileSidebar /> : <DesktopSidebar />}
+      <div
+        className={cn(
+          "flex min-h-screen w-full",
+          "transition-all duration-300 ease-in-out",
+          "relative overflow-x-hidden" // Added overflow-x-hidden to prevent horizontal scrolling
+        )}
+      >
+        {/* Conditionally render mobile or desktop components */}
         {isMobile || isTablet ? (
-          <div className="flex-1">
+          <>
+            <MobileSidebar />
             <MobileContent>{children}</MobileContent>
-          </div>
+          </>
         ) : (
-          <div className="flex-1">
+          <>
+            <DesktopSidebar />
             <DesktopContent>{children}</DesktopContent>
-          </div>
+          </>
         )}
       </div>
     </TooltipProvider>

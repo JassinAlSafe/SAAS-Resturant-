@@ -27,9 +27,9 @@ export const navItems: NavItem[] = [
         icon: PackageIcon,
         className: "mt-2",
         items: [
-            { name: "Inventory", href: "/inventory", icon: PackageIcon },
-            { name: "Suppliers", href: "/suppliers", icon: Truck },
-            { name: "Shopping List", href: "/shopping-list", icon: ShoppingBagIcon },
+            { name: "Inventory", href: "/inventory" },
+            { name: "Suppliers", href: "/suppliers" },
+            { name: "Shopping List", href: "/shopping-list" },
         ],
     },
     {
@@ -37,8 +37,8 @@ export const navItems: NavItem[] = [
         icon: ShoppingCartIcon,
         className: "mt-2",
         items: [
-            { name: "Recipes", href: "/recipes", icon: BookOpenIcon },
-            { name: "Sales", href: "/sales", icon: ShoppingCartIcon },
+            { name: "Recipes", href: "/recipes" },
+            { name: "Sales", href: "/sales" },
         ],
     },
     {
@@ -46,8 +46,8 @@ export const navItems: NavItem[] = [
         icon: BarChart2Icon,
         className: "mt-2",
         items: [
-            { name: "Reports", href: "/reports", icon: BarChart2Icon },
-            { name: "Notes", href: "/notes", icon: MessageSquareIcon },
+            { name: "Reports", href: "/reports" },
+            { name: "Notes", href: "/notes" },
         ],
     },
     {
@@ -55,10 +55,10 @@ export const navItems: NavItem[] = [
         icon: SettingsIcon,
         className: "mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 opacity-90",
         items: [
-            { name: "Users", href: "/users", icon: UsersIcon },
-            { name: "Billing", href: "/billing", icon: CreditCardIcon },
-            { name: "Settings", href: "/settings", icon: SettingsIcon },
-            { name: "Help", href: "/help", icon: HelpCircleIcon },
+            { name: "Users", href: "/users" },
+            { name: "Billing", href: "/billing" },
+            { name: "Settings", href: "/settings" },
+            { name: "Help", href: "/help" },
         ],
     },
 ]; 
