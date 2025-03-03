@@ -1,0 +1,49 @@
+import { useMediaQuery } from 'react-responsive';
+
+// Breakpoints aligned with common device sizes
+export const useMediaQueries = () => {
+    const isMobile = useMediaQuery({ maxWidth: 767 });
+    const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 1023 });
+    const isDesktop = useMediaQuery({ minWidth: 1024 });
+    const isLargeDesktop = useMediaQuery({ minWidth: 1440 });
+
+    return {
+        isMobile,
+        isTablet,
+        isDesktop,
+        isLargeDesktop,
+        // Current device type as a string
+        deviceType: isMobile
+            ? 'mobile'
+            : isTablet
+                ? 'tablet'
+                : isLargeDesktop
+                    ? 'largeDesktop'
+                    : 'desktop'
+    };
+};
+
+// SSR-friendly media query hook with fallback
+export const useSafeMediaQueries = () => {
+    // We need to call hooks unconditionally at the top level
+    const mediaQueries = useMediaQueries();
+
+    // For SSR, check if client-side and return appropriate values
+    const isClient = typeof window === 'object';
+
+    // If we're not in a client environment (SSR), return desktop defaults
+    if (!isClient) {
+        return {
+            isMobile: false,
+            isTablet: false,
+            isDesktop: true,
+            isLargeDesktop: false,
+            deviceType: 'desktop',
+        };
+    }
+
+    // Otherwise return the actual media queries
+    return mediaQueries;
+};
+
+export default useSafeMediaQueries; 

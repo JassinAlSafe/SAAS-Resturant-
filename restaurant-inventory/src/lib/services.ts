@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Ingredient, Dish, Sale, DishIngredient, StockAlert, DashboardStats } from './types';
+import { Ingredient, Dish, Sale, StockAlert, DashboardStats } from './types';
 
 // Ingredient Services
 export const ingredientService = {
