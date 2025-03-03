@@ -9,6 +9,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "ShelfWise | Smart Inventory Management",
   description: "Smart inventory management for restaurants and food businesses",
+  viewport:
+    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
 };
 
 export default function RootLayout({
@@ -18,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="overflow-x-hidden">
-      <body className={`${inter.className} overflow-x-hidden`}>
+      <body
+        className={`${inter.className} overflow-x-hidden text-base antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

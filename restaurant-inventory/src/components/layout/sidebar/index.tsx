@@ -20,10 +20,16 @@ function MainSidebarLayout() {
   const children = React.useContext(SidebarChildrenContext);
   const { isMobile, isTablet } = useSafeMediaQueries();
   const { updateLastInteraction } = useSidebarStore();
+  const [hasMounted, setHasMounted] = React.useState(false);
 
   // Use a ref to track last update time for throttling
   const lastUpdateRef = React.useRef<number>(Date.now());
   const throttleTimeMs = 5000; // Only update at most once every 5 seconds
+
+  // Set mounted state after hydration
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Update last interaction time on user activity, but throttled
   React.useEffect(() => {
@@ -59,16 +65,18 @@ function MainSidebarLayout() {
           "relative overflow-x-hidden" // Added overflow-x-hidden to prevent horizontal scrolling
         )}
       >
-        {/* Conditionally render mobile or desktop components */}
-        {isMobile || isTablet ? (
-          <>
-            <MobileSidebar />
-            <MobileContent>{children}</MobileContent>
-          </>
-        ) : (
+        {/* 
+          Always render desktop sidebar first for SSR,
+          After hydration, conditionally render based on screen size.
+        */}
+        {!hasMounted || (!isMobile && !isTablet) ? (
           <>
             <DesktopSidebar />
             <DesktopContent>{children}</DesktopContent>
+          </>
+        ) : (
+          <>
+            <MobileContent>{children}</MobileContent>
           </>
         )}
       </div>

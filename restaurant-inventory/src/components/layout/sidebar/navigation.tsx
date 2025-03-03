@@ -20,6 +20,39 @@ import useSafeMediaQueries from "@/hooks/use-media-query";
 import { useAuth } from "@/lib/auth-context";
 import { useTransition } from "@/components/ui/transition";
 import { LogOutIcon } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  BarChart,
+  FileText,
+  Home,
+  Landmark,
+  Package,
+  Settings,
+  ShoppingCart,
+  Utensils,
+  Package2,
+  BarChart2,
+  ClipboardCheck,
+  Info,
+  Users,
+  Bell,
+  Store,
+  Star,
+  FileSpreadsheet,
+  ChevronRight,
+  ListChecks,
+  BookOpen,
+  Sparkles,
+  CreditCard,
+  ListIcon,
+  Wallet,
+  Layers,
+} from "lucide-react";
 
 import { NavItem, hasChildren, SidebarContextType } from "./types";
 import { navItems } from "./nav-items";
@@ -34,7 +67,7 @@ export function Navigation({
   const { isOpen } = useSidebarStore();
   const { isMobile, isTablet } = useSafeMediaQueries();
   const navRef = React.useRef<HTMLDivElement>(null);
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const { startTransition } = useTransition();
 
   // Use either the provided sidebarContext or the store
@@ -285,6 +318,17 @@ export function Navigation({
       </Tooltip>
     );
   };
+
+  // Close sidebar when navigating on mobile
+  const handleNavigation = React.useCallback(() => {
+    if (isMobile && !open) {
+      // Implement the logic to close the sidebar on mobile
+    }
+  }, [isMobile, open]);
+
+  // Is user admin or manager?
+  const isAdminOrManager =
+    profile?.role === "admin" || profile?.role === "manager";
 
   return (
     <div

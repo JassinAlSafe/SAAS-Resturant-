@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 import { HeaderSearch } from "./header-search";
+import { MobileSidebar } from "./mobile-sidebar";
 
 interface MobileContentProps {
   children: React.ReactNode;
@@ -42,9 +43,14 @@ export function MobileContent({ children }: MobileContentProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full">
       <header className="sticky top-0 z-10 bg-sidebar border-b border-border/50 dark:border-border/30 px-4 flex items-center h-14">
-        <div className="text-lg font-semibold truncate flex items-center">
-          <span className="text-primary mr-1">R</span>
-          <span>{currentPage}</span>
+        <div className="flex items-center">
+          <div className="mr-2">
+            <MobileSidebar />
+          </div>
+          <div className="text-lg font-semibold truncate flex items-center">
+            <span className="text-primary mr-1">R</span>
+            <span>{currentPage}</span>
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <HeaderSearch />

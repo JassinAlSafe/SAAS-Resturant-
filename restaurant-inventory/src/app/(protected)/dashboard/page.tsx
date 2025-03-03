@@ -156,104 +156,124 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Welcome to ShelfWise</h1>
-        <CurrencySelector />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Inventory Value"
-          value={formatCurrency(stats.totalInventoryValue)}
-          icon={<FiPackage className="h-5 w-5 text-primary" />}
-        />
-        <StatCard
-          title="Low Stock Items"
-          value={stats.lowStockItems.toString()}
-          icon={<FiAlertTriangle className="h-5 w-5 text-amber-500" />}
-          trend={{
-            value: 3,
-            isPositive: false,
-          }}
-        />
-        <StatCard
-          title="Monthly Sales"
-          value={formatCurrency(stats.monthlySales)}
-          icon={<FiDollarSign className="h-5 w-5 text-green-600" />}
-        />
-        <StatCard
-          title="Sales Growth"
-          value={`${stats.salesGrowth}%`}
-          icon={<FiTrendingUp className="h-5 w-5 text-blue-600" />}
-          trend={{
-            value: 2.5,
-            isPositive: true,
-          }}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <SalesGrowthCard
-            title="Sales Trend"
-            totalRevenue={90000}
-            averageMonthly={15000}
-            highestMonth={17500}
-            lowestMonth={12400}
-            percentComplete={75}
-            growthPercent={12.3}
-            salesData={salesData}
-          />
-        </div>
-        <div>
-          <CategoryStatsCard
-            title="Inventory by Category"
-            categories={[
-              {
-                id: "1",
-                name: "Meat",
-                count: 35,
-                change: 5,
-                icon: <FiShoppingBag className="h-5 w-5 text-white" />,
-                color: "bg-primary",
-              },
-              {
-                id: "2",
-                name: "Produce",
-                count: 25,
-                change: 3,
-                icon: <FiHome className="h-5 w-5 text-white" />,
-                color: "bg-green-500",
-              },
-              {
-                id: "3",
-                name: "Dairy",
-                count: 15,
-                change: 2,
-                icon: <FiPackage className="h-5 w-5 text-white" />,
-                color: "bg-blue-500",
-              },
-              {
-                id: "4",
-                name: "Dry Goods",
-                count: 15,
-                change: 1,
-                icon: <FiBarChart2 className="h-5 w-5 text-white" />,
-                color: "bg-amber-500",
-              },
-              {
-                id: "5",
-                name: "Beverages",
-                count: 10,
-                change: 0,
-                icon: <FiSettings className="h-5 w-5 text-white" />,
-                color: "bg-red-500",
-              },
-            ]}
-          />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-8 border-b mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4 sm:mb-0">
+          Welcome to ShelfWise
+        </h1>
+        <div className="flex items-center">
+          <CurrencySelector />
         </div>
       </div>
+
+      {/* Stats Section */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-6 text-foreground/80">
+          Key Metrics
+        </h2>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Inventory Value"
+            value={formatCurrency(stats.totalInventoryValue)}
+            icon={<FiPackage className="h-5 w-5 text-primary" />}
+            className="shadow-sm hover:shadow transition-shadow duration-200"
+          />
+          <StatCard
+            title="Low Stock Items"
+            value={stats.lowStockItems.toString()}
+            icon={<FiAlertTriangle className="h-5 w-5 text-amber-500" />}
+            trend={{
+              value: 3,
+              isPositive: false,
+            }}
+            className="shadow-sm hover:shadow transition-shadow duration-200"
+          />
+          <StatCard
+            title="Monthly Sales"
+            value={formatCurrency(stats.monthlySales)}
+            icon={<FiDollarSign className="h-5 w-5 text-green-600" />}
+            className="shadow-sm hover:shadow transition-shadow duration-200"
+          />
+          <StatCard
+            title="Sales Growth"
+            value={`${stats.salesGrowth}%`}
+            icon={<FiTrendingUp className="h-5 w-5 text-blue-600" />}
+            trend={{
+              value: 2.5,
+              isPositive: true,
+            }}
+            className="shadow-sm hover:shadow transition-shadow duration-200"
+          />
+        </div>
+      </section>
+
+      {/* Charts Section */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-6 text-foreground/80">
+          Analytics
+        </h2>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <SalesGrowthCard
+              title="Sales Trend"
+              totalRevenue={90000}
+              averageMonthly={15000}
+              highestMonth={17500}
+              lowestMonth={12400}
+              percentComplete={75}
+              growthPercent={12.3}
+              salesData={salesData}
+            />
+          </div>
+          <div>
+            <CategoryStatsCard
+              title="Inventory by Category"
+              categories={[
+                {
+                  id: "1",
+                  name: "Meat",
+                  count: 35,
+                  change: 5,
+                  icon: <FiShoppingBag className="h-5 w-5 text-white" />,
+                  color: "bg-primary",
+                },
+                {
+                  id: "2",
+                  name: "Produce",
+                  count: 25,
+                  change: 3,
+                  icon: <FiHome className="h-5 w-5 text-white" />,
+                  color: "bg-green-500",
+                },
+                {
+                  id: "3",
+                  name: "Dairy",
+                  count: 15,
+                  change: 2,
+                  icon: <FiPackage className="h-5 w-5 text-white" />,
+                  color: "bg-blue-500",
+                },
+                {
+                  id: "4",
+                  name: "Dry Goods",
+                  count: 15,
+                  change: 1,
+                  icon: <FiBarChart2 className="h-5 w-5 text-white" />,
+                  color: "bg-amber-500",
+                },
+                {
+                  id: "5",
+                  name: "Beverages",
+                  count: 10,
+                  change: 0,
+                  icon: <FiSettings className="h-5 w-5 text-white" />,
+                  color: "bg-red-500",
+                },
+              ]}
+            />
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

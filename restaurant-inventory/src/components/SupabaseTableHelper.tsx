@@ -324,334 +324,164 @@ END $$;`;
   };
 
   return (
-    <div className="p-4 border rounded-md space-y-4">
-      <h2 className="text-xl font-bold">Table Health Check</h2>
+    <div className="w-full max-w-full overflow-hidden">
+      <div className="space-y-4 p-2 sm:p-4">
+        <h1 className="text-xl sm:text-2xl font-bold">
+          Supabase Database Helper
+        </h1>
 
-      {loading ? (
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
-          <span>Checking tables...</span>
-        </div>
-      ) : error ? (
-        <Alert variant="destructive">
-          <FiAlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          <div className="space-y-2">
-            <p className="font-medium">Detected tables:</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {tables.map((table) => (
-                <div
-                  key={table}
-                  className={`p-2 border rounded ${
-                    table === "suppliers" || table === "ingredients"
-                      ? "bg-green-50 border-green-200"
-                      : ""
-                  }`}
-                >
-                  {table}{" "}
-                  {(table === "suppliers" || table === "ingredients") && (
-                    <FiCheckCircle className="inline text-green-500" />
-                  )}
-                </div>
-              ))}
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-
-          <Tabs defaultValue="suppliers">
-            <TabsList className="mb-4">
-              <TabsTrigger value="suppliers">Suppliers Table</TabsTrigger>
-              <TabsTrigger value="ingredients">Ingredients Table</TabsTrigger>
-              <TabsTrigger value="columns">Missing Columns</TabsTrigger>
+        ) : error ? (
+          <Alert variant="destructive">
+            <FiAlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : (
+          <Tabs defaultValue="setup" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="setup">Setup</TabsTrigger>
+              <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+              <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="suppliers">
-              {!hasSuppliersTable && (
-                <Alert>
-                  <FiAlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Suppliers table not found</AlertTitle>
-                  <AlertDescription>
-                    You need to create the suppliers table in your Supabase
-                    database. Copy the SQL script below and run it in the SQL
-                    Editor.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {!hasSuppliersTable && (
-                <div className="space-y-2 mt-4">
-                  <div className="flex justify-between">
-                    <h3 className="font-medium">
-                      SQL Script to create suppliers table:
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        copyToClipboard(suppliersSqlScript, setCopiedSuppliers)
-                      }
-                      className="flex items-center space-x-1"
-                    >
-                      <FiCopy className="h-4 w-4" />
-                      <span>{copiedSuppliers ? "Copied!" : "Copy"}</span>
-                    </Button>
-                  </div>
-                  <Textarea
-                    value={suppliersSqlScript}
-                    readOnly
-                    className="font-mono text-sm h-64"
-                  />
+            <TabsContent value="setup" className="space-y-4">
+              <div className="rounded-md border p-3 sm:p-4">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Tables Status
+                </h2>
+                <div className="table-responsive overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="text-left p-2 font-medium">
+                          Table Name
+                        </th>
+                        <th className="text-left p-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tables.map((table) => (
+                        <tr key={table} className="border-t">
+                          <td className="p-2" data-label="Table Name">
+                            {table}
+                          </td>
+                          <td
+                            className="p-2 flex justify-end sm:table-cell"
+                            data-label="Status"
+                          >
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-green-600">
+                              <FiCheckCircle className="h-3 w-3" />
+                              <span>Exists</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </div>
 
-              {hasSuppliersTable && (
-                <Alert className="bg-green-50 border-green-200 text-green-800">
-                  <FiCheckCircle className="h-4 w-4" />
-                  <AlertTitle>Suppliers table exists</AlertTitle>
-                  <AlertDescription>
-                    The suppliers table is already created in your database.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div>
-                <Button
-                  onClick={testSupplierService}
-                  disabled={loading}
-                  className="flex items-center space-x-1"
-                >
-                  {loading && (
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full"></div>
-                  )}
-                  {loading ? "Testing..." : "Run Test"}
-                </Button>
+              <div className="rounded-md border p-3 sm:p-4">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Columns
+                </h2>
+                <div className="space-y-2">
+                  {Object.entries(tableColumns).map(([table, columns]) => (
+                    <div key={table} className="space-y-1">
+                      <h3 className="font-medium">{table}</h3>
+                      <div className="table-responsive overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              <th className="text-left p-2 font-medium">
+                                Column Name
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {columns.map((column) => (
+                              <tr key={column} className="border-t">
+                                <td className="p-2" data-label="Column Name">
+                                  {column}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="ingredients">
-              {!hasIngredientsTable && (
-                <Alert>
-                  <FiAlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Ingredients table not found</AlertTitle>
-                  <AlertDescription>
-                    You need to create the ingredients table in your Supabase
-                    database. Copy the SQL script below and run it in the SQL
-                    Editor.
-                    <div className="mt-2 text-amber-600 font-medium">
-                      IMPORTANT: The ingredients table references the suppliers
-                      table. Please make sure to create the suppliers table
-                      first.
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
+            <TabsContent value="suppliers" className="space-y-4">
+              <div className="rounded-md border p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                  <h2 className="text-lg sm:text-xl font-semibold">
+                    Create Suppliers Table
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() =>
+                      copyToClipboard(suppliersSqlScript, setCopiedSuppliers)
+                    }
+                  >
+                    {copiedSuppliers ? "Copied!" : "Copy SQL"}
+                    <FiCopy className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
 
-              {!hasIngredientsTable && (
-                <div className="space-y-2 mt-4">
-                  <div className="flex justify-between">
-                    <h3 className="font-medium">
-                      SQL Script to create ingredients table:
-                    </h3>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        copyToClipboard(
-                          ingredientsSqlScript,
-                          setCopiedIngredients
-                        )
-                      }
-                      className="flex items-center space-x-1"
-                    >
-                      <FiCopy className="h-4 w-4" />
-                      <span>{copiedIngredients ? "Copied!" : "Copy"}</span>
-                    </Button>
-                  </div>
+                <div className="relative">
                   <Textarea
-                    value={ingredientsSqlScript}
+                    className="font-mono text-xs sm:text-sm whitespace-pre overflow-auto h-64 max-h-96 resize-none"
                     readOnly
-                    className="font-mono text-sm h-64"
+                    value={suppliersSqlScript}
                   />
                 </div>
-              )}
-
-              {hasIngredientsTable && (
-                <Alert className="bg-green-50 border-green-200 text-green-800">
-                  <FiCheckCircle className="h-4 w-4" />
-                  <AlertTitle>Ingredients table exists</AlertTitle>
-                  <AlertDescription>
-                    The ingredients table is already created in your database.
-                    Check the &quot;Missing Columns&quot; tab to make sure it
-                    has all the required columns.
-                  </AlertDescription>
-                </Alert>
-              )}
+              </div>
             </TabsContent>
 
-            <TabsContent value="columns">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Column Diagnostics</h3>
+            <TabsContent value="ingredients" className="space-y-4">
+              <div className="rounded-md border p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                  <h2 className="text-lg sm:text-xl font-semibold">
+                    Create Ingredients Table
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() =>
+                      copyToClipboard(
+                        ingredientsSqlScript,
+                        setCopiedIngredients
+                      )
+                    }
+                  >
+                    {copiedIngredients ? "Copied!" : "Copy SQL"}
+                    <FiCopy className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
 
-                {hasIngredientsTable && (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className={
-                          hasExpiryDateColumn
-                            ? "text-green-500"
-                            : "text-amber-500"
-                        }
-                      >
-                        {hasExpiryDateColumn ? (
-                          <FiCheckCircle className="h-5 w-5" />
-                        ) : (
-                          <FiAlertTriangle className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium">expiry_date column</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {hasExpiryDateColumn
-                            ? "Column exists in ingredients table"
-                            : "Column is missing from ingredients table"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className={
-                          hasSupplierIdColumn
-                            ? "text-green-500"
-                            : "text-amber-500"
-                        }
-                      >
-                        {hasSupplierIdColumn ? (
-                          <FiCheckCircle className="h-5 w-5" />
-                        ) : (
-                          <FiAlertTriangle className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium">supplier_id column</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {hasSupplierIdColumn
-                            ? "Column exists in ingredients table"
-                            : "Column is missing from ingredients table"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {!hasExpiryDateColumn && (
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium">
-                            SQL Script to add expiry_date column:
-                          </h3>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              copyToClipboard(
-                                addExpiryDateScript,
-                                setCopiedExpiry
-                              )
-                            }
-                            className="flex items-center space-x-1"
-                          >
-                            <FiCopy className="h-4 w-4" />
-                            <span>{copiedExpiry ? "Copied!" : "Copy"}</span>
-                          </Button>
-                        </div>
-                        <Textarea
-                          value={addExpiryDateScript}
-                          readOnly
-                          className="font-mono text-sm h-32"
-                        />
-                      </div>
-                    )}
-
-                    {!hasSupplierIdColumn && (
-                      <div className="mt-4 space-y-2">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium">
-                            SQL Script to add supplier_id column:
-                          </h3>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              copyToClipboard(
-                                addSupplierIdScript,
-                                setCopiedSupplierColumn
-                              )
-                            }
-                            className="flex items-center space-x-1"
-                          >
-                            <FiCopy className="h-4 w-4" />
-                            <span>
-                              {copiedSupplierColumn ? "Copied!" : "Copy"}
-                            </span>
-                          </Button>
-                        </div>
-                        <Alert className="mb-2">
-                          <FiAlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Important</AlertTitle>
-                          <AlertDescription>
-                            Make sure the suppliers table exists before adding
-                            this column.
-                          </AlertDescription>
-                        </Alert>
-                        <Textarea
-                          value={addSupplierIdScript}
-                          readOnly
-                          className="font-mono text-sm h-32"
-                        />
-                      </div>
-                    )}
-
-                    {hasExpiryDateColumn && hasSupplierIdColumn && (
-                      <Alert className="bg-green-50 border-green-200 text-green-800">
-                        <FiCheckCircle className="h-4 w-4" />
-                        <AlertTitle>All columns present</AlertTitle>
-                        <AlertDescription>
-                          The ingredients table has all required columns.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                )}
-
-                {!hasIngredientsTable && (
-                  <Alert>
-                    <FiAlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Ingredients table not found</AlertTitle>
-                    <AlertDescription>
-                      You need to create the ingredients table first. Go to the
-                      &quot;Ingredients Table&quot; tab.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <div className="relative">
+                  <Textarea
+                    className="font-mono text-xs sm:text-sm whitespace-pre overflow-auto h-64 max-h-96 resize-none"
+                    readOnly
+                    value={ingredientsSqlScript}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
-
-          <div className="flex justify-end mt-4">
-            <a
-              href="https://app.supabase.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-            >
-              Open Supabase Dashboard{" "}
-              <FiExternalLink className="ml-1 h-3 w-3" />
-            </a>
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

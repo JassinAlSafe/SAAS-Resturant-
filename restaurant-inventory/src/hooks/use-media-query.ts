@@ -1,4 +1,5 @@
 import { useMediaQuery } from 'react-responsive';
+import { useState, useEffect } from 'react';
 
 // Breakpoints aligned with common device sizes
 export const useMediaQueries = () => {
@@ -25,14 +26,20 @@ export const useMediaQueries = () => {
 
 // SSR-friendly media query hook with fallback
 export const useSafeMediaQueries = () => {
+    // Create state to track if we've hydrated
+    const [hasMounted, setHasMounted] = useState(false);
+
     // We need to call hooks unconditionally at the top level
     const mediaQueries = useMediaQueries();
 
-    // For SSR, check if client-side and return appropriate values
-    const isClient = typeof window === 'object';
+    // Effect to update mounted state after hydration is complete
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
-    // If we're not in a client environment (SSR), return desktop defaults
-    if (!isClient) {
+    // During SSR and first client render (before hydration is complete), 
+    // return desktop values to ensure consistent UI between server and client
+    if (!hasMounted) {
         return {
             isMobile: false,
             isTablet: false,
@@ -42,7 +49,7 @@ export const useSafeMediaQueries = () => {
         };
     }
 
-    // Otherwise return the actual media queries
+    // After hydration, return the actual media queries
     return mediaQueries;
 };
 

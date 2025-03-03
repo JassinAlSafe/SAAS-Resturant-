@@ -246,4 +246,142 @@
     mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
   }
+
+  /* Force tables to be responsive */
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Flex utilities for better mobile layouts */
+  .flex-col-mobile {
+    @apply flex-col sm:flex-row;
+  }
+
+  .flex-col-reverse-mobile {
+    @apply flex-col-reverse sm:flex-row;
+  }
+
+  /* Grid for responsive layouts */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+
+  /* Content width constraint for readability */
+  .content-width {
+    @apply max-w-full sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] mx-auto;
+  }
+
+  /* Text size adjustments for mobile */
+  .text-mobile-body {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-mobile-heading {
+    @apply text-xl sm:text-2xl md:text-3xl;
+  }
+
+  .text-mobile-subheading {
+    @apply text-lg sm:text-xl;
+  }
+
+  /* Spacing adjustments for mobile */
+  .p-mobile {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+
+  .m-mobile {
+    @apply m-2 sm:m-4 md:m-6;
+  }
+
+  .gap-mobile {
+    @apply gap-2 sm:gap-4 md:gap-6;
+  }
+}
+
+/* Handling long texts and preventing overflow */
+.truncate-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Improve table responsiveness */
+table {
+  @apply w-full;
+}
+
+@media (max-width: 640px) {
+  .responsive-table {
+    display: block;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody {
+    display: block;
+  }
+
+  .responsive-table tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.5rem;
+  }
+
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    text-align: right;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .responsive-table td:last-child {
+    border-bottom: none;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    text-align: left;
+  }
+}
+
+/* Touch-friendly inputs */
+input,
+select,
+textarea,
+button {
+  @apply text-base; /* Larger touch targets */
+}
+
+button,
+.button {
+  @apply min-h-10; /* Minimum height for touch targets */
+}
+
+/* Fix for iOS safari viewport issues */
+html,
+body {
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overscroll-behavior-y: none;
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
 }

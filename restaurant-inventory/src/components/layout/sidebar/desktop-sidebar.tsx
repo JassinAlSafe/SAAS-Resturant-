@@ -34,6 +34,7 @@ export function DesktopSidebar() {
   const { isOpen, expandedSections, toggleSection, setOpen } =
     useSidebarStore();
   const { signOut } = useAuth();
+  const [hasMounted, setHasMounted] = React.useState(false);
   const inventoryExpanded = expandedSections["inventory"] !== false;
   const menuSalesExpanded = expandedSections["menuSales"] !== false;
   const analyticsExpanded = expandedSections["analytics"] !== false;
@@ -44,13 +45,21 @@ export function DesktopSidebar() {
   const navRefs = React.useRef<(HTMLElement | null)[]>([]);
   const [focusIndex, setFocusIndex] = React.useState<number>(-1);
 
+  // Set mounted state after hydration
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   // Clear references when expanded sections change
   React.useEffect(() => {
     navRefs.current = [];
   }, [expandedSections]);
 
-  // Handle keyboard shortcuts for global sidebar actions
+  // Add keyboard event listeners only after hydration
   React.useEffect(() => {
+    if (!hasMounted) return;
+
+    // Keyboard navigation implementation
     const handleKeyDown = (event: KeyboardEvent) => {
       // Toggle sidebar with Cmd/Ctrl + B
       if ((event.metaKey || event.ctrlKey) && event.key === "b") {
@@ -68,9 +77,11 @@ export function DesktopSidebar() {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, setOpen]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [focusIndex, hasMounted]);
 
   // Handle keyboard navigation within the sidebar
   const handleNavKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -168,6 +179,34 @@ export function DesktopSidebar() {
     }
   };
 
+  // Only render client-specific UI features after component has mounted
+  if (!hasMounted) {
+    return (
+      <aside
+        aria-label="Main Navigation"
+        className={cn(
+          "fixed h-screen bg-sidebar flex-col hidden md:flex z-30 transition-all duration-300 ease-in-out",
+          isOpen ? "sidebar-expanded" : "sidebar-collapsed"
+        )}
+        style={{ width: isOpen ? "16rem" : "4.5rem", left: "0px" }}
+      >
+        {/* Simple placeholder content that matches the structure but with minimal interactivity */}
+        <div className="p-4 flex items-center justify-between">
+          <span
+            className={cn(
+              "font-semibold transition-opacity duration-300",
+              isOpen ? "opacity-100" : "opacity-0"
+            )}
+          >
+            Dashboard
+          </span>
+        </div>
+        <div className="flex-1">{/* Static navigation placeholder */}</div>
+      </aside>
+    );
+  }
+
+  // Regular render with full functionality
   return (
     <aside
       aria-label="Main Navigation"
