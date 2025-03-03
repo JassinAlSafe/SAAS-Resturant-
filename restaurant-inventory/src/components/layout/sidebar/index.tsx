@@ -10,12 +10,13 @@ import { DesktopSidebar } from "./desktop-sidebar";
 import { MobileSidebar } from "./mobile-sidebar";
 import { DesktopContent } from "./desktop-content";
 import { MobileContent } from "./mobile-content";
-
-// Create a context to pass children down to the SidebarLayout
-const SidebarChildrenContext = React.createContext<React.ReactNode>(null);
+import { SidebarLayout } from "./sidebar-layout";
+import { Navigation } from "./navigation";
+import { UserProfile } from "./user-profile";
+import { SidebarChildrenContext } from "./types";
 
 // Main sidebar layout component
-function SidebarLayout() {
+function MainSidebarLayout() {
   const children = React.useContext(SidebarChildrenContext);
   const { isMobile, isTablet } = useSafeMediaQueries();
   const { updateLastInteraction } = useSidebarStore();
@@ -82,10 +83,13 @@ interface SidebarNavigationProps {
 export function SidebarNavigation({ children }: SidebarNavigationProps) {
   return (
     <SidebarChildrenContext.Provider value={children}>
-      <SidebarLayout />
+      <MainSidebarLayout />
     </SidebarChildrenContext.Provider>
   );
 }
+
+// Export all components for direct access if needed
+export { SidebarLayout, Navigation, UserProfile };
 
 // Export all sidebar components for easy imports
 export * from "./types";

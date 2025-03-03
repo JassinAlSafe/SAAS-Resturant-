@@ -19,7 +19,7 @@ const nextConfig = {
   },
 
   // Modify webpack configuration to bypass the problematic plugin
-  webpack: (config, { dev, isServer, webpack }) => {
+  webpack: (config, { dev, isServer }) => {
     // Only apply these in production build (when dev is false)
     if (!dev && !isServer) {
       // Force disable all minification
@@ -38,6 +38,8 @@ const nextConfig = {
     }
 
     return config;
+  },
+
   // Configure allowed image domains
   images: {
     domains: [

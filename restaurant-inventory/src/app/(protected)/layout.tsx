@@ -1,4 +1,4 @@
-import { SidebarNavigation } from "@/components/layout/sidebar-navigation";
+import { SidebarNavigation } from "@/components/layout/sidebar";
 
 export default function ProtectedLayout({
   children,

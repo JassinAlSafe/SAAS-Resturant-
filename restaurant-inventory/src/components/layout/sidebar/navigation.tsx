@@ -17,16 +17,28 @@ import {
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { cn } from "@/lib/utils";
 import useSafeMediaQueries from "@/hooks/use-media-query";
+import { useAuth } from "@/lib/auth-context";
+import { useTransition } from "@/components/ui/transition";
+import { LogOutIcon } from "lucide-react";
 
-import { NavItem, hasChildren } from "./types";
+import { NavItem, hasChildren, SidebarContextType } from "./types";
 import { navItems } from "./nav-items";
 
-export function Navigation() {
+export function Navigation({
+  sidebarContext,
+}: {
+  sidebarContext?: SidebarContextType;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen } = useSidebarStore();
   const { isMobile, isTablet } = useSafeMediaQueries();
   const navRef = React.useRef<HTMLDivElement>(null);
+  const { signOut } = useAuth();
+  const { startTransition } = useTransition();
+
+  // Use either the provided sidebarContext or the store
+  const open = sidebarContext?.open ?? isOpen;
 
   // Track if sections are collapsed
   const [collapsedSections, setCollapsedSections] = React.useState<
@@ -129,6 +141,22 @@ export function Navigation() {
     }
   }, [pathname, collapsedSections]);
 
+  const handleLogout = async () => {
+    try {
+      startTransition(() => {
+        signOut()
+          .then(() => {
+            router.push("/login");
+          })
+          .catch((error) => {
+            console.error("Error signing out:", error);
+          });
+      }, "logout");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   // Render a navigation item based on its properties
   const renderNavItem = (item: NavItem): React.ReactNode => {
     // If the item has children, render it as a collapsible section
@@ -158,7 +186,7 @@ export function Navigation() {
                   )}
                 />
               )}
-              {(isOpen || isMobile || isTablet) && (
+              {(open || isMobile || isTablet) && (
                 <>
                   <span className="flex-1 truncate">{item.name}</span>
                   <ChevronDownIcon
@@ -174,7 +202,7 @@ export function Navigation() {
             <CollapsibleContent
               className={cn(
                 "transition-all data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down",
-                isOpen || isMobile || isTablet ? "pl-8" : "pl-0"
+                open || isMobile || isTablet ? "pl-8" : "pl-0"
               )}
             >
               <div className="space-y-1 py-1 relative">
@@ -221,7 +249,7 @@ export function Navigation() {
             )}
           />
         )}
-        {(isOpen || isMobile || isTablet) && (
+        {(open || isMobile || isTablet) && (
           <>
             <span className="flex-1 truncate">{item.name}</span>
             {shortcutKey && (
@@ -235,7 +263,7 @@ export function Navigation() {
     );
 
     // Wrap in Link if href exists
-    return isOpen || isMobile || isTablet ? (
+    return open || isMobile || isTablet ? (
       <Link key={item.name} href={item.href} className="group relative block">
         {itemContent}
       </Link>
@@ -268,6 +296,40 @@ export function Navigation() {
       )}
     >
       {navItems.map((item) => renderNavItem(item))}
+
+      {/* Logout button as a navigation item */}
+      <div className="nav-item mt-8 border-t border-gray-200 pt-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleLogout}
+              className={`
+                sidebar-transition
+                ${
+                  open
+                    ? "sidebar-expanded-item"
+                    : "flex items-center justify-center h-10 w-10 mx-auto rounded-md"
+                }
+              `}
+            >
+              <LogOutIcon className="h-5 w-5 text-gray-500" />
+              {open && (
+                <span className="text-sm font-medium text-gray-900 ml-3">
+                  Logout
+                </span>
+              )}
+            </button>
+          </TooltipTrigger>
+          {!open && (
+            <TooltipContent
+              side="right"
+              className="font-medium sidebar-tooltip"
+            >
+              Logout
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </div>
     </div>
   );
 }
