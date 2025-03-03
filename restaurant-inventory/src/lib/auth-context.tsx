@@ -1,13 +1,27 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { User as AppUser } from "./types";
+import { User } from "./types";
+
+// Define minimal types to avoid dependencies
+type Session = {
+  user: {
+    id: string;
+  };
+};
+
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    name?: string;
+  };
+};
 
 type AuthContextType = {
-  user: User | null;
-  profile: AppUser | null;
+  user: SupabaseUser | null;
+  profile: User | null;
   session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -24,42 +38,56 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<AppUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionData = data.session as Session | null;
 
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
+        setSession(sessionData);
+        setUser(sessionData?.user ?? null);
+
+        if (sessionData?.user) {
+          await fetchProfile(sessionData.user.id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
         setIsLoading(false);
       }
-    });
+    };
+
+    initAuth();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session as Session | null);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setIsLoading(false);
-      }
-    });
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setIsLoading(false);
+        }
+      });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        data.subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error("Error setting up auth listener:", error);
+      setIsLoading(false);
+      return () => {};
+    }
   }, []);
 
   // Fetch user profile from the database
@@ -75,14 +103,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: userData, error: userError } =
         await supabase.auth.getUser();
 
-      if (userError) {
-        console.error("Error getting user in fetchProfile:", userError);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!userData?.user) {
-        console.error("No user data available in fetchProfile");
+      if (userError || !userData?.user) {
+        console.error(
+          "Error getting user in fetchProfile:",
+          userError || "No user data"
+        );
         setIsLoading(false);
         return;
       }
@@ -102,8 +127,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const name = userData.user.user_metadata?.name || "User";
             const email = userData.user.email || "";
-
-            console.log("Creating new profile for user:", userId, name, email);
 
             // Create a new profile
             const { error: insertError } = await supabase
@@ -127,7 +150,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 name,
                 role: "staff",
               });
-              console.log("Created new profile for user:", userId);
             }
           } catch (createError) {
             console.error("Error in profile creation process:", createError);
@@ -140,21 +162,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: data.name,
           role: data.role,
         });
-        console.log("Fetched existing profile for user:", userId);
       } else {
-        console.error("No profile data returned but no error");
-
         // If no data and no error, create a profile as a fallback
         try {
           const name = userData.user.user_metadata?.name || "User";
           const email = userData.user.email || "";
-
-          console.log(
-            "Creating fallback profile for user:",
-            userId,
-            name,
-            email
-          );
 
           // Create a new profile
           const { error: insertError } = await supabase
@@ -178,7 +190,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               name,
               role: "staff",
             });
-            console.log("Created fallback profile for user:", userId);
           }
         } catch (createError) {
           console.error("Error in fallback profile creation:", createError);

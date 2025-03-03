@@ -1,7 +1,5 @@
-// Inventory Item interface
-import { CurrencyCode } from "./currency-context";
-
-export interface InventoryItem {
+// Ingredient interface
+export interface Ingredient {
     id: string;
     name: string;
     category: string;
@@ -9,38 +7,6 @@ export interface InventoryItem {
     unit: string;
     reorderLevel: number;
     cost: number;
-    expiryDate?: string; // Optional expiry date in ISO format
-    supplierId?: string; // Optional reference to supplier
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface IngredientRow {
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    reorder_level: number;
-    cost: number;
-    expiry_date?: string;
-    supplier_id?: string;
-    created_at: string;
-    updated_at: string;
-}
-
-// Alias for backward compatibility
-export type Ingredient = InventoryItem;
-
-// Supplier interface
-export interface Supplier {
-    id: string;
-    name: string;
-    contactName: string;
-    email: string;
-    phone: string;
-    address: string;
-    notes?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -72,14 +38,6 @@ export interface Sale {
     createdAt: string;
 }
 
-// User interface
-export interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: 'admin' | 'manager' | 'staff' | 'owner';
-}
-
 // Dashboard stats interface
 export interface DashboardStats {
     totalInventoryValue: number;
@@ -98,126 +56,124 @@ export interface StockAlert {
     category: string;
 }
 
-// Note interface
-export interface Note {
-    id: string;
-    content: string;
-    tags: string[];
-    entityType: 'inventory' | 'supplier' | 'sale' | 'general';
-    entityId?: string; // Optional reference to the entity (inventory item, supplier, or sale)
-    createdBy: string;
-    createdAt: string;
-    updatedAt: string;
-}
+// Basic types used throughout the application
 
-// Note Tag interface
-export interface NoteTag {
-    id: string;
-    name: string;
-    color: string;
-    createdAt: string;
-}
+// User profile type
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role?: "admin" | "manager" | "staff";
+  avatar_url?: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+};
 
-// Business Profile interface
-export interface BusinessProfile {
-    id: string;
-    name: string;
-    type: 'cafe' | 'fast_food' | 'fine_dining' | 'casual_dining' | 'bakery' | 'bar' | 'other';
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-    phone: string;
-    email: string;
-    website?: string;
-    logo?: string;
-    operatingHours: {
-        monday: { open: string; close: string; closed: boolean };
-        tuesday: { open: string; close: string; closed: boolean };
-        wednesday: { open: string; close: string; closed: boolean };
-        thursday: { open: string; close: string; closed: boolean };
-        friday: { open: string; close: string; closed: boolean };
-        saturday: { open: string; close: string; closed: boolean };
-        sunday: { open: string; close: string; closed: boolean };
-    };
-    defaultCurrency: CurrencyCode;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
-}
+// Inventory item type
+export type InventoryItem = {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  unit: string;
+  quantity: number;
+  cost_per_unit: number;
+  minimum_stock_level?: number;
+  reorder_point?: number;
+  supplier_id?: string;
+  location?: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
-// Subscription related types
-export interface SubscriptionPlan {
-    id: string;
-    name: string;
-    description: string;
-    features: string[];
-    monthlyPrice: number;
-    yearlyPrice: number;
-    price?: number; // Price based on selected interval
-    interval?: string; // "monthly" or "yearly"
-    currency: string;
-    isPopular?: boolean;
-    priority: number;
-}
+// Supplier type
+export type Supplier = {
+  id: string;
+  name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  notes?: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
-export interface Subscription {
-    id: string;
-    userId: string;
-    planId: string;
-    plan?: SubscriptionPlan;
-    status: "active" | "canceled" | "incomplete" | "incomplete_expired" | "past_due" | "trialing" | "unpaid" | "paused";
-    currentPeriodStart: string;
-    currentPeriodEnd: string;
-    cancelAtPeriodEnd: boolean;
-    createdAt: string;
-    updatedAt: string;
-    billingInterval: "monthly" | "yearly";
-    trialEnd: string | null;
-    pausedAt: string | null;
-    resumesAt: string | null;
-}
+// Recipe type
+export type Recipe = {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  preparation_time?: number;
+  cooking_time?: number;
+  serving_size: number;
+  cost_per_serving?: number;
+  selling_price?: number;
+  ingredients: RecipeIngredient[];
+  instructions?: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
-export interface PaymentMethod {
-    id: string;
-    userId: string;
-    type: "card" | "bank_account";
-    cardBrand?: string;
-    cardLastFour?: string;
-    expiryMonth?: number;
-    expiryYear?: number;
-    isDefault: boolean;
-    billingDetails: {
-        name: string;
-        line1?: string;
-        line2?: string;
-        city?: string;
-        state?: string;
-        postalCode?: string;
-        country?: string;
-    };
-    createdAt: string;
-}
+// Recipe ingredient type
+export type RecipeIngredient = {
+  id: string;
+  recipe_id: string;
+  inventory_item_id: string;
+  quantity: number;
+  unit: string;
+  inventory_item?: InventoryItem;
+};
 
-export interface InvoiceItem {
-    id: string;
-    description: string;
-    amount: number;
-    quantity: number;
-}
+// Sales transaction type
+export type SalesTransaction = {
+  id: string;
+  date: Date | string;
+  total_amount: number;
+  discount?: number;
+  tax?: number;
+  payment_method: string;
+  items: SalesItem[];
+  created_at: Date | string;
+  updated_at: Date | string;
+};
 
-export interface Invoice {
-    id: string;
-    userId: string;
-    subscriptionId: string;
-    invoiceNumber: string;
-    amount: number;
-    currency: string;
-    status: "draft" | "open" | "paid" | "uncollectible" | "void";
-    invoiceDate: string;
-    dueDate: string;
-    paidAt: string | null;
-    pdf: string | null;
-    items: InvoiceItem[];
-} 
+// Sales item type
+export type SalesItem = {
+  id: string;
+  transaction_id: string;
+  recipe_id: string;
+  quantity: number;
+  price_per_unit: number;
+  recipe?: Recipe;
+};
+
+// Purchase order type
+export type PurchaseOrder = {
+  id: string;
+  supplier_id: string;
+  order_date: Date | string;
+  expected_delivery_date?: Date | string;
+  status: "pending" | "approved" | "delivered" | "cancelled";
+  total_amount: number;
+  items: PurchaseOrderItem[];
+  notes?: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+  supplier?: Supplier;
+};
+
+// Purchase order item type
+export type PurchaseOrderItem = {
+  id: string;
+  purchase_order_id: string;
+  inventory_item_id: string;
+  quantity: number;
+  cost_per_unit: number;
+  inventory_item?: InventoryItem;
+};

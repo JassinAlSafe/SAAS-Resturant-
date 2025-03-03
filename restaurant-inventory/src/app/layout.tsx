@@ -7,7 +7,6 @@ import { CurrencyProvider } from "@/lib/currency-context";
 import { PermissionProvider } from "@/lib/permission-context";
 import { NotificationContainer } from "@/components/ui/notification";
 import { ThemeProvider } from "@/components/theme-provider";
-import { TransitionProvider } from "@/components/ui/transition";
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -35,11 +34,9 @@ export default function RootLayout({
             <NotificationProvider>
               <CurrencyProvider>
                 <PermissionProvider>
-                  <TransitionProvider>
-                    {children}
-                    <NotificationContainer />
-                    <Toaster />
-                  </TransitionProvider>
+                  {children}
+                  <NotificationContainer />
+                  <Toaster />
                 </PermissionProvider>
               </CurrencyProvider>
             </NotificationProvider>
