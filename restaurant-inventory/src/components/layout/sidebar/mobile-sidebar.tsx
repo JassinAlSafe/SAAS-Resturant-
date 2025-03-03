@@ -10,16 +10,29 @@ import { Navigation } from "./navigation";
 import { UserProfile } from "./user-profile";
 import { HeaderSearch } from "./header-search";
 import { useAuth } from "@/lib/auth-context";
+import { SidebarContextType } from "./types";
 
 export function MobileSidebar() {
   const { openMobile, setMobileOpen } = useSidebarStore();
   const { signOut } = useAuth();
+  const [, setDummyState] = React.useState(true);
 
   const openNav = React.useCallback(() => setMobileOpen(true), [setMobileOpen]);
   const closeNav = React.useCallback(
     () => setMobileOpen(false),
     [setMobileOpen]
   );
+
+  // Create a sidebarContext object for components that need it
+  const sidebarContext: SidebarContextType = {
+    open: true, // Mobile sidebar is always expanded
+    setOpen: setDummyState, // Use a dummy setState function
+    state: "expanded",
+    isMobile: true,
+    openMobile,
+    setOpenMobile: setMobileOpen,
+    toggleSidebar: openNav,
+  };
 
   // Handle logout
   const handleLogout = React.useCallback(async () => {
@@ -127,7 +140,7 @@ export function MobileSidebar() {
           </div>
           <HeaderSearch />
           <div className="flex-1 px-2 py-2 overflow-y-auto scrollbar-thin">
-            <Navigation />
+            <Navigation sidebarContext={sidebarContext} />
           </div>
 
           {/* Logout Button */}
@@ -143,7 +156,7 @@ export function MobileSidebar() {
             </button>
           </div>
 
-          <UserProfile />
+          <UserProfile sidebarContext={sidebarContext} />
 
           {/* Swipe indicator - simplified */}
           <div className="p-1.5 text-center border-t">

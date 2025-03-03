@@ -2,14 +2,16 @@
 
 import * as React from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { SidebarContextType } from "./types";
 
 export function UserProfile({
   sidebarContext,
 }: {
-  sidebarContext: SidebarContextType;
+  sidebarContext?: SidebarContextType;
 }) {
-  const { open } = sidebarContext;
+  const { isOpen } = useSidebarStore();
+  const open = sidebarContext?.open ?? isOpen;
   const { profile } = useAuth();
 
   return (

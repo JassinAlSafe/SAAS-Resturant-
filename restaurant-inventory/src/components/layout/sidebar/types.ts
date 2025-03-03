@@ -21,7 +21,7 @@ export type SidebarContextType = {
     state: "expanded" | "collapsed";
     isMobile: boolean;
     openMobile: boolean;
-    setOpenMobile: React.Dispatch<React.SetStateAction<boolean>>;
+    setOpenMobile: React.Dispatch<React.SetStateAction<boolean>> | ((open: boolean) => void);
     toggleSidebar: () => void;
 };
 

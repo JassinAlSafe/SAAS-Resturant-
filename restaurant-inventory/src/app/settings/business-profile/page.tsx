@@ -12,9 +12,9 @@ const mockBusinessData = {
   basicInfo: {
     name: "Delicious Bites",
     email: "contact@deliciousbites.com",
-    phone: "+1 (555) 123-4567",
+    phone: "(555) 123-4567",
     website: "https://deliciousbites.com",
-    type: "restaurant" as const,
+    type: "casual_dining" as const,
   },
   address: {
     street: "123 Main Street",
