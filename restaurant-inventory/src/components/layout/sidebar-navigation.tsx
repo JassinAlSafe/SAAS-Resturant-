@@ -81,17 +81,45 @@ const sidebarStyles = `
     right: 0;
     height: 1px;
     background-color: rgba(0, 0, 0, 0.1);
+    dark:background-color: rgba(255, 255, 255, 0.1);
   }
   
   /* Custom styling for the user profile */
   .user-profile {
     border-top: 1px solid rgba(0, 0, 0, 0.1);
+    dark:border-top: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: auto;
+    padding-top: 12px;
   }
   
   /* Smooth transitions */
   .sidebar-transition {
     transition: all 0.3s ease;
+  }
+  
+  /* Mobile optimizations */
+  @media (max-width: 1024px) {
+    .sidebar-container {
+      width: 100%;
+      max-width: 280px;
+    }
+    
+    .nav-item button, .nav-item a {
+      padding: 12px 16px;
+    }
+    
+    .mobile-sidebar-overlay {
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    
+    .mobile-sidebar-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
   }
 `;
 
@@ -245,100 +273,73 @@ function Navigation({
             <CollapsibleTrigger asChild>
               <button
                 className={`
-                  w-full flex items-center justify-between px-2 py-2 rounded-md
-                  ${isActive ? "bg-gray-100 text-gray-900" : ""}
+                  w-full flex items-center justify-between px-3 py-2 rounded-md text-sm
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  ${isActive ? "bg-gray-100 dark:bg-gray-800 text-primary" : ""}
                   ${open ? "" : "justify-center"}
+                  transition-colors
                 `}
               >
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                   <Icon
-                    className={`h-5 w-5 ${
-                      isActive ? "text-gray-900" : "text-gray-500"
-                    }`}
+                    size={20}
+                    className={
+                      isActive
+                        ? "text-primary"
+                        : "text-gray-500 dark:text-gray-400"
+                    }
                   />
-                  {open && (
-                    <span className="text-sm font-medium text-gray-900 ml-3">
-                      {item.name}
-                    </span>
-                  )}
+                  {open && <span>{item.name}</span>}
                 </div>
                 {open && (
                   <ChevronDownIcon
-                    className={`h-4 w-4 transition-transform ${
-                      isExpanded ? "transform rotate-180" : ""
+                    size={16}
+                    className={`transform transition-transform ${
+                      isExpanded ? "rotate-180" : ""
                     }`}
                   />
                 )}
               </button>
             </CollapsibleTrigger>
-
-            {!open && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="sr-only">{item.name}</span>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="font-medium sidebar-tooltip"
-                >
-                  {item.name}
-                </TooltipContent>
-              </Tooltip>
-            )}
-
             <CollapsibleContent>
               {open && (
-                <ul className="pl-7 mt-1 space-y-1">
-                  {item.items.map((childItem) =>
-                    renderNavItem(childItem, depth + 1)
-                  )}
+                <ul className="mt-1 ml-7 space-y-1">
+                  {item.items.map((child) => renderNavItem(child, depth + 1))}
                 </ul>
               )}
             </CollapsibleContent>
           </Collapsible>
         </li>
       );
-    } else {
-      const isActive =
-        pathname === item.href || pathname.startsWith(`${item.href}/`);
-      const Icon = item.icon;
-
-      return (
-        <li key={item.href} className={`nav-item ${item.className || ""}`}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href={item.href}
-                className={`
-                  sidebar-transition flex items-center px-2 py-2 rounded-md
-                  ${open ? "" : "justify-center"}
-                  ${isActive ? "bg-gray-100 text-gray-900" : ""}
-                `}
-              >
-                <Icon
-                  className={`h-5 w-5 ${
-                    isActive ? "text-gray-900" : "text-gray-500"
-                  }`}
-                />
-                {open && (
-                  <span className="text-sm font-medium text-gray-900 ml-3">
-                    {item.name}
-                  </span>
-                )}
-              </Link>
-            </TooltipTrigger>
-            {!open && (
-              <TooltipContent
-                side="right"
-                className="font-medium sidebar-tooltip"
-              >
-                {item.name}
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </li>
-      );
     }
+
+    // Item with href (leaf node)
+    const isActive =
+      pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const Icon = item.icon;
+
+    return (
+      <li key={item.name} className={`nav-item ${item.className || ""}`}>
+        <Link
+          href={item.href}
+          className={`
+            flex items-center gap-3 px-3 py-2 rounded-md text-sm
+            hover:bg-gray-100 dark:hover:bg-gray-800
+            ${isActive ? "bg-gray-100 dark:bg-gray-800 text-primary" : ""}
+            ${open ? "" : "justify-center"}
+            transition-colors
+          `}
+        >
+          <Icon
+            size={20}
+            className={
+              isActive ? "text-primary" : "text-gray-500 dark:text-gray-400"
+            }
+          />
+          {open && <span>{item.name}</span>}
+        </Link>
+      </li>
+    );
   };
 
   return (
@@ -416,192 +417,186 @@ function UserProfile({
 
 // Main sidebar layout component
 function SidebarLayout() {
-  // Since we removed SidebarProvider, we need to manage state directly
-  const [open, setOpen] = React.useState(true); // Default to open for wider sidebar
+  const [open, setOpen] = React.useState(true);
+  const [openMobile, setOpenMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [state, setState] = React.useState<"expanded" | "collapsed">(
+    "expanded"
+  );
   const children = React.useContext(SidebarChildrenContext);
   const { profile } = useAuth();
-  const [isMobile, setIsMobile] = React.useState(
-    typeof window !== "undefined" ? window.innerWidth < 768 : false
-  );
-  const [openMobile, setOpenMobile] = React.useState(false);
 
-  // Add resize listener
+  // Check if we're on mobile on component mount and window resize
   React.useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 1024; // Increased breakpoint to include tablets
+      setIsMobile(mobile);
+
+      // Only force sidebar state on initial detection of mobile/desktop
+      // Don't override user's preference when resizing
+      if (mobile && !isMobile) {
+        // When switching from desktop to mobile, close the sidebar
+        setOpen(false);
+      }
     };
 
-    // Set initial value
+    // Run once on mount
     handleResize();
 
-    // Add event listener
     window.addEventListener("resize", handleResize);
-
-    // Clean up
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [open, isMobile]);
 
-  // Create a mock useSidebar context for components that need it
+  // Get the saved sidebar state from localStorage when component mounts
+  React.useEffect(() => {
+    // Only read local storage on desktop
+    if (!isMobile) {
+      const savedState = localStorage.getItem("sidebar_state");
+      if (savedState) {
+        setOpen(savedState === "true");
+      }
+    }
+  }, [isMobile]);
+
+  // Update state when open changes
+  React.useEffect(() => {
+    setState(open ? "expanded" : "collapsed");
+  }, [open]);
+
+  const toggleSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(!openMobile);
+    } else {
+      const newState = !open;
+      setOpen(newState);
+      // Save sidebar state to localStorage for desktop
+      localStorage.setItem("sidebar_state", String(newState));
+    }
+  };
+
+  // Create sidebar context with our state
   const sidebarContext: SidebarContextType = {
     open,
     setOpen,
-    state: open ? "expanded" : "collapsed",
+    state,
     isMobile,
     openMobile,
     setOpenMobile,
-    toggleSidebar: () =>
-      isMobile ? setOpenMobile(!openMobile) : setOpen(!open),
+    toggleSidebar,
   };
 
   return (
     <TooltipProvider>
-      <>
-        {/* Style tag to fix sidebar width issue */}
-        <style dangerouslySetInnerHTML={{ __html: sidebarStyles }} />
-
-        {/* Sidebar - desktop version */}
-        <div
-          className={`hidden md:flex flex-col h-full border-r border-gray-200 bg-white flex-shrink-0 sidebar-transition relative ${
-            open ? "w-72" : "w-20"
-          }`}
-        >
-          {/* Logo */}
-          <div className="flex items-center h-16 px-4 border-b border-gray-200">
-            {open ? (
-              <div className="flex items-center">
-                <span className="text-2xl font-bold text-gray-900">
-                  ShelfWise
-                </span>
-                <span className="text-sm text-gray-500 ml-2">Inventory</span>
-              </div>
-            ) : (
-              <div className="w-full flex justify-center">
-                <span className="text-2xl font-bold text-gray-900">S</span>
-              </div>
-            )}
-          </div>
-
-          {/* Navigation - with more spacing between items */}
-          <div className="flex-1 py-6">
-            <Navigation sidebarContext={sidebarContext} />
-          </div>
-
-          {/* User profile - positioned at bottom */}
-          <UserProfile sidebarContext={sidebarContext} />
-
-          {/* Toggle button - positioned on the right edge of the sidebar */}
-          <div className="absolute -right-4 top-20 z-10">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full h-8 w-8 border border-gray-200 bg-white shadow-sm flex items-center justify-center"
-              onClick={() => setOpen(!open)}
-              aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              {open ? (
-                <ChevronLeftIcon size={16} />
-              ) : (
-                <ChevronRightIcon size={16} />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Main content area - using flex-1 to take up remaining space */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-background main-content">
-          {/* Header with search and notifications */}
-          <header className="h-16 border-b border-border bg-background flex items-center justify-between px-4 flex-shrink-0">
-            <h1 className="text-xl font-bold text-foreground">ShelfWise</h1>
-
-            <div className="flex items-center gap-4">
-              {/* Search bar */}
-              <div className="relative hidden md:flex items-center">
-                <div className="absolute left-3 text-muted-foreground">
-                  <SearchIcon size={18} />
-                </div>
-                <Input
-                  placeholder="Search Anything..."
-                  className="w-64 pl-10 h-9 bg-background border-border"
-                />
-              </div>
-
-              {/* Refresh button */}
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <RefreshCwIcon size={18} />
-              </Button>
-
-              {/* Theme toggle */}
-              <ThemeToggle />
-
-              {/* Notification bell */}
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <BellIcon size={18} />
-              </Button>
-
-              {/* User avatar (mobile only) */}
-              <div className="md:hidden w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-                <span className="text-xs font-semibold">
-                  {profile?.name ? profile.name.charAt(0).toUpperCase() : "S"}
-                </span>
-              </div>
-            </div>
-          </header>
-
-          {/* Main content - using flex-1 to take up remaining space */}
-          <main className="flex-1 overflow-auto p-4 md:p-6 bg-background">
-            <div className="w-full h-full">{children}</div>
-          </main>
-        </div>
-
-        {/* Mobile sidebar trigger */}
-        <div className="md:hidden fixed bottom-4 right-4 z-50">
-          <Button
-            onClick={() => sidebarContext.toggleSidebar()}
-            className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center shadow-lg"
+      <div className="flex h-screen w-full overflow-hidden">
+        {/* For desktop: normal sidebar */}
+        {!isMobile && (
+          <div
+            className={`sidebar-container sidebar-transition ${
+              open ? "w-64" : "w-16"
+            } h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 z-30 fixed top-0 left-0`}
           >
-            <MenuIcon size={24} />
-          </Button>
-        </div>
+            <div className="flex flex-col h-full">
+              <div className="p-4 flex items-center justify-between">
+                {open && (
+                  <div className="text-lg font-semibold">
+                    Restaurant Inventory
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleSidebar}
+                  aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+                  className={`${
+                    open ? "ml-auto" : "mx-auto"
+                  } hover:bg-gray-100 dark:hover:bg-gray-800`}
+                >
+                  {open ? (
+                    <ChevronLeftIcon size={18} />
+                  ) : (
+                    <ChevronRightIcon size={18} />
+                  )}
+                </Button>
+              </div>
+              <Navigation sidebarContext={sidebarContext} />
+              <UserProfile sidebarContext={sidebarContext} />
+            </div>
+          </div>
+        )}
 
-        {/* Mobile sidebar */}
+        {/* For mobile: sheet/dialog style sidebar with overlay */}
         {isMobile && openMobile && (
-          <div className="fixed inset-0 z-50 bg-black/50">
-            <div className="fixed inset-y-0 left-0 w-72 bg-white p-0">
-              {/* Logo */}
-              <div className="flex items-center h-16 px-4 border-b border-gray-200">
-                <div className="flex items-center">
-                  <span className="text-2xl font-bold text-gray-900">
-                    ShelfWise
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2">Inventory</span>
+          <div className="fixed inset-0 z-40 flex">
+            <div
+              className="fixed inset-0 bg-black/50 mobile-sidebar-overlay transition-opacity"
+              onClick={() => setOpenMobile(false)}
+            />
+            <div className="fixed inset-y-0 left-0 w-full max-w-[280px] bg-white dark:bg-gray-950 shadow-xl flex flex-col h-full z-50">
+              <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
+                <div className="text-lg font-semibold">
+                  Restaurant Inventory
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setOpenMobile(false)}
-                  className="ml-auto text-gray-400"
+                  aria-label="Close sidebar"
                 >
-                  <ChevronLeftIcon />
+                  <ChevronLeftIcon size={18} />
                 </Button>
               </div>
-
-              {/* Navigation */}
-              <div className="py-6">
+              <div className="flex-1 overflow-y-auto">
                 <Navigation
                   sidebarContext={{ ...sidebarContext, open: true }}
                 />
               </div>
-
-              {/* User profile */}
-              <div className="absolute bottom-0 left-0 right-0">
-                <UserProfile
-                  sidebarContext={{ ...sidebarContext, open: true }}
-                />
-              </div>
+              <UserProfile sidebarContext={{ ...sidebarContext, open: true }} />
             </div>
           </div>
         )}
-      </>
+
+        {/* Mobile toggle button - only visible on mobile */}
+        {isMobile && !openMobile && (
+          <Button
+            className="mobile-sidebar-toggle rounded-full p-3 bg-primary text-white shadow-lg"
+            onClick={() => setOpenMobile(true)}
+            aria-label="Open menu"
+          >
+            <MenuIcon size={24} />
+          </Button>
+        )}
+
+        {/* Main content */}
+        <div className="flex-1 h-screen overflow-hidden">
+          <div
+            className={`main-content h-full overflow-auto bg-gray-50 dark:bg-gray-900 transition-all duration-200 ease-in-out ${
+              !isMobile ? (open ? "ml-64" : "ml-16") : ""
+            }`}
+          >
+            <div className="min-h-full">
+              {isMobile && (
+                <div className="p-4 flex items-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+                  <div className="text-lg font-semibold">
+                    Restaurant Inventory
+                  </div>
+                  <div className="ml-auto">
+                    <ThemeToggle />
+                  </div>
+                </div>
+              )}
+              {!isMobile && (
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center">
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                  </div>
+                </div>
+              )}
+              <main className="p-4 md:p-6">{children}</main>
+            </div>
+          </div>
+        </div>
+      </div>
     </TooltipProvider>
   );
 }
@@ -612,11 +607,7 @@ const SidebarChildrenContext = React.createContext<React.ReactNode>(null);
 export function SidebarNavigation({ children }: { children: React.ReactNode }) {
   return (
     <SidebarChildrenContext.Provider value={children}>
-      {/* Use a direct flex layout instead of relying on the SidebarProvider's internal structure */}
-      <div className="flex h-screen w-full overflow-hidden bg-background">
-        {/* Our custom sidebar is already handling everything, so we don't need the SidebarProvider */}
-        <SidebarLayout />
-      </div>
+      <SidebarLayout />
     </SidebarChildrenContext.Provider>
   );
 }
