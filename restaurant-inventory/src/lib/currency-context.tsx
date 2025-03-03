@@ -29,9 +29,19 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(
   undefined
 );
 
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  // Default to SEK
-  const [currency, setCurrency] = useState<Currency>(CURRENCIES.SEK);
+export interface CurrencyProviderProps {
+  children: React.ReactNode;
+  defaultCurrency?: CurrencyCode;
+}
+
+export function CurrencyProvider({
+  children,
+  defaultCurrency = "SEK",
+}: CurrencyProviderProps) {
+  // Default to SEK or the provided default
+  const [currency, setCurrency] = useState<Currency>(
+    CURRENCIES[defaultCurrency]
+  );
 
   // Load saved currency preference from localStorage on client side
   useEffect(() => {

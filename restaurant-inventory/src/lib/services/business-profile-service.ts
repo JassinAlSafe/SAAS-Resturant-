@@ -53,7 +53,7 @@ const defaultBusinessProfile: Omit<BusinessProfile, "id" | "created_at" | "updat
         saturday: { open: "12:00", close: "23:00", closed: false },
         sunday: { open: "12:00", close: "21:00", closed: false },
     },
-    defaultCurrency: "SEK",
+    defaultCurrency: "USD",
 };
 
 // Helper function to convert snake_case database fields to camelCase
@@ -100,8 +100,8 @@ function transformForDatabase(data: Partial<BusinessProfile>): Record<string, un
     return result;
 }
 
-// Business profile service
-export const businessProfileService = {
+// Create the business profile service object
+const businessProfileService = {
     // Clean up duplicate profiles
     cleanupDuplicateProfiles: async (userId: string): Promise<void> => {
         try {
@@ -596,6 +596,69 @@ export const businessProfileService = {
         }
     },
 
+    // Upload logo using a placeholder image (temporary solution)
+    uploadLogoWithPlaceholder: async (
+        userId: string,
+        logoFile: File
+    ): Promise<BusinessProfile> => {
+        try {
+            // Validate the file type
+            const validMimeTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!validMimeTypes.includes(logoFile.type)) {
+                throw new Error(`Unsupported file type: ${logoFile.type}. Please use PNG, JPEG, GIF, WebP, or SVG.`);
+            }
+
+            console.log(`Processing logo upload for user ${userId}, file type: ${logoFile.type}`);
+
+            // Get the current profile
+            const { data: profiles, error: fetchError } = await supabase
+                .from('business_profiles')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (fetchError || !profiles || profiles.length === 0) {
+                throw new Error(`No profile found for user ${userId}`);
+            }
+
+            const profile = profiles[0];
+
+            // For now, use a placeholder image service instead of actual uploads
+            // This avoids storage permission issues until they can be properly configured
+            const width = 300;
+            const height = 300;
+            const logoUrl = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
+
+            // Log that we're using a placeholder
+            console.log('Using placeholder image URL due to storage permission issues:', logoUrl);
+
+            // Update the profile with the new logo URL
+            const { data, error } = await supabase
+                .from('business_profiles')
+                .update({
+                    logo: logoUrl,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', profile.id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error updating logo in profile:', error);
+                throw new Error(`Failed to update logo: ${error.message}`);
+            }
+
+            console.log('Successfully updated profile with new logo URL');
+            return transformDatabaseResponse(data as BusinessProfileDatabase);
+        } catch (error) {
+            console.error('Error in uploadLogoWithPlaceholder:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('Failed to upload logo');
+        }
+    },
+
     // Upload logo
     uploadLogo: async (
         userId: string,
@@ -608,72 +671,18 @@ export const businessProfileService = {
                 throw new Error(`Unsupported file type: ${logoFile.type}. Please use PNG, JPEG, GIF, WebP, or SVG.`);
             }
 
-            console.log(`Starting logo upload process for user ${userId}, file type: ${logoFile.type}`);
-
-            // Check storage policies before attempting upload
-            try {
-                console.log('Checking storage policies...');
-                const policiesResponse = await fetch('/api/check-storage-policies');
-
-                if (!policiesResponse.ok) {
-                    console.error('Error checking policies:', await policiesResponse.text());
-                } else {
-                    const policiesData = await policiesResponse.json();
-                    console.log('Current policies:', policiesData.policies?.length || 0);
-                    console.log('Permission test result:', policiesData.permissionTest?.success);
-
-                    // If we can't upload, force a policy update
-                    if (!policiesData.permissionTest?.success) {
-                        console.log('Upload permission test failed, forcing policy update...');
-                        const setupResponse = await fetch('/api/setup-storage-bucket?force=true');
-
-                        if (!setupResponse.ok) {
-                            console.error('Failed to update policies:', await setupResponse.text());
-                        } else {
-                            console.log('Successfully updated storage policies');
-                        }
-                    }
-                }
-            } catch (policyError) {
-                console.error('Error checking policies:', policyError);
-                // Continue anyway, we'll handle upload errors if they occur
+            // Check file size (max 2MB)
+            const maxSizeInBytes = 2 * 1024 * 1024; // 2MB
+            if (logoFile.size > maxSizeInBytes) {
+                throw new Error(`File size exceeds the 2MB limit. Please compress your image or choose a smaller file.`);
             }
 
-            // First check if the bucket exists using regular client
-            const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+            console.log(`Processing logo upload for user ${userId}, file type: ${logoFile.type}, size: ${logoFile.size} bytes`);
 
-            if (bucketsError) {
-                console.error('Error checking buckets:', bucketsError);
-                throw new Error(`Failed to check storage buckets: ${bucketsError.message}`);
-            }
-
-            const bucketExists = buckets?.some(bucket => bucket.name === 'business_assets');
-
-            // Create the bucket if it doesn't exist - use API endpoint instead of direct admin access
-            if (!bucketExists) {
-                console.log('Bucket does not exist, setting up through API...');
-
-                // Use the API endpoint instead of direct admin client
-                try {
-                    const response = await fetch('/api/setup-storage-bucket?force=true');
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Failed to create storage bucket: ${errorData.message || errorData.error || 'Unknown error'}`);
-                    }
-
-                    console.log('Successfully created business_assets bucket via API.');
-                } catch (setupError) {
-                    console.error('Error setting up bucket via API:', setupError);
-                    throw setupError instanceof Error
-                        ? setupError
-                        : new Error('Failed to set up storage bucket');
-                }
-            }
-
-            // Get the most recent profile
+            // Get the current profile
             const { data: profiles, error: fetchError } = await supabase
                 .from('business_profiles')
-                .select('id')
+                .select('*')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(1);
@@ -682,84 +691,49 @@ export const businessProfileService = {
                 throw new Error(`No profile found for user ${userId}`);
             }
 
-            const profileId = profiles[0].id;
+            const profile = profiles[0];
 
-            // Upload the file to Supabase Storage
-            const fileName = `${userId}_logo_${Date.now()}`;
+            // Generate a unique file name with timestamp and random string
+            const timestamp = new Date().getTime();
+            const randomString = Math.random().toString(36).substring(2, 10);
             const fileExt = logoFile.name.split('.').pop();
-            const filePath = `logos/${fileName}.${fileExt}`;
+            const fileName = `${userId}/logo-${timestamp}-${randomString}.${fileExt}`;
 
-            console.log(`Attempting to upload file to path: ${filePath} with type: ${logoFile.type}`);
+            // Upload the file to the restaurant-icons bucket
+            const { error: uploadError } = await supabase.storage
+                .from('restaurant-icons')
+                .upload(fileName, logoFile, {
+                    cacheControl: '3600',
+                    upsert: true,
+                    contentType: logoFile.type
+                });
 
-            // Try to upload with specific options
-            const uploadOptions = {
-                cacheControl: '3600',
-                upsert: true,
-                contentType: logoFile.type // Explicitly set the content type
-            };
-
-            // Try multiple approaches to uploading
-            let uploadError = null;
-
-            // First attempt - directly upload the file
-            console.log('Attempt 1: Direct upload');
-            let uploadResult = await supabase.storage
-                .from('business_assets')
-                .upload(filePath, logoFile, uploadOptions);
-
-            if (uploadResult.error) {
-                uploadError = uploadResult.error;
-                console.error('Direct upload failed:', uploadError);
-
-                // Second attempt - ensure policies are set correctly
-                console.log('Attempt 2: Fixing policies and retrying');
-                const fixResponse = await fetch('/api/setup-storage-bucket?force=true');
-
-                if (!fixResponse.ok) {
-                    console.error('Failed to fix policies:', await fixResponse.text());
-                } else {
-                    console.log('Policies updated, retrying upload');
-
-                    // Wait a short time for policies to take effect
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-
-                    // Try upload again
-                    uploadResult = await supabase.storage
-                        .from('business_assets')
-                        .upload(filePath, logoFile, uploadOptions);
-
-                    if (uploadResult.error) {
-                        uploadError = uploadResult.error;
-                        console.error('Second upload attempt failed:', uploadError);
-                    } else {
-                        console.log('Second upload attempt succeeded');
-                        uploadError = null;
-                    }
-                }
-            } else {
-                console.log('Direct upload succeeded');
-            }
-
-            // If we still have an error after all attempts, throw an error
             if (uploadError) {
+                console.error('Error uploading logo:', uploadError);
                 throw new Error(`Failed to upload logo: ${uploadError.message}`);
             }
 
-            // Get the public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('business_assets')
-                .getPublicUrl(filePath);
+            // Generate a signed URL for the uploaded file
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                .from('restaurant-icons')
+                .createSignedUrl(fileName, 60 * 60 * 24 * 7); // 7 days expiry
 
-            console.log(`Successfully uploaded logo, public URL: ${publicUrl}`);
+            if (signedUrlError) {
+                console.error('Error generating signed URL:', signedUrlError);
+                throw new Error(`Failed to generate signed URL: ${signedUrlError.message}`);
+            }
 
-            // Update the business profile with the logo URL
+            const logoUrl = signedUrlData.signedUrl;
+
+            // Update the profile with the new logo URL and file path
             const { data, error } = await supabase
                 .from('business_profiles')
                 .update({
-                    logo: publicUrl,
+                    logo: logoUrl,
+                    logo_path: fileName, // Store the path for future reference
                     updated_at: new Date().toISOString()
                 })
-                .eq('id', profileId)  // Use ID instead of user_id
+                .eq('id', profile.id)
                 .select()
                 .single();
 
@@ -777,4 +751,101 @@ export const businessProfileService = {
                 : new Error('Failed to upload logo');
         }
     },
-}; 
+
+    // Update tax settings
+    updateTaxSettings: async (
+        userId: string,
+        taxSettings: { rate: number; enabled: boolean; name: string }
+    ): Promise<BusinessProfile> => {
+        try {
+            // In a real app, this would be an API call
+            console.log(`Updating tax settings for user ${userId}:`, taxSettings);
+
+            // Get the current profile
+            const profile = await businessProfileService.getBusinessProfile(userId);
+
+            // Update the tax settings
+            const updatedProfile = {
+                ...profile,
+                taxSettings: {
+                    rate: taxSettings.rate,
+                    enabled: taxSettings.enabled,
+                    name: taxSettings.name
+                }
+            };
+
+            // Save the updated profile
+            localStorage.setItem(`business_profile_${userId}`, JSON.stringify(updatedProfile));
+
+            return updatedProfile;
+        } catch (error) {
+            console.error("Error updating tax settings:", error);
+            throw new Error("Failed to update tax settings");
+        }
+    },
+
+    // Get a fresh signed URL for a logo
+    getLogoSignedUrl: async (logoPath: string, expiresIn: number = 3600): Promise<string> => {
+        try {
+            if (!logoPath) {
+                throw new Error('No logo path provided');
+            }
+
+            // Generate a signed URL for the file
+            const { data, error } = await supabase.storage
+                .from('restaurant-icons')
+                .createSignedUrl(logoPath, expiresIn);
+
+            if (error) {
+                console.error('Error generating signed URL:', error);
+                throw new Error(`Failed to generate signed URL: ${error.message}`);
+            }
+
+            return data.signedUrl;
+        } catch (error) {
+            console.error('Error in getLogoSignedUrl:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('Failed to get logo signed URL');
+        }
+    },
+
+    // Get a fresh signed URL with transformations (for image optimization)
+    getLogoSignedUrlWithTransform: async (
+        logoPath: string,
+        options: { width?: number; height?: number; quality?: number; resize?: 'cover' | 'contain' | 'fill' },
+        expiresIn: number = 3600
+    ): Promise<string> => {
+        try {
+            if (!logoPath) {
+                throw new Error('No logo path provided');
+            }
+
+            // Generate a signed URL with transformations
+            const { data, error } = await supabase.storage
+                .from('restaurant-icons')
+                .createSignedUrl(logoPath, expiresIn, {
+                    transform: {
+                        width: options.width,
+                        height: options.height,
+                        quality: options.quality,
+                        resize: options.resize,
+                    }
+                });
+
+            if (error) {
+                console.error('Error generating transformed signed URL:', error);
+                throw new Error(`Failed to generate transformed signed URL: ${error.message}`);
+            }
+
+            return data.signedUrl;
+        } catch (error) {
+            console.error('Error in getLogoSignedUrlWithTransform:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('Failed to get transformed logo signed URL');
+        }
+    },
+};
+
+export { businessProfileService }; 

@@ -17,6 +17,22 @@ const nextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+
+  // Configure allowed image domains
+  images: {
+    domains: [
+      "example.com",
+      "localhost",
+      "placehold.co",
+      "placekitten.com",
+      "picsum.photos",
+      "images.unsplash.com",
+      "via.placeholder.com",
+      "rnxfpfvvqwxcwwqbfvjj.supabase.co", // Supabase storage domain
+      "xzvqzxieczeznywlhfru.supabase.co", // Another Supabase storage domain
+      "github.com", // Added for user profile images
+    ],
+  },
 };
 
 module.exports = nextConfig;

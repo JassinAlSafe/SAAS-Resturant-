@@ -24,7 +24,7 @@ const CategoryStatsCard = ({
   categories,
 }: CategoryStatsCardProps) => {
   return (
-    <Card className={cn("overflow-hidden bg-white shadow-sm", className)}>
+    <Card className={cn("overflow-hidden bg-card shadow-sm", className)}>
       <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-6">
         <div>
           <CardTitle className="text-xl font-bold text-slate-800">

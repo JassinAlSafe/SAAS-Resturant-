@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context";
-import { NotificationProvider } from "@/lib/notification-context";
-import { CurrencyProvider } from "@/lib/currency-context";
-import { PermissionProvider } from "@/lib/permission-context";
-import { NotificationContainer } from "@/components/ui/notification";
+import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toaster";
-import { BusinessProfileProvider } from "@/lib/business-profile-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,17 +25,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <BusinessProfileProvider>
-              <CurrencyProvider>
-                <NotificationProvider>
-                  {children}
-                  <NotificationContainer />
-                  <Toaster />
-                </NotificationProvider>
-              </CurrencyProvider>
-            </BusinessProfileProvider>
-          </AuthProvider>
+          <Providers>{children}</Providers>
         </ThemeProvider>
       </body>
     </html>

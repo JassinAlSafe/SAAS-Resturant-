@@ -52,7 +52,7 @@ export function DesktopContent({ children }: DesktopContentProps) {
         width: "calc(100vw - " + (isOpen ? "16rem" : "4rem") + ")",
       }}
     >
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 flex items-center h-14 px-4">
+      <header className="sticky top-0 z-10 bg-sidebar border-b border-border/50 dark:border-border/30 flex items-center h-14 px-4">
         <Button
           variant="ghost"
           size="icon"

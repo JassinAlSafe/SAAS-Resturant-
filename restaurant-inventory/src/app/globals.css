@@ -58,12 +58,12 @@
   }
 
   .dark {
-    /* ShelfWise Dark Theme - Simple Black */
-    --background: 222.2 84% 4.9%;
+    /* ShelfWise Dark Theme - Deep Dark */
+    --background: 222 18% 8%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 16% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 16% 10%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
@@ -86,18 +86,18 @@
     --chart-4: 0 0% 55%;
     --chart-5: 0 0% 40%;
 
-    /* Sidebar - Dark grayscale version */
-    --sidebar: 0 0% 10%;
+    /* Sidebar - Darker grayscale version */
+    --sidebar: 222 18% 7%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 90%;
     --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent: 222 18% 10%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
+    --sidebar-border: 222 18% 12%;
     --sidebar-ring: 0 0% 70%;
-    --sidebar-background: 0 0% 10%;
-    --sidebar-hover: 0 0% 15%;
-    --sidebar-active: 0 0% 20%;
+    --sidebar-background: 222 18% 7%;
+    --sidebar-hover: 222 18% 10%;
+    --sidebar-active: 222 18% 13%;
     --sidebar-active-text: 0 0% 100%;
     --sidebar-icon: 0 0% 70%;
     --sidebar-icon-active: 0 0% 100%;

@@ -23,6 +23,7 @@ import {
   FiTrash2,
   FiUpload,
   FiShield,
+  FiDatabase,
 } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 import BusinessProfileForm from "@/components/settings/BusinessProfileForm";
@@ -67,6 +68,8 @@ import { createBackup, restoreFromBackup } from "@/lib/utils/backup";
 import BackupFileUpload from "@/components/settings/BackupFileUpload";
 import { deleteAccount } from "@/lib/utils/account";
 import { useRouter } from "next/navigation";
+import { SetupStorageBucket } from "@/components/settings/SetupStorageBucket";
+import { TestStorageUpload } from "@/components/settings/TestStorageUpload";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -522,6 +525,7 @@ export default function SettingsPage() {
           <TabsTrigger value="data">Data & Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="storage">Storage</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -954,6 +958,26 @@ export default function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="storage" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="md:col-span-2 lg:col-span-3">
+              <h2 className="text-2xl font-bold tracking-tight">
+                Storage Settings
+              </h2>
+              <p className="text-muted-foreground">
+                Storage functionality is currently using placeholder images due
+                to permission issues with the storage bucket. We're working on
+                resolving these issues to enable real file uploads.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <SetupStorageBucket />
+            <TestStorageUpload />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

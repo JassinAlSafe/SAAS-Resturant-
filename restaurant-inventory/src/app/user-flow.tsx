@@ -227,7 +227,7 @@ function FlowSection({
       className={`rounded-lg border-2 p-6 ${color}`}
     >
       <div className="flex items-center gap-4 mb-4">
-        <div className="flex items-center justify-center h-12 w-12 rounded-full bg-white border-2 border-current text-primary">
+        <div className="flex items-center justify-center h-12 w-12 rounded-full bg-card border-2 border-current text-primary">
           <span className="text-xl font-bold">{number}</span>
         </div>
         <div>
@@ -256,7 +256,7 @@ function FlowStep({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 bg-white rounded-md p-4 border shadow-sm">
+    <div className="flex-1 bg-card rounded-md p-4 border shadow-sm">
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
           {number}

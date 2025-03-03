@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { VisuallyHidden } from "@/components/ui/visually-hidden";
+import { useAuth } from "@/lib/auth-context";
+import Image from "next/image";
 
 // Keyboard navigation constants
 const KEY = {
@@ -31,6 +33,7 @@ const KEY = {
 export function DesktopSidebar() {
   const { isOpen, expandedSections, toggleSection, setOpen } =
     useSidebarStore();
+  const { signOut } = useAuth();
   const inventoryExpanded = expandedSections["inventory"] !== false;
   const menuSalesExpanded = expandedSections["menuSales"] !== false;
   const analyticsExpanded = expandedSections["analytics"] !== false;
@@ -155,11 +158,22 @@ export function DesktopSidebar() {
     }
   };
 
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // Redirect will happen automatically due to auth state change
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <aside
       aria-label="Main Navigation"
       className={cn(
-        "fixed h-screen bg-white dark:bg-gray-900 flex-col hidden md:flex z-30",
+        "fixed h-screen bg-sidebar flex-col hidden md:flex z-30",
+        isOpen ? "sidebar-expanded" : "sidebar-collapsed",
         "transition-all duration-500 ease-in-out overflow-hidden",
         "shadow-sm border-r border-gray-200 dark:border-gray-800",
         isOpen ? "w-64" : "w-16" // Increased from w-14 to w-16 for better visibility
@@ -172,12 +186,8 @@ export function DesktopSidebar() {
       {/* Toggle Button - positioned at center of right edge */}
       <button
         className={cn(
-          "absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 flex justify-center items-center",
-          "h-8 w-8 rounded-full shadow-md bg-white dark:bg-gray-800",
-          "text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary",
-          "transition-all duration-300 ease-in-out z-50", // Higher z-index to ensure visibility
-          "border border-gray-200 dark:border-gray-700",
-          "hidden md:flex" // Hide on mobile, only show on desktop
+          "h-8 w-8 rounded-full shadow-md bg-sidebar-accent flex items-center justify-center absolute -right-4 top-16 z-10",
+          "hover:bg-sidebar-hover"
         )}
         onClick={() => setOpen(!isOpen)}
         aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -213,10 +223,12 @@ export function DesktopSidebar() {
               }}
               onKeyDown={(e) => handleNavKeyDown(e, 0)}
             >
-              <img
+              <Image
                 src="https://github.com/shadcn.png"
                 alt="User"
-                className="w-6 h-6 rounded-full"
+                width={24}
+                height={24}
+                className="rounded-full"
               />
               <span className="text-sm font-medium flex-1">
                 Restaurant Manager
@@ -237,10 +249,12 @@ export function DesktopSidebar() {
                     }}
                     onKeyDown={(e) => handleNavKeyDown(e, 0)}
                   >
-                    <img
+                    <Image
                       src="https://github.com/shadcn.png"
                       alt="User"
-                      className="w-8 h-8 rounded-full"
+                      width={32}
+                      height={32}
+                      className="rounded-full"
                     />
                   </div>
                 </TooltipTrigger>
@@ -254,7 +268,7 @@ export function DesktopSidebar() {
           {/* Search Bar - only when expanded */}
           {isOpen && (
             <div className="relative mb-2 transition-all duration-300 ease-in-out">
-              <div className="relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="relative rounded-lg border border-border dark:border-border/30 bg-card dark:bg-card overflow-hidden">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                   <Search className="h-4 w-4" />
                 </div>
@@ -755,6 +769,49 @@ export function DesktopSidebar() {
               </TooltipProvider>
             )}
           </div>
+
+          {/* Logout Button */}
+          <div className={!isOpen ? "w-full flex justify-center" : ""}>
+            {isOpen ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-lg text-sm transition-all duration-300 ease-in-out px-2 py-1.5 w-full hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+                ref={(el) => {
+                  if (el) navRefs.current[18] = el;
+                }}
+                onKeyDown={(e) => handleNavKeyDown(e, 18)}
+                tabIndex={0}
+              >
+                <span className="text-lg" aria-hidden="true">
+                  🚪
+                </span>
+                <span>Logout</span>
+              </button>
+            ) : (
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center justify-center p-2 rounded-lg text-sm transition-all duration-300 ease-in-out hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ref={(el) => {
+                        if (el) navRefs.current[18] = el;
+                      }}
+                      onKeyDown={(e) => handleNavKeyDown(e, 18)}
+                      tabIndex={0}
+                    >
+                      <span className="text-lg" aria-hidden="true">
+                        🚪
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Logout</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
 
         {/* Footer section - fixed at bottom */}
@@ -783,20 +840,23 @@ export function DesktopSidebar() {
               <TooltipProvider>
                 <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
-                    <div className="flex justify-center">
-                      <NavigationItem
-                        icon="❓"
-                        href="/help"
-                        active={pathname === "/help"}
-                        collapsedMode
-                        refCallback={(el) => {
-                          if (el) navRefs.current[17] = el;
-                        }}
-                        onKeyDown={(e) => handleNavKeyDown(e, 17)}
-                        navIndex={17}
-                        focusIndex={focusIndex}
-                      />
-                    </div>
+                    <Link
+                      href="/help"
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-all duration-300 ease-in-out hover:bg-gray-100 dark:hover:bg-gray-800",
+                        pathname === "/help" &&
+                          "bg-primary/10 text-primary dark:bg-primary/20"
+                      )}
+                      ref={(el) => {
+                        if (el) navRefs.current[17] = el;
+                      }}
+                      onKeyDown={(e) => handleNavKeyDown(e, 17)}
+                      tabIndex={0}
+                    >
+                      <span className="text-lg" aria-hidden="true">
+                        ❓
+                      </span>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p>Help</p>
@@ -806,43 +866,42 @@ export function DesktopSidebar() {
             )}
           </div>
 
-          {/* Keyboard shortcuts info - only when expanded */}
+          {/* Keyboard Shortcuts - only when expanded */}
           {isOpen && (
-            <div className="transition-opacity duration-300 ease-in-out">
-              <div className="text-xs text-gray-500 dark:text-gray-400 px-2 space-y-1">
-                <div className="flex justify-between">
-                  <span className="inline-flex items-center gap-1">
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      ⌘
-                    </kbd>
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      K
-                    </kbd>
-                  </span>
-                  <span>Search</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="inline-flex items-center gap-1">
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      ⌘
-                    </kbd>
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      B
-                    </kbd>
-                  </span>
-                  <span>Toggle sidebar</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="inline-flex items-center gap-1">
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      ⌘
-                    </kbd>
-                    <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
-                      J
-                    </kbd>
-                  </span>
-                  <span>Focus sidebar</span>
-                </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-3 space-y-2">
+              <div className="text-sm font-medium mb-1">Keyboard Shortcuts</div>
+              <div className="flex justify-between">
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    ⌘
+                  </kbd>
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    K
+                  </kbd>
+                </span>
+                <span>Search</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    ⌘
+                  </kbd>
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    B
+                  </kbd>
+                </span>
+                <span>Toggle sidebar</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="inline-flex items-center gap-1">
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    ⌘
+                  </kbd>
+                  <kbd className="px-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded text-xs">
+                    J
+                  </kbd>
+                </span>
+                <span>Focus sidebar</span>
               </div>
             </div>
           )}

@@ -9,11 +9,28 @@ import { SidebarHeader } from "./sidebar-header";
 import { Navigation } from "./navigation";
 import { UserProfile } from "./user-profile";
 import { HeaderSearch } from "./header-search";
+import { useAuth } from "@/lib/auth-context";
 
 export function MobileSidebar() {
-  const { openMobile, toggleMobile, setMobileOpen } = useSidebarStore();
-  const openNav = () => setMobileOpen(true);
-  const closeNav = () => setMobileOpen(false);
+  const { openMobile, setMobileOpen } = useSidebarStore();
+  const { signOut } = useAuth();
+
+  const openNav = React.useCallback(() => setMobileOpen(true), [setMobileOpen]);
+  const closeNav = React.useCallback(
+    () => setMobileOpen(false),
+    [setMobileOpen]
+  );
+
+  // Handle logout
+  const handleLogout = React.useCallback(async () => {
+    try {
+      await signOut();
+      closeNav();
+      // Redirect will happen automatically due to auth state change
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  }, [signOut, closeNav]);
 
   // Touch gesture handling
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
@@ -112,6 +129,20 @@ export function MobileSidebar() {
           <div className="flex-1 px-2 py-2 overflow-y-auto scrollbar-thin">
             <Navigation />
           </div>
+
+          {/* Logout Button */}
+          <div className="px-2 py-2 border-t border-border/30">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-lg text-sm transition-all duration-300 ease-in-out px-3 py-2 w-full hover:bg-accent/30 text-left"
+            >
+              <span className="text-lg" aria-hidden="true">
+                🚪
+              </span>
+              <span>Logout</span>
+            </button>
+          </div>
+
           <UserProfile />
 
           {/* Swipe indicator - simplified */}

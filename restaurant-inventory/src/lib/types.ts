@@ -193,6 +193,7 @@ export type BusinessProfile = {
   email: string;
   website?: string;
   logo?: string;
+  logo_path?: string;
   operatingHours: {
     monday: { open: string; close: string; closed: boolean };
     tuesday: { open: string; close: string; closed: boolean };
@@ -203,6 +204,11 @@ export type BusinessProfile = {
     sunday: { open: string; close: string; closed: boolean };
   };
   defaultCurrency: string;
+  taxSettings?: {
+    enabled: boolean;
+    rate: number;
+    name: string;
+  };
   created_at: string;
   updated_at: string;
 };
