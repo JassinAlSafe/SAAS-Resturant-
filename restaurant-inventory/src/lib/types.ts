@@ -1,59 +1,59 @@
 // Ingredient interface
 export interface Ingredient {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  unit: string;
-  reorderLevel: number;
-  cost: number;
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    reorderLevel: number;
+    cost: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 // Dish interface
 export interface Dish {
-  id: string;
-  name: string;
-  price: number;
-  ingredients: DishIngredient[];
-  createdAt: string;
-  updatedAt: string;
+    id: string;
+    name: string;
+    price: number;
+    ingredients: DishIngredient[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 // DishIngredient interface for the relationship between dishes and ingredients
 export interface DishIngredient {
-  ingredientId: string;
-  quantity: number;
+    ingredientId: string;
+    quantity: number;
 }
 
 // Sales interface
 export interface Sale {
-  id: string;
-  dishId: string;
-  dishName: string;
-  quantity: number;
-  totalAmount: number;
-  date: string;
-  createdAt: string;
+    id: string;
+    dishId: string;
+    dishName: string;
+    quantity: number;
+    totalAmount: number;
+    date: string;
+    createdAt: string;
 }
 
 // Dashboard stats interface
 export interface DashboardStats {
-  totalInventoryValue: number;
-  lowStockItems: number;
-  monthlySales: number;
-  salesGrowth: number;
+    totalInventoryValue: number;
+    lowStockItems: number;
+    monthlySales: number;
+    salesGrowth: number;
 }
 
 // Stock alert interface
 export interface StockAlert {
-  id: number;
-  name: string;
-  currentStock: number;
-  unit: string;
-  minStock: number;
-  category: string;
+    id: number;
+    name: string;
+    currentStock: number;
+    unit: string;
+    minStock: number;
+    category: string;
 }
 
 // Basic types used throughout the application
@@ -176,39 +176,4 @@ export type PurchaseOrderItem = {
   quantity: number;
   cost_per_unit: number;
   inventory_item?: InventoryItem;
-};
-
-// Business profile type
-export type BusinessProfile = {
-  id: string;
-  user_id: string;
-  name: string;
-  type: "cafe" | "fast_food" | "fine_dining" | "casual_dining" | "bakery" | "bar" | "other";
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  phone: string;
-  email: string;
-  website?: string;
-  logo?: string;
-  logo_path?: string;
-  operatingHours: {
-    monday: { open: string; close: string; closed: boolean };
-    tuesday: { open: string; close: string; closed: boolean };
-    wednesday: { open: string; close: string; closed: boolean };
-    thursday: { open: string; close: string; closed: boolean };
-    friday: { open: string; close: string; closed: boolean };
-    saturday: { open: string; close: string; closed: boolean };
-    sunday: { open: string; close: string; closed: boolean };
-  };
-  defaultCurrency: string;
-  taxSettings?: {
-    enabled: boolean;
-    rate: number;
-    name: string;
-  };
-  created_at: string;
-  updated_at: string;
 };

@@ -1,22 +1,20 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { cva, type VariantProps } from "class-variance-authority";
+import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { Card, CardContent } from "@/components/ui/card";
+import { cva } from "class-variance-authority";
 
-// Define card variants with cleaner styling
-const statCardVariants = cva(
-  "rounded-lg border p-5 sm:p-6 shadow-sm bg-card overflow-hidden transition-all duration-200",
+const cardVariants = cva(
+  "bg-card border rounded-xl transition-all duration-300 hover:shadow-md",
   {
     variants: {
       variant: {
-        default: "bg-card",
-        primary: "bg-primary/5 border-primary/20 hover:bg-primary/10",
-        success:
-          "bg-green-50/50 dark:bg-green-950/20 border-green-200/50 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-950/30",
-        warning:
-          "bg-yellow-50/50 dark:bg-yellow-950/20 border-yellow-200/50 dark:border-yellow-900/50 hover:bg-yellow-50 dark:hover:bg-yellow-950/30",
-        danger:
-          "bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30",
-        info: "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/50 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30",
+        default: "border-border",
+        primary: "border-primary/20 bg-primary/5 hover:bg-primary/10",
+        success: "border-green-200 bg-green-50 hover:bg-green-100/50",
+        warning: "border-amber-200 bg-amber-50 hover:bg-amber-100/50",
+        danger: "border-red-200 bg-red-50 hover:bg-red-100/50",
+        info: "border-blue-200 bg-blue-50 hover:bg-blue-100/50",
       },
     },
     defaultVariants: {
@@ -25,111 +23,110 @@ const statCardVariants = cva(
   }
 );
 
-// Define icon variants with improved visual hierarchy
-const iconVariants = cva("rounded-md p-2.5 flex items-center justify-center", {
-  variants: {
-    variant: {
-      default: "bg-primary/10 text-primary",
-      primary: "bg-primary/15 text-primary dark:text-primary-foreground",
-      success:
-        "bg-green-100/70 dark:bg-green-900/40 text-green-600 dark:text-green-400",
-      warning:
-        "bg-yellow-100/70 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400",
-      danger: "bg-red-100/70 dark:bg-red-900/40 text-red-600 dark:text-red-400",
-      info: "bg-blue-100/70 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400",
+const iconContainerVariants = cva(
+  "h-11 w-11 rounded-lg flex items-center justify-center",
+  {
+    variants: {
+      variant: {
+        default: "bg-muted text-muted-foreground",
+        primary: "bg-primary/20 text-primary",
+        success: "bg-green-100 text-green-700",
+        warning: "bg-amber-100 text-amber-700",
+        danger: "bg-red-100 text-red-700",
+        info: "bg-blue-100 text-blue-700",
+      },
     },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
 
-export interface StatCardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof statCardVariants> {
+const trendBadgeVariants = cva(
+  "flex items-center justify-center gap-1 font-medium rounded-md text-xs px-1.5 py-0.5",
+  {
+    variants: {
+      trend: {
+        positive: "bg-green-100 text-green-700",
+        negative: "bg-red-100 text-red-700",
+        neutral: "bg-muted text-muted-foreground",
+      },
+    },
+    defaultVariants: {
+      trend: "neutral",
+    },
+  }
+);
+
+interface StatCardProps {
+  className?: string;
   title: string;
-  value: string | number;
-  icon?: React.ReactNode;
-  trend?: number | { value: number; isPositive?: boolean };
+  value: string;
+  icon: React.ReactNode;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
   trendLabel?: string;
-  isLoading?: boolean;
+  variant?: "default" | "primary" | "success" | "warning" | "danger" | "info";
   footer?: React.ReactNode;
-  iconClassName?: string;
 }
 
-export default function StatCard({
+const StatCard = ({
+  className,
   title,
   value,
   icon,
   trend,
   trendLabel,
   variant = "default",
-  className,
-  isLoading = false,
   footer,
-  iconClassName,
-  ...props
-}: StatCardProps) {
-  // Format trend with a plus sign for positive values
-  let formattedTrend;
-  let trendValue = typeof trend === "number" ? trend : trend?.value;
-  let isPositive =
-    typeof trend === "object" ? trend.isPositive !== false : trendValue > 0;
-
-  if (trendValue !== undefined) {
-    formattedTrend = isPositive ? `+${trendValue}%` : `${trendValue}%`;
-  }
-
-  // Determine trend color
-  const trendColor =
-    trendValue !== undefined
-      ? isPositive
-        ? "text-green-600 dark:text-green-400"
-        : "text-red-600 dark:text-red-400"
-      : "";
-
+}: StatCardProps) => {
   return (
-    <div className={cn(statCardVariants({ variant }), className)} {...props}>
-      {isLoading ? (
-        <div className="flex h-full w-full items-center justify-center min-h-[100px]">
-          <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-row items-start justify-between space-x-4">
-            {icon && (
-              <div className={cn(iconVariants({ variant }), iconClassName)}>
-                {icon}
+    <Card className={cn(cardVariants({ variant }), className)}>
+      <CardContent className="p-6">
+        <div className="flex flex-col space-y-5">
+          <div className="flex justify-between items-start">
+            <div className={cn(iconContainerVariants({ variant }))}>{icon}</div>
+
+            {trend && (
+              <div
+                className={cn(
+                  trendBadgeVariants({
+                    trend: trend.isPositive ? "positive" : "negative",
+                  })
+                )}
+              >
+                {trend.isPositive ? (
+                  <FiTrendingUp className="h-3 w-3" />
+                ) : (
+                  <FiTrendingDown className="h-3 w-3" />
+                )}
+                {trend.isPositive ? "+" : ""}
+                {trend.value}%
               </div>
             )}
-            <div className="text-right flex-grow">
-              <h3 className="truncate text-sm font-medium text-muted-foreground mb-1.5">
-                {title}
-              </h3>
-              <div className="text-2xl sm:text-3xl font-semibold tracking-tight">
-                {value}
-              </div>
+          </div>
 
-              {trend !== undefined && (
-                <div className="mt-2 flex items-center justify-end gap-1.5">
-                  <span className={cn("text-sm font-medium", trendColor)}>
-                    {formattedTrend}
-                  </span>
-                  {trendLabel && (
-                    <span className="text-xs text-muted-foreground/70">
-                      {trendLabel}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="space-y-1.5">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {title}
+            </h3>
+            <p className="text-2xl font-bold">{value}</p>
+            {trendLabel && (
+              <p className="text-xs text-muted-foreground">{trendLabel}</p>
+            )}
           </div>
 
           {footer && (
-            <div className="mt-4 pt-3 border-t border-border/30">{footer}</div>
+            <div className="border-t border-border/50 pt-4 mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              {footer}
+            </div>
           )}
-        </>
-      )}
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default StatCard;
