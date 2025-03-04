@@ -57,7 +57,7 @@ export default function InventoryFilters({
           <div className="relative flex-1">
             <FiSearch className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search inventory..."
+              placeholder="Search by name, category, or quantity..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-9 w-full"

@@ -180,12 +180,10 @@
 }
 
 @layer components {
-  /* ... existing code ... */
+  /* Other component styles can go here */
 }
 
 @layer utilities {
-  /* ... existing code ... */
-
   /* Collapsible animations */
   @keyframes collapsible-down {
     from {
