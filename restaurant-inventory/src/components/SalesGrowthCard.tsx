@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Card,
@@ -18,6 +20,17 @@ import {
 import { cva } from "class-variance-authority";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { useCurrency } from "@/lib/currency-context";
 
 // Define bar chart styling variants
 const barVariants = cva(
@@ -62,6 +75,8 @@ const SalesGrowthCard = ({
   title = "Sales Growth Summary",
   viewAllLink,
 }: SalesGrowthCardProps) => {
+  const { formatCurrency } = useCurrency();
+
   // Use data prop if provided, otherwise use salesData
   const chartData = data ||
     salesData || [
@@ -83,16 +98,6 @@ const SalesGrowthCard = ({
   const calculatedLowestMonth =
     lowestMonth || Math.min(...chartData.map((item) => item.sales));
 
-  // Format currency
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   // Calculate the max sales value for normalization
   const maxSales = Math.max(...chartData.map((item) => item.sales));
 
@@ -100,6 +105,21 @@ const SalesGrowthCard = ({
   const highestMonthIndex = chartData.findIndex(
     (item) => item.sales === maxSales
   );
+
+  // Custom tooltip for the chart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-sm border border-border/50 shadow-md rounded-md p-3">
+          <p className="font-medium text-sm">{label}</p>
+          <p className="text-primary font-semibold">
+            {formatCurrency(payload[0].value)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <Card

@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { Separator } from "@/components/ui/separator";
 import { useBusinessProfile } from "@/lib/business-profile-context";
+import { ThemeTest } from "@/components/theme-test";
 
 export default function DebugPage() {
   const { user } = useAuth();
@@ -179,6 +180,9 @@ export default function DebugPage() {
           </Button>
         </div>
       </div>
+
+      {/* Theme Test Component */}
+      <ThemeTest />
 
       {serviceRoleStatus === "same" && (
         <Alert variant="destructive">

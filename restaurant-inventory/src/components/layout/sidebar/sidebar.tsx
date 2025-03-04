@@ -7,14 +7,13 @@ import { SidebarNavigation } from "./components/SidebarNavigation";
 import { SidebarUserProfile } from "./components/SidebarUserProfile";
 import { SidebarCollapseButton } from "./components/SidebarCollapseButton";
 import { MobileSidebar } from "./components/MobileSidebar";
-import { MenuIcon, SearchIcon, BellIcon, UserIcon } from "lucide-react";
+import { AppHeader } from "./components/AppHeader";
+import { MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useBusinessProfile } from "@/lib/business-profile-context";
-import { useAuth } from "@/lib/auth-context";
 import { useMediaQueries } from "@/hooks/use-media-query";
 import { navItems } from "./nav-items"; // Import navItems directly
+import { useUser } from "@/hooks/use-user";
 
 // Custom hook for sidebar state management
 const useSidebarState = () => {
@@ -57,21 +56,10 @@ export function Sidebar({ children }: SidebarProps) {
   >({});
   const { isMobile } = useMediaQueries();
   const { profile } = useBusinessProfile();
-  const { signOut } = useAuth();
+  const { user, handleLogout } = useUser();
 
   const businessName = profile?.name || "Restaurant Manager";
   const logoUrl = profile?.logo || "";
-  const userEmail = "user@example.com"; // Placeholder since user is not available in context
-
-  // User object
-  const user = {
-    name: "User",
-    email: userEmail,
-    image: "",
-  };
-
-  // Navigation items (using the imported navItems)
-  // const navItems = getNavItems();
 
   // Toggle a section expanded/collapsed
   const toggleSection = (section: string) => {
@@ -79,15 +67,6 @@ export function Sidebar({ children }: SidebarProps) {
       ...prev,
       [section]: !prev[section],
     }));
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    try {
-      signOut();
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
   };
 
   return (
@@ -163,6 +142,7 @@ export function Sidebar({ children }: SidebarProps) {
             businessName={businessName}
             logoUrl={logoUrl}
             handleLogout={handleLogout}
+            user={user}
           />
         </>
       )}
@@ -174,57 +154,13 @@ export function Sidebar({ children }: SidebarProps) {
           !isMobile && (open ? "ml-64" : "ml-16")
         )}
       >
-        {/* Header */}
-        <header className="sticky top-0 z-10 h-16 px-4 border-b border-border/40 flex items-center justify-between bg-background/80 backdrop-blur-sm">
-          {/* Left side */}
-          <div className="flex items-center gap-2">
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setOpenMobile(!openMobile)}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              >
-                <MenuIcon className="h-4 w-4" />
-              </Button>
-            )}
-            <div className="relative w-64 lg:w-72 hidden md:block">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="pl-9 bg-background w-full rounded-lg border-muted h-9"
-              />
-            </div>
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground relative"
-            >
-              <BellIcon className="h-4 w-4" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary"></span>
-            </Button>
-
-            <div className="flex items-center gap-3 pl-2 border-l border-border/40">
-              <Avatar className="h-9 w-9 rounded-full">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-primary/10 text-primary rounded-full">
-                  <UserIcon className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium leading-none">user</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {userEmail}
-                </p>
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* App Header - Now using the extracted component */}
+        <AppHeader
+          isMobile={isMobile}
+          openMobile={openMobile}
+          setOpenMobile={setOpenMobile}
+          user={user}
+        />
 
         {/* Page Content - Make it scrollable */}
         <main className="flex-1 overflow-y-auto p-4">{children}</main>

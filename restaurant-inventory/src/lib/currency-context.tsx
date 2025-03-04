@@ -22,7 +22,7 @@ export const CURRENCIES: Record<CurrencyCode, Currency> = {
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (currency: Currency) => void;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number | undefined | null) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(
@@ -57,13 +57,16 @@ export function CurrencyProvider({
   }, [currency]);
 
   // Format currency with the current symbol
-  const formatCurrency = (amount: number): string => {
+  const formatCurrency = (amount: number | undefined | null): string => {
+    // Handle undefined or null values
+    const safeAmount = amount ?? 0;
+
     // For SEK, the symbol comes after the amount
     if (currency.code === "SEK") {
-      return `${amount.toFixed(2)} ${currency.symbol}`;
+      return `${safeAmount.toFixed(2)} ${currency.symbol}`;
     }
     // For other currencies, the symbol comes before the amount
-    return `${currency.symbol}${amount.toFixed(2)}`;
+    return `${currency.symbol}${safeAmount.toFixed(2)}`;
   };
 
   return (

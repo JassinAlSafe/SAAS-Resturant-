@@ -194,7 +194,7 @@ export default function SupabaseDiagnosticPage() {
                           <td className="px-4 py-2">{item.category}</td>
                           <td className="px-4 py-2">{item.quantity}</td>
                           <td className="px-4 py-2">{item.unit}</td>
-                          <td className="px-4 py-2">${item.cost}</td>
+                          <td className="px-4 py-2">${item.cost_per_unit}</td>
                         </tr>
                       ))}
                     </tbody>

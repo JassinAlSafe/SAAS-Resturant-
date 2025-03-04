@@ -1,6 +1,6 @@
-import InventoryItemModal from "@/components/inventory/InventoryItemModal";
+import InventoryItemModal from "../modals/InventoryItemModal";
 import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, Supplier } from "@/lib/types";
 
 type InventoryModalsProps = {
   isModalOpen: boolean;
@@ -10,13 +10,15 @@ type InventoryModalsProps = {
   onCloseModal: () => void;
   onCloseDeleteDialog: () => void;
   onSaveItem: (
-    itemData: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
+    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
   ) => void;
   onUpdateItem: (
-    itemData: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">
+    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
   ) => void;
   onDeleteItem: () => void;
   customCategories: string[];
+  suppliers?: Supplier[];
+  userRole?: "admin" | "manager" | "staff";
 };
 
 export function InventoryModals({
@@ -30,15 +32,20 @@ export function InventoryModals({
   onUpdateItem,
   onDeleteItem,
   customCategories,
+  suppliers = [],
+  userRole = "staff",
 }: InventoryModalsProps) {
   return (
     <>
       <InventoryItemModal
         isOpen={isModalOpen}
         onClose={onCloseModal}
-        onSave={selectedItem ? onUpdateItem : onSaveItem}
+        onSave={onSaveItem}
+        onUpdate={onUpdateItem}
         item={selectedItem}
         customCategories={customCategories}
+        suppliers={suppliers}
+        userRole={userRole}
       />
 
       <DeleteConfirmationDialog

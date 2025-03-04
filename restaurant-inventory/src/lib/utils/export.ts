@@ -54,7 +54,7 @@ export function formatInventoryForExport(items: InventoryItem[]): Record<string,
     "Quantity": item.quantity,
     "Unit": item.unit,
     "Reorder Level": item.reorderLevel,
-    "Cost": item.cost,
+    "Cost": item.cost_per_unit,
     "Expiry Date": item.expiryDate
       ? format(new Date(item.expiryDate), "yyyy-MM-dd")
       : "N/A",

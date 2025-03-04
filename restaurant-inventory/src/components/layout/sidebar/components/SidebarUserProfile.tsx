@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
-import { LogOutIcon, UserIcon } from "lucide-react";
+import { LogOutIcon, UserIcon, Settings2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,86 +30,107 @@ export function SidebarUserProfile({
   handleLogout,
 }: SidebarUserProfileProps) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between p-4 border-t border-border/40",
-        open ? "px-4" : "px-2"
-      )}
-    >
+    <div className="mt-auto border-t border-border/40">
+      {/* User Profile Section */}
       {open ? (
-        <>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="h-8 w-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-              {user.image ? (
-                <Image
-                  src={user.image}
-                  alt={user.name}
-                  width={32}
-                  height={32}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <UserIcon className="h-4 w-4 text-primary" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user.email}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <LogOutIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </>
+        <div className="p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full flex items-center justify-start gap-3 px-3 py-2 hover:bg-accent rounded-lg transition-colors"
+              >
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.image} alt={user?.name || "User"} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {user?.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden text-left">
+                  <p className="text-sm font-medium leading-none truncate">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate mt-1">
+                    {user?.email || "user@example.com"}
+                  </p>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings2Icon className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer text-red-600 focus:text-red-600"
+                onClick={handleLogout}
+              >
+                <LogOutIcon className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ) : (
-        <div className="flex flex-col items-center justify-center w-full gap-1">
+        <div className="p-4 flex justify-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center"
+                className="h-9 w-9 rounded-full"
               >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt={user.name}
-                    width={32}
-                    height={32}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <UserIcon className="h-4 w-4 text-primary" />
-                )}
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.image} alt={user?.name || "User"} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {user?.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" side="right">
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span>{user.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {user.email}
-                  </span>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="flex items-center gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.image} alt={user?.name || "User"} />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {user?.name?.[0] || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-medium leading-none truncate">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email || "user@example.com"}
+                  </p>
                 </div>
-              </DropdownMenuLabel>
+              </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOutIcon className="h-4 w-4 mr-2" />
+              <DropdownMenuItem className="cursor-pointer">
+                <UserIcon className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings2Icon className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer text-red-600 focus:text-red-600"
+                onClick={handleLogout}
+              >
+                <LogOutIcon className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <ThemeToggle />
         </div>
       )}
     </div>

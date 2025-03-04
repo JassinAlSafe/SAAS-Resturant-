@@ -55,12 +55,16 @@ export const inventoryService = {
                 category: item.category,
                 quantity: item.quantity,
                 unit: item.unit,
+                cost_per_unit: item.cost,
                 reorderLevel: item.reorder_level,
-                cost: item.cost,
+                minimum_stock_level: item.minimum_stock_level,
+                reorder_point: item.reorder_point,
+                supplier_id: item.supplier_id,
+                location: item.location,
                 expiryDate: item.expiry_date || undefined,
                 supplierId: item.supplier_id || undefined,
-                createdAt: item.created_at,
-                updatedAt: item.updated_at
+                created_at: item.created_at,
+                updated_at: item.updated_at
             }));
         } catch (error) {
             console.error('Error in getItems:', error);
@@ -118,12 +122,16 @@ export const inventoryService = {
                 category: item.category,
                 quantity: item.quantity,
                 unit: item.unit,
+                cost_per_unit: item.cost,
                 reorderLevel: item.reorder_level,
-                cost: item.cost,
+                minimum_stock_level: item.minimum_stock_level,
+                reorder_point: item.reorder_point,
+                supplier_id: item.supplier_id,
+                location: item.location,
                 expiryDate: item.expiry_date || undefined,
                 supplierId: item.supplier_id || undefined,
-                createdAt: item.created_at,
-                updatedAt: item.updated_at
+                created_at: item.created_at,
+                updated_at: item.updated_at
             }));
         } catch (error) {
             console.error('Error in getSoonToExpireItems:', error);
@@ -159,9 +167,12 @@ export const inventoryService = {
                     quantity: item.quantity,
                     unit: item.unit,
                     reorder_level: item.reorderLevel,
-                    cost: item.cost,
+                    cost: item.cost_per_unit,
+                    minimum_stock_level: item.minimum_stock_level,
+                    reorder_point: item.reorder_point,
                     expiry_date: item.expiryDate || null,
-                    supplier_id: item.supplierId || null
+                    supplier_id: item.supplierId || null,
+                    location: item.location || null
                 })
                 .select()
                 .single();
@@ -185,12 +196,16 @@ export const inventoryService = {
                 category: data.category,
                 quantity: data.quantity,
                 unit: data.unit,
+                cost_per_unit: data.cost,
                 reorderLevel: data.reorder_level,
-                cost: data.cost,
+                minimum_stock_level: data.minimum_stock_level,
+                reorder_point: data.reorder_point,
+                supplier_id: data.supplier_id || null,
+                location: data.location,
                 expiryDate: data.expiry_date || null,
                 supplierId: data.supplier_id || null,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at
+                created_at: data.created_at,
+                updated_at: data.updated_at
             };
         } catch (error) {
             console.error('Error in addItem:', error);
@@ -219,9 +234,12 @@ export const inventoryService = {
             if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
             if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
             if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
-            if (updates.cost !== undefined) dbUpdates.cost = updates.cost;
+            if (updates.cost_per_unit !== undefined) dbUpdates.cost = updates.cost_per_unit;
+            if (updates.minimum_stock_level !== undefined) dbUpdates.minimum_stock_level = updates.minimum_stock_level;
+            if (updates.reorder_point !== undefined) dbUpdates.reorder_point = updates.reorder_point;
             if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
             if (updates.supplierId !== undefined) dbUpdates.supplier_id = updates.supplierId;
+            if (updates.location !== undefined) dbUpdates.location = updates.location;
 
             const { data, error } = await supabase
                 .from('ingredients')
@@ -242,12 +260,16 @@ export const inventoryService = {
                 category: data.category,
                 quantity: data.quantity,
                 unit: data.unit,
+                cost_per_unit: data.cost,
                 reorderLevel: data.reorder_level,
-                cost: data.cost,
+                minimum_stock_level: data.minimum_stock_level,
+                reorder_point: data.reorder_point,
+                supplier_id: data.supplier_id || null,
+                location: data.location,
                 expiryDate: data.expiry_date || null,
                 supplierId: data.supplier_id || null,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at
+                created_at: data.created_at,
+                updated_at: data.updated_at
             };
         } catch (error) {
             console.error('Error in updateItem:', error);

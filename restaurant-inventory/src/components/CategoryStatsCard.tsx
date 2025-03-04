@@ -1,29 +1,25 @@
-import React from "react";
+"use client";
+
+import { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import {
-  MoreHorizontal,
-  TrendingUp,
-  TrendingDown,
-  ArrowRight,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+  FiChevronDown,
+  FiChevronUp,
+  FiMoreHorizontal,
+  FiFilter,
+} from "react-icons/fi";
+import Card from "./Card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-interface CategoryItem {
+interface Category {
   id: string;
   name: string;
   count: number;
@@ -33,180 +29,184 @@ interface CategoryItem {
 }
 
 interface CategoryStatsCardProps {
-  className?: string;
   title: string;
-  categories: CategoryItem[];
+  categories: Category[];
   onViewAll?: () => void;
-  viewAllLink?: string;
 }
 
-const CategoryStatsCard = ({
-  className,
+export default function CategoryStatsCard({
   title,
   categories,
   onViewAll,
-  viewAllLink,
-}: CategoryStatsCardProps) => {
-  // Total items across all categories
-  const totalItems = categories.reduce(
-    (sum, category) => sum + category.count,
-    0
-  );
+}: CategoryStatsCardProps) {
+  const [sortBy, setSortBy] = useState<"name" | "count" | "change">("count");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  const handleSort = (field: "name" | "count" | "change") => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDirection("desc");
+    }
+  };
+
+  const sortedCategories = [...categories].sort((a, b) => {
+    if (sortBy === "name") {
+      return sortDirection === "asc"
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
+    } else if (sortBy === "count") {
+      return sortDirection === "asc" ? a.count - b.count : b.count - a.count;
+    } else {
+      return sortDirection === "asc"
+        ? a.change - b.change
+        : b.change - a.change;
+    }
+  });
 
   return (
-    <Card
-      className={cn(
-        "overflow-hidden bg-card shadow-sm hover:shadow-md transition-all duration-300 h-full",
-        className
-      )}
-    >
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6 px-6">
-        <div>
-          <CardTitle className="text-lg font-bold">{title}</CardTitle>
-          <CardDescription className="mt-1 text-sm">
-            {totalItems} total items
-          </CardDescription>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">More options</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Generate report</DropdownMenuItem>
-            <DropdownMenuItem>Export data</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardHeader>
-      <CardContent className="px-6 pb-6">
-        <div className="space-y-4">
-          {categories.map((category) => {
-            // Calculate percentage of total for the progress bar
-            const percentage = Math.round((category.count / totalItems) * 100);
-            // Determine if the change is positive, negative or neutral
-            const changeType =
-              category.change > 0
-                ? "positive"
-                : category.change < 0
-                ? "negative"
-                : "neutral";
-
-            return (
-              <div
-                key={category.id}
-                className="group p-3 rounded-lg hover:bg-muted/40 transition-colors duration-200"
+    <Card className="shadow-sm hover:shadow-md transition-all">
+      <div className="p-4 border-b flex items-center justify-between">
+        <h3 className="font-semibold">{title}</h3>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 flex items-center justify-center"
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 duration-300",
-                      category.color
+                <FiFilter className="h-4 w-4" />
+                <span className="sr-only">Sort</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => handleSort("name")}
+              >
+                <span>Category Name</span>
+                {sortBy === "name" && (
+                  <span>
+                    {sortDirection === "asc" ? (
+                      <FiChevronUp className="h-4 w-4" />
+                    ) : (
+                      <FiChevronDown className="h-4 w-4" />
                     )}
-                  >
-                    {category.icon}
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">{category.name}</p>
-
-                      {/* Dynamic badge based on change direction */}
-                      {changeType === "positive" && (
-                        <Badge
-                          variant="outline"
-                          className="bg-green-50 text-green-700 flex items-center gap-1 hover:bg-green-100"
-                        >
-                          <TrendingUp className="h-3 w-3" />+
-                          {Math.abs(category.change)}
-                        </Badge>
-                      )}
-                      {changeType === "negative" && (
-                        <Badge
-                          variant="outline"
-                          className="bg-red-50 text-red-700 flex items-center gap-1 hover:bg-red-100"
-                        >
-                          <TrendingDown className="h-3 w-3" />
-                          {category.change}
-                        </Badge>
-                      )}
-                      {changeType === "neutral" && (
-                        <Badge
-                          variant="outline"
-                          className="bg-blue-50 text-blue-700"
-                        >
-                          No change
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex-grow mr-4">
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              category.color.includes("primary")
-                                ? "bg-primary"
-                                : category.color.includes("green")
-                                ? "bg-green-500"
-                                : category.color.includes("blue")
-                                ? "bg-blue-500"
-                                : category.color.includes("amber")
-                                ? "bg-amber-500"
-                                : category.color.includes("red")
-                                ? "bg-red-500"
-                                : "bg-muted-foreground"
-                            )}
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                      <p className="text-sm font-semibold whitespace-nowrap">
-                        {category.count.toLocaleString()}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          items
-                        </span>
-                      </p>
-                    </div>
+                  </span>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => handleSort("count")}
+              >
+                <span>Item Count</span>
+                {sortBy === "count" && (
+                  <span>
+                    {sortDirection === "asc" ? (
+                      <FiChevronUp className="h-4 w-4" />
+                    ) : (
+                      <FiChevronDown className="h-4 w-4" />
+                    )}
+                  </span>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => handleSort("change")}
+              >
+                <span>Change</span>
+                {sortBy === "change" && (
+                  <span>
+                    {sortDirection === "asc" ? (
+                      <FiChevronUp className="h-4 w-4" />
+                    ) : (
+                      <FiChevronDown className="h-4 w-4" />
+                    )}
+                  </span>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 flex items-center justify-center"
+              >
+                <FiMoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">More options</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onViewAll}>
+                View all categories
+              </DropdownMenuItem>
+              <DropdownMenuItem>Export data</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="space-y-3">
+          {sortedCategories.map((category) => (
+            <div
+              key={category.id}
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "h-9 w-9 rounded-full flex items-center justify-center",
+                    category.color
+                  )}
+                >
+                  {category.icon}
+                </div>
+                <div>
+                  <div className="font-medium text-sm">{category.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {category.count} items
                   </div>
                 </div>
               </div>
-            );
-          })}
-
-          {(onViewAll || viewAllLink) && (
-            <div className="pt-2">
-              {viewAllLink ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
-                  asChild
-                >
-                  <Link href={viewAllLink}>
-                    View all categories
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onViewAll}
-                  className="w-full text-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
-                >
-                  View all categories
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Button>
-              )}
+              <div
+                className={cn(
+                  "text-sm font-medium flex items-center",
+                  category.change > 0
+                    ? "text-green-600"
+                    : category.change < 0
+                    ? "text-red-600"
+                    : "text-muted-foreground"
+                )}
+              >
+                {category.change > 0 ? (
+                  <FiChevronUp className="h-4 w-4 mr-0.5" />
+                ) : category.change < 0 ? (
+                  <FiChevronDown className="h-4 w-4 mr-0.5" />
+                ) : null}
+                {Math.abs(category.change)}%
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      </CardContent>
+      </div>
+      {onViewAll && (
+        <div className="p-3 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs"
+            onClick={onViewAll}
+          >
+            View All Categories
+          </Button>
+        </div>
+      )}
     </Card>
   );
-};
-
-export default CategoryStatsCard;
+}

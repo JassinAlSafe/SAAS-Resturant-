@@ -11,7 +11,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SidebarThemeToggle } from "../sidebar/components/SidebarThemeToggle";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
@@ -23,8 +23,8 @@ import {
 import { useBusinessProfile } from "@/lib/business-profile-context";
 import Image from "next/image";
 import { BookOpenIcon, LogOutIcon } from "lucide-react";
-import { navItems } from "./nav-items"; // Updated import
-import { NavItem, hasChildren } from "./types"; // Updated import
+import { navItems } from "../sidebar/nav-items";
+import { NavItem, hasChildren } from "../sidebar/types";
 
 // Helpers
 const MOBILE_BREAKPOINT = 768;
@@ -202,46 +202,53 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* User Profile / Toggle */}
-            <div className="border-t border-border mt-auto p-3 flex items-center justify-between">
+            <div className="border-t border-border mt-auto p-3">
               {!open ? (
-                <Button
-                  variant="default"
-                  size="default"
-                  onClick={toggleSidebar}
-                  className="mx-auto flex items-center justify-center bg-primary text-primary-foreground w-full"
-                  aria-label="Expand sidebar"
-                >
-                  <ChevronRightIcon className="h-5 w-5 mr-1" />
-                  <span className="text-xs">Expand</span>
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <SidebarThemeToggle />
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={toggleSidebar}
+                    className="mx-auto flex items-center justify-center bg-primary text-primary-foreground w-full"
+                    aria-label="Expand sidebar"
+                  >
+                    <ChevronRightIcon className="h-5 w-5 mr-1" />
+                    <span className="text-xs">Expand</span>
+                  </Button>
+                </div>
               ) : (
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                      <span className="text-sm font-medium">
-                        {profile?.name
-                          ? profile.name.charAt(0).toUpperCase()
-                          : "U"}
-                      </span>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium">
-                        {profile?.name || "User"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {profile?.email || "user@example.com"}
-                      </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <span className="text-sm font-medium">
+                          {profile?.name
+                            ? profile.name.charAt(0).toUpperCase()
+                            : "U"}
+                        </span>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm font-medium">
+                          {profile?.name || "User"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {profile?.email || "user@example.com"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleLogout}
-                    className="text-muted-foreground"
-                  >
-                    <LogOutIcon className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-between">
+                    <SidebarThemeToggle />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLogout}
+                      className="text-muted-foreground"
+                    >
+                      <LogOutIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -304,7 +311,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
 
             {/* Mobile User Profile */}
             <div className="border-t border-border p-4">
-              <div className="flex items-center">
+              <div className="flex items-center mb-3">
                 <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                   <span className="text-sm font-medium">
                     {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
@@ -318,11 +325,14 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                     {profile?.email || "user@example.com"}
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <SidebarThemeToggle />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleLogout}
-                  className="ml-auto text-muted-foreground"
+                  className="text-muted-foreground"
                 >
                   <LogOutIcon className="h-4 w-4" />
                 </Button>
@@ -347,7 +357,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             )}
             <div className={cn("flex-1", !isMobile && "ml-3")}></div>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
+              <SidebarThemeToggle />
             </div>
           </header>
 

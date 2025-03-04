@@ -101,7 +101,7 @@ export default function InventoryItemModal({
       setQuantity(item.quantity.toString());
       setUnit(item.unit);
       setReorderLevel(item.reorderLevel.toString());
-      setCost(item.cost.toString());
+      setCost(item.cost_per_unit.toString());
       setExpiryDate(item.expiryDate ? new Date(item.expiryDate) : undefined);
       setSupplierId(item.supplierId || "none");
     } else {
@@ -165,7 +165,7 @@ export default function InventoryItemModal({
       quantity: Number(quantity),
       unit,
       reorderLevel: Number(reorderLevel),
-      cost: Number(cost),
+      cost_per_unit: Number(cost),
       expiryDate: expiryDate ? format(expiryDate, "yyyy-MM-dd") : undefined,
       supplierId: finalSupplierId,
     });

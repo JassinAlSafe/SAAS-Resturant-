@@ -68,11 +68,15 @@ export function useInventorySubscription({
                                 quantity: item.quantity,
                                 unit: item.unit,
                                 reorderLevel: item.reorder_level,
-                                cost: item.cost,
+                                cost_per_unit: item.cost,
+                                minimum_stock_level: item.minimum_stock_level,
+                                reorder_point: item.reorder_point,
+                                supplier_id: item.supplier_id,
+                                location: item.location,
                                 expiryDate: item.expiry_date || undefined,
                                 supplierId: item.supplier_id || undefined,
-                                createdAt: item.created_at,
-                                updatedAt: item.updated_at
+                                created_at: item.created_at,
+                                updated_at: item.updated_at
                             }));
                             onItemsChanged(transformedData);
                         }

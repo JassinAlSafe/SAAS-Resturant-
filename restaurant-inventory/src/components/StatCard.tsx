@@ -1,75 +1,11 @@
+"use client";
+
 import React from "react";
+import { FiTrendingUp, FiTrendingDown } from "react-icons/fi";
 import { cn } from "@/lib/utils";
-import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardTitle,
-} from "@/components/ui/card";
-import { cva } from "class-variance-authority";
-
-const cardVariants = cva("transition-all duration-300", {
-  variants: {
-    variant: {
-      default: "border-border bg-card hover:shadow-sm",
-      primary: "border-primary/20 bg-primary/5 hover:bg-primary/10",
-      success:
-        "border-green-200 bg-green-50 hover:bg-green-100/50 dark:border-green-800 dark:bg-green-950/50",
-      warning:
-        "border-amber-200 bg-amber-50 hover:bg-amber-100/50 dark:border-amber-800 dark:bg-amber-950/50",
-      danger:
-        "border-red-200 bg-red-50 hover:bg-red-100/50 dark:border-red-800 dark:bg-red-950/50",
-      info: "border-blue-200 bg-blue-50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/50",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
-
-const iconContainerVariants = cva(
-  "h-11 w-11 rounded-lg flex items-center justify-center shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted text-muted-foreground",
-        primary: "bg-primary/20 text-primary",
-        success:
-          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
-        warning:
-          "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400",
-        danger: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
-        info: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const trendBadgeVariants = cva(
-  "flex items-center justify-center gap-1 font-medium rounded-md text-xs px-1.5 py-0.5",
-  {
-    variants: {
-      trend: {
-        positive:
-          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
-        negative:
-          "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
-        neutral: "bg-muted text-muted-foreground",
-      },
-    },
-    defaultVariants: {
-      trend: "neutral",
-    },
-  }
-);
+import Card from "./Card";
 
 interface StatCardProps {
-  className?: string;
   title: string;
   value: string;
   icon: React.ReactNode;
@@ -77,64 +13,88 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
-  trendLabel?: string;
-  variant?: "default" | "primary" | "success" | "warning" | "danger" | "info";
+  variant?: "primary" | "success" | "warning" | "info" | "default";
   footer?: React.ReactNode;
 }
 
-const StatCard = ({
-  className,
+export default function StatCard({
   title,
   value,
   icon,
   trend,
-  trendLabel,
   variant = "default",
   footer,
-}: StatCardProps) => {
-  return (
-    <Card className={cn(cardVariants({ variant }), className)}>
-      <CardContent className="pt-6">
-        <div className="flex justify-between items-start">
-          <div className={cn(iconContainerVariants({ variant }))}>{icon}</div>
+}: StatCardProps) {
+  // Define variant-specific styles
+  const variantStyles = {
+    primary: {
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
+      trendUp: "text-primary",
+      trendDown: "text-red-600",
+    },
+    success: {
+      iconBg: "bg-green-50",
+      iconColor: "text-green-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+    },
+    warning: {
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      trendUp: "text-green-600",
+      trendDown: "text-amber-600",
+    },
+    info: {
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+    },
+    default: {
+      iconBg: "bg-muted",
+      iconColor: "text-muted-foreground",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+    },
+  };
 
+  const styles = variantStyles[variant];
+
+  return (
+    <Card className="shadow-sm hover:shadow-md transition-all">
+      <div className="p-6">
+        <div className="flex items-start justify-between">
+          <div
+            className={cn(
+              "h-12 w-12 rounded-full flex items-center justify-center",
+              styles.iconBg
+            )}
+          >
+            <div className={styles.iconColor}>{icon}</div>
+          </div>
           {trend && (
             <div
               className={cn(
-                trendBadgeVariants({
-                  trend: trend.isPositive ? "positive" : "negative",
-                })
+                "flex items-center text-sm font-medium",
+                trend.isPositive ? styles.trendUp : styles.trendDown
               )}
             >
               {trend.isPositive ? (
-                <FiTrendingUp className="h-3 w-3" />
+                <FiTrendingUp className="mr-1 h-4 w-4" />
               ) : (
-                <FiTrendingDown className="h-3 w-3" />
+                <FiTrendingDown className="mr-1 h-4 w-4" />
               )}
-              {trend.isPositive ? "+" : ""}
               {trend.value}%
             </div>
           )}
         </div>
-
-        <div className="mt-5">
-          <CardTitle className="text-2xl font-bold tracking-tight">
-            {value}
-          </CardTitle>
-          <CardDescription className="mt-1.5">{title}</CardDescription>
-          {trendLabel && (
-            <p className="text-xs text-muted-foreground mt-1">{trendLabel}</p>
-          )}
+        <div className="mt-4">
+          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+          <p className="text-2xl font-bold mt-1">{value}</p>
         </div>
-
-        {footer && (
-          <CardFooter className="px-0 pt-4 mt-4 border-t border-border/50 flex items-center gap-2 text-xs text-muted-foreground">
-            {footer}
-          </CardFooter>
-        )}
-      </CardContent>
+        {footer && <div className="mt-4 text-xs">{footer}</div>}
+      </div>
     </Card>
   );
-};
-
-export default StatCard;
+}
