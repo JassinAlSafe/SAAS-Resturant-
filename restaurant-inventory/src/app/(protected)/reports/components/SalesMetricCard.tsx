@@ -1,6 +1,7 @@
 "use client";
 
 import { SalesMetricCardProps } from "../types";
+import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 export const SalesMetricCard = ({
   title,
@@ -8,19 +9,18 @@ export const SalesMetricCard = ({
   change,
   positive,
 }: SalesMetricCardProps) => (
-  <div className="bg-muted/50 dark:bg-muted/20 p-3 md:p-4 rounded-lg">
-    <p className="text-xs md:text-sm font-medium text-muted-foreground">
-      {title}
-    </p>
-    <p className="text-lg md:text-2xl font-semibold mt-1 line-clamp-1">
-      {value}
-    </p>
-    <p
-      className={`text-xs mt-1 md:mt-2 ${
-        positive ? "text-green-600" : "text-red-600"
-      }`}
-    >
-      {change} from last period
-    </p>
+  <div className="bg-card p-4 rounded-lg shadow-sm border border-border/40">
+    <p className="text-sm font-medium text-muted-foreground mb-2">{title}</p>
+    <p className="text-2xl font-semibold mb-2 line-clamp-1">{value}</p>
+    <div className="flex items-center gap-1">
+      {positive ? (
+        <ArrowUpIcon className="h-3 w-3 text-green-500" />
+      ) : (
+        <ArrowDownIcon className="h-3 w-3 text-red-500" />
+      )}
+      <p className={`text-xs ${positive ? "text-green-500" : "text-red-500"}`}>
+        {change} from last period
+      </p>
+    </div>
   </div>
 );

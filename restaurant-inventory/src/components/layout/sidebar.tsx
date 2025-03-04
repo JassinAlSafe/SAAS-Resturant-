@@ -1,10 +1,5 @@
 "use client";
 
-// This file now re-exports from the modular sidebar components
+// This file re-exports from the sidebar implementation
 // for backward compatibility
-export {
-  SidebarNavigation,
-  SidebarLayout,
-  Navigation,
-  UserProfile,
-} from "./sidebar/index";
+export { Sidebar } from "./sidebar/sidebar";

@@ -1,39 +1,47 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardTitle,
+} from "@/components/ui/card";
 import { cva } from "class-variance-authority";
 
-const cardVariants = cva(
-  "bg-card border rounded-xl transition-all duration-300 hover:shadow-md",
-  {
-    variants: {
-      variant: {
-        default: "border-border",
-        primary: "border-primary/20 bg-primary/5 hover:bg-primary/10",
-        success: "border-green-200 bg-green-50 hover:bg-green-100/50",
-        warning: "border-amber-200 bg-amber-50 hover:bg-amber-100/50",
-        danger: "border-red-200 bg-red-50 hover:bg-red-100/50",
-        info: "border-blue-200 bg-blue-50 hover:bg-blue-100/50",
-      },
+const cardVariants = cva("transition-all duration-300", {
+  variants: {
+    variant: {
+      default: "border-border bg-card hover:shadow-sm",
+      primary: "border-primary/20 bg-primary/5 hover:bg-primary/10",
+      success:
+        "border-green-200 bg-green-50 hover:bg-green-100/50 dark:border-green-800 dark:bg-green-950/50",
+      warning:
+        "border-amber-200 bg-amber-50 hover:bg-amber-100/50 dark:border-amber-800 dark:bg-amber-950/50",
+      danger:
+        "border-red-200 bg-red-50 hover:bg-red-100/50 dark:border-red-800 dark:bg-red-950/50",
+      info: "border-blue-200 bg-blue-50 hover:bg-blue-100/50 dark:border-blue-800 dark:bg-blue-950/50",
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 const iconContainerVariants = cva(
-  "h-11 w-11 rounded-lg flex items-center justify-center",
+  "h-11 w-11 rounded-lg flex items-center justify-center shrink-0",
   {
     variants: {
       variant: {
         default: "bg-muted text-muted-foreground",
         primary: "bg-primary/20 text-primary",
-        success: "bg-green-100 text-green-700",
-        warning: "bg-amber-100 text-amber-700",
-        danger: "bg-red-100 text-red-700",
-        info: "bg-blue-100 text-blue-700",
+        success:
+          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
+        warning:
+          "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400",
+        danger: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
+        info: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400",
       },
     },
     defaultVariants: {
@@ -47,8 +55,10 @@ const trendBadgeVariants = cva(
   {
     variants: {
       trend: {
-        positive: "bg-green-100 text-green-700",
-        negative: "bg-red-100 text-red-700",
+        positive:
+          "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400",
+        negative:
+          "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400",
         neutral: "bg-muted text-muted-foreground",
       },
     },
@@ -84,46 +94,44 @@ const StatCard = ({
 }: StatCardProps) => {
   return (
     <Card className={cn(cardVariants({ variant }), className)}>
-      <CardContent className="p-6">
-        <div className="flex flex-col space-y-5">
-          <div className="flex justify-between items-start">
-            <div className={cn(iconContainerVariants({ variant }))}>{icon}</div>
+      <CardContent className="pt-6">
+        <div className="flex justify-between items-start">
+          <div className={cn(iconContainerVariants({ variant }))}>{icon}</div>
 
-            {trend && (
-              <div
-                className={cn(
-                  trendBadgeVariants({
-                    trend: trend.isPositive ? "positive" : "negative",
-                  })
-                )}
-              >
-                {trend.isPositive ? (
-                  <FiTrendingUp className="h-3 w-3" />
-                ) : (
-                  <FiTrendingDown className="h-3 w-3" />
-                )}
-                {trend.isPositive ? "+" : ""}
-                {trend.value}%
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              {title}
-            </h3>
-            <p className="text-2xl font-bold">{value}</p>
-            {trendLabel && (
-              <p className="text-xs text-muted-foreground">{trendLabel}</p>
-            )}
-          </div>
-
-          {footer && (
-            <div className="border-t border-border/50 pt-4 mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              {footer}
+          {trend && (
+            <div
+              className={cn(
+                trendBadgeVariants({
+                  trend: trend.isPositive ? "positive" : "negative",
+                })
+              )}
+            >
+              {trend.isPositive ? (
+                <FiTrendingUp className="h-3 w-3" />
+              ) : (
+                <FiTrendingDown className="h-3 w-3" />
+              )}
+              {trend.isPositive ? "+" : ""}
+              {trend.value}%
             </div>
           )}
         </div>
+
+        <div className="mt-5">
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            {value}
+          </CardTitle>
+          <CardDescription className="mt-1.5">{title}</CardDescription>
+          {trendLabel && (
+            <p className="text-xs text-muted-foreground mt-1">{trendLabel}</p>
+          )}
+        </div>
+
+        {footer && (
+          <CardFooter className="px-0 pt-4 mt-4 border-t border-border/50 flex items-center gap-2 text-xs text-muted-foreground">
+            {footer}
+          </CardFooter>
+        )}
       </CardContent>
     </Card>
   );

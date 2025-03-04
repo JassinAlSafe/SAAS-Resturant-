@@ -1,6 +1,14 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
+import {
+  Card as ShadcnCard,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // Define card variants with more modern styling
 const cardVariants = cva(
@@ -15,9 +23,9 @@ const cardVariants = cva(
       },
       padding: {
         none: "",
-        sm: "p-4",
-        md: "p-5 sm:p-6",
-        lg: "p-6 sm:p-8",
+        sm: "p-0",
+        md: "p-0",
+        lg: "p-0",
       },
     },
     defaultVariants: {
@@ -27,9 +35,7 @@ const cardVariants = cva(
   }
 );
 
-interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
+interface CardProps extends VariantProps<typeof cardVariants> {
   title?: React.ReactNode;
   description?: React.ReactNode;
   footer?: React.ReactNode;
@@ -44,7 +50,7 @@ interface CardProps
   hoverEffect?: boolean;
 }
 
-export default function Card({
+export default function CardComponent({
   title,
   description,
   footer,
@@ -62,7 +68,7 @@ export default function Card({
   ...props
 }: CardProps) {
   return (
-    <div
+    <ShadcnCard
       className={cn(
         cardVariants({ variant, padding }),
         hoverEffect && "hover:border-primary/20 transition-all duration-300",
@@ -71,39 +77,20 @@ export default function Card({
       {...props}
     >
       {(title || description || headerAction) && (
-        <div
-          className={cn(
-            "flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b",
-            padding === "none" ? "p-5 sm:p-6" : "",
-            headerClassName
-          )}
-        >
-          <div className="space-y-1">
-            {title && (
-              <h3 className="text-base sm:text-lg font-semibold leading-tight text-foreground break-words">
-                {title}
-              </h3>
-            )}
-            {description && (
-              <p className="text-sm text-muted-foreground break-words">
-                {description}
-              </p>
+        <CardHeader className={cn(headerClassName)}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="space-y-1.5">
+              {title && <CardTitle>{title}</CardTitle>}
+              {description && <CardDescription>{description}</CardDescription>}
+            </div>
+            {headerAction && (
+              <div className="flex-shrink-0">{headerAction}</div>
             )}
           </div>
-          {headerAction && (
-            <div className="flex justify-end sm:justify-start flex-shrink-0">
-              {headerAction}
-            </div>
-          )}
-        </div>
+        </CardHeader>
       )}
-      <div
-        className={cn(
-          "flex flex-col",
-          !noPadding && padding === "none" ? "p-5 sm:p-6" : "",
-          contentClassName
-        )}
-      >
+
+      <CardContent className={cn(noPadding && "p-0", contentClassName)}>
         {isLoading ? (
           <div className="flex h-40 w-full items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-t-2 border-b-2 border-primary"></div>
@@ -111,18 +98,13 @@ export default function Card({
         ) : (
           children
         )}
-      </div>
+      </CardContent>
+
       {footer && (
-        <div
-          className={cn(
-            "border-t bg-muted/10",
-            padding === "none" ? "p-5 sm:p-6" : "",
-            footerClassName
-          )}
-        >
+        <CardFooter className={cn("bg-muted/10", footerClassName)}>
           {footer}
-        </div>
+        </CardFooter>
       )}
-    </div>
+    </ShadcnCard>
   );
 }

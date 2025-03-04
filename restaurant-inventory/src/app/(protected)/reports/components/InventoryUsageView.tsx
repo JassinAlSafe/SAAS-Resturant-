@@ -1,6 +1,5 @@
 "use client";
 
-import Card from "@/components/Card";
 import { Line } from "react-chartjs-2";
 import {
   Table,
@@ -15,8 +14,10 @@ import { InventoryRow } from "./InventoryRow";
 export const InventoryUsageView = ({
   inventoryUsageData,
 }: InventoryUsageViewProps) => (
-  <div className="grid grid-cols-1 gap-4 md:gap-6">
-    <Card title="Ingredient Usage Trends" className="min-h-[320px]">
+  <div className="space-y-6">
+    {/* Chart */}
+    <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
+      <h3 className="text-sm font-medium mb-4">Ingredient Usage Trends</h3>
       <div className="h-[280px] md:h-[320px]">
         <Line
           data={inventoryUsageData}
@@ -33,6 +34,8 @@ export const InventoryUsageView = ({
                   font: {
                     size: 11,
                   },
+                  usePointStyle: true,
+                  pointStyle: "circle",
                 },
               },
               title: {
@@ -41,6 +44,9 @@ export const InventoryUsageView = ({
             },
             scales: {
               x: {
+                grid: {
+                  display: false,
+                },
                 ticks: {
                   font: {
                     size: 10,
@@ -50,6 +56,9 @@ export const InventoryUsageView = ({
                 },
               },
               y: {
+                grid: {
+                  color: "rgba(0, 0, 0, 0.05)",
+                },
                 ticks: {
                   font: {
                     size: 10,
@@ -60,10 +69,12 @@ export const InventoryUsageView = ({
           }}
         />
       </div>
-    </Card>
+    </div>
 
-    <Card title="Inventory Summary">
-      <div className="overflow-x-auto -mx-4 md:mx-0">
+    {/* Table */}
+    <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
+      <h3 className="text-sm font-medium mb-4">Inventory Summary</h3>
+      <div className="overflow-x-auto">
         <div className="min-w-[600px] md:min-w-0">
           <Table>
             <TableHeader>
@@ -124,6 +135,6 @@ export const InventoryUsageView = ({
           </Table>
         </div>
       </div>
-    </Card>
+    </div>
   </div>
 );

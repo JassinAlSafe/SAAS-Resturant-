@@ -55,7 +55,7 @@ export default function Reports() {
   } = useReports();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 bg-background">
       <PageHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -67,7 +67,7 @@ export default function Reports() {
       {isLoading ? (
         <LoadingIndicator />
       ) : (
-        <>
+        <div className="bg-card rounded-lg shadow-sm p-6">
           {/* Sales Analytics Content */}
           {activeTab === "sales" && (
             <SalesAnalyticsView
@@ -81,7 +81,7 @@ export default function Reports() {
           {activeTab === "inventory" && (
             <InventoryUsageView inventoryUsageData={inventoryUsageData} />
           )}
-        </>
+        </div>
       )}
     </div>
   );
