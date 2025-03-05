@@ -58,7 +58,14 @@ export const userService = {
                 id: profile.id,
                 email: profile.email,
                 name: profile.name || "",
-                role: profile.role as User["role"]
+                role: profile.role as User["role"],
+                avatar_url: profile.avatar_url,
+                created_at: profile.created_at,
+                updated_at: profile.updated_at,
+                last_login: profile.last_login,
+                status: profile.status || "active",
+                department: profile.department,
+                mfa_enabled: profile.mfa_enabled || false
             }));
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -87,7 +94,14 @@ export const userService = {
                 id: data.id,
                 email: data.email,
                 name: data.name || "",
-                role: data.role as User["role"]
+                role: data.role as User["role"],
+                avatar_url: data.avatar_url,
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                last_login: data.last_login,
+                status: data.status || "active",
+                department: data.department,
+                mfa_enabled: data.mfa_enabled || false
             };
         } catch (error) {
             console.error("Error fetching user:", error);
@@ -113,7 +127,14 @@ export const userService = {
                 id: data.id,
                 email: data.email,
                 name: data.name || "",
-                role: data.role as User["role"]
+                role: data.role as User["role"],
+                avatar_url: data.avatar_url,
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                last_login: data.last_login,
+                status: data.status || "active",
+                department: data.department,
+                mfa_enabled: data.mfa_enabled || false
             };
         } catch (error) {
             console.error("Error updating user role:", error);
@@ -121,12 +142,75 @@ export const userService = {
         }
     },
 
-    // Invite a new user
-    inviteUser: async (email: string, name: string, role: User["role"]): Promise<{ success: boolean, message: string }> => {
+    // Update user status
+    updateUserStatus: async (userId: string, status: User["status"]): Promise<User> => {
         try {
-            // In a real app, this would send an invitation email with a signup link
-            // For this mock implementation, we'll simulate the process
+            const { data, error } = await supabase
+                .from("profiles")
+                .update({ status, updated_at: new Date().toISOString() })
+                .eq("id", userId)
+                .select()
+                .single();
 
+            if (error) {
+                throw error;
+            }
+
+            return {
+                id: data.id,
+                email: data.email,
+                name: data.name || "",
+                role: data.role as User["role"],
+                avatar_url: data.avatar_url,
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                last_login: data.last_login,
+                status: data.status,
+                department: data.department,
+                mfa_enabled: data.mfa_enabled || false
+            };
+        } catch (error) {
+            console.error("Error updating user status:", error);
+            throw error;
+        }
+    },
+
+    // Update user department
+    updateUserDepartment: async (userId: string, department: string): Promise<User> => {
+        try {
+            const { data, error } = await supabase
+                .from("profiles")
+                .update({ department, updated_at: new Date().toISOString() })
+                .eq("id", userId)
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            return {
+                id: data.id,
+                email: data.email,
+                name: data.name || "",
+                role: data.role as User["role"],
+                avatar_url: data.avatar_url,
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                last_login: data.last_login,
+                status: data.status || "active",
+                department: data.department,
+                mfa_enabled: data.mfa_enabled || false
+            };
+        } catch (error) {
+            console.error("Error updating user department:", error);
+            throw error;
+        }
+    },
+
+    // Invite a new user
+    inviteUser: async (email: string, name: string, role: User["role"], department?: string): Promise<{ success: boolean, message: string }> => {
+        try {
             // Check if user already exists
             const { data: existingUser } = await supabase
                 .from("profiles")
@@ -175,7 +259,11 @@ export const userService = {
                         id: data.user.id,
                         email,
                         name,
-                        role
+                        role,
+                        department,
+                        status: "pending",
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
                     }
                 ]);
 
@@ -202,6 +290,60 @@ export const userService = {
         }
     },
 
+    // Resend invitation
+    resendInvitation: async (userId: string): Promise<{ success: boolean, message: string }> => {
+        try {
+            // In a real app, this would regenerate the invitation link and send a new email
+            // For this mock implementation, we'll simulate the process
+
+            // Get the user's email
+            const { data: userData, error: userError } = await supabase
+                .from("profiles")
+                .select("email, name")
+                .eq("id", userId)
+                .single();
+
+            if (userError || !userData) {
+                return {
+                    success: false,
+                    message: "User not found."
+                };
+            }
+
+            // Update the user's status to ensure it's still pending
+            const { error: updateError } = await supabase
+                .from("profiles")
+                .update({
+                    status: "pending",
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", userId);
+
+            if (updateError) {
+                return {
+                    success: false,
+                    message: "Failed to update user status."
+                };
+            }
+
+            // Generate a new temporary password
+            const newTempPassword = Math.random().toString(36).slice(-8);
+
+            // In a real app, we would send an email with the new invitation link
+            // For now, we'll just return success with the new temp password
+            return {
+                success: true,
+                message: `Invitation resent to ${userData.email}. New temporary password: ${newTempPassword}`
+            };
+        } catch (error: any) {
+            console.error("Error resending invitation:", error);
+            return {
+                success: false,
+                message: "An unexpected error occurred. " + error.message
+            };
+        }
+    },
+
     // Remove a user
     removeUser: async (userId: string): Promise<boolean> => {
         try {
@@ -218,6 +360,74 @@ export const userService = {
         } catch (error) {
             console.error("Error removing user:", error);
             return false;
+        }
+    },
+
+    // Bulk update user roles
+    bulkUpdateRoles: async (userIds: string[], role: User["role"]): Promise<{ success: boolean, message: string }> => {
+        try {
+            const { error } = await supabase
+                .from("profiles")
+                .update({
+                    role,
+                    updated_at: new Date().toISOString()
+                })
+                .in("id", userIds);
+
+            if (error) {
+                return {
+                    success: false,
+                    message: "Failed to update roles. " + error.message
+                };
+            }
+
+            return {
+                success: true,
+                message: `Successfully updated ${userIds.length} user(s) to ${role} role.`
+            };
+        } catch (error: any) {
+            console.error("Error bulk updating roles:", error);
+            return {
+                success: false,
+                message: "An unexpected error occurred. " + error.message
+            };
+        }
+    },
+
+    // Bulk delete users
+    bulkDeleteUsers: async (userIds: string[]): Promise<{ success: boolean, message: string }> => {
+        try {
+            // Delete users one by one since Supabase doesn't support bulk delete for auth users
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const userId of userIds) {
+                const { error } = await supabase.auth.admin.deleteUser(userId);
+                if (error) {
+                    console.error(`Error deleting user ${userId}:`, error);
+                    failCount++;
+                } else {
+                    successCount++;
+                }
+            }
+
+            if (failCount > 0) {
+                return {
+                    success: successCount > 0,
+                    message: `Successfully deleted ${successCount} user(s). Failed to delete ${failCount} user(s).`
+                };
+            }
+
+            return {
+                success: true,
+                message: `Successfully deleted ${successCount} user(s).`
+            };
+        } catch (error: any) {
+            console.error("Error bulk deleting users:", error);
+            return {
+                success: false,
+                message: "An unexpected error occurred. " + error.message
+            };
         }
     },
 

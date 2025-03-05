@@ -23,8 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { FiInfo, FiZap, FiClipboard, FiSettings } from "react-icons/fi";
-import { Switch } from "@/components/ui/switch";
 import { useMediaQueries } from "@/hooks/use-media-query";
+import { CustomToggle } from "@/components/ui/custom-toggle";
 
 interface InventoryItemModalProps {
   isOpen: boolean;
@@ -179,14 +179,14 @@ export default function InventoryItemModal({
         {canAccessAdvanced && (
           <div className="flex items-center justify-between mb-2 pb-2 border-b">
             <div className="flex items-center gap-2">
-              <Switch
+              <CustomToggle
                 id="quick-mode"
                 checked={quickMode}
                 onCheckedChange={setQuickMode}
+                size="sm"
+                color="primary"
+                label="Quick Entry Mode"
               />
-              <Label htmlFor="quick-mode" className="cursor-pointer">
-                Quick Entry Mode
-              </Label>
             </div>
             <span className="text-xs text-muted-foreground">
               {quickMode ? "Essential fields only" : "All fields"}

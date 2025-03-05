@@ -8,11 +8,10 @@ import InventoryActions from "./components/InventoryActions";
 import { InventoryModals } from "./components/modals";
 import { InventoryItem } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useInventory } from "./hooks/useInventory";
 import { InventoryStats } from "./components/InventoryStats";
 import { InventoryCategoryValue } from "./components/InventoryCategoryValue";
+import { CustomToggle } from "@/components/ui/custom-toggle";
 
 export default function Inventory() {
   const { toast } = useToast();
@@ -276,17 +275,14 @@ export default function Inventory() {
 
       <div className="flex flex-wrap justify-between items-center mb-4">
         <div className="flex items-center space-x-3 bg-white dark:bg-gray-800 px-4 py-2.5 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
-          <Switch
+          <CustomToggle
             id="low-stock-filter"
             checked={showLowStockOnly}
             onCheckedChange={setShowLowStockOnly}
+            size="sm"
+            color="primary"
+            label="Show low/out of stock only"
           />
-          <Label
-            htmlFor="low-stock-filter"
-            className="text-sm font-medium cursor-pointer text-gray-700 dark:text-gray-300"
-          >
-            Show low/out of stock only
-          </Label>
         </div>
 
         <div className="flex items-center space-x-2">

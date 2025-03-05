@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { format, subDays } from "date-fns";
+import { format, subDays, differenceInDays, eachDayOfInterval } from "date-fns";
 import { useCurrency } from "@/lib/currency-context";
 import {
     DateRangeType,
     TabType,
     SalesData,
     TopDishesData,
-    InventoryUsageData
+    InventoryUsageData,
+    DateRange
 } from "../types";
 import { exportSalesReport, exportInventoryReport } from "../utils/exportUtils";
 
@@ -14,6 +15,16 @@ export const useReports = () => {
     const [activeTab, setActiveTab] = useState<TabType>("sales");
     const [dateRange, setDateRange] = useState<DateRangeType>("week");
     const [isLoading, setIsLoading] = useState(true);
+    const [customDateRange, setCustomDateRange] = useState<DateRange>({
+        from: undefined,
+        to: undefined
+    });
+    const [previousPeriodData, setPreviousPeriodData] = useState({
+        totalSales: 9350,
+        avgDailySales: 1335.71,
+        totalOrders: 365,
+        avgOrderValue: 25.75
+    });
 
     // Get currency formatter
     const { formatCurrency } = useCurrency();
@@ -25,14 +36,32 @@ export const useReports = () => {
 
         // In a real app, this would be an API call to Supabase
         const fetchTimeout = setTimeout(() => {
+            // Also update previous period data
+            setPreviousPeriodData({
+                totalSales: 9350,
+                avgDailySales: 1335.71,
+                totalOrders: 365,
+                avgOrderValue: 25.75
+            });
+
             setIsLoading(false);
         }, 1000);
 
         return () => clearTimeout(fetchTimeout);
-    }, [dateRange]);
+    }, [dateRange, customDateRange]);
 
     // Generate dates for the selected range
     const getDateLabels = () => {
+        if (dateRange === "custom" && customDateRange.from && customDateRange.to) {
+            // For custom date range, generate labels for each day in the range
+            const days = eachDayOfInterval({
+                start: customDateRange.from,
+                end: customDateRange.to
+            });
+            return days.map(date => format(date, "MMM dd"));
+        }
+
+        // For predefined ranges
         const days = dateRange === "week" ? 7 : dateRange === "month" ? 30 : 90;
         return Array.from({ length: days })
             .map((_, i) => {
@@ -40,6 +69,42 @@ export const useReports = () => {
                 return format(date, "MMM dd");
             })
             .reverse();
+    };
+
+    // Get the number of days in the current range for calculating averages
+    const getDaysInRange = () => {
+        if (dateRange === "custom" && customDateRange.from && customDateRange.to) {
+            return differenceInDays(customDateRange.to, customDateRange.from) + 1;
+        }
+
+        return dateRange === "week" ? 7 : dateRange === "month" ? 30 : 90;
+    };
+
+    // Calculate metrics based on the date range
+    const calculateMetrics = () => {
+        // In a real app, these would be calculated from actual data
+        const totalSales = 10500;
+        const daysInRange = getDaysInRange();
+        const avgDailySales = totalSales / daysInRange;
+        const totalOrders = 420;
+        const avgOrderValue = totalSales / totalOrders;
+
+        return {
+            totalSales,
+            avgDailySales,
+            totalOrders,
+            avgOrderValue
+        };
+    };
+
+    // Get the metrics for the current period
+    const metrics = calculateMetrics();
+
+    // Calculate percentage changes
+    const getPercentageChange = (current: number, previous: number) => {
+        if (previous === 0) return "0%";
+        const change = ((current - previous) / previous) * 100;
+        return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
     };
 
     // Prepare chart data based on the date range
@@ -124,11 +189,16 @@ export const useReports = () => {
         setActiveTab,
         dateRange,
         setDateRange,
+        customDateRange,
+        setCustomDateRange,
         isLoading,
         salesData,
         topDishesData,
         inventoryUsageData,
         formatCurrency,
         handleExportReport,
+        metrics,
+        previousPeriodData,
+        getPercentageChange
     };
 }; 

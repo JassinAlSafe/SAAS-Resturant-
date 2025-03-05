@@ -46,12 +46,17 @@ export default function Reports() {
     setActiveTab,
     dateRange,
     setDateRange,
+    customDateRange,
+    setCustomDateRange,
     isLoading,
     salesData,
     topDishesData,
     inventoryUsageData,
     formatCurrency,
     handleExportReport,
+    metrics,
+    previousPeriodData,
+    getPercentageChange,
   } = useReports();
 
   return (
@@ -62,7 +67,12 @@ export default function Reports() {
         handleExportReport={handleExportReport}
       />
 
-      <DateRangeSelector dateRange={dateRange} setDateRange={setDateRange} />
+      <DateRangeSelector
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        customDateRange={customDateRange}
+        setCustomDateRange={setCustomDateRange}
+      />
 
       {isLoading ? (
         <LoadingIndicator />
@@ -74,6 +84,7 @@ export default function Reports() {
               salesData={salesData}
               topDishesData={topDishesData}
               formatCurrency={formatCurrency}
+              previousPeriodData={previousPeriodData}
             />
           )}
 

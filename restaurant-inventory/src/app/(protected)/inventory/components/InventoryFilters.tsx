@@ -12,8 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { FiSearch, FiFilter, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -22,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { CustomToggle } from "@/components/ui/custom-toggle";
 
 interface InventoryFiltersProps {
   searchTerm: string;
@@ -114,18 +113,14 @@ export default function InventoryFilters({
         {/* Stock Status Filter */}
         <div className="flex items-center justify-between rounded-lg p-3 bg-background/50">
           <div className="flex items-center gap-3">
-            <Switch
+            <CustomToggle
               id="show-low-stock"
               checked={showLowStock}
               onCheckedChange={onLowStockChange}
-              className="data-[state=checked]:bg-primary"
+              size="md"
+              color="primary"
+              label="Show Low/Out of Stock Only"
             />
-            <Label
-              htmlFor="show-low-stock"
-              className="text-sm font-medium cursor-pointer flex items-center gap-3"
-            >
-              Show Low/Out of Stock Only
-            </Label>
           </div>
           {(lowStockCount > 0 || outOfStockCount > 0) && (
             <div className="flex gap-2">

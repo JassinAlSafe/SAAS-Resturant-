@@ -33,8 +33,8 @@ export default function SaleNotesModal({
             Notes for Sale on {format(new Date(sale.date), "PPP")}
           </DialogTitle>
           <DialogDescription>
-            {sale.dishName} - Quantity: {sale.quantity} - Total:{" "}
-            {sale.totalAmount}
+            {sale.dishName || "Unknown Dish"} - Quantity: {sale.quantity} -
+            Total: {sale.totalAmount}
           </DialogDescription>
         </DialogHeader>
 
@@ -42,7 +42,7 @@ export default function SaleNotesModal({
           <EntityNotes
             entityType="sale"
             entityId={sale.id}
-            entityName={`${sale.dishName} (${format(
+            entityName={`${sale.dishName || "Unknown Dish"} (${format(
               new Date(sale.date),
               "PPP"
             )})`}

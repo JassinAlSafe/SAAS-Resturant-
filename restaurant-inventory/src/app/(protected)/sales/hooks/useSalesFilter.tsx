@@ -13,9 +13,11 @@ export function useSalesFilter(sales: Sale[], dishes: Dish[]) {
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => {
       // Filter by search term
-      const matchesSearch = sale.dishName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        searchTerm === "" ||
+        (sale.dishName
+          ? sale.dishName.toLowerCase().includes(searchTerm.toLowerCase())
+          : "unknown dish".includes(searchTerm.toLowerCase()));
 
       // Filter by date if selected
       const matchesDate =
@@ -43,12 +45,17 @@ export function useSalesFilter(sales: Sale[], dishes: Dish[]) {
 
   // Calculate total sales by dish
   const calculateSalesByDish = () => {
-    const dishSales: { [key: string]: { quantity: number; amount: number } } =
-      {};
+    const dishSales: {
+      [key: string]: { quantity: number; amount: number; dishName: string };
+    } = {};
 
     filteredSales.forEach((sale) => {
       if (!dishSales[sale.dishId]) {
-        dishSales[sale.dishId] = { quantity: 0, amount: 0 };
+        dishSales[sale.dishId] = {
+          quantity: 0,
+          amount: 0,
+          dishName: sale.dishName || "Unknown Dish",
+        };
       }
 
       dishSales[sale.dishId].quantity += sale.quantity;
@@ -59,7 +66,7 @@ export function useSalesFilter(sales: Sale[], dishes: Dish[]) {
       const dish = dishes.find((d) => d.id === dishId);
       return {
         dishId,
-        dishName: dish?.name || "Unknown Dish",
+        dishName: dish?.name || data.dishName || "Unknown Dish",
         quantity: data.quantity,
         amount: data.amount,
       };

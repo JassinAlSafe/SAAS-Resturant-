@@ -101,11 +101,28 @@ export function useSales() {
       const formattedDate = format(date, "yyyy-MM-dd");
       const salesEntries: Omit<Sale, "id" | "createdAt">[] = [];
 
+      console.log(`Processing sales entries for ${formattedDate}`);
+
+      // Check if dishes are loaded
+      if (dishes.length === 0) {
+        console.error(
+          "No dishes available. Make sure dishes are loaded before adding sales."
+        );
+        showError(
+          "No Dishes Available",
+          "Please wait for dishes to load or refresh the page."
+        );
+        return false;
+      }
+
       for (const [dishId, quantity] of Object.entries(entries)) {
         if (quantity <= 0) continue;
 
         const dish = dishes.find((d) => d.id === dishId);
-        if (!dish) continue;
+        if (!dish) {
+          console.warn(`Dish with ID ${dishId} not found. Skipping entry.`);
+          continue;
+        }
 
         salesEntries.push({
           dishId,
@@ -117,6 +134,7 @@ export function useSales() {
       }
 
       if (salesEntries.length === 0) {
+        console.warn("No valid sales entries to add");
         showError(
           "No Sales to Add",
           "Please enter valid quantities for at least one dish."
@@ -124,26 +142,51 @@ export function useSales() {
         return false;
       }
 
+      console.log(`Sending ${salesEntries.length} sales entries to the server`);
+
       // Add sales
-      const addedSales = await salesService.addSales(salesEntries);
+      try {
+        const addedSales = await salesService.addSales(salesEntries);
 
-      if (addedSales.length > 0) {
-        // Update the sales list
-        setSales((prev) => [...prev, ...addedSales]);
+        if (addedSales.length > 0) {
+          console.log(`Successfully added ${addedSales.length} sales entries`);
 
-        // Update inventory (in a real app, this would reduce ingredient quantities)
-        await salesService.updateInventoryFromSales(addedSales);
+          // Update the sales list
+          setSales((prev) => [...prev, ...addedSales]);
 
-        success(
-          "Sales Recorded",
-          `${addedSales.length} sales entries have been added.`
-        );
-        return true;
+          // Update inventory (in a real app, this would reduce ingredient quantities)
+          try {
+            await salesService.updateInventoryFromSales(addedSales);
+          } catch (inventoryError) {
+            console.error("Error updating inventory:", inventoryError);
+            // Continue with success message even if inventory update fails
+          }
+
+          success(
+            "Sales Recorded",
+            `${addedSales.length} sales entries have been added.`
+          );
+          return true;
+        } else {
+          console.warn("No sales were added by the server");
+          showError(
+            "No Sales Added",
+            "The server processed your request but no sales were added."
+          );
+          return false;
+        }
+      } catch (salesError) {
+        console.error("Error in salesService.addSales:", salesError);
+        const errorMessage =
+          salesError instanceof Error
+            ? salesError.message
+            : "Unknown server error";
+
+        showError("Failed to Add Sales", `Server error: ${errorMessage}`);
+        return false;
       }
-
-      return false;
     } catch (err) {
-      console.error("Error adding sales entries:", err);
+      console.error("Unexpected error in addSalesEntries:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error occurred";
       showError(

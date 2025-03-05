@@ -11,6 +11,18 @@ import {
     MessageSquareIcon,
     UsersIcon,
     CreditCardIcon,
+    ClipboardListIcon,
+    BoxIcon,
+    TruckIcon,
+    ListIcon,
+    UtensilsIcon,
+    DollarSignIcon,
+    FileTextIcon,
+    PieChartIcon,
+    UserIcon,
+    CreditCardIcon as BillingIcon,
+    WrenchIcon,
+    HelpCircleIcon as HelpIcon,
 } from "lucide-react";
 
 import { NavItem } from "./types";
@@ -27,9 +39,9 @@ export const navItems: NavItem[] = [
         icon: PackageIcon,
         className: "mt-2",
         items: [
-            { name: "Inventory", href: "/inventory" },
-            { name: "Suppliers", href: "/suppliers" },
-            { name: "Shopping List", href: "/shopping-list" },
+            { name: "Inventory", href: "/inventory", icon: BoxIcon },
+            { name: "Suppliers", href: "/suppliers", icon: TruckIcon },
+            { name: "Shopping List", href: "/shopping-list", icon: ListIcon },
         ],
     },
     {
@@ -37,8 +49,8 @@ export const navItems: NavItem[] = [
         icon: ShoppingCartIcon,
         className: "mt-2",
         items: [
-            { name: "Recipes", href: "/recipes" },
-            { name: "Sales", href: "/sales" },
+            { name: "Recipes", href: "/recipes", icon: UtensilsIcon },
+            { name: "Sales", href: "/sales", icon: DollarSignIcon },
         ],
     },
     {
@@ -46,8 +58,8 @@ export const navItems: NavItem[] = [
         icon: BarChart2Icon,
         className: "mt-2",
         items: [
-            { name: "Reports", href: "/reports" },
-            { name: "Notes", href: "/notes" },
+            { name: "Reports", href: "/reports", icon: FileTextIcon },
+            { name: "Notes", href: "/notes", icon: MessageSquareIcon },
         ],
     },
     {
@@ -55,10 +67,10 @@ export const navItems: NavItem[] = [
         icon: SettingsIcon,
         className: "mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 opacity-90",
         items: [
-            { name: "Users", href: "/users" },
-            { name: "Billing", href: "/billing" },
-            { name: "Settings", href: "/settings" },
-            { name: "Help", href: "/help" },
+            { name: "Users", href: "/users", icon: UserIcon },
+            { name: "Billing", href: "/billing", icon: BillingIcon },
+            { name: "Settings", href: "/settings", icon: WrenchIcon },
+            { name: "Help", href: "/help", icon: HelpIcon },
         ],
     },
 ]; 

@@ -49,7 +49,9 @@ export default function SalesTable({ sales, onViewNotes }: SalesTableProps) {
             sales.map((sale) => (
               <TableRow key={sale.id}>
                 <TableCell>{format(new Date(sale.date), "PP")}</TableCell>
-                <TableCell className="font-medium">{sale.dishName}</TableCell>
+                <TableCell className="font-medium">
+                  {sale.dishName || "Unknown Dish"}
+                </TableCell>
                 <TableCell>{sale.quantity}</TableCell>
                 <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                 <TableCell className="text-right">

@@ -75,7 +75,8 @@ create table if not exists public.sales (
   quantity integer not null default 0,
   total_amount numeric not null default 0,
   date date not null default current_date,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  user_id uuid references auth.users on delete set null
 );
 
 -- Create indexes for performance

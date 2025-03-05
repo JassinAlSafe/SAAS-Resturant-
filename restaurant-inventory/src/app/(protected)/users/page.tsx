@@ -39,10 +39,21 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiMail } from "react-icons/fi";
+import {
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiUsers,
+  FiMail,
+  FiCalendar,
+  FiShield,
+  FiBriefcase,
+  FiLock,
+} from "react-icons/fi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { AccessDenied } from "@/components/ui/access-denied";
+import { format } from "date-fns";
 
 export default function UsersPage() {
   const { profile } = useAuth();
@@ -57,6 +68,7 @@ export default function UsersPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState<User["role"]>("staff");
+  const [inviteDepartment, setInviteDepartment] = useState("");
   const [isInviting, setIsInviting] = useState(false);
 
   // Edit role dialog state
@@ -93,7 +105,7 @@ export default function UsersPage() {
   // Handle inviting a new user
   const handleInviteUser = async () => {
     if (!inviteEmail || !inviteName || !inviteRole) {
-      error("Missing Information", "Please fill in all fields.");
+      error("Missing Information", "Please fill in all required fields.");
       return;
     }
 
@@ -102,7 +114,8 @@ export default function UsersPage() {
       const result = await userService.inviteUser(
         inviteEmail,
         inviteName,
-        inviteRole
+        inviteRole,
+        inviteDepartment
       );
 
       if (result.success) {
@@ -111,7 +124,8 @@ export default function UsersPage() {
         setInviteEmail("");
         setInviteName("");
         setInviteRole("staff");
-        fetchUsers(); // Refresh the user list
+        setInviteDepartment("");
+        fetchUsers();
       } else {
         error("Invitation Failed", result.message);
       }
@@ -125,7 +139,7 @@ export default function UsersPage() {
 
   // Handle updating a user's role
   const handleUpdateRole = async () => {
-    if (!selectedUser || !editRole) {
+    if (!selectedUser?.id || !editRole) {
       error("Missing Information", "Please select a role.");
       return;
     }
@@ -139,7 +153,7 @@ export default function UsersPage() {
       );
       setIsEditDialogOpen(false);
       setSelectedUser(null);
-      fetchUsers(); // Refresh the user list
+      fetchUsers();
     } catch (err) {
       console.error("Error updating role:", err);
       error("Update Failed", "There was an error updating the user's role.");
@@ -150,20 +164,20 @@ export default function UsersPage() {
 
   // Handle deleting a user
   const handleDeleteUser = async () => {
-    if (!userToDelete) {
+    if (!userToDelete?.id) {
       error("Missing Information", "No user selected for deletion.");
       return;
     }
 
     setIsDeleting(true);
     try {
-      const success = await userService.removeUser(userToDelete.id);
+      const deleteSuccess = await userService.removeUser(userToDelete.id);
 
-      if (success) {
+      if (deleteSuccess) {
         success("User Removed", `${userToDelete.name} has been removed.`);
         setIsDeleteDialogOpen(false);
         setUserToDelete(null);
-        fetchUsers(); // Refresh the user list
+        fetchUsers();
       } else {
         error("Removal Failed", "There was an error removing the user.");
       }
@@ -231,16 +245,15 @@ export default function UsersPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+            User Management
+          </h1>
           <p className="text-sm text-muted-foreground">
             Manage team members and their permissions
           </p>
         </div>
 
-        <Button
-          className="mt-4 md:mt-0"
-          onClick={() => setIsInviteDialogOpen(true)}
-        >
+        <Button onClick={() => setIsInviteDialogOpen(true)}>
           <FiPlus className="mr-2" />
           Invite User
         </Button>
@@ -262,6 +275,10 @@ export default function UsersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Login</TableHead>
+                  <TableHead>MFA</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -269,7 +286,7 @@ export default function UsersPage() {
                 {users.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={8}
                       className="text-center py-8 text-muted-foreground"
                     >
                       No users found. Invite team members to get started.
@@ -278,7 +295,28 @@ export default function UsersPage() {
                 ) : (
                   users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {user.avatar_url ? (
+                            <img
+                              src={user.avatar_url}
+                              alt={user.name}
+                              className="h-8 w-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-medium text-primary">
+                                {user.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          {user.name}
+                        </div>
+                      </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <Badge
@@ -289,9 +327,56 @@ export default function UsersPage() {
                               ? "default"
                               : "secondary"
                           }
+                          className="flex w-fit items-center gap-1"
                         >
-                          {user.role.charAt(0).toUpperCase() +
-                            user.role.slice(1)}
+                          <FiShield className="h-3 w-3" />
+                          {user.role &&
+                            user.role.charAt(0).toUpperCase() +
+                              user.role.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.department ? (
+                          <div className="flex items-center gap-1">
+                            <FiBriefcase className="h-3 w-3" />
+                            {user.department}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.status === "active"
+                              ? "default"
+                              : user.status === "pending"
+                              ? "warning"
+                              : "destructive"
+                          }
+                        >
+                          {user.status &&
+                            user.status.charAt(0).toUpperCase() +
+                              user.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.last_login ? (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <FiCalendar className="h-3 w-3" />
+                            {format(new Date(user.last_login), "MMM d, yyyy")}
+                          </div>
+                        ) : (
+                          "Never"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={user.mfa_enabled ? "default" : "secondary"}
+                          className="flex w-fit items-center gap-1"
+                        >
+                          <FiLock className="h-3 w-3" />
+                          {user.mfa_enabled ? "Enabled" : "Disabled"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -302,7 +387,7 @@ export default function UsersPage() {
                             className="h-8 w-8 text-blue-600"
                             onClick={() => openEditDialog(user)}
                             title="Edit role"
-                            disabled={user.id === profile?.id} // Can't edit your own role
+                            disabled={user.id === profile?.id}
                           >
                             <FiEdit2 className="h-4 w-4" />
                           </Button>
@@ -312,7 +397,7 @@ export default function UsersPage() {
                             className="h-8 w-8 text-red-600"
                             onClick={() => openDeleteDialog(user)}
                             title="Remove user"
-                            disabled={user.id === profile?.id} // Can't delete yourself
+                            disabled={user.id === profile?.id}
                           >
                             <FiTrash2 className="h-4 w-4" />
                           </Button>
@@ -360,10 +445,19 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="department">Department (Optional)</Label>
+              <Input
+                id="department"
+                placeholder="Kitchen, Service, etc."
+                value={inviteDepartment}
+                onChange={(e) => setInviteDepartment(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
               <Select
                 value={inviteRole}
-                onValueChange={(value: User["role"]) => setInviteRole(value)}
+                onValueChange={(value) => setInviteRole(value as User["role"])}
               >
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Select a role" />
@@ -412,7 +506,7 @@ export default function UsersPage() {
               <Label htmlFor="edit-role">Role</Label>
               <Select
                 value={editRole}
-                onValueChange={(value: User["role"]) => setEditRole(value)}
+                onValueChange={(value) => setEditRole(value as User["role"])}
               >
                 <SelectTrigger id="edit-role">
                   <SelectValue placeholder="Select a role" />

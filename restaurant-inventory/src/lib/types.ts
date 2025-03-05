@@ -42,6 +42,7 @@ export interface Sale {
   totalAmount: number;
   date: string;
   createdAt: string;
+  userId?: string;
 }
 
 // Dashboard stats interface
@@ -73,6 +74,10 @@ export type User = {
   avatar_url?: string;
   created_at?: Date | string;
   updated_at?: Date | string;
+  last_login?: Date | string;
+  status?: "active" | "pending" | "suspended";
+  department?: string;
+  mfa_enabled?: boolean;
 };
 
 // Inventory item type
