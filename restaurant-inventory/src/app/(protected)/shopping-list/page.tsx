@@ -5,7 +5,6 @@ import { useShoppingListFilters } from "./hooks/useShoppingListFilters";
 import { useAddShoppingItem } from "./hooks/useAddShoppingItem";
 import { useShoppingListExport } from "./hooks/useShoppingListExport";
 import { ApiError } from "@/components/ui/api-error";
-import Card from "@/components/Card";
 
 import ShoppingListTable from "./components/ShoppingListTable";
 import ShoppingListFilters from "./components/ShoppingListFilters";
@@ -65,13 +64,14 @@ export default function ShoppingList() {
   // Error state
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <ShoppingListHeader
             error={error}
             retry={fetchInventoryAndGenerateList}
           />
         </div>
+        <ApiError title="Shopping List Error" message={error} />
       </div>
     );
   }
@@ -79,8 +79,8 @@ export default function ShoppingList() {
   // Empty state
   if (shoppingList.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <ShoppingListHeader />
           <ShoppingListActions
             onAddClick={toggleAddItemForm}
@@ -116,8 +116,8 @@ export default function ShoppingList() {
 
   // Main view with items
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <ShoppingListHeader />
         <ShoppingListActions
           onAddClick={toggleAddItemForm}
@@ -155,13 +155,11 @@ export default function ShoppingList() {
         categories={categories}
       />
 
-      <Card>
-        <ShoppingListTable
-          items={filteredItems}
-          onMarkPurchased={markAsPurchased}
-          onRemoveItem={removeItem}
-        />
-      </Card>
+      <ShoppingListTable
+        items={filteredItems}
+        onMarkPurchased={markAsPurchased}
+        onRemoveItem={removeItem}
+      />
     </div>
   );
 }

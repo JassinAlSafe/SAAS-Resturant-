@@ -54,6 +54,21 @@ interface SupplierFormProps {
   onCancel: () => void;
 }
 
+// Define category colors for badges
+const categoryColors: Record<SupplierCategory, string> = {
+  [SupplierCategory.MEAT]: "bg-red-100 text-red-800 border-red-200",
+  [SupplierCategory.DAIRY]: "bg-blue-100 text-blue-800 border-blue-200",
+  [SupplierCategory.VEGETABLES]: "bg-green-100 text-green-800 border-green-200",
+  [SupplierCategory.FRUITS]: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  [SupplierCategory.BEVERAGES]:
+    "bg-purple-100 text-purple-800 border-purple-200",
+  [SupplierCategory.BAKERY]: "bg-amber-100 text-amber-800 border-amber-200",
+  [SupplierCategory.SEAFOOD]: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  [SupplierCategory.DRY_GOODS]:
+    "bg-orange-100 text-orange-800 border-orange-200",
+  [SupplierCategory.OTHER]: "bg-gray-100 text-gray-800 border-gray-200",
+};
+
 export default function SupplierForm({
   supplier,
   onSubmit,
@@ -228,8 +243,8 @@ export default function SupplierForm({
                   {field.value.map((category) => (
                     <Badge
                       key={category}
-                      variant="secondary"
-                      className="flex items-center gap-1"
+                      variant="outline"
+                      className={`flex items-center gap-1 ${categoryColors[category]}`}
                     >
                       {category.replace("_", " ")}
                       <button

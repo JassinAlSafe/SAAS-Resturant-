@@ -117,10 +117,18 @@ export function useShoppingList() {
       return updatedItem;
     } catch (err) {
       console.error("Error marking item as purchased:", err);
-      showError(
-        "Failed to mark item as purchased",
-        "There was an error updating the item status."
-      );
+
+      // Get a more specific error message if available
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "There was an error updating the item status.";
+
+      showError("Failed to mark item as purchased", errorMessage);
+
+      // Refresh the shopping list to ensure UI is in sync with backend
+      fetchInventoryAndGenerateList();
+
       return null;
     }
   };

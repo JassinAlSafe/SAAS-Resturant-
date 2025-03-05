@@ -1,7 +1,7 @@
 "use client";
 
 import { FiShoppingCart } from "react-icons/fi";
-import { ApiError } from "@/components/ui/api-error";
+import { Button } from "@/components/ui/button";
 
 interface ShoppingListHeaderProps {
   error?: string;
@@ -13,19 +13,23 @@ export default function ShoppingListHeader({
   retry,
 }: ShoppingListHeaderProps) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <FiShoppingCart className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Shopping List</h1>
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+        <FiShoppingCart className="h-5 w-5 text-blue-600" />
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Manage items to purchase for your inventory
-      </p>
-
-      {error && retry && (
-        <ApiError title="Shopping List Error" message={error} onRetry={retry} />
-      )}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Shopping List</h1>
+        <p className="text-sm text-gray-500">
+          Track items to purchase for your restaurant
+        </p>
+        {error && retry && (
+          <div className="mt-2">
+            <Button variant="destructive" size="sm" onClick={retry}>
+              Retry Loading
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

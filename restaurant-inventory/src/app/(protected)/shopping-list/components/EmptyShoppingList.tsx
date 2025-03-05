@@ -1,8 +1,7 @@
 "use client";
 
-import Card from "@/components/Card";
 import { Button } from "@/components/ui/button";
-import { FiShoppingCart, FiPlus } from "react-icons/fi";
+import { FiPlus, FiRefreshCw, FiShoppingCart } from "react-icons/fi";
 
 interface EmptyShoppingListProps {
   onAddClick: () => void;
@@ -14,27 +13,35 @@ export default function EmptyShoppingList({
   onRefreshClick,
 }: EmptyShoppingListProps) {
   return (
-    <Card className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="bg-primary/10 p-6 rounded-full mb-6">
-        <FiShoppingCart className="h-12 w-12 text-primary" />
+    <div className="bg-white border rounded-lg shadow-sm flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="bg-blue-50 p-6 rounded-full mb-6 border border-blue-100">
+        <FiShoppingCart className="h-12 w-12 text-blue-600" />
       </div>
-      <h2 className="text-xl font-semibold mb-2">
+      <h2 className="text-xl font-semibold mb-2 text-gray-900">
         Your Shopping List is Empty
       </h2>
-      <p className="text-muted-foreground max-w-md mb-6">
-        Add items to your shopping list manually or refresh to generate a list
-        based on low inventory items.
+      <p className="text-gray-500 max-w-md mb-8">
+        Add items to your shopping list to keep track of what you need to
+        purchase. You can add items manually or generate them from low inventory
+        items.
       </p>
-      <div className="flex flex-wrap gap-3 justify-center">
-        <Button variant="outline" onClick={onRefreshClick}>
-          <FiShoppingCart className="mr-2" />
-          Generate from Inventory
-        </Button>
-        <Button onClick={onAddClick}>
-          <FiPlus className="mr-2" />
+      <div className="flex flex-wrap gap-4 justify-center">
+        <Button
+          onClick={onAddClick}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-sm"
+        >
+          <FiPlus className="mr-2 h-4 w-4" />
           Add Item Manually
         </Button>
+        <Button
+          onClick={onRefreshClick}
+          variant="outline"
+          className="border-gray-200 text-gray-700 hover:bg-gray-50"
+        >
+          <FiRefreshCw className="mr-2 h-4 w-4" />
+          Generate from Inventory
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 }

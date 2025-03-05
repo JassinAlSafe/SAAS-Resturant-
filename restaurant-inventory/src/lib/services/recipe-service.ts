@@ -4,7 +4,13 @@ import { Dish, DishIngredient } from '@/lib/types';
 interface RecipeWithIngredients {
     id: string;
     name: string;
+    description?: string;
     price: number;
+    food_cost?: number;
+    category?: string;
+    allergens?: string[];
+    popularity?: number;
+    image_url?: string;
     created_at?: string;
     updated_at?: string;
     ingredients?: {
@@ -34,7 +40,13 @@ export const recipeService = {
                 .select(`
           id,
           name,
+          description,
           price,
+          food_cost,
+          category,
+          allergens,
+          popularity,
+          image_url,
           created_at,
           updated_at,
           recipe_ingredients (
@@ -58,7 +70,13 @@ export const recipeService = {
             return recipes.map((recipe: RecipeWithIngredients) => ({
                 id: recipe.id,
                 name: recipe.name,
+                description: recipe.description,
                 price: recipe.price,
+                foodCost: recipe.food_cost,
+                category: recipe.category,
+                allergens: recipe.allergens,
+                popularity: recipe.popularity,
+                imageUrl: recipe.image_url,
                 ingredients: recipe.ingredients?.map(item => ({
                     ingredientId: item.ingredient_id,
                     quantity: item.quantity
@@ -90,7 +108,13 @@ export const recipeService = {
                 .select(`
           id,
           name,
+          description,
           price,
+          food_cost,
+          category,
+          allergens,
+          popularity,
+          image_url,
           created_at,
           updated_at,
           recipe_ingredients (
@@ -113,7 +137,13 @@ export const recipeService = {
             return {
                 id: recipe.id,
                 name: recipe.name,
+                description: recipe.description,
                 price: recipe.price,
+                foodCost: recipe.food_cost,
+                category: recipe.category,
+                allergens: recipe.allergens,
+                popularity: recipe.popularity,
+                imageUrl: recipe.image_url,
                 ingredients: recipe.recipe_ingredients?.map(item => ({
                     ingredientId: item.ingredient_id,
                     quantity: item.quantity
@@ -147,7 +177,13 @@ export const recipeService = {
                 .from('recipes')
                 .insert({
                     name: dish.name,
+                    description: dish.description,
                     price: dish.price,
+                    food_cost: dish.foodCost,
+                    category: dish.category,
+                    allergens: dish.allergens,
+                    popularity: dish.popularity,
+                    image_url: dish.imageUrl,
                     user_id: user.id // Include the user_id
                 })
                 .select()
@@ -191,7 +227,13 @@ export const recipeService = {
             return {
                 id: recipe.id,
                 name: dish.name,
+                description: dish.description,
                 price: dish.price,
+                foodCost: dish.foodCost,
+                category: dish.category,
+                allergens: dish.allergens,
+                popularity: dish.popularity,
+                imageUrl: dish.imageUrl,
                 ingredients: dish.ingredients || [],
                 createdAt: recipe.created_at,
                 updatedAt: recipe.updated_at
@@ -228,7 +270,13 @@ export const recipeService = {
                 .from('recipes')
                 .update({
                     name: dish.name,
+                    description: dish.description,
                     price: dish.price,
+                    food_cost: dish.foodCost,
+                    category: dish.category,
+                    allergens: dish.allergens,
+                    popularity: dish.popularity,
+                    image_url: dish.imageUrl,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', id)
@@ -279,7 +327,13 @@ export const recipeService = {
             return {
                 id: id,
                 name: dish.name,
+                description: dish.description,
                 price: dish.price,
+                foodCost: dish.foodCost,
+                category: dish.category,
+                allergens: dish.allergens,
+                popularity: dish.popularity,
+                imageUrl: dish.imageUrl,
                 ingredients: dish.ingredients || [],
                 createdAt: recipe.created_at,
                 updatedAt: recipe.updated_at

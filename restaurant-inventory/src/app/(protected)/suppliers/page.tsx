@@ -1,7 +1,6 @@
 "use client";
 
 import { ApiError } from "@/components/ui/api-error";
-import Card from "@/components/Card";
 import { useSuppliers } from "./hooks/useSuppliers";
 import { useSupplierModals } from "./hooks/useSupplierModals";
 import { useSupplierFilters } from "./hooks/useSupplierFilters";
@@ -14,7 +13,7 @@ import SupplierLoading from "./components/SupplierLoading";
 import EmptySuppliers from "./components/EmptySuppliers";
 import { SupplierModals } from "./components/modals";
 import { toast } from "sonner";
-import { Supplier } from "@/lib/types";
+import { Supplier, SupplierCategory } from "@/lib/types";
 
 export default function Suppliers() {
   // Use our custom hooks
@@ -40,8 +39,13 @@ export default function Suppliers() {
     closeDeleteDialog,
   } = useSupplierModals();
 
-  const { searchTerm, setSearchTerm, filteredSuppliers } =
-    useSupplierFilters(suppliers);
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedCategory,
+    setSelectedCategory,
+    filteredSuppliers,
+  } = useSupplierFilters(suppliers);
 
   const { handleExportSuppliers } = useSupplierExport(filteredSuppliers);
 
@@ -99,6 +103,11 @@ export default function Suppliers() {
     }
   };
 
+  // Handle category filter change
+  const handleCategoryFilterChange = (category: SupplierCategory | null) => {
+    setSelectedCategory(category);
+  };
+
   // Loading state
   if (isLoading) {
     return <SupplierLoading />;
@@ -107,7 +116,7 @@ export default function Suppliers() {
   // Error state
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <SupplierHeader />
         </div>
@@ -120,8 +129,8 @@ export default function Suppliers() {
   // Empty state
   if (suppliers.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <SupplierHeader />
           <SupplierActions
             onAddClick={openAddModal}
@@ -147,8 +156,8 @@ export default function Suppliers() {
 
   // Main view with suppliers
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <SupplierHeader />
         <SupplierActions
           onAddClick={openAddModal}
@@ -158,14 +167,14 @@ export default function Suppliers() {
 
       <SupplierSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
-      <Card>
-        <SupplierTable
-          suppliers={filteredSuppliers}
-          onEditClick={openEditModal}
-          onDeleteClick={openDeleteDialog}
-          onBulkAction={handleBulkAction}
-        />
-      </Card>
+      <SupplierTable
+        suppliers={filteredSuppliers}
+        onEditClick={openEditModal}
+        onDeleteClick={openDeleteDialog}
+        onBulkAction={handleBulkAction}
+        selectedCategory={selectedCategory}
+        onCategoryFilterChange={handleCategoryFilterChange}
+      />
 
       <SupplierModals
         isModalOpen={isModalOpen}

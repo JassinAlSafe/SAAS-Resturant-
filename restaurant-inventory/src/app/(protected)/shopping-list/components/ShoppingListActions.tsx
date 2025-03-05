@@ -1,9 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ExportButton } from "@/components/ui/export-button";
-import { CurrencySelector } from "@/components/currency-selector";
-import { FiPlus, FiRefreshCw } from "react-icons/fi";
+import { FiPlus, FiRefreshCw, FiDownload } from "react-icons/fi";
 
 interface ShoppingListActionsProps {
   onAddClick: () => void;
@@ -17,22 +15,32 @@ export default function ShoppingListActions({
   onExportClick,
 }: ShoppingListActionsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <CurrencySelector />
-
-      <ExportButton
-        onExport={onExportClick}
-        label="Export Excel"
-        tooltipText="Download shopping list as Excel file"
+    <div className="flex flex-wrap items-center gap-3">
+      <Button
         variant="outline"
-      />
-
-      <Button variant="outline" size="sm" onClick={onRefreshClick}>
-        <FiRefreshCw className="mr-2 h-4 w-4" />
-        Refresh List
+        size="sm"
+        onClick={onExportClick}
+        className="border-gray-200 text-gray-700 hover:bg-gray-50"
+      >
+        <FiDownload className="mr-2 h-4 w-4" />
+        Export Excel
       </Button>
 
-      <Button size="sm" onClick={onAddClick}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRefreshClick}
+        className="border-gray-200 text-gray-700 hover:bg-gray-50"
+      >
+        <FiRefreshCw className="mr-2 h-4 w-4" />
+        Refresh Items
+      </Button>
+
+      <Button
+        size="sm"
+        onClick={onAddClick}
+        className="bg-blue-600 hover:bg-blue-700 text-white"
+      >
         <FiPlus className="mr-2 h-4 w-4" />
         Add Item
       </Button>

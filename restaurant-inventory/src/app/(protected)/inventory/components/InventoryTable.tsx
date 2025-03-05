@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Checkbox } from "@/components/ui/checkbox";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { Card } from "@/components/ui/card";
 
 interface InventoryTableProps {
@@ -300,7 +300,7 @@ export default function InventoryTable({
           <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
             <TableRow className="border-b border-gray-200 dark:border-gray-700 hover:bg-transparent">
               <TableHead className="w-12 h-10">
-                <Checkbox
+                <CustomCheckbox
                   checked={
                     items.length > 0 && selectedItems.size === items.length
                   }
@@ -358,7 +358,7 @@ export default function InventoryTable({
                   `}
                 >
                   <TableCell className={`${isCompactView ? "py-2" : ""}`}>
-                    <Checkbox
+                    <CustomCheckbox
                       checked={selectedItems.has(item.id)}
                       onCheckedChange={(checked) =>
                         handleSelectItem(item.id, checked === true)

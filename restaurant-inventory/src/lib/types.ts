@@ -16,6 +16,12 @@ export interface Dish {
   id: string;
   name: string;
   price: number;
+  category?: string;
+  allergens?: string[];
+  foodCost?: number;
+  popularity?: number;
+  imageUrl?: string;
+  description?: string;
   ingredients: DishIngredient[];
   createdAt: string;
   updatedAt: string;
