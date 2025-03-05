@@ -275,7 +275,7 @@ export default function Inventory() {
       <InventoryCategoryValue items={items} />
 
       <div className="flex flex-wrap justify-between items-center mb-4">
-        <div className="flex items-center space-x-3 bg-white dark:bg-gray-800 px-4 py-2 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center space-x-3 bg-white dark:bg-gray-800 px-4 py-2.5 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
           <Switch
             id="low-stock-filter"
             checked={showLowStockOnly}
@@ -283,30 +283,30 @@ export default function Inventory() {
           />
           <Label
             htmlFor="low-stock-filter"
-            className="text-sm font-medium cursor-pointer"
+            className="text-sm font-medium cursor-pointer text-gray-700 dark:text-gray-300"
           >
             Show low/out of stock only
           </Label>
         </div>
 
         <div className="flex items-center space-x-2">
-          <div className="bg-white dark:bg-gray-800 p-1 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-800 p-1.5 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
             <Button
               variant="ghost"
               size="sm"
               className={`px-3 ${
                 !isCompactView
                   ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground font-medium shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-750"
+              } transition-colors`}
               onClick={() => setIsCompactView(false)}
             >
               <List
-                className={`h-4 w-4 mr-1 ${
+                className={`h-4 w-4 mr-1.5 ${
                   !isCompactView
                     ? "text-primary dark:text-primary-foreground"
                     : "text-gray-500 dark:text-gray-400"
-                }`}
+                } stroke-[2px]`}
               />
               Standard
             </Button>
@@ -316,16 +316,16 @@ export default function Inventory() {
               className={`px-3 ${
                 isCompactView
                   ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground font-medium shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-750"
+              } transition-colors`}
               onClick={() => setIsCompactView(true)}
             >
               <Eye
-                className={`h-4 w-4 mr-1 ${
+                className={`h-4 w-4 mr-1.5 ${
                   isCompactView
                     ? "text-primary dark:text-primary-foreground"
                     : "text-gray-500 dark:text-gray-400"
-                }`}
+                } stroke-[2px]`}
               />
               Compact
             </Button>

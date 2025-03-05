@@ -209,11 +209,11 @@ export default function InventoryTable({
       <Card>
         {/* Bulk Actions Toolbar - Only visible when items are selected */}
         {isBulkActionsVisible && (
-          <div className="mb-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+          <div className="mb-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <Badge
                 variant="secondary"
-                className="bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary-foreground font-medium px-2.5 py-1 shadow-sm"
+                className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground font-medium px-3 py-1.5 rounded-full shadow-sm"
               >
                 {selectedItems.size} item{selectedItems.size !== 1 ? "s" : ""}{" "}
                 selected
@@ -221,27 +221,27 @@ export default function InventoryTable({
               <Button
                 variant="outline"
                 size="sm"
-                className="shadow-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                className="shadow-sm border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
                 onClick={() => handleSelectAll(false)}
               >
                 Clear selection
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Quantity adjustment:
                 </span>
                 <div className="flex items-center border rounded-md overflow-hidden shadow-sm border-gray-200 dark:border-gray-700">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="px-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     onClick={() =>
                       setBulkQuantityChange(Math.max(1, bulkQuantityChange - 1))
                     }
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
                   </Button>
                   <input
                     type="number"
@@ -252,78 +252,88 @@ export default function InventoryTable({
                         setBulkQuantityChange(val);
                       }
                     }}
-                    className="w-12 text-center border-x h-8 dark:bg-gray-800 dark:border-gray-700"
+                    className="w-14 text-center border-x h-8 dark:bg-gray-800 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary"
                     min="1"
                   />
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="px-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="px-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     onClick={() =>
                       setBulkQuantityChange(bulkQuantityChange + 1)
                     }
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
                   </Button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => handleBulkUpdateQuantity(true)}
-                  className="bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 hover:text-green-700 shadow-sm dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/40 transition-colors"
+                  className="bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 hover:text-green-700 shadow-sm dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30 transition-colors"
                 >
-                  <PlusCircle className="h-4 w-4 mr-1" />
+                  <PlusCircle className="h-4 w-4 mr-1.5 stroke-[2px]" />
                   Add {bulkQuantityChange} to stock
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => handleBulkUpdateQuantity(false)}
-                  className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 shadow-sm dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/40 transition-colors"
+                  className="bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 shadow-sm dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/30 transition-colors"
                 >
-                  <MinusCircle className="h-4 w-4 mr-1" />
+                  <MinusCircle className="h-4 w-4 mr-1.5 stroke-[2px]" />
                   Remove {bulkQuantityChange} from stock
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handleBulkDelete}
-                  className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 shadow-sm dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40 transition-colors"
+                  className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 shadow-sm dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30 transition-colors"
                 >
-                  <Trash className="h-4 w-4 mr-1" />
+                  <Trash className="h-4 w-4 mr-1.5 stroke-[2px]" />
                   Delete selected
                 </Button>
               </div>
             </div>
           </div>
         )}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
+        <Table className="border rounded-lg overflow-hidden shadow-sm bg-white dark:bg-gray-850">
+          <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
+            <TableRow className="border-b border-gray-200 dark:border-gray-700 hover:bg-transparent">
+              <TableHead className="w-12 h-10">
                 <Checkbox
                   checked={
                     items.length > 0 && selectedItems.size === items.length
                   }
                   onCheckedChange={handleSelectAll}
                   aria-label="Select all items"
-                  className="h-5 w-5 border-2 rounded-md data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  className="h-5 w-5 rounded-md"
                 />
               </TableHead>
-              <TableHead className="font-medium">Name</TableHead>
-              <TableHead className="font-medium">Category</TableHead>
-              <TableHead className="font-medium">Quantity</TableHead>
-              <TableHead className="font-medium">Status</TableHead>
-              <TableHead className="font-medium hidden md:table-cell">
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">
+                Name
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">
+                Category
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">
+                Quantity
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700 dark:text-gray-300">
+                Status
+              </TableHead>
+              <TableHead className="font-semibold hidden md:table-cell text-gray-700 dark:text-gray-300">
                 Reorder Level
               </TableHead>
-              <TableHead className="font-medium hidden sm:table-cell">
+              <TableHead className="font-semibold hidden md:table-cell text-right text-gray-700 dark:text-gray-300">
                 Unit Cost
               </TableHead>
-              <TableHead className="font-medium text-right">Actions</TableHead>
+              <TableHead className="text-right font-semibold text-gray-700 dark:text-gray-300">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -338,23 +348,18 @@ export default function InventoryTable({
                 <TableRow
                   key={item.id}
                   className={`
+                    transition-colors
+                    ${isCompactView ? "h-10" : ""}
                     ${
                       outOfStock
-                        ? "bg-red-50/90 dark:bg-red-950/20 border-l-4 border-l-red-500 dark:border-l-red-700"
-                        : ""
+                        ? "bg-red-50/80 dark:bg-red-950/10 border-l-4 border-l-red-500 dark:border-l-red-700"
+                        : lowStock
+                        ? "bg-yellow-50/80 dark:bg-yellow-950/10 border-l-4 border-l-yellow-500 dark:border-l-yellow-600"
+                        : approachingReorder && !lowStock && !outOfStock
+                        ? "bg-amber-50/70 dark:bg-amber-950/5 border-l-4 border-l-amber-400 dark:border-l-amber-600"
+                        : "hover:bg-gray-50 dark:hover:bg-gray-800/50 border-l-4 border-l-transparent"
                     }
-                    ${
-                      lowStock
-                        ? "bg-yellow-50/90 dark:bg-yellow-950/20 border-l-4 border-l-yellow-500 dark:border-l-yellow-600"
-                        : ""
-                    }
-                    ${
-                      approachingReorder && !lowStock && !outOfStock
-                        ? "bg-amber-50/80 dark:bg-amber-950/10 border-l-4 border-l-amber-400 dark:border-l-amber-600"
-                        : ""
-                    }
-                    hover:bg-muted/50 transition-colors
-                    ${isCompactView ? "h-10" : ""}
+                    border-b border-gray-100 dark:border-gray-800
                   `}
                 >
                   <TableCell className={`${isCompactView ? "py-2" : ""}`}>
@@ -364,7 +369,7 @@ export default function InventoryTable({
                         handleSelectItem(item.id, checked === true)
                       }
                       aria-label={`Select ${item.name}`}
-                      className="h-5 w-5 border-2 rounded-md data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      className="h-5 w-5 rounded-md"
                     />
                   </TableCell>
                   <TableCell
@@ -386,7 +391,7 @@ export default function InventoryTable({
                                         ? "text-yellow-500"
                                         : "text-amber-400"
                                     }
-                                    inline mr-1 h-4 w-4 stroke-[2px]
+                                    inline mr-1 h-4 w-4 stroke-[2.5px]
                                   `}
                                   />
                                 </span>
@@ -401,7 +406,7 @@ export default function InventoryTable({
                             </Tooltip>
                           </TooltipProvider>
                         )}
-                        <span className="truncate max-w-[180px]">
+                        <span className="truncate max-w-[180px] font-medium text-gray-800 dark:text-gray-200">
                           {item.name}
                         </span>
                       </div>
@@ -410,12 +415,7 @@ export default function InventoryTable({
                   <TableCell className={isCompactView ? "py-2" : ""}>
                     <Badge
                       variant="outline"
-                      className={`font-normal px-3 py-1 rounded-full shadow bg-white dark:bg-gray-800 border-[1.5px] border-gray-200 dark:border-gray-700
-                        ${
-                          onCategoryClick
-                            ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            : ""
-                        }`}
+                      className="font-normal px-3 py-1.5 rounded-full shadow-sm bg-white dark:bg-gray-800 border-[1.5px] border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-50 dark:hover:bg-gray-750"
                       onClick={() => onCategoryClick?.(item.category)}
                     >
                       {item.category}
@@ -431,11 +431,11 @@ export default function InventoryTable({
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-8 w-8 rounded-full"
+                                  className="h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                   onClick={() => handleQuickUpdate(item, false)}
                                   disabled={item.quantity <= 0}
                                 >
-                                  <MinusCircle className="h-5 w-5 stroke-[2px]" />
+                                  <MinusCircle className="h-4 w-4 stroke-[2px] text-gray-600 dark:text-gray-400" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Decrease quantity</TooltipContent>
@@ -452,7 +452,7 @@ export default function InventoryTable({
                                   onUpdateQuantity(item.id, newQty);
                                 }
                               }}
-                              className="w-14 h-8 text-center border rounded"
+                              className="w-14 text-center h-8 rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm focus:ring-1 focus:ring-primary/50 focus:border-primary"
                               min="0"
                             />
                             <span className="text-xs text-muted-foreground mt-1">
@@ -466,10 +466,10 @@ export default function InventoryTable({
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-8 w-8 rounded-full"
+                                  className="h-8 w-8 rounded-full border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                   onClick={() => handleQuickUpdate(item, true)}
                                 >
-                                  <PlusCircle className="h-5 w-5 stroke-[2px]" />
+                                  <PlusCircle className="h-4 w-4 stroke-[2px] text-gray-600 dark:text-gray-400" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Increase quantity</TooltipContent>
@@ -478,7 +478,9 @@ export default function InventoryTable({
                         </div>
                       ) : (
                         <div>
-                          {item.quantity}{" "}
+                          <span className="font-medium text-gray-800 dark:text-gray-200">
+                            {item.quantity}
+                          </span>{" "}
                           <span className="text-muted-foreground">
                             {formatUnit(item.quantity, item.unit)}
                           </span>
@@ -491,36 +493,36 @@ export default function InventoryTable({
                       {outOfStock && (
                         <Badge
                           variant="outline"
-                          className="border-[1.5px] bg-red-50 border-red-500 text-red-600 dark:bg-red-950/30 dark:border-red-400 dark:text-red-400 w-fit shadow-sm"
+                          className="border-[1.5px] bg-red-50 border-red-500 text-red-600 dark:bg-red-950/30 dark:border-red-400 dark:text-red-400 w-fit shadow-sm px-2.5 py-1 rounded-full font-medium"
                         >
-                          <AlertCircle className="mr-1 h-3 w-3 stroke-[2px]" />
+                          <AlertCircle className="mr-1 h-3.5 w-3.5 stroke-[2.5px]" />
                           Out of stock
                         </Badge>
                       )}
                       {lowStock && !outOfStock && (
                         <Badge
                           variant="outline"
-                          className="border-[1.5px] bg-yellow-50 border-yellow-500 text-yellow-600 dark:bg-yellow-950/30 dark:border-yellow-400 dark:text-yellow-400 w-fit shadow-sm"
+                          className="border-[1.5px] bg-yellow-50 border-yellow-500 text-yellow-600 dark:bg-yellow-950/30 dark:border-yellow-400 dark:text-yellow-400 w-fit shadow-sm px-2.5 py-1 rounded-full font-medium"
                         >
-                          <AlertTriangle className="mr-1 h-3 w-3 stroke-[2px]" />
+                          <AlertTriangle className="mr-1 h-3.5 w-3.5 stroke-[2.5px]" />
                           Low stock
                         </Badge>
                       )}
                       {approachingReorder && !lowStock && !outOfStock && (
                         <Badge
                           variant="outline"
-                          className="border-[1.5px] bg-amber-50 border-amber-400 text-amber-500 dark:bg-amber-950/30 dark:border-amber-300 dark:text-amber-300 w-fit shadow-sm"
+                          className="border-[1.5px] bg-amber-50 border-amber-400 text-amber-500 dark:bg-amber-950/30 dark:border-amber-300 dark:text-amber-300 w-fit shadow-sm px-2.5 py-1 rounded-full font-medium"
                         >
-                          <AlertCircle className="mr-1 h-3 w-3 stroke-[2px]" />
+                          <AlertCircle className="mr-1 h-3.5 w-3.5 stroke-[2.5px]" />
                           Reorder soon
                         </Badge>
                       )}
                       {!approachingReorder && !lowStock && !outOfStock && (
                         <Badge
                           variant="outline"
-                          className="border-[1.5px] bg-green-50 border-green-500 text-green-600 dark:bg-green-950/30 dark:border-green-400 dark:text-green-400 w-fit shadow-sm"
+                          className="border-[1.5px] bg-green-50 border-green-500 text-green-600 dark:bg-green-950/30 dark:border-green-400 dark:text-green-400 w-fit shadow-sm px-2.5 py-1 rounded-full font-medium"
                         >
-                          <Check className="mr-1 h-3 w-3 stroke-[2px]" />
+                          <Check className="mr-1 h-3.5 w-3.5 stroke-[2.5px]" />
                           In stock
                         </Badge>
                       )}
@@ -532,19 +534,30 @@ export default function InventoryTable({
                     }`}
                   >
                     <div className="flex items-center">
-                      {reorderLevel} {formatUnit(reorderLevel, item.unit)}
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        {reorderLevel}
+                      </span>{" "}
+                      <span className="text-muted-foreground ml-1">
+                        {formatUnit(reorderLevel, item.unit)}
+                      </span>
                       {(lowStock || outOfStock) && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="ml-2">
-                                <Info className="h-4 w-4 text-blue-500 stroke-[2px]" />
+                                <Info className="h-4 w-4 text-muted-foreground inline" />
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {outOfStock
-                                ? "Item needs to be restocked immediately!"
-                                : "Item is below reorder level"}
+                              <p>
+                                Current stock is{" "}
+                                {outOfStock
+                                  ? "depleted"
+                                  : `below the reorder level of ${reorderLevel} ${formatUnit(
+                                      reorderLevel,
+                                      item.unit
+                                    )}`}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -552,49 +565,42 @@ export default function InventoryTable({
                     </div>
                   </TableCell>
                   <TableCell
-                    className={`hidden sm:table-cell ${
+                    className={`hidden md:table-cell text-right ${
                       isCompactView ? "py-2" : ""
                     }`}
                   >
-                    {formatCurrency(item.cost_per_unit)}
+                    <div className="flex items-center justify-end">
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
+                        {new Intl.NumberFormat("sv-SE", {
+                          style: "currency",
+                          currency: "SEK",
+                          minimumFractionDigits: 2,
+                        }).format(item.unitCost || 0)}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell
                     className={`text-right ${isCompactView ? "py-2" : ""}`}
                   >
-                    <div className="flex justify-end gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20"
-                              onClick={() => onEditClick(item)}
-                            >
-                              <Pencil className="h-4 w-4 mr-1 stroke-[2px]" />
-                              <span className="hidden sm:inline">Edit</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit item details</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-                              onClick={() => onDeleteClick(item)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1 stroke-[2px]" />
-                              <span className="hidden sm:inline">Delete</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete this item</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => onEditClick(item)}
+                        className="h-8 w-8 border-gray-200 hover:border-primary/50 hover:bg-primary/5 dark:border-gray-700 dark:hover:border-primary/50 dark:hover:bg-primary/10 transition-colors rounded-md shadow-sm"
+                      >
+                        <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <span className="sr-only">Edit {item.name}</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => onDeleteClick(item)}
+                        className="h-8 w-8 border-gray-200 hover:border-red-200 hover:bg-red-50 dark:border-gray-700 dark:hover:border-red-900 dark:hover:bg-red-950/30 transition-colors rounded-md shadow-sm"
+                      >
+                        <Trash className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        <span className="sr-only">Delete {item.name}</span>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
