@@ -9,29 +9,37 @@
 
 @layer base {
   :root {
-    /* ShelfWise Light Theme - Simple White */
+    /* Core theme colors */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Component colors */
+    --card: var(--background);
+    --card-foreground: var(--foreground);
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+
+    /* Brand colors */
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* UI colors */
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Border and input */
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --input: var(--border);
+    --ring: var(--primary);
     --radius: 0.5rem;
 
-    /* Chart Colors */
+    /* Chart Colors - Grayscale */
     --chart-1: 0 0% 20%;
     --chart-2: 0 0% 35%;
     --chart-3: 0 0% 50%;
@@ -39,95 +47,90 @@
     --chart-5: 0 0% 80%;
 
     /* Sidebar - Clean grayscale theme */
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 0 0% 10%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 80%;
-    --sidebar-background: 0 0% 100%;
+    --sidebar-bg: var(--background);
+    --sidebar-fg: var(--foreground);
     --sidebar-hover: 0 0% 95%;
-    --sidebar-active: 0 0% 95%;
-    --sidebar-active-text: 0 0% 10%;
+    --sidebar-active: 0 0% 90%;
+    --sidebar-border: var(--border);
     --sidebar-icon: 0 0% 50%;
-    --sidebar-icon-active: 0 0% 10%;
-    --sidebar-muted: 0 0% 60%;
+    --sidebar-icon-active: var(--foreground);
+    --sidebar-muted: var(--muted-foreground);
     --sidebar-item-height: 3rem;
   }
 
   .dark {
-    /* ShelfWise Dark Theme - Deep Dark */
-    --background: 222 18% 8%;
+    /* Core theme colors */
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-    --card: 222 16% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 16% 10%;
-    --popover-foreground: 210 40% 98%;
+
+    /* Component colors inherit from core */
+    --card: var(--background);
+    --card-foreground: var(--foreground);
+    --popover: var(--background);
+    --popover-foreground: var(--foreground);
+
+    /* Brand colors */
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+
+    /* UI colors */
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: var(--secondary);
+    --accent-foreground: var(--secondary-foreground);
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Border and input */
     --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --input: var(--border);
     --ring: 224.3 76.3% 48%;
 
-    /* Chart Colors */
+    /* Chart Colors - Inverted Grayscale */
     --chart-1: 0 0% 100%;
     --chart-2: 0 0% 85%;
     --chart-3: 0 0% 70%;
     --chart-4: 0 0% 55%;
     --chart-5: 0 0% 40%;
 
-    /* Sidebar - Darker grayscale version */
-    --sidebar: 222 18% 7%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 90%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 222 18% 10%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 222 18% 12%;
-    --sidebar-ring: 0 0% 70%;
-    --sidebar-background: 222 18% 7%;
+    /* Sidebar - Darker theme */
+    --sidebar-bg: 222 18% 7%;
+    --sidebar-fg: var(--foreground);
     --sidebar-hover: 222 18% 10%;
     --sidebar-active: 222 18% 13%;
-    --sidebar-active-text: 0 0% 100%;
+    --sidebar-border: 222 18% 12%;
     --sidebar-icon: 0 0% 70%;
     --sidebar-icon-active: 0 0% 100%;
-    --sidebar-muted: 0 0% 60%;
+    --sidebar-muted: var(--muted-foreground);
   }
 
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-@layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased min-h-screen;
   }
+}
+
+/* Update sidebar classes to use new consolidated variables */
+.sidebar {
+  @apply bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))];
+  @apply border-[hsl(var(--sidebar-border))];
 }
 
 /* Add custom sidebar styles */
 .sidebar-item {
   @apply transition-all duration-200;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50;
+  @apply focus-visible:bg-[hsl(var(--sidebar-hover))];
 }
 
 .sidebar-item-active {
-  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
+  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-fg))];
+  @apply focus-visible:bg-[hsl(var(--sidebar-active))];
 }
 
 .sidebar-item-icon {
@@ -139,14 +142,15 @@
 }
 
 .sidebar-toggle-button {
-  @apply bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-primary))];
-  @apply hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-primary))];
+  @apply bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-fg))];
+  @apply hover:bg-[hsl(var(--sidebar-active))] hover:text-[hsl(var(--sidebar-fg))];
   @apply transition-all duration-200 shadow-sm;
 }
 
 /* Tooltip styles for sidebar */
 .sidebar-tooltip {
-  @apply z-50 px-4 py-2 bg-[#333] text-white rounded-md shadow-lg;
+  @apply z-50 px-4 py-2 rounded-md shadow-lg;
+  @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
   @apply transition-opacity duration-200;
 }
 
@@ -171,11 +175,15 @@
 
 /* Hover menu for collapsed sidebar */
 .sidebar-hover-menu {
-  @apply absolute left-16 bg-[#333] rounded-md py-2 px-4 shadow-lg z-50;
+  @apply absolute left-16 rounded-md py-2 px-4 shadow-lg z-50;
+  @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
   @apply opacity-0 pointer-events-none transition-opacity duration-200;
+  @apply focus-within:opacity-100 focus-within:pointer-events-auto;
+  @apply border border-border;
 }
 
-.sidebar-item:hover .sidebar-hover-menu {
+.sidebar-item:hover .sidebar-hover-menu,
+.sidebar-item:focus-within .sidebar-hover-menu {
   @apply opacity-100 pointer-events-auto;
 }
 
@@ -231,18 +239,19 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 3px;
+    @apply bg-muted-foreground/30 dark:bg-muted-foreground/20;
+    @apply rounded-sm;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
+    @apply bg-muted-foreground/50 dark:bg-muted-foreground/40;
   }
 
   /* Bottom fade for scrollable content */
   .mask-bottom-fade {
     mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+    @apply bg-gradient-to-b from-background to-transparent;
   }
 
   /* Force tables to be responsive */
@@ -297,6 +306,38 @@
   .gap-mobile {
     @apply gap-2 sm:gap-4 md:gap-6;
   }
+
+  /* Interactive elements accessibility */
+  button,
+  a,
+  [role="button"],
+  [tabindex="0"] {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50;
+    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply dark:focus-visible:ring-offset-[hsl(var(--background))];
+  }
+
+  /* Touch-friendly improvements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px]; /* iOS minimum touch target size */
+  }
+
+  /* Improved mobile table accessibility */
+  .responsive-table td::before {
+    content: attr(data-label);
+    @apply font-semibold text-left mr-2;
+    @apply sr-only sm:not-sr-only; /* Screen reader only on mobile */
+  }
+
+  /* Skip to main content link for keyboard users */
+  .skip-to-content {
+    @apply sr-only focus:not-sr-only;
+    @apply fixed top-0 left-0 z-50;
+    @apply bg-background text-foreground;
+    @apply px-4 py-2 m-2 rounded-md;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring/50;
+    @apply border border-border;
+  }
 }
 
 /* Handling long texts and preventing overflow */
@@ -330,29 +371,15 @@ table {
   }
 
   .responsive-table tr {
-    display: block;
-    margin-bottom: 1rem;
-    border: 1px solid hsl(var(--border));
-    border-radius: var(--radius);
-    padding: 0.5rem;
+    @apply border-border bg-card/50;
   }
 
   .responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    text-align: right;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid hsl(var(--border));
-  }
-
-  .responsive-table td:last-child {
-    border-bottom: none;
+    @apply border-border/50;
   }
 
   .responsive-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    text-align: left;
+    @apply text-muted-foreground;
   }
 }
 
@@ -382,4 +409,15 @@ body {
 /* Prevent pull-to-refresh on mobile */
 body {
   overscroll-behavior-y: contain;
+}
+
+/* Remove custom button styles */
+input,
+textarea {
+  @apply focus:outline-none focus:ring-2 focus:ring-ring/50;
+}
+
+html,
+body {
+  @apply h-full;
 }

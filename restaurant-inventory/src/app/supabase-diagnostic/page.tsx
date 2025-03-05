@@ -7,10 +7,12 @@ import { supplierService } from "@/lib/services/supplier-service";
 import { inventoryService } from "@/lib/services/inventory-service";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Supplier } from "@/lib/types";
+import { InventoryItem } from "@/lib/types";
 
 export default function SupabaseDiagnosticPage() {
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string>("");
@@ -38,10 +40,12 @@ export default function SupabaseDiagnosticPage() {
       }
 
       setResult(resultText);
-    } catch (err: any) {
-      console.error("Error in supplier diagnostic test:", err);
-      setError(err.message || "An error occurred during testing");
-      setResult(`❌ Error: ${err.message || "Unknown error"}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Error in supplier diagnostic test:", error);
+      setError(errorMessage);
+      setResult(`❌ Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -69,10 +73,12 @@ export default function SupabaseDiagnosticPage() {
       }
 
       setResult(resultText);
-    } catch (err: any) {
-      console.error("Error in inventory diagnostic test:", err);
-      setError(err.message || "An error occurred during testing");
-      setResult(`❌ Error: ${err.message || "Unknown error"}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("Error in inventory diagnostic test:", error);
+      setError(errorMessage);
+      setResult(`❌ Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -250,7 +256,7 @@ export default function SupabaseDiagnosticPage() {
               <li>Create a new query</li>
               <li>
                 Run the SQL scripts for suppliers and ingredients tables (from
-                the 'SQL Scripts' section below)
+                the &apos;SQL Scripts&apos; section below)
               </li>
             </ol>
           </div>
@@ -266,8 +272,7 @@ export default function SupabaseDiagnosticPage() {
               <li>Verify RLS policies allow proper access to these tables</li>
               <li>Check for any errors in the browser console</li>
               <li>
-                Ensure you're authenticated - most RLS policies require
-                authentication
+                Ensure you&apos;re authenticated - most RLS policies require
               </li>
             </ul>
           </div>

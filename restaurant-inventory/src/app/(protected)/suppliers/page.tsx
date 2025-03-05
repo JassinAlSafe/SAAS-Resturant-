@@ -13,6 +13,8 @@ import SupplierHeader from "./components/SupplierHeader";
 import SupplierLoading from "./components/SupplierLoading";
 import EmptySuppliers from "./components/EmptySuppliers";
 import { SupplierModals } from "./components/modals";
+import { toast } from "sonner";
+import { Supplier } from "@/lib/types";
 
 export default function Suppliers() {
   // Use our custom hooks
@@ -23,6 +25,7 @@ export default function Suppliers() {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    bulkDeleteSuppliers,
   } = useSuppliers();
 
   const {
@@ -43,21 +46,56 @@ export default function Suppliers() {
   const { handleExportSuppliers } = useSupplierExport(filteredSuppliers);
 
   // Handle saving a supplier (either add or update)
-  const handleSaveSupplier = (
+  const handleSaveSupplier = async (
     supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">
   ) => {
-    if (selectedSupplier) {
-      updateSupplier(selectedSupplier.id, supplierData);
-    } else {
-      addSupplier(supplierData);
+    try {
+      if (selectedSupplier) {
+        await updateSupplier(selectedSupplier.id, supplierData);
+        toast.success("Supplier updated successfully");
+      } else {
+        await addSupplier(supplierData);
+        toast.success("Supplier created successfully");
+      }
+      closeModal();
+    } catch (error) {
+      toast.error("Failed to save supplier");
+      console.error(error);
     }
   };
 
   // Handle deleting a supplier
   const handleDeleteSupplier = async () => {
-    if (supplierToDelete) {
-      await deleteSupplier(supplierToDelete.id);
-      closeDeleteDialog();
+    try {
+      if (supplierToDelete) {
+        await deleteSupplier(supplierToDelete.id);
+        toast.success("Supplier deleted successfully");
+        closeDeleteDialog();
+      }
+    } catch (error) {
+      toast.error("Failed to delete supplier");
+      console.error(error);
+    }
+  };
+
+  // Handle bulk actions
+  const handleBulkAction = async (action: string, suppliers: Supplier[]) => {
+    try {
+      switch (action) {
+        case "export":
+          await handleExportSuppliers(suppliers);
+          toast.success("Suppliers exported successfully");
+          break;
+        case "delete":
+          await bulkDeleteSuppliers(suppliers.map((s) => s.id));
+          toast.success("Suppliers deleted successfully");
+          break;
+        default:
+          console.warn("Unknown bulk action:", action);
+      }
+    } catch (error) {
+      toast.error(`Failed to ${action} suppliers`);
+      console.error(error);
     }
   };
 
@@ -125,6 +163,7 @@ export default function Suppliers() {
           suppliers={filteredSuppliers}
           onEditClick={openEditModal}
           onDeleteClick={openDeleteDialog}
+          onBulkAction={handleBulkAction}
         />
       </Card>
 

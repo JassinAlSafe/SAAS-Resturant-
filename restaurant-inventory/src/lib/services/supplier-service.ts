@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Supplier } from '@/lib/types';
+import { Supplier, SupplierCategory } from '@/lib/types';
 
 export const supplierService = {
     /**
@@ -46,7 +46,12 @@ export const supplierService = {
                 email: item.email,
                 phone: item.phone,
                 address: item.address,
-                notes: item.notes || null,
+                categories: item.categories || [SupplierCategory.OTHER],
+                isPreferred: item.is_preferred || false,
+                status: item.status || "ACTIVE",
+                rating: item.rating || 0,
+                lastOrderDate: item.last_order_date,
+                logo: item.logo,
                 createdAt: item.created_at,
                 updatedAt: item.updated_at
             }));
@@ -86,7 +91,12 @@ export const supplierService = {
                 email: data.email,
                 phone: data.phone,
                 address: data.address,
-                notes: data.notes || null,
+                categories: data.categories || [SupplierCategory.OTHER],
+                isPreferred: data.is_preferred || false,
+                status: data.status || "ACTIVE",
+                rating: data.rating || 0,
+                lastOrderDate: data.last_order_date,
+                logo: data.logo,
                 createdAt: data.created_at,
                 updatedAt: data.updated_at
             };
@@ -109,7 +119,12 @@ export const supplierService = {
                     email: supplier.email,
                     phone: supplier.phone,
                     address: supplier.address,
-                    notes: supplier.notes || null
+                    categories: supplier.categories,
+                    is_preferred: supplier.isPreferred,
+                    status: supplier.status,
+                    rating: supplier.rating,
+                    last_order_date: supplier.lastOrderDate,
+                    logo: supplier.logo
                 })
                 .select()
                 .single();
@@ -126,7 +141,12 @@ export const supplierService = {
                 email: data.email,
                 phone: data.phone,
                 address: data.address,
-                notes: data.notes || null,
+                categories: data.categories || [SupplierCategory.OTHER],
+                isPreferred: data.is_preferred || false,
+                status: data.status || "ACTIVE",
+                rating: data.rating || 0,
+                lastOrderDate: data.last_order_date,
+                logo: data.logo,
                 createdAt: data.created_at,
                 updatedAt: data.updated_at
             };
@@ -147,7 +167,12 @@ export const supplierService = {
             if (updates.email !== undefined) dbUpdates.email = updates.email;
             if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
             if (updates.address !== undefined) dbUpdates.address = updates.address;
-            if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+            if (updates.categories !== undefined) dbUpdates.categories = updates.categories;
+            if (updates.isPreferred !== undefined) dbUpdates.is_preferred = updates.isPreferred;
+            if (updates.status !== undefined) dbUpdates.status = updates.status;
+            if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
+            if (updates.lastOrderDate !== undefined) dbUpdates.last_order_date = updates.lastOrderDate;
+            if (updates.logo !== undefined) dbUpdates.logo = updates.logo;
 
             const { data, error } = await supabase
                 .from('suppliers')
@@ -168,7 +193,12 @@ export const supplierService = {
                 email: data.email,
                 phone: data.phone,
                 address: data.address,
-                notes: data.notes || null,
+                categories: data.categories || [SupplierCategory.OTHER],
+                isPreferred: data.is_preferred || false,
+                status: data.status || "ACTIVE",
+                rating: data.rating || 0,
+                lastOrderDate: data.last_order_date,
+                logo: data.logo,
                 createdAt: data.created_at,
                 updatedAt: data.updated_at
             };
@@ -196,6 +226,28 @@ export const supplierService = {
             return true;
         } catch (error) {
             console.error('Error in deleteSupplier:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Bulk delete suppliers
+     */
+    async bulkDeleteSuppliers(ids: string[]): Promise<boolean> {
+        try {
+            const { error } = await supabase
+                .from('suppliers')
+                .delete()
+                .in('id', ids);
+
+            if (error) {
+                console.error('Error bulk deleting suppliers:', error);
+                throw error;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error in bulkDeleteSuppliers:', error);
             return false;
         }
     },

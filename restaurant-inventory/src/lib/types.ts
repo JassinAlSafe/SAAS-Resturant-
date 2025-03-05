@@ -1,59 +1,59 @@
 // Ingredient interface
 export interface Ingredient {
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    reorderLevel: number;
-    cost: number;
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  reorderLevel: number;
+  cost: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Dish interface
 export interface Dish {
-    id: string;
-    name: string;
-    price: number;
-    ingredients: DishIngredient[];
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  name: string;
+  price: number;
+  ingredients: DishIngredient[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // DishIngredient interface for the relationship between dishes and ingredients
 export interface DishIngredient {
-    ingredientId: string;
-    quantity: number;
+  ingredientId: string;
+  quantity: number;
 }
 
 // Sales interface
 export interface Sale {
-    id: string;
-    dishId: string;
-    dishName: string;
-    quantity: number;
-    totalAmount: number;
-    date: string;
-    createdAt: string;
+  id: string;
+  dishId: string;
+  dishName: string;
+  quantity: number;
+  totalAmount: number;
+  date: string;
+  createdAt: string;
 }
 
 // Dashboard stats interface
 export interface DashboardStats {
-    totalInventoryValue: number;
-    lowStockItems: number;
-    monthlySales: number;
-    salesGrowth: number;
+  totalInventoryValue: number;
+  lowStockItems: number;
+  monthlySales: number;
+  salesGrowth: number;
 }
 
 // Stock alert interface
 export interface StockAlert {
-    id: number;
-    name: string;
-    currentStock: number;
-    unit: string;
-    minStock: number;
-    category: string;
+  id: number;
+  name: string;
+  currentStock: number;
+  unit: string;
+  minStock: number;
+  category: string;
 }
 
 // Basic types used throughout the application
@@ -86,22 +86,36 @@ export type InventoryItem = {
   updated_at: Date | string;
 };
 
+// Supplier category enum
+export enum SupplierCategory {
+  MEAT = "MEAT",
+  DAIRY = "DAIRY",
+  VEGETABLES = "VEGETABLES",
+  FRUITS = "FRUITS",
+  BEVERAGES = "BEVERAGES",
+  BAKERY = "BAKERY",
+  SEAFOOD = "SEAFOOD",
+  DRY_GOODS = "DRY_GOODS",
+  OTHER = "OTHER",
+}
+
 // Supplier type
-export type Supplier = {
+export interface Supplier {
   id: string;
   name: string;
-  contact_name?: string;
+  contactName?: string;
   email?: string;
   phone?: string;
   address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postal_code?: string;
-  notes?: string;
-  created_at: Date | string;
-  updated_at: Date | string;
-};
+  categories: SupplierCategory[];
+  isPreferred: boolean;
+  status: "ACTIVE" | "INACTIVE";
+  rating: number;
+  lastOrderDate?: string;
+  logo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Recipe type
 export type Recipe = {

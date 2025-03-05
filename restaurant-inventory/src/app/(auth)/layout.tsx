@@ -1,10 +1,9 @@
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import { NotificationContainer } from "@/components/ui/notification";
 import { AuthProvider } from "@/lib/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import type { Metadata } from "next";
-
-const inter = Inter({ subsets: ["latin"] });
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Restaurant Inventory Manager - Authentication",
@@ -16,5 +15,19 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="min-h-screen">{children}</div>;
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <div
+          className={cn(
+            "min-h-screen bg-background font-sans antialiased",
+            GeistSans.className
+          )}
+        >
+          {children}
+          <NotificationContainer />
+        </div>
+      </NotificationProvider>
+    </AuthProvider>
+  );
 }

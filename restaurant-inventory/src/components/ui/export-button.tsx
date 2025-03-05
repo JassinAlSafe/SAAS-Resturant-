@@ -1,98 +1,80 @@
-import React, { useState } from "react";
-import { Button, ButtonProps } from "@/components/ui/button";
-import { FiDownload } from "react-icons/fi";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+"use client";
 
-interface ExportButtonProps extends ButtonProps {
-  onExport: () => void;
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { FileDown, FileSpreadsheet, FileText, FileType } from "lucide-react";
+
+interface ExportButtonProps {
+  onExport: (format: "csv" | "excel" | "pdf") => void;
   label?: string;
-  tooltipText?: string;
-  variant?: "default" | "outline" | "secondary";
-  size?: "default" | "sm" | "lg" | "icon";
+  variant?: "default" | "secondary" | "outline" | "ghost";
+  disabled?: boolean;
+  showSelectedItems?: boolean;
+  selectedCount?: number;
 }
 
-/**
- * Reusable export button component with loading state
- */
 export function ExportButton({
   onExport,
   label = "Export",
-  tooltipText = "Export data to Excel",
   variant = "outline",
-  size = "sm",
-  className,
-  ...props
+  disabled = false,
+  showSelectedItems = false,
+  selectedCount = 0,
 }: ExportButtonProps) {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await onExport();
-    } catch (error) {
-      console.error("Export failed:", error);
-    } finally {
-      setIsExporting(false);
-    }
+  const handleExport = (format: "csv" | "excel" | "pdf") => {
+    setIsOpen(false);
+    onExport(format);
   };
 
-  const button = (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleExport}
-      disabled={isExporting}
-      className={className}
-      {...props}
-    >
-      {isExporting ? (
-        <>
-          <svg
-            className="mr-2 h-4 w-4 animate-spin"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          Exporting...
-        </>
-      ) : (
-        <>
-          <FiDownload className="mr-2 h-4 w-4" />
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={variant}
+          size="default"
+          className="flex items-center gap-2"
+          disabled={disabled}
+        >
+          <FileDown className="h-4 w-4" />
           {label}
-        </>
-      )}
-    </Button>
+          {showSelectedItems && selectedCount > 0 && (
+            <span className="ml-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+              {selectedCount} selected
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem
+          className="flex items-center cursor-pointer"
+          onClick={() => handleExport("excel")}
+        >
+          <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+          <span>Export as Excel</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="flex items-center cursor-pointer"
+          onClick={() => handleExport("csv")}
+        >
+          <FileText className="mr-2 h-4 w-4 text-blue-600" />
+          <span>Export as CSV</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="flex items-center cursor-pointer"
+          onClick={() => handleExport("pdf")}
+        >
+          <FileType className="mr-2 h-4 w-4 text-red-600" />
+          <span>Export as PDF</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
-
-  if (tooltipText) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent>{tooltipText}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
-  return button;
 }

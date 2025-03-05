@@ -5,12 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  FiCheckCircle,
-  FiAlertTriangle,
-  FiCopy,
-  FiExternalLink,
-} from "react-icons/fi";
+import { FiCheckCircle, FiAlertTriangle, FiCopy } from "react-icons/fi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SupabaseTableHelper() {

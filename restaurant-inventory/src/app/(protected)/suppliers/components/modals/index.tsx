@@ -1,21 +1,36 @@
 "use client";
 
 import { Supplier } from "@/lib/types";
-import SupplierModal from "@/components/suppliers/SupplierModal";
-import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import SupplierForm from "./SupplierForm";
 
-type SupplierModalsProps = {
+interface SupplierModalsProps {
   isModalOpen: boolean;
-  selectedSupplier?: Supplier;
+  selectedSupplier: Supplier | null;
   isDeleteDialogOpen: boolean;
   supplierToDelete: Supplier | null;
   onCloseModal: () => void;
   onCloseDeleteDialog: () => void;
   onSaveSupplier: (
-    supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">
+    data: Omit<Supplier, "id" | "createdAt" | "updatedAt">
   ) => void;
   onDeleteSupplier: () => void;
-};
+}
 
 export function SupplierModals({
   isModalOpen,
@@ -29,19 +44,42 @@ export function SupplierModals({
 }: SupplierModalsProps) {
   return (
     <>
-      <SupplierModal
-        isOpen={isModalOpen}
-        onClose={onCloseModal}
-        onSave={onSaveSupplier}
-        supplier={selectedSupplier}
-      />
+      <Dialog open={isModalOpen} onOpenChange={onCloseModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedSupplier ? "Edit" : "Add"} Supplier
+            </DialogTitle>
+          </DialogHeader>
+          <SupplierForm
+            supplier={selectedSupplier ?? undefined}
+            onSubmit={onSaveSupplier}
+            onCancel={onCloseModal}
+          />
+        </DialogContent>
+      </Dialog>
 
-      <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={onCloseDeleteDialog}
-        onConfirm={onDeleteSupplier}
-        itemName={supplierToDelete?.name || ""}
-      />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={onCloseDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the supplier &quot;
+              {supplierToDelete?.name}&quot; and all associated data. This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onDeleteSupplier}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Supplier
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

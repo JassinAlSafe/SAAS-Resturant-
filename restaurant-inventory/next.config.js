@@ -42,18 +42,32 @@ const nextConfig = {
 
   // Configure allowed image domains
   images: {
-    domains: [
-      "example.com",
-      "localhost",
-      "placehold.co",
-      "placekitten.com",
-      "picsum.photos",
-      "images.unsplash.com",
-      "via.placeholder.com",
-      "rnxfpfvvqwxcwwqbfvjj.supabase.co", // Supabase storage domain
-      "xzvqzxieczeznywlhfru.supabase.co", // Another Supabase storage domain
-      "github.com", // Added for user profile images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "github.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
+      },
     ],
+  },
+
+  // Turbopack configuration
+  experimental: {
+    // Enable Turbopack
+    turbo: true,
+    // Other experimental features
+    serverExternalPackages: [],
   },
 };
 

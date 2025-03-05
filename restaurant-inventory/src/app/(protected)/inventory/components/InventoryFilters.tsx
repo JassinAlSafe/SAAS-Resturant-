@@ -12,6 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { FiSearch, FiFilter, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface InventoryFiltersProps {
   searchTerm: string;
@@ -23,6 +33,10 @@ interface InventoryFiltersProps {
   setSortField?: (field: string) => void;
   sortDirection?: "asc" | "desc";
   setSortDirection?: (direction: "asc" | "desc") => void;
+  showLowStock?: boolean;
+  onLowStockChange?: (value: boolean) => void;
+  lowStockCount?: number;
+  outOfStockCount?: number;
 }
 
 export default function InventoryFilters({
@@ -35,15 +49,17 @@ export default function InventoryFilters({
   setSortField = () => {},
   sortDirection = "asc",
   setSortDirection = () => {},
+  showLowStock = false,
+  onLowStockChange = () => {},
+  lowStockCount = 0,
+  outOfStockCount = 0,
 }: InventoryFiltersProps) {
   const [showFilters, setShowFilters] = useState(false);
 
   const handleSortChange = (field: string) => {
     if (sortField === field) {
-      // Toggle direction if same field
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // Set new field and default to ascending
       setSortField(field);
       setSortDirection("asc");
     }
@@ -52,21 +68,21 @@ export default function InventoryFilters({
   return (
     <Card className="mb-4">
       <div className="p-4 space-y-4">
-        {/* Search and Filter Toggle */}
+        {/* Search Bar and Filters Row */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <FiSearch className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search by name, category, or quantity..."
+              placeholder="Search inventory..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9 w-full"
+              className="pl-9 w-full bg-background/50 focus:bg-background transition-colors"
             />
           </div>
           <div className="flex gap-2">
             <Select value={selectedCategory} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Category" />
+              <SelectTrigger className="w-full sm:w-[160px] bg-background/50 focus:bg-background transition-colors">
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
@@ -77,78 +93,98 @@ export default function InventoryFilters({
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowFilters(!showFilters)}
-              className="h-10 w-10 flex-shrink-0"
-            >
-              <FiFilter className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="h-9 w-9 bg-background/50 hover:bg-background transition-colors"
+                  >
+                    <FiFilter className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle advanced filters</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
+        </div>
+
+        {/* Stock Status Filter */}
+        <div className="flex items-center justify-between rounded-lg p-3 bg-background/50">
+          <div className="flex items-center gap-3">
+            <Switch
+              id="show-low-stock"
+              checked={showLowStock}
+              onCheckedChange={onLowStockChange}
+              className="data-[state=checked]:bg-primary"
+            />
+            <Label
+              htmlFor="show-low-stock"
+              className="text-sm font-medium cursor-pointer flex items-center gap-3"
+            >
+              Show Low/Out of Stock Only
+            </Label>
+          </div>
+          {(lowStockCount > 0 || outOfStockCount > 0) && (
+            <div className="flex gap-2">
+              {outOfStockCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-red-100/50 text-red-700 hover:bg-red-100"
+                >
+                  {outOfStockCount} out of stock
+                </Badge>
+              )}
+              {lowStockCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-yellow-100/50 text-yellow-700 hover:bg-yellow-100"
+                >
+                  {lowStockCount} low stock
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="pt-3 border-t">
-            <h3 className="text-sm font-medium mb-2">Sort By</h3>
+          <div className="pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                Sort By
+              </h3>
+            </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant={sortField === "name" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("name")}
-                className="flex items-center"
-              >
-                Name
-                {sortField === "name" &&
-                  (sortDirection === "asc" ? (
-                    <FiChevronUp className="ml-1 h-4 w-4" />
-                  ) : (
-                    <FiChevronDown className="ml-1 h-4 w-4" />
-                  ))}
-              </Button>
-              <Button
-                variant={sortField === "category" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("category")}
-                className="flex items-center"
-              >
-                Category
-                {sortField === "category" &&
-                  (sortDirection === "asc" ? (
-                    <FiChevronUp className="ml-1 h-4 w-4" />
-                  ) : (
-                    <FiChevronDown className="ml-1 h-4 w-4" />
-                  ))}
-              </Button>
-              <Button
-                variant={sortField === "quantity" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("quantity")}
-                className="flex items-center"
-              >
-                Quantity
-                {sortField === "quantity" &&
-                  (sortDirection === "asc" ? (
-                    <FiChevronUp className="ml-1 h-4 w-4" />
-                  ) : (
-                    <FiChevronDown className="ml-1 h-4 w-4" />
-                  ))}
-              </Button>
-              <Button
-                variant={sortField === "cost" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("cost")}
-                className="flex items-center"
-              >
-                Cost
-                {sortField === "cost" &&
-                  (sortDirection === "asc" ? (
-                    <FiChevronUp className="ml-1 h-4 w-4" />
-                  ) : (
-                    <FiChevronDown className="ml-1 h-4 w-4" />
-                  ))}
-              </Button>
+              {[
+                { key: "name", label: "Name" },
+                { key: "category", label: "Category" },
+                { key: "quantity", label: "Quantity" },
+                { key: "cost", label: "Cost" },
+              ].map(({ key, label }) => (
+                <Button
+                  key={key}
+                  variant={sortField === key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleSortChange(key)}
+                  className={cn(
+                    "flex items-center gap-1 h-8",
+                    sortField === key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background/50 hover:bg-background"
+                  )}
+                >
+                  {label}
+                  {sortField === key &&
+                    (sortDirection === "asc" ? (
+                      <FiChevronUp className="h-3 w-3" />
+                    ) : (
+                      <FiChevronDown className="h-3 w-3" />
+                    ))}
+                </Button>
+              ))}
             </div>
           </div>
         )}

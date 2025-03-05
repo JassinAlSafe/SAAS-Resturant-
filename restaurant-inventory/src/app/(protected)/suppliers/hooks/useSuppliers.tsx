@@ -112,6 +112,29 @@ export function useSuppliers() {
     }
   };
 
+  // Handle bulk deleting suppliers
+  const bulkDeleteSuppliers = async (ids: string[]) => {
+    try {
+      const isDeleted = await supplierService.bulkDeleteSuppliers(ids);
+      if (isDeleted) {
+        setSuppliers((prev) => prev.filter((s) => !ids.includes(s.id)));
+        success(
+          "Suppliers Deleted",
+          `${ids.length} suppliers have been removed from your list.`
+        );
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error bulk deleting suppliers:", err);
+      showError(
+        "Failed to delete suppliers",
+        "There was an error deleting the selected suppliers."
+      );
+      return false;
+    }
+  };
+
   // Load suppliers on hook initialization
   useEffect(() => {
     fetchSuppliers();
@@ -125,5 +148,6 @@ export function useSuppliers() {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    bulkDeleteSuppliers,
   };
 }
