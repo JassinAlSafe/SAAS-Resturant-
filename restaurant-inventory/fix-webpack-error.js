@@ -1,82 +1,141 @@
 const fs = require("fs");
 const path = require("path");
+const { promisify } = require("util");
 
-// Path to the problematic file
-const minifyPluginPath = path.resolve(
-  "./node_modules/next/dist/build/webpack/plugins/minify-webpack-plugin/src/index.js"
-);
+// Promisify fs functions
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
+const access = promisify(fs.access);
 
-console.log("Applying webpack error fix...");
+// Paths to check
+const paths = {
+  minifyPlugin: path.resolve(
+    "./node_modules/next/dist/build/webpack/plugins/minify-webpack-plugin/src/index.js"
+  ),
+  terserPlugin: path.resolve(
+    "./node_modules/next/dist/build/webpack/plugins/terser-webpack-plugin/src/index.js"
+  ),
+};
 
-// Check if the file exists
-if (fs.existsSync(minifyPluginPath)) {
+async function backupFile(filePath) {
   try {
-    // Read the file content
-    let fileContent = fs.readFileSync(minifyPluginPath, "utf8");
+    const content = await readFile(filePath, "utf8");
+    const backupPath = `${filePath}.backup-${Date.now()}`;
+    await writeFile(backupPath, content, "utf8");
+    console.log(`✓ Created backup at: ${backupPath}`);
+    return content;
+  } catch (error) {
+    console.error(`✗ Failed to create backup: ${error.message}`);
+    throw error;
+  }
+}
 
-    // First approach: Find and replace the specific buildError function
-    const buildErrorPattern =
-      /function\s+buildError[^{]*{[^}]*new\s+_webpack\.WebpackError/;
+async function patchMinifyPlugin(content) {
+  // Replace WebpackError with standard Error
+  content = content.replace(/new\s+_webpack\.WebpackError\s*\(/g, "new Error(");
+  content = content.replace(/_webpack\.WebpackError/g, "Error");
 
-    if (buildErrorPattern.test(fileContent)) {
-      console.log("Found problematic pattern in buildError function");
-
-      // Replace the WebpackError constructor with a regular Error constructor
-      fileContent = fileContent.replace(
-        /new\s+_webpack\.WebpackError\s*\(/g,
-        "new Error("
-      );
-
-      // Replace any reference to WebpackError type
-      fileContent = fileContent.replace(/_webpack\.WebpackError/g, "Error");
-
-      // Write the fixed content back to the file
-      fs.writeFileSync(minifyPluginPath, fileContent, "utf8");
-      console.log("Patch applied successfully!");
-    } else {
-      // If we couldn't find the specific pattern, try a more direct approach
-      console.log(
-        "Could not find the buildError pattern, trying alternate approach"
-      );
-
-      // Create a simple backup of the file
-      fs.writeFileSync(`${minifyPluginPath}.backup`, fileContent, "utf8");
-
-      // Replace the entire buildError function with a simplified version
-      const simplifiedBuildError = `
+  // Simplified buildError function
+  const simplifiedBuildError = `
 function buildError(error, causedByPlugin, compilation) {
   const message = error.message || "Unspecified error";
   const stack = error.stack || "";
   
-  // Create a simplified error object
   const simpleError = new Error(message);
   simpleError.name = "MinifyError";
   simpleError.stack = stack;
-  
-  // Add additional properties that might be expected
   simpleError.cause = error.cause;
   simpleError.plugin = causedByPlugin;
   
-  return simpleError;
-}
-`;
-
-      // Try to find and replace the buildError function
-      const functionPattern = /function\s+buildError[^{]*\{[\s\S]*?\n\}/;
-      if (functionPattern.test(fileContent)) {
-        fileContent = fileContent.replace(
-          functionPattern,
-          simplifiedBuildError
-        );
-        fs.writeFileSync(minifyPluginPath, fileContent, "utf8");
-        console.log("Replaced buildError function with simplified version");
-      } else {
-        console.log("Could not locate buildError function, unable to patch");
-      }
-    }
-  } catch (error) {
-    console.error("Error applying patch:", error);
+  // Add compilation context if available
+  if (compilation && compilation.compiler) {
+    simpleError.file = compilation.compiler.name;
   }
-} else {
-  console.log("MinifyPlugin file not found. Skipping patch.");
+  
+  return simpleError;
+}`;
+
+  // Replace the existing buildError function
+  const functionPattern = /function\s+buildError[^{]*\{[\s\S]*?\n\}/;
+  content = content.replace(functionPattern, simplifiedBuildError);
+
+  return content;
 }
+
+async function patchTerserPlugin(content) {
+  // Replace problematic terser options
+  const terserOptions = `
+const terserOptions = {
+  parse: {
+    ecma: 8
+  },
+  compress: {
+    ecma: 5,
+    warnings: false,
+    comparisons: false,
+    inline: 2,
+    drop_console: process.env.NODE_ENV === 'production'
+  },
+  mangle: { safari10: true },
+  output: {
+    ecma: 5,
+    comments: false,
+    ascii_only: true
+  }
+};`;
+
+  // Replace existing terser options
+  const optionsPattern = /const\s+terserOptions\s*=\s*{[\s\S]*?};/;
+  content = content.replace(optionsPattern, terserOptions);
+
+  return content;
+}
+
+async function fixFile(filePath, patchFunction) {
+  try {
+    // Check if file exists
+    await access(filePath);
+
+    // Create backup
+    const content = await backupFile(filePath);
+
+    // Apply patch
+    const patchedContent = await patchFunction(content);
+
+    // Write patched content
+    await writeFile(filePath, patchedContent, "utf8");
+    console.log(`✓ Successfully patched: ${path.basename(filePath)}`);
+
+    return true;
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      console.log(`ℹ Skipping ${path.basename(filePath)} - file not found`);
+    } else {
+      console.error(
+        `✗ Error patching ${path.basename(filePath)}: ${error.message}`
+      );
+    }
+    return false;
+  }
+}
+
+async function main() {
+  console.log("🔧 Starting webpack error fix...");
+
+  try {
+    // Fix MinifyPlugin
+    await fixFile(paths.minifyPlugin, patchMinifyPlugin);
+
+    // Fix TerserPlugin
+    await fixFile(paths.terserPlugin, patchTerserPlugin);
+
+    console.log("✅ Webpack error fix completed!");
+    console.log("ℹ Please run 'npm run build' to verify the fixes.");
+  } catch (error) {
+    console.error("❌ Failed to apply webpack fixes:", error);
+    process.exit(1);
+  }
+}
+
+// Run the script
+main();

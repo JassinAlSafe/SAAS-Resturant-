@@ -18,28 +18,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Modify webpack configuration to bypass the problematic plugin
-  webpack: (config, { dev, isServer }) => {
-    // Only apply these in production build (when dev is false)
-    if (!dev && !isServer) {
-      // Force disable all minification
-      config.optimization.minimize = false;
-      config.optimization.minimizer = [];
-
-      // Remove any references to WebpackError
-      const plugins = config.plugins.filter((plugin) => {
-        return (
-          plugin.constructor.name !== "MinifyPlugin" &&
-          plugin.constructor.name !== "TerserPlugin"
-        );
-      });
-
-      config.plugins = plugins;
-    }
-
-    return config;
-  },
-
   // Configure allowed image domains
   images: {
     remotePatterns: [
@@ -62,12 +40,22 @@ const nextConfig = {
     ],
   },
 
-  // Turbopack configuration
-  experimental: {
-    // Enable Turbopack
-    turbo: true,
-    // Other experimental features
-    serverExternalPackages: [],
+  // Configure webpack to handle minification
+  webpack: (config, { dev, isServer }) => {
+    // Only modify production client-side builds
+    if (!dev && !isServer) {
+      // Disable minification
+      config.optimization.minimize = false;
+
+      // Remove problematic plugins
+      config.plugins = config.plugins.filter(
+        (plugin) =>
+          plugin.constructor.name !== "MinifyPlugin" &&
+          plugin.constructor.name !== "TerserPlugin"
+      );
+    }
+
+    return config;
   },
 };
 
