@@ -1,188 +1,154 @@
-import { useState, useEffect } from "react";
-import { format, subDays, differenceInDays, eachDayOfInterval } from "date-fns";
-import { useCurrency } from "@/lib/currency-context";
+import { useState, useEffect, useCallback } from 'react';
+import { DateRange } from 'react-day-picker';
+import { addDays, format, subDays } from 'date-fns';
+import { TabType } from '../types';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+// Mock data generator functions
 import {
-    DateRangeType,
-    TabType,
-    SalesData,
-    TopDishesData,
-    InventoryUsageData,
-    DateRange
-} from "../types";
-import { exportSalesReport, exportInventoryReport } from "../utils/exportUtils";
+    generateSalesData,
+    generateTopDishesData,
+    generateInventoryData
+} from '../utils/mockDataGenerators';
 
 export const useReports = () => {
-    const [activeTab, setActiveTab] = useState<TabType>("sales");
-    const [dateRange, setDateRange] = useState<DateRangeType>("week");
+    // Tab state
+    const [activeTab, setActiveTab] = useLocalStorage<TabType>('reports-active-tab', 'sales');
+
+    // Date range state
+    const today = new Date();
+    const defaultFrom = subDays(today, 7);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: defaultFrom,
+        to: today
+    });
+    const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>({
+        from: defaultFrom,
+        to: today
+    });
+
+    // Data states
     const [isLoading, setIsLoading] = useState(true);
-    const [customDateRange, setCustomDateRange] = useState<DateRange>({
-        from: undefined,
-        to: undefined
-    });
-    const [previousPeriodData, setPreviousPeriodData] = useState({
-        totalSales: 9350,
-        avgDailySales: 1335.71,
-        totalOrders: 365,
-        avgOrderValue: 25.75
+    const [error, setError] = useState<Error | null>(null);
+    const [salesData, setSalesData] = useState<any>(null);
+    const [topDishesData, setTopDishesData] = useState<any>(null);
+    const [inventoryUsageData, setInventoryUsageData] = useState<any>(null);
+    const [previousPeriodData, setPreviousPeriodData] = useState<any>(null);
+    const [metrics, setMetrics] = useState({
+        totalSales: 0,
+        avgDailySales: 0,
+        totalOrders: 0,
+        avgOrderValue: 0
     });
 
-    // Get currency formatter
-    const { formatCurrency } = useCurrency();
+    // Format currency based on user locale
+    const formatCurrency = useCallback((amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        }).format(amount);
+    }, []);
 
-    // Simulate fetching data from API
-    useEffect(() => {
-        // Show loading state
+    // Calculate percentage change
+    const getPercentageChange = useCallback((current: number, previous: number) => {
+        if (previous === 0) return 0;
+        return Math.round(((current - previous) / previous) * 100);
+    }, []);
+
+    // Fetch data based on active tab and date range
+    const fetchData = useCallback(async () => {
+        if (!dateRange?.from || !dateRange?.to) return;
+
         setIsLoading(true);
+        setError(null);
 
-        // In a real app, this would be an API call to Supabase
-        const fetchTimeout = setTimeout(() => {
-            // Also update previous period data
-            setPreviousPeriodData({
-                totalSales: 9350,
-                avgDailySales: 1335.71,
-                totalOrders: 365,
-                avgOrderValue: 25.75
-            });
+        try {
+            // In a real app, these would be API calls
+            setTimeout(() => {
+                if (activeTab === 'sales') {
+                    // Generate sales data
+                    const sales = generateSalesData(dateRange);
+                    setSalesData(sales.currentPeriod);
 
+                    // Generate top dishes data
+                    const dishes = generateTopDishesData();
+                    setTopDishesData(dishes);
+
+                    // Generate previous period metrics for comparison
+                    const previousRange = {
+                        from: subDays(dateRange.from!, dateRange.to!.getTime() - dateRange.from!.getTime()),
+                        to: subDays(dateRange.from!, 1)
+                    };
+                    const previousPeriod = generateSalesData(previousRange);
+                    setPreviousPeriodData(previousPeriod.metrics);
+
+                    // Update metrics
+                    setMetrics(sales.metrics);
+                } else {
+                    // Generate inventory data
+                    const inventory = generateInventoryData(dateRange);
+                    // Ensure we have valid data
+                    if (inventory && inventory.labels && inventory.labels.length > 0) {
+                        setInventoryUsageData(inventory);
+                    } else {
+                        // Set default empty data structure
+                        setInventoryUsageData({
+                            labels: [],
+                            datasets: [
+                                {
+                                    label: "No Data",
+                                    data: [],
+                                    borderColor: "rgb(200, 200, 200)",
+                                    backgroundColor: "rgba(200, 200, 200, 0.5)",
+                                },
+                            ],
+                        });
+                    }
+                }
+
+                setIsLoading(false);
+            }, 1000); // Simulate network delay
+        } catch (err) {
+            console.error('Error fetching report data:', err);
+            setError(err instanceof Error ? err : new Error('Failed to fetch data'));
             setIsLoading(false);
-        }, 1000);
-
-        return () => clearTimeout(fetchTimeout);
-    }, [dateRange, customDateRange]);
-
-    // Generate dates for the selected range
-    const getDateLabels = () => {
-        if (dateRange === "custom" && customDateRange.from && customDateRange.to) {
-            // For custom date range, generate labels for each day in the range
-            const days = eachDayOfInterval({
-                start: customDateRange.from,
-                end: customDateRange.to
-            });
-            return days.map(date => format(date, "MMM dd"));
         }
+    }, [activeTab, dateRange]);
 
-        // For predefined ranges
-        const days = dateRange === "week" ? 7 : dateRange === "month" ? 30 : 90;
-        return Array.from({ length: days })
-            .map((_, i) => {
-                const date = subDays(new Date(), i);
-                return format(date, "MMM dd");
-            })
-            .reverse();
-    };
+    // Refresh data
+    const refetchData = useCallback(() => {
+        fetchData();
+    }, [fetchData]);
 
-    // Get the number of days in the current range for calculating averages
-    const getDaysInRange = () => {
-        if (dateRange === "custom" && customDateRange.from && customDateRange.to) {
-            return differenceInDays(customDateRange.to, customDateRange.from) + 1;
-        }
+    // Handle export report
+    const handleExportReport = useCallback(() => {
+        // Logic to export report data as CSV or PDF
+        const fileName = `${activeTab}-report-${format(dateRange?.from || new Date(), 'yyyy-MM-dd')}`;
 
-        return dateRange === "week" ? 7 : dateRange === "month" ? 30 : 90;
-    };
+        // In a real app, this would generate and download a file
+        console.log(`Exporting ${fileName}`);
 
-    // Calculate metrics based on the date range
-    const calculateMetrics = () => {
-        // In a real app, these would be calculated from actual data
-        const totalSales = 10500;
-        const daysInRange = getDaysInRange();
-        const avgDailySales = totalSales / daysInRange;
-        const totalOrders = 420;
-        const avgOrderValue = totalSales / totalOrders;
+        // Mock export by creating a simple text download
+        const data = activeTab === 'sales'
+            ? JSON.stringify(salesData, null, 2)
+            : JSON.stringify(inventoryUsageData, null, 2);
 
-        return {
-            totalSales,
-            avgDailySales,
-            totalOrders,
-            avgOrderValue
-        };
-    };
+        const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
 
-    // Get the metrics for the current period
-    const metrics = calculateMetrics();
+        link.href = url;
+        link.download = `${fileName}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, [activeTab, dateRange, salesData, inventoryUsageData]);
 
-    // Calculate percentage changes
-    const getPercentageChange = (current: number, previous: number) => {
-        if (previous === 0) return "0%";
-        const change = ((current - previous) / previous) * 100;
-        return `${change > 0 ? '+' : ''}${change.toFixed(0)}%`;
-    };
-
-    // Prepare chart data based on the date range
-    // In a real application, this would come from your API
-    const salesData: SalesData = {
-        labels: getDateLabels().slice(0, 7), // Just show first 7 days for demo
-        datasets: [
-            {
-                label: "Sales",
-                data: [1250, 1420, 1350, 1650, 1480, 1600, 1750],
-                backgroundColor: "rgba(59, 130, 246, 0.5)",
-                borderColor: "rgb(59, 130, 246)",
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    // Top dishes data for the pie chart
-    const topDishesData: TopDishesData = {
-        labels: [
-            "Margherita Pizza",
-            "Spaghetti Bolognese",
-            "Chicken Alfredo",
-            "Caesar Salad",
-            "Other",
-        ],
-        datasets: [
-            {
-                label: "Sales",
-                data: [35, 25, 20, 15, 5],
-                backgroundColor: [
-                    "rgba(59, 130, 246, 0.7)",
-                    "rgba(16, 185, 129, 0.7)",
-                    "rgba(245, 158, 11, 0.7)",
-                    "rgba(239, 68, 68, 0.7)",
-                    "rgba(107, 114, 128, 0.7)",
-                ],
-                borderWidth: 1,
-            },
-        ],
-    };
-
-    // Inventory usage data for the line chart
-    const inventoryUsageData: InventoryUsageData = {
-        labels: getDateLabels().slice(0, 7), // Just show first 7 days for demo
-        datasets: [
-            {
-                label: "Tomatoes (kg)",
-                data: [5, 4.5, 4.8, 5.2, 4.7, 5.0, 5.5],
-                borderColor: "rgb(239, 68, 68)",
-                backgroundColor: "rgba(239, 68, 68, 0.5)",
-                tension: 0.3,
-            },
-            {
-                label: "Chicken (kg)",
-                data: [3.2, 3.5, 3.3, 3.8, 3.6, 3.9, 4.1],
-                borderColor: "rgb(16, 185, 129)",
-                backgroundColor: "rgba(16, 185, 129, 0.5)",
-                tension: 0.3,
-            },
-            {
-                label: "Flour (kg)",
-                data: [8, 7.5, 7.8, 8.2, 7.9, 8.3, 8.5],
-                borderColor: "rgb(245, 158, 11)",
-                backgroundColor: "rgba(245, 158, 11, 0.5)",
-                tension: 0.3,
-            },
-        ],
-    };
-
-    // Handler that calls the appropriate export function based on active tab
-    const handleExportReport = () => {
-        if (activeTab === "sales") {
-            exportSalesReport(salesData, topDishesData, dateRange, formatCurrency);
-        } else if (activeTab === "inventory") {
-            exportInventoryReport(inventoryUsageData, dateRange);
-        }
-    };
+    // Fetch data when tab or date range changes
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     return {
         activeTab,
@@ -192,6 +158,7 @@ export const useReports = () => {
         customDateRange,
         setCustomDateRange,
         isLoading,
+        error,
         salesData,
         topDishesData,
         inventoryUsageData,
@@ -199,6 +166,7 @@ export const useReports = () => {
         handleExportReport,
         metrics,
         previousPeriodData,
-        getPercentageChange
+        getPercentageChange,
+        refetchData
     };
-}; 
+};
