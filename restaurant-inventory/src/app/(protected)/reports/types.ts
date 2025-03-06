@@ -9,6 +9,10 @@ export interface PageHeaderProps {
     activeTab: TabType;
     setActiveTab: (tab: TabType) => void;
     handleExportReport: () => void;
+    dateRange: DateRange | undefined;
+    setDateRange: (range: DateRange | undefined) => void;
+    customDateRange: DateRange | undefined;
+    setCustomDateRange: (range: DateRange | undefined) => void;
 }
 
 export interface DateRangeSelectorProps {

@@ -19,7 +19,6 @@ import { ErrorBoundary } from "@/components/error-boundary";
 // Components
 import {
   PageHeader,
-  DateRangeSelector,
   SalesAnalyticsView,
   InventoryUsageView,
   LoadingIndicator,
@@ -92,9 +91,6 @@ function ReportsContent() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         handleExportReport={handleExportReport}
-      />
-
-      <DateRangeSelector
         dateRange={dateRange}
         setDateRange={setDateRange}
         customDateRange={customDateRange}
@@ -108,8 +104,8 @@ function ReportsContent() {
           {/* Sales Analytics Content */}
           {activeTab === "sales" && (
             <SalesAnalyticsView
-              salesData={salesData}
-              topDishesData={topDishesData}
+              salesData={salesData || { labels: [], datasets: [] }}
+              topDishesData={topDishesData || { labels: [], datasets: [] }}
               formatCurrency={formatCurrency}
               previousPeriodData={previousPeriodData}
             />
@@ -117,7 +113,14 @@ function ReportsContent() {
 
           {/* Inventory Usage Content */}
           {activeTab === "inventory" && (
-            <InventoryUsageView inventoryUsageData={inventoryUsageData} />
+            <InventoryUsageView
+              inventoryUsageData={
+                inventoryUsageData || {
+                  labels: [],
+                  datasets: [],
+                }
+              }
+            />
           )}
         </div>
       )}

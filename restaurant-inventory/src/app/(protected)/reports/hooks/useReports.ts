@@ -1,19 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DateRange } from 'react-day-picker';
-import { addDays, format, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { TabType } from '../types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-// Mock data generator functions
-import {
-    generateSalesData,
-    generateTopDishesData,
-    generateInventoryData
-} from '../utils/mockDataGenerators';
+import { reportsService, ReportMetrics } from '@/lib/services/reports-service';
+import { ChartData } from 'chart.js';
 
 export const useReports = () => {
-    // Tab state
-    const [activeTab, setActiveTab] = useLocalStorage<TabType>('reports-active-tab', 'sales');
+    // Tab state with useEffect to handle hydration
+    const [activeTab, setActiveTab] = useState<TabType>('sales');
+    const [storedTab, setStoredTab] = useLocalStorage<TabType>('reports-active-tab', 'sales');
+
+    // Sync state with localStorage after hydration
+    useEffect(() => {
+        setActiveTab(storedTab);
+    }, [storedTab]);
+
+    // Update both states when tab changes
+    const handleTabChange = useCallback((tab: TabType) => {
+        setActiveTab(tab);
+        setStoredTab(tab);
+    }, [setStoredTab]);
 
     // Date range state
     const today = new Date();
@@ -30,15 +37,17 @@ export const useReports = () => {
     // Data states
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [salesData, setSalesData] = useState<any>(null);
-    const [topDishesData, setTopDishesData] = useState<any>(null);
-    const [inventoryUsageData, setInventoryUsageData] = useState<any>(null);
-    const [previousPeriodData, setPreviousPeriodData] = useState<any>(null);
-    const [metrics, setMetrics] = useState({
+    const [salesData, setSalesData] = useState<ChartData<"bar"> | null>(null);
+    const [topDishesData, setTopDishesData] = useState<ChartData<"pie"> | null>(null);
+    const [inventoryUsageData, setInventoryUsageData] = useState<ChartData<"line"> | null>(null);
+    const [previousPeriodData, setPreviousPeriodData] = useState<ReportMetrics | null>(null);
+    const [metrics, setMetrics] = useState<ReportMetrics>({
         totalSales: 0,
         avgDailySales: 0,
         totalOrders: 0,
-        avgOrderValue: 0
+        avgOrderValue: 0,
+        grossProfit: 0,
+        profitMargin: 0
     });
 
     // Format currency based on user locale
@@ -64,51 +73,31 @@ export const useReports = () => {
         setError(null);
 
         try {
-            // In a real app, these would be API calls
-            setTimeout(() => {
-                if (activeTab === 'sales') {
-                    // Generate sales data
-                    const sales = generateSalesData(dateRange);
-                    setSalesData(sales.currentPeriod);
+            if (activeTab === 'sales') {
+                // Fetch current period data
+                const { chartData, metrics: currentMetrics } = await reportsService.getSalesData(dateRange);
+                setSalesData(chartData);
+                setMetrics(currentMetrics);
 
-                    // Generate top dishes data
-                    const dishes = generateTopDishesData();
-                    setTopDishesData(dishes);
+                // Fetch top dishes data
+                const topDishes = await reportsService.getTopDishes(dateRange);
+                setTopDishesData(topDishes);
 
-                    // Generate previous period metrics for comparison
-                    const previousRange = {
-                        from: subDays(dateRange.from!, dateRange.to!.getTime() - dateRange.from!.getTime()),
-                        to: subDays(dateRange.from!, 1)
-                    };
-                    const previousPeriod = generateSalesData(previousRange);
-                    setPreviousPeriodData(previousPeriod.metrics);
+                // Calculate previous period for comparison
+                const daysDifference = Math.floor((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+                const previousRange = {
+                    from: subDays(dateRange.from, daysDifference),
+                    to: subDays(dateRange.from, 1)
+                };
+                const { metrics: previousMetrics } = await reportsService.getSalesData(previousRange);
+                setPreviousPeriodData(previousMetrics);
+            } else {
+                // Fetch inventory usage data
+                const usageData = await reportsService.getInventoryUsage(dateRange);
+                setInventoryUsageData(usageData);
+            }
 
-                    // Update metrics
-                    setMetrics(sales.metrics);
-                } else {
-                    // Generate inventory data
-                    const inventory = generateInventoryData(dateRange);
-                    // Ensure we have valid data
-                    if (inventory && inventory.labels && inventory.labels.length > 0) {
-                        setInventoryUsageData(inventory);
-                    } else {
-                        // Set default empty data structure
-                        setInventoryUsageData({
-                            labels: [],
-                            datasets: [
-                                {
-                                    label: "No Data",
-                                    data: [],
-                                    borderColor: "rgb(200, 200, 200)",
-                                    backgroundColor: "rgba(200, 200, 200, 0.5)",
-                                },
-                            ],
-                        });
-                    }
-                }
-
-                setIsLoading(false);
-            }, 1000); // Simulate network delay
+            setIsLoading(false);
         } catch (err) {
             console.error('Error fetching report data:', err);
             setError(err instanceof Error ? err : new Error('Failed to fetch data'));
@@ -116,25 +105,16 @@ export const useReports = () => {
         }
     }, [activeTab, dateRange]);
 
-    // Refresh data
-    const refetchData = useCallback(() => {
-        fetchData();
-    }, [fetchData]);
-
     // Handle export report
     const handleExportReport = useCallback(() => {
-        // Logic to export report data as CSV or PDF
-        const fileName = `${activeTab}-report-${format(dateRange?.from || new Date(), 'yyyy-MM-dd')}`;
+        if (!dateRange?.from) return;
 
-        // In a real app, this would generate and download a file
-        console.log(`Exporting ${fileName}`);
+        const fileName = `${activeTab}-report-${format(dateRange.from, 'yyyy-MM-dd')}`;
+        const data = activeTab === 'sales' ? salesData : inventoryUsageData;
 
-        // Mock export by creating a simple text download
-        const data = activeTab === 'sales'
-            ? JSON.stringify(salesData, null, 2)
-            : JSON.stringify(inventoryUsageData, null, 2);
+        if (!data) return;
 
-        const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
@@ -152,7 +132,7 @@ export const useReports = () => {
 
     return {
         activeTab,
-        setActiveTab,
+        setActiveTab: handleTabChange,
         dateRange,
         setDateRange,
         customDateRange,
@@ -167,6 +147,6 @@ export const useReports = () => {
         metrics,
         previousPeriodData,
         getPercentageChange,
-        refetchData
+        refetchData: fetchData
     };
 };

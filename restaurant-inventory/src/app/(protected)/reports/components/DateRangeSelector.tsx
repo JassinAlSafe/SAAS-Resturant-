@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface DateRangeSelectorProps {
   dateRange: DateRange | undefined;
@@ -35,66 +36,92 @@ export function DateRangeSelector({
   setCustomDateRange,
   className,
 }: DateRangeSelectorProps) {
+  const formatDateRange = (range: DateRange | undefined) => {
+    if (!range?.from) return "Select date range";
+    if (!range.to) return format(range.from, "LLL dd, y");
+    return `${format(range.from, "LLL dd, y")} - ${format(
+      range.to,
+      "LLL dd, y"
+    )}`;
+  };
+
   return (
-    <div className={cn("grid gap-2 mb-6", className)}>
+    <div
+      className={cn("grid gap-2", className)}
+      role="group"
+      aria-label="Date range selection"
+    >
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            id="date"
-            variant={"outline"}
+            id="date-range-selector"
+            variant="outline"
             className={cn(
-              "w-full md:w-[280px] justify-start text-left font-normal bg-background",
+              "w-full md:w-[300px] justify-start text-left font-normal",
+              "hover:bg-muted/5 focus:ring-2 focus:ring-ring focus:ring-offset-2",
               !dateRange?.from && "text-muted-foreground"
             )}
+            aria-label={`Selected date range: ${formatDateRange(dateRange)}`}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            {dateRange?.from ? (
-              dateRange.to ? (
-                <>
-                  {format(dateRange.from, "LLL dd, y")} -{" "}
-                  {format(dateRange.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(dateRange.from, "LLL dd, y")
-              )
-            ) : (
-              <span>Pick a date range</span>
-            )}
+            <CalendarIcon
+              className="mr-2 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="truncate">{formatDateRange(dateRange)}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start" sideOffset={8}>
-          <div className="flex items-center gap-2 border-b p-4 bg-muted/5">
-            <Select
-              onValueChange={(value) => {
-                const today = new Date();
-                const from = new Date();
-                if (value === "7d") {
-                  from.setDate(today.getDate() - 7);
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          sideOffset={8}
+          role="dialog"
+          aria-label="Date range picker"
+        >
+          <div className="flex flex-col gap-4 p-4 border-b bg-muted/5">
+            <div className="space-y-2">
+              <Label htmlFor="preset-range">Quick select</Label>
+              <Select
+                onValueChange={(value) => {
+                  const today = new Date();
+                  const from = new Date();
+
+                  switch (value) {
+                    case "7d":
+                      from.setDate(today.getDate() - 7);
+                      break;
+                    case "30d":
+                      from.setDate(today.getDate() - 30);
+                      break;
+                    case "90d":
+                      from.setDate(today.getDate() - 90);
+                      break;
+                    case "custom":
+                      setDateRange(customDateRange || undefined);
+                      return;
+                  }
+
                   setDateRange({ from, to: today });
-                } else if (value === "30d") {
-                  from.setDate(today.getDate() - 30);
-                  setDateRange({ from, to: today });
-                } else if (value === "90d") {
-                  from.setDate(today.getDate() - 90);
-                  setDateRange({ from, to: today });
-                } else if (value === "custom") {
-                  setDateRange(customDateRange || undefined);
-                }
-              }}
-              defaultValue="7d"
-            >
-              <SelectTrigger className="w-[180px] h-9">
-                <SelectValue placeholder="Select preset range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-                <SelectItem value="custom">Custom range</SelectItem>
-              </SelectContent>
-            </Select>
+                }}
+                defaultValue="7d"
+              >
+                <SelectTrigger
+                  id="preset-range"
+                  className="w-[200px] h-9"
+                  aria-label="Select a preset date range"
+                >
+                  <SelectValue placeholder="Select preset range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="p-3">
+
+          <div className="p-4">
             <Calendar
               initialFocus
               mode="range"
@@ -106,6 +133,13 @@ export function DateRangeSelector({
               }}
               numberOfMonths={2}
               disabled={{ after: new Date() }}
+              className="rounded-md border"
+              classNames={{
+                day_selected:
+                  "bg-primary text-primary-foreground hover:bg-primary/90",
+                day_today: "bg-muted text-foreground",
+              }}
+              aria-label="Date range calendar"
             />
           </div>
         </PopoverContent>
