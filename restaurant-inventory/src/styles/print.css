@@ -1,0 +1,69 @@
+@media print {
+  /* Hide unnecessary elements */
+  nav,
+  button,
+  aside,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure full width content */
+  .max-w-7xl,
+  .container {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Reset colors for better printing */
+  body {
+    background-color: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Ensure charts and tables are visible */
+  canvas {
+    max-height: 400px !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    page-break-inside: avoid !important;
+    width: 100% !important;
+  }
+
+  /* Add page title */
+  .print-title {
+    display: block !important;
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    margin: 20px 0 !important;
+    text-align: center !important;
+  }
+
+  /* Format page breaks */
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+  }
+
+  /* Reset backgrounds for cards */
+  .bg-card,
+  .shadow-sm,
+  .border {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+
+  /* Add URL after links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+  }
+}

@@ -1,188 +1,149 @@
 "use client";
 
-import { useState } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { DateRange } from "react-day-picker";
+
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import Card from "@/components/Card";
-import { FiCalendar } from "react-icons/fi";
-import { DateRangeSelectorProps } from "../types";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format, subDays } from "date-fns";
-import { cn } from "@/lib/utils";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
-export const DateRangeSelector = ({
+interface DateRangeSelectorProps {
+  dateRange: DateRange | undefined;
+  setDateRange: (date: DateRange | undefined) => void;
+  customDateRange: DateRange | undefined;
+  setCustomDateRange: (date: DateRange | undefined) => void;
+  className?: string;
+}
+
+export function DateRangeSelector({
   dateRange,
   setDateRange,
   customDateRange,
   setCustomDateRange,
-}: DateRangeSelectorProps) => {
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
-  // Handle custom date selection
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-
-    if (!customDateRange.from) {
-      setCustomDateRange({ from: date, to: undefined });
-      return;
-    }
-
-    if (date < customDateRange.from) {
-      setCustomDateRange({ from: date, to: customDateRange.from });
-    } else {
-      setCustomDateRange({ from: customDateRange.from, to: date });
-      setIsCalendarOpen(false);
-      setDateRange("custom");
-    }
-  };
-
-  // Format date range for display
-  const formatDateRange = () => {
-    if (!customDateRange.from) return "Select dates";
-
-    if (!customDateRange.to) {
-      return format(customDateRange.from, "MMM dd, yyyy");
-    }
-
-    return `${format(customDateRange.from, "MMM dd")} - ${format(
-      customDateRange.to,
-      "MMM dd, yyyy"
+  className,
+}: DateRangeSelectorProps) {
+  const formatDateRange = (range: DateRange | undefined) => {
+    if (!range?.from) return "Select date range";
+    if (!range.to) return format(range.from, "LLL dd, y");
+    return `${format(range.from, "LLL dd, y")} - ${format(
+      range.to,
+      "LLL dd, y"
     )}`;
   };
 
   return (
-    <Card className="mb-6 shadow-sm border-0 bg-card">
-      <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 p-1">
-        <div className="flex items-center mr-4 mb-2 sm:mb-0">
-          <FiCalendar className="h-4 w-4 text-muted-foreground mr-2" />
-          <span className="text-sm font-medium text-muted-foreground">
-            Time Range:
-          </span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full sm:w-auto">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={dateRange === "week" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setDateRange("week")}
-                  className={`text-xs py-1 px-2 h-auto rounded-md ${
-                    dateRange === "week"
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  Last 7 Days
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>
-                  Data from {format(subDays(new Date(), 7), "MMM dd")} to today
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <div
+      className={cn("grid gap-2", className)}
+      role="group"
+      aria-label="Date range selection"
+    >
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date-range-selector"
+            variant="outline"
+            className={cn(
+              "w-full md:w-[300px] justify-start text-left font-normal",
+              "hover:bg-muted/5 focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              !dateRange?.from && "text-muted-foreground"
+            )}
+            aria-label={`Selected date range: ${formatDateRange(dateRange)}`}
+          >
+            <CalendarIcon
+              className="mr-2 h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="truncate">{formatDateRange(dateRange)}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          sideOffset={8}
+          role="dialog"
+          aria-label="Date range picker"
+        >
+          <div className="flex flex-col gap-4 p-4 border-b bg-muted/5">
+            <div className="space-y-2">
+              <Label htmlFor="preset-range">Quick select</Label>
+              <Select
+                onValueChange={(value) => {
+                  const today = new Date();
+                  const from = new Date();
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={dateRange === "month" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setDateRange("month")}
-                  className={`text-xs py-1 px-2 h-auto rounded-md ${
-                    dateRange === "month"
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  Last 30 Days
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>
-                  Data from {format(subDays(new Date(), 30), "MMM dd")} to today
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={dateRange === "quarter" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setDateRange("quarter")}
-                  className={`text-xs py-1 px-2 h-auto rounded-md ${
-                    dateRange === "quarter"
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  Last 90 Days
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <p>
-                  Data from {format(subDays(new Date(), 90), "MMM dd")} to today
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={dateRange === "custom" ? "secondary" : "ghost"}
-                size="sm"
-                className={`text-xs py-1 px-2 h-auto rounded-md ${
-                  dateRange === "custom"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {dateRange === "custom" ? formatDateRange() : "Custom Range"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                selected={{
-                  from: customDateRange.from,
-                  to: customDateRange.to,
-                }}
-                onSelect={(range: any) => {
-                  if (range?.from) {
-                    setCustomDateRange({
-                      from: range.from,
-                      to: range.to,
-                    });
-                    if (range.to) {
-                      setDateRange("custom");
-                      setIsCalendarOpen(false);
-                    }
+                  switch (value) {
+                    case "7d":
+                      from.setDate(today.getDate() - 7);
+                      break;
+                    case "30d":
+                      from.setDate(today.getDate() - 30);
+                      break;
+                    case "90d":
+                      from.setDate(today.getDate() - 90);
+                      break;
+                    case "custom":
+                      setDateRange(customDateRange || undefined);
+                      return;
                   }
+
+                  setDateRange({ from, to: today });
                 }}
-                initialFocus
-                numberOfMonths={2}
-                disabled={{ after: new Date() }}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-    </Card>
+                defaultValue="7d"
+              >
+                <SelectTrigger
+                  id="preset-range"
+                  className="w-[200px] h-9"
+                  aria-label="Select a preset date range"
+                >
+                  <SelectValue placeholder="Select preset range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={(range) => {
+                setDateRange(range);
+                setCustomDateRange(range);
+              }}
+              numberOfMonths={2}
+              disabled={{ after: new Date() }}
+              className="rounded-md border"
+              classNames={{
+                day_selected:
+                  "bg-primary text-primary-foreground hover:bg-primary/90",
+                day_today: "bg-muted text-foreground",
+              }}
+              aria-label="Date range calendar"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
-};
+}
