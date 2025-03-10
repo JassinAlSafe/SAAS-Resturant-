@@ -1,6 +1,8 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export interface UserData {
     name: string;
@@ -16,6 +18,7 @@ export interface UserData {
  */
 export function useUser() {
     const { user, profile: userProfile, signOut } = useAuth();
+    const router = useRouter();
 
     // Combine data from both user and userProfile
     const userData: UserData = {
@@ -30,8 +33,11 @@ export function useUser() {
     const handleLogout = async () => {
         try {
             await signOut();
+            toast.success("Logged out successfully");
+            router.push("/login");
         } catch (error) {
             console.error("Logout failed", error);
+            toast.error("Failed to logout. Please try again.");
         }
     };
 

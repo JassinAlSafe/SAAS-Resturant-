@@ -37,7 +37,11 @@ const ExpiryBadge = ({ variant = "default", children }: BadgeProps) => {
   );
 };
 
-export default function ExpiryAlerts() {
+export default function ExpiryAlerts({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [items, setItems] = useState<ExtendedInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +104,18 @@ export default function ExpiryAlerts() {
   };
 
   if (isLoading) {
+    if (compact) {
+      return (
+        <div className="p-2">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold mb-4">Expiry Alerts</h2>
@@ -113,6 +129,22 @@ export default function ExpiryAlerts() {
   }
 
   if (error) {
+    if (compact) {
+      return (
+        <div className="p-2 text-center text-red-600">
+          <p className="text-sm">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-1"
+            onClick={fetchExpiringItems}
+          >
+            Retry
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold mb-4">Expiry Alerts</h2>
@@ -132,6 +164,19 @@ export default function ExpiryAlerts() {
   }
 
   if (items.length === 0) {
+    if (compact) {
+      return (
+        <div className="p-2 text-center">
+          <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-100 mb-1">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            No items are expiring soon.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold mb-4">Expiry Alerts</h2>
@@ -151,6 +196,47 @@ export default function ExpiryAlerts() {
     );
   }
 
+  // Compact layout for dashboard
+  if (compact) {
+    return (
+      <div className="p-2">
+        <div className="space-y-2">
+          {items.slice(0, 5).map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center p-1.5 rounded-md border bg-background/50 hover:bg-background/80"
+            >
+              <div
+                className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center mr-2 ${getSeverityClass(
+                  item.expiryDate
+                )}`}
+              >
+                <AlertTriangle className="h-3 w-3" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-xs truncate">{item.name}</h4>
+              </div>
+              <div className="ml-1">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {item.expiryDate &&
+                  differenceInDays(new Date(item.expiryDate), new Date()) < 0
+                    ? "Expired"
+                    : item.expiryDate
+                    ? `${Math.max(
+                        0,
+                        differenceInDays(new Date(item.expiryDate), new Date())
+                      )}d`
+                    : "-"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Regular layout
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-lg font-semibold mb-4">Expiry Alerts</h2>

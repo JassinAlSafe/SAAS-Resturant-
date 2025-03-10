@@ -4,25 +4,16 @@ import {
     BarChart2Icon,
     ShoppingCartIcon,
     SettingsIcon,
-    BookOpenIcon,
-    HelpCircleIcon,
-    Truck,
-    ShoppingBagIcon,
     MessageSquareIcon,
-    UsersIcon,
-    CreditCardIcon,
-    ClipboardListIcon,
     BoxIcon,
     TruckIcon,
     ListIcon,
     UtensilsIcon,
     DollarSignIcon,
     FileTextIcon,
-    PieChartIcon,
     UserIcon,
     CreditCardIcon as BillingIcon,
-    WrenchIcon,
-    HelpCircleIcon as HelpIcon,
+
 } from "lucide-react";
 
 import { NavItem } from "./types";
@@ -69,8 +60,6 @@ export const navItems: NavItem[] = [
         items: [
             { name: "Users", href: "/users", icon: UserIcon },
             { name: "Billing", href: "/billing", icon: BillingIcon },
-            { name: "Settings", href: "/settings", icon: WrenchIcon },
-            { name: "Help", href: "/help", icon: HelpIcon },
         ],
     },
 ]; 

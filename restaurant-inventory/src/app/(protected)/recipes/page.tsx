@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRecipes } from "./hooks/useRecipes";
-import { useRecipeModals } from "./hooks/useRecipeModals";
 import Card from "@/components/Card";
 import RecipeHeader from "./components/RecipeHeader";
 import RecipeActions from "./components/RecipeActions";
@@ -10,11 +9,10 @@ import RecipeSearch from "./components/RecipeSearch";
 import RecipeTable from "./components/RecipeTable";
 import RecipeLoading from "./components/RecipeLoading";
 import EmptyRecipes from "./components/EmptyRecipes";
-import { RecipeModals } from "./components/modals";
 import RecipeForm from "@/components/RecipeForm";
 import { Dish } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { FiAlertCircle, FiLoader } from "react-icons/fi";
+import { FiAlertCircle } from "react-icons/fi";
 import {
   Dialog,
   DialogContent,
@@ -32,47 +30,91 @@ export default function RecipesPage() {
     ingredients,
     isLoading,
     error,
-    fetchRecipesAndIngredients,
+    showArchivedRecipes,
+    setShowArchivedRecipes,
     addRecipe,
     updateRecipe,
     deleteRecipe,
-    refreshData,
+    archiveRecipe,
+    unarchiveRecipe,
+    fetchRecipesAndIngredients,
   } = useRecipes();
-
-  const {
-    isFormOpen,
-    selectedRecipe,
-    isDeleteDialogOpen,
-    recipeToDelete,
-    openAddModal,
-    openEditModal,
-    openDeleteDialog,
-    closeFormModal,
-    closeDeleteDialog,
-  } = useRecipeModals();
 
   // State for search query
   const [searchQuery, setSearchQuery] = useState("");
-
-  // State for modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState<Dish | null>(null);
   const [recipesToDelete, setRecipesToDelete] = useState<Dish[]>([]);
+  const [showArchiveOption, setShowArchiveOption] = useState(false);
+  const [showBulkArchiveOption, setShowBulkArchiveOption] = useState(false);
 
-  // Filter recipes based on search query
-  const filteredRecipes = recipes.filter((recipe) =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Effect to refetch recipes when archive state changes
+  useEffect(() => {
+    fetchRecipesAndIngredients();
+  }, [showArchivedRecipes]);
+
+  // Filter recipes based on search query and archive status
+  const filteredRecipes = recipes.filter((recipe) => {
+    const matchesSearch = recipe.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesArchiveState = showArchivedRecipes
+      ? recipe.isArchived
+      : !recipe.isArchived;
+    return matchesSearch && matchesArchiveState;
+  });
+
+  // Handle toggling archived recipes view
+  const handleToggleArchivedRecipes = (show: boolean) => {
+    setShowArchivedRecipes(show);
+    setSearchQuery(""); // Clear search when switching views
+  };
 
   // Handle deleting a recipe
   const handleDeleteRecipe = async () => {
-    if (currentRecipe) {
-      await deleteRecipe(currentRecipe.id);
+    if (!currentRecipe || !currentRecipe.id) {
+      toast.error("No recipe selected for deletion");
+      setShowDeleteModal(false);
+      return;
+    }
+
+    const result = await deleteRecipe(currentRecipe.id);
+
+    if (result.success) {
       setShowDeleteModal(false);
       setCurrentRecipe(null);
+      setShowArchiveOption(false);
+    } else if (result.hasSalesReferences) {
+      setShowArchiveOption(true);
+      toast.error("Cannot delete recipe", {
+        description:
+          "This recipe has associated sales records. You can archive it instead to hide it from active recipes.",
+        duration: 5000,
+      });
+    } else {
+      toast.error(`Failed to delete recipe: ${result.error}`);
+    }
+  };
+
+  // Handle archiving a recipe
+  const handleArchiveRecipe = async () => {
+    if (!currentRecipe || !currentRecipe.id) {
+      toast.error("No recipe selected for archiving");
+      return;
+    }
+
+    try {
+      const success = await archiveRecipe(currentRecipe.id);
+      if (success) {
+        setShowDeleteModal(false);
+        setCurrentRecipe(null);
+        setShowArchiveOption(false);
+      }
+    } catch (error) {
+      console.error("Error in handleArchiveRecipe:", error);
     }
   };
 
@@ -84,25 +126,67 @@ export default function RecipesPage() {
 
   // Handle edit recipe
   const handleEditRecipe = (recipe: Dish) => {
-    updateRecipe(recipe);
+    const { id, ...recipeData } = recipe;
+    updateRecipe(id, recipeData);
     setShowEditModal(false);
   };
 
   // Handle bulk delete recipes
-  const handleBulkDeleteRecipes = () => {
-    if (recipesToDelete.length > 0) {
-      Promise.all(recipesToDelete.map((recipe) => deleteRecipe(recipe.id)))
-        .then(() => {
-          toast.success(
-            `${recipesToDelete.length} recipes deleted successfully`
+  const handleBulkDeleteRecipes = async () => {
+    if (!recipesToDelete.length) {
+      toast.error("No recipes selected for deletion");
+      return;
+    }
+
+    try {
+      const results = await Promise.all(
+        recipesToDelete.map((recipe) => deleteRecipe(recipe.id))
+      );
+
+      const successful = results.filter((result) => result.success).length;
+      const failed = results.length - successful;
+      const hasSalesReferences = results.some(
+        (result) => result.hasSalesReferences
+      );
+
+      if (successful > 0) {
+        toast.success(
+          `Successfully deleted ${successful} recipe${
+            successful !== 1 ? "s" : ""
+          }.`
+        );
+      }
+
+      if (failed > 0) {
+        if (hasSalesReferences) {
+          setShowBulkArchiveOption(true);
+          toast.error(
+            `${failed} recipe${
+              failed !== 1 ? "s" : ""
+            } cannot be deleted due to sales records`,
+            {
+              description:
+                "Some recipes are referenced in sales records. You can archive them instead to hide them from active recipes.",
+              duration: 5000,
+            }
           );
-          setShowBulkDeleteModal(false);
-          setRecipesToDelete([]);
-        })
-        .catch((error) => {
-          toast.error("Failed to delete recipes");
-          console.error(error);
-        });
+        } else {
+          toast.error(
+            `Failed to delete ${failed} recipe${failed !== 1 ? "s" : ""}.`
+          );
+        }
+      }
+
+      // Only close the modal if all operations were successful
+      if (failed === 0) {
+        setRecipesToDelete([]);
+        setShowBulkDeleteModal(false);
+        setShowBulkArchiveOption(false);
+      }
+    } catch (error) {
+      console.error("Error in handleBulkDeleteRecipes:", error);
+      toast.error("There was an error processing your request.");
+      setShowBulkArchiveOption(true);
     }
   };
 
@@ -122,11 +206,18 @@ export default function RecipesPage() {
 
   // Handle bulk actions
   const handleBulkAction = (action: string, recipes: Dish[]) => {
+    // Filter out archived recipes for deletion
+    const activeRecipes = recipes.filter((recipe) => !recipe.isArchived);
+
     if (action === "delete") {
-      setRecipesToDelete(recipes);
+      if (activeRecipes.length === 0) {
+        toast.error("No active recipes selected for deletion");
+        return;
+      }
+      setRecipesToDelete(activeRecipes);
       setShowBulkDeleteModal(true);
     } else if (action === "export") {
-      // Create a JSON file with the selected recipes
+      // For export, we can include all selected recipes
       const dataStr = JSON.stringify(recipes, null, 2);
       const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(
         dataStr
@@ -151,6 +242,57 @@ export default function RecipesPage() {
     // This would typically open a modal or navigate to a details page
     // For now, we'll just log the ingredients
     console.log("Viewing ingredients for", recipe.name, recipe.ingredients);
+  };
+
+  // Handle bulk archive recipes
+  const handleBulkArchiveRecipes = () => {
+    if (!recipesToDelete.length) {
+      toast.error("No recipes selected for archiving");
+      return;
+    }
+
+    try {
+      Promise.all(recipesToDelete.map((recipe) => archiveRecipe(recipe.id)))
+        .then((results) => {
+          const successCount = results.filter(Boolean).length;
+          const failCount = results.length - successCount;
+
+          if (successCount > 0) {
+            toast.success(
+              `Successfully archived ${successCount} recipe${
+                successCount !== 1 ? "s" : ""
+              }.`
+            );
+          }
+
+          if (failCount > 0) {
+            toast.error(
+              `Failed to archive ${failCount} recipe${
+                failCount !== 1 ? "s" : ""
+              }.`
+            );
+          }
+
+          setRecipesToDelete([]);
+          setShowBulkDeleteModal(false);
+        })
+        .catch((error) => {
+          console.error("Error in bulk archive:", error);
+          toast.error("There was an error archiving the selected recipes.");
+        });
+    } catch (error) {
+      console.error("Error in handleBulkArchiveRecipes:", error);
+      toast.error("There was an error processing your request.");
+    }
+  };
+
+  // Handle unarchive recipe
+  const handleUnarchiveRecipe = (recipe: Dish) => {
+    if (!recipe.id) {
+      toast.error("Invalid recipe");
+      return;
+    }
+    unarchiveRecipe(recipe.id);
   };
 
   // Loading state
@@ -215,6 +357,14 @@ export default function RecipesPage() {
       <RecipeSearch searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       <Card>
+        <div className="p-6">
+          <RecipeHeader
+            error={error || undefined}
+            retry={fetchRecipesAndIngredients}
+            showArchivedRecipes={showArchivedRecipes}
+            onToggleArchivedRecipes={handleToggleArchivedRecipes}
+          />
+        </div>
         <RecipeTable
           recipes={filteredRecipes}
           ingredients={ingredients}
@@ -228,6 +378,7 @@ export default function RecipesPage() {
           }}
           onViewIngredientsClick={handleViewIngredients}
           onDuplicateClick={handleDuplicateRecipe}
+          onUnarchiveClick={handleUnarchiveRecipe}
           onBulkAction={handleBulkAction}
         />
       </Card>
@@ -271,104 +422,108 @@ export default function RecipesPage() {
 
       {/* Delete Recipe Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="p-0 gap-0 overflow-hidden max-w-md">
-          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <DialogTitle className="text-xl text-gray-800">
-              Delete Recipe
-            </DialogTitle>
-            <DialogDescription className="text-gray-500">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Recipe</DialogTitle>
+            <DialogDescription>
               Are you sure you want to delete this recipe? This action cannot be
               undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-4">
-            {currentRecipe && (
-              <div className="flex items-center gap-3 p-3 mb-4 bg-red-50 border border-red-100 rounded-lg">
-                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                  <FiAlertCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-medium text-red-800">
-                    {currentRecipe.name}
-                  </p>
-                  <p className="text-sm text-red-600">
-                    This recipe will be permanently deleted
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+          <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setShowArchiveOption(false);
+              }}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteRecipe}
-              className="bg-red-600 hover:bg-red-700"
+              disabled={showArchiveOption}
             >
-              Delete Recipe
+              Delete
             </Button>
+            {showArchiveOption && (
+              <Button variant="default" onClick={handleArchiveRecipe}>
+                Archive Instead
+              </Button>
+            )}
           </DialogFooter>
+          {showArchiveOption && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-start">
+                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-amber-800">
+                    Cannot Delete Recipe
+                  </h4>
+                  <p className="text-sm text-amber-700">
+                    This recipe cannot be deleted because it is referenced in
+                    sales records. You can archive it instead, which will hide
+                    it from active recipes but preserve the sales history.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Delete Modal */}
+      {/* Bulk Delete Confirmation Dialog */}
       <Dialog open={showBulkDeleteModal} onOpenChange={setShowBulkDeleteModal}>
-        <DialogContent className="p-0 gap-0 overflow-hidden max-w-md">
-          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <DialogTitle className="text-xl text-gray-800">
-              Delete Multiple Recipes
-            </DialogTitle>
-            <DialogDescription className="text-gray-500">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Multiple Recipes</DialogTitle>
+            <DialogDescription>
               Are you sure you want to delete {recipesToDelete.length} recipes?
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-4">
-            <div className="p-3 bg-red-50 border border-red-100 rounded-lg mb-3">
-              <div className="flex items-center gap-2 mb-2 text-red-800">
-                <FiAlertCircle className="h-4 w-4" />
-                <span className="font-medium">Warning: Permanent Deletion</span>
-              </div>
-              <p className="text-sm text-red-600 mb-0">
-                You are about to delete {recipesToDelete.length} recipes. This
-                action cannot be reversed.
-              </p>
-            </div>
-            <div className="max-h-[200px] overflow-y-auto my-3 border border-gray-100 rounded-lg p-3 bg-gray-50">
-              <ul className="space-y-1">
-                {recipesToDelete.map((recipe) => (
-                  <li
-                    key={recipe.id}
-                    className="text-sm text-gray-700 py-1 px-2 border-b border-gray-100 last:border-0"
-                  >
-                    • {recipe.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <DialogFooter className="px-6 py-4 border-t border-gray-100 bg-gray-50">
+          <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowBulkDeleteModal(false)}
-              className="border-gray-200 text-gray-700 hover:bg-gray-50"
+              onClick={() => {
+                setShowBulkDeleteModal(false);
+                setShowBulkArchiveOption(false);
+              }}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleBulkDeleteRecipes}
-              className="bg-red-600 hover:bg-red-700"
+              disabled={showBulkArchiveOption}
             >
-              Delete {recipesToDelete.length} Recipes
+              Delete
             </Button>
+            {showBulkArchiveOption && (
+              <Button variant="default" onClick={handleBulkArchiveRecipes}>
+                Archive Instead
+              </Button>
+            )}
           </DialogFooter>
+          {showBulkArchiveOption && (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+              <div className="flex items-start">
+                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-amber-800">
+                    Cannot Delete Recipes
+                  </h4>
+                  <p className="text-sm text-amber-700">
+                    Some or all of these recipes cannot be deleted because they
+                    are referenced in sales records. You can archive them
+                    instead, which will hide them from active recipes but
+                    preserve the sales history.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

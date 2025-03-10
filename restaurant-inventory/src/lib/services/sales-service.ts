@@ -50,31 +50,31 @@ export const salesService = {
             const dishIds = [...new Set(data.map((sale: SaleRecord) => sale.dish_id))];
             console.log('Dish IDs to fetch:', dishIds);
 
-            // Fetch dish names for these IDs
-            const { data: dishesData, error: dishesError } = await supabase
-                .from('dishes')
+            // Fetch dish names from recipes table
+            const { data: recipesData, error: recipesError } = await supabase
+                .from('recipes')
                 .select('id, name')
                 .in('id', dishIds);
 
-            if (dishesError) {
-                console.error('Error fetching dish names:', dishesError);
+            if (recipesError) {
+                console.error('Error fetching dish names:', recipesError);
             }
 
             // Create a map of dish IDs to dish names
             const dishNameMap = new Map();
-            if (dishesData && dishesData.length > 0) {
-                dishesData.forEach((dish: { id: string, name: string }) => {
-                    dishNameMap.set(dish.id, dish.name);
+            if (recipesData && recipesData.length > 0) {
+                recipesData.forEach((recipe: { id: string, name: string }) => {
+                    dishNameMap.set(recipe.id, recipe.name);
                 });
             }
 
-            console.log('Dish name map:', Object.fromEntries(dishNameMap));
+            console.log('Recipe name map:', Object.fromEntries(dishNameMap));
 
             // Transform DB data to our application model
             return data.map((sale: SaleRecord) => ({
                 id: sale.id,
                 dishId: sale.dish_id,
-                dishName: dishNameMap.get(sale.dish_id) || 'Unknown Dish',
+                dishName: dishNameMap.get(sale.dish_id) || 'Unknown Recipe',
                 quantity: sale.quantity,
                 totalAmount: sale.total_amount,
                 date: sale.date,
@@ -123,31 +123,31 @@ export const salesService = {
             const dishIds = [...new Set(data.map((sale: SaleRecord) => sale.dish_id))];
             console.log('Dish IDs to fetch for date:', dishIds);
 
-            // Fetch dish names for these IDs
-            const { data: dishesData, error: dishesError } = await supabase
-                .from('dishes')
+            // Fetch dish names from recipes table
+            const { data: recipesData, error: recipesError } = await supabase
+                .from('recipes')
                 .select('id, name')
                 .in('id', dishIds);
 
-            if (dishesError) {
-                console.error('Error fetching dish names for date:', dishesError);
+            if (recipesError) {
+                console.error('Error fetching dish names for date:', recipesError);
             }
 
             // Create a map of dish IDs to dish names
             const dishNameMap = new Map();
-            if (dishesData && dishesData.length > 0) {
-                dishesData.forEach((dish: { id: string, name: string }) => {
-                    dishNameMap.set(dish.id, dish.name);
+            if (recipesData && recipesData.length > 0) {
+                recipesData.forEach((recipe: { id: string, name: string }) => {
+                    dishNameMap.set(recipe.id, recipe.name);
                 });
             }
 
-            console.log('Dish name map for date:', Object.fromEntries(dishNameMap));
+            console.log('Recipe name map for date:', Object.fromEntries(dishNameMap));
 
             // Transform DB data to our application model
             return data.map((sale: SaleRecord) => ({
                 id: sale.id,
                 dishId: sale.dish_id,
-                dishName: dishNameMap.get(sale.dish_id) || 'Unknown Dish',
+                dishName: dishNameMap.get(sale.dish_id) || 'Unknown Recipe',
                 quantity: sale.quantity,
                 totalAmount: sale.total_amount,
                 date: sale.date,
@@ -326,96 +326,75 @@ export const salesService = {
                 return [];
             }
 
-            console.log('Fetching dishes for user:', user.id);
+            console.log('Fetching active recipes for user:', user.id);
 
-            // Try to fetch from dishes table first
-            const { data: dishesData, error: dishesError } = await supabase
-                .from('dishes')
+            // Fetch from recipes table
+            const { data: recipesData, error: recipesError } = await supabase
+                .from('recipes')
                 .select(`
                     id,
                     name,
                     price,
+                    description,
+                    category,
+                    food_cost,
+                    allergens,
+                    popularity,
+                    image_url,
                     created_at,
-                    updated_at
-                `);
+                    updated_at,
+                    recipe_ingredients (
+                        ingredient_id,
+                        quantity
+                    )
+                `)
+                .eq('user_id', user.id)
+                .eq('is_archived', false); // Only fetch non-archived recipes
 
-            console.log('Dishes table query result:', { dishesData, dishesError });
-
-            // If dishes table query fails or returns no data, try recipes table
-            if (dishesError || !dishesData || dishesData.length === 0) {
-                console.log('No dishes found in dishes table, trying recipes table');
-
-                const { data: recipesData, error: recipesError } = await supabase
-                    .from('recipes')
-                    .select(`
-                        id,
-                        name,
-                        price,
-                        created_at,
-                        updated_at,
-                        recipe_ingredients (
-                            ingredient_id,
-                            quantity
-                        )
-                    `)
-                    .eq('user_id', user.id);
-
-                console.log('Recipes table query result:', { recipesData, recipesError });
-
-                if (recipesError) {
-                    console.error('Error fetching recipes:', recipesError);
-                    // If both tables fail, return empty array
-                    if (dishesError) {
-                        console.error('Error fetching dishes:', dishesError);
-                        return [];
-                    }
-                } else if (recipesData && recipesData.length > 0) {
-                    // Use recipes data if available
-                    return recipesData.map((recipe: {
-                        id: string;
-                        name: string;
-                        price: number;
-                        created_at?: string;
-                        updated_at?: string;
-                        recipe_ingredients?: Array<{
-                            ingredient_id: string;
-                            quantity: number;
-                        }>;
-                    }) => ({
-                        id: recipe.id,
-                        name: recipe.name,
-                        price: recipe.price,
-                        ingredients: recipe.recipe_ingredients?.map((item) => ({
-                            ingredientId: item.ingredient_id,
-                            quantity: item.quantity
-                        })) || [],
-                        createdAt: recipe.created_at || new Date().toISOString(),
-                        updatedAt: recipe.updated_at || new Date().toISOString()
-                    }));
-                }
+            if (recipesError) {
+                console.error('Error fetching recipes:', recipesError);
+                return [];
             }
 
-            // If we have dishes data, use it
-            if (dishesData && dishesData.length > 0) {
-                return dishesData.map((dish: {
-                    id: string;
-                    name: string;
-                    price: number;
-                    created_at?: string;
-                    updated_at?: string;
-                }) => ({
-                    id: dish.id,
-                    name: dish.name,
-                    price: dish.price,
-                    ingredients: [], // Dishes table doesn't have ingredients
-                    createdAt: dish.created_at || new Date().toISOString(),
-                    updatedAt: dish.updated_at || new Date().toISOString()
-                }));
+            if (!recipesData || recipesData.length === 0) {
+                console.log('No active recipes found');
+                return [];
             }
 
-            // If we get here, no data was found in either table
-            console.warn('No dishes or recipes found');
-            return [];
+            // Transform recipes data to Dish interface
+            return recipesData.map((recipe: {
+                id: string;
+                name: string;
+                price: number;
+                description?: string;
+                category?: string;
+                food_cost?: number;
+                allergens?: string[];
+                popularity?: number;
+                image_url?: string;
+                created_at?: string;
+                updated_at?: string;
+                recipe_ingredients?: Array<{
+                    ingredient_id: string;
+                    quantity: number;
+                }>;
+            }) => ({
+                id: recipe.id,
+                name: recipe.name,
+                description: recipe.description || '',
+                price: recipe.price,
+                foodCost: recipe.food_cost || 0,
+                category: recipe.category || '',
+                allergens: recipe.allergens || [],
+                popularity: recipe.popularity || 0,
+                imageUrl: recipe.image_url || '',
+                ingredients: recipe.recipe_ingredients?.map((item) => ({
+                    ingredientId: item.ingredient_id,
+                    quantity: item.quantity
+                })) || [],
+                createdAt: recipe.created_at || new Date().toISOString(),
+                updatedAt: recipe.updated_at || new Date().toISOString()
+            }));
         } catch (error) {
             console.error('Exception in getDishes:', error);
             return [];

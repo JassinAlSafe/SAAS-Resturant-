@@ -13,6 +13,11 @@ interface RecipeWithIngredients {
     image_url?: string;
     created_at?: string;
     updated_at?: string;
+    is_archived?: boolean;
+    recipe_ingredients?: {
+        ingredient_id: string;
+        quantity: number;
+    }[];
     ingredients?: {
         ingredient_id: string;
         quantity: number;
@@ -23,70 +28,90 @@ export const recipeService = {
     /**
      * Get all recipes
      */
-    async getRecipes(): Promise<Dish[]> {
+    async getRecipes(includeArchived = false): Promise<Dish[]> {
         try {
             console.log('Fetching recipes...');
 
             // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
 
             if (!user) {
                 console.error('No authenticated user found');
-                return [];
+                throw new Error('User not authenticated');
             }
 
-            const { data: recipes, error } = await supabase
+            // Build the query
+            let query = supabase
                 .from('recipes')
                 .select(`
-          id,
-          name,
-          description,
-          price,
-          food_cost,
-          category,
-          allergens,
-          popularity,
-          image_url,
-          created_at,
-          updated_at,
-          recipe_ingredients (
-            ingredient_id,
-            quantity
-          )
-        `)
+                    id,
+                    name,
+                    description,
+                    price,
+                    food_cost,
+                    category,
+                    allergens,
+                    popularity,
+                    image_url,
+                    created_at,
+                    updated_at,
+                    is_archived,
+                    recipe_ingredients (
+                        ingredient_id,
+                        quantity
+                    )
+                `)
                 .eq('user_id', user.id);
+
+            // Filter out archived recipes unless specifically requested
+            if (!includeArchived) {
+                // First try with is_archived column
+                try {
+                    query = query.or('is_archived.is.null,is_archived.eq.false');
+                } catch (e) {
+                    // If the column doesn't exist, just continue without filtering
+                    console.log('is_archived column may not exist, continuing without filtering');
+                }
+            }
+
+            const { data, error } = await query;
 
             if (error) {
                 console.error('Error fetching recipes:', error);
                 throw error;
             }
 
-            if (!recipes) {
-                console.log('No recipes found');
+            if (!data) {
                 return [];
             }
 
-            // Transform DB data to our application model
-            return recipes.map((recipe: RecipeWithIngredients) => ({
+            // Map the data to our Dish interface
+            return data.map((recipe: RecipeWithIngredients) => ({
                 id: recipe.id,
                 name: recipe.name,
-                description: recipe.description,
+                description: recipe.description || '',
                 price: recipe.price,
-                foodCost: recipe.food_cost,
-                category: recipe.category,
-                allergens: recipe.allergens,
-                popularity: recipe.popularity,
-                imageUrl: recipe.image_url,
-                ingredients: recipe.ingredients?.map(item => ({
-                    ingredientId: item.ingredient_id,
-                    quantity: item.quantity
+                foodCost: recipe.food_cost || 0,
+                category: recipe.category || '',
+                allergens: recipe.allergens || [],
+                popularity: recipe.popularity || 0,
+                imageUrl: recipe.image_url || '',
+                ingredients: recipe.recipe_ingredients?.map(ingredient => ({
+                    ingredientId: ingredient.ingredient_id,
+                    quantity: ingredient.quantity
                 })) || [],
-                createdAt: recipe.created_at || new Date().toISOString(),
-                updatedAt: recipe.updated_at || new Date().toISOString()
+                createdAt: recipe.created_at || '',
+                updatedAt: recipe.updated_at || '',
+                isArchived: recipe.is_archived || false
             }));
         } catch (error) {
             console.error('Exception in getRecipes:', error);
-            return [];
+            throw error;
         }
     },
 
@@ -258,15 +283,20 @@ export const recipeService = {
     async updateRecipe(id: string, dish: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>): Promise<Dish | null> {
         try {
             // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
 
             if (!user) {
                 console.error('No authenticated user found');
                 throw new Error('User not authenticated');
             }
 
-            // First, update the recipe
-            const { data: recipe, error: recipeError } = await supabase
+            // Update the recipe
+            const { error } = await supabase
                 .from('recipes')
                 .update({
                     name: dish.name,
@@ -277,75 +307,22 @@ export const recipeService = {
                     allergens: dish.allergens,
                     popularity: dish.popularity,
                     image_url: dish.imageUrl,
+                    is_archived: dish.isArchived,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', id)
-                .eq('user_id', user.id) // Ensure the user owns this recipe
-                .select()
-                .single();
+                .eq('user_id', user.id);
 
-            if (recipeError) {
-                console.error('Error updating recipe:', recipeError);
-                throw recipeError;
+            if (error) {
+                console.error('Error updating recipe:', error);
+                throw error;
             }
 
-            if (!recipe) {
-                console.error('Recipe not found or not owned by user');
-                throw new Error('Recipe update failed');
-            }
-
-            // Delete all previous ingredients
-            const { error: deleteError } = await supabase
-                .from('recipe_ingredients')
-                .delete()
-                .eq('recipe_id', id);
-
-            if (deleteError) {
-                console.error('Error deleting previous ingredients:', deleteError);
-                throw deleteError;
-            }
-
-            // Then, insert new recipe ingredients
-            if (dish.ingredients && dish.ingredients.length > 0) {
-                const ingredientsToInsert = dish.ingredients.map(ingredient => ({
-                    recipe_id: id,
-                    ingredient_id: ingredient.ingredientId,
-                    quantity: ingredient.quantity
-                }));
-
-                const { error: ingredientsError } = await supabase
-                    .from('recipe_ingredients')
-                    .insert(ingredientsToInsert);
-
-                if (ingredientsError) {
-                    console.error('Error updating recipe ingredients:', ingredientsError);
-                    throw ingredientsError;
-                }
-            }
-
-            // Return the complete dish
-            return {
-                id: id,
-                name: dish.name,
-                description: dish.description,
-                price: dish.price,
-                foodCost: dish.foodCost,
-                category: dish.category,
-                allergens: dish.allergens,
-                popularity: dish.popularity,
-                imageUrl: dish.imageUrl,
-                ingredients: dish.ingredients || [],
-                createdAt: recipe.created_at,
-                updatedAt: recipe.updated_at
-            };
+            // Get the updated recipe
+            return this.getRecipeById(id);
         } catch (error) {
-            // Enhanced error logging
             console.error('Exception in updateRecipe:', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-            }
-            throw error; // Re-throw the error so it's caught by the hook
+            throw error;
         }
     },
 
@@ -355,14 +332,47 @@ export const recipeService = {
     async deleteRecipe(id: string): Promise<boolean> {
         try {
             // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
 
             if (!user) {
                 console.error('No authenticated user found');
                 throw new Error('User not authenticated');
             }
 
-            // Delete the recipe (cascade should handle ingredients)
+            // First check if this recipe is referenced in sales
+            const { data: salesData, error: salesError } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('dish_id', id)
+                .limit(1);
+
+            if (salesError) {
+                console.error('Error checking sales references:', salesError);
+                throw new Error(`Error checking sales: ${salesError.message}`);
+            }
+
+            // If the recipe is used in sales, prevent deletion
+            if (salesData && salesData.length > 0) {
+                throw new Error('Cannot delete this recipe because it is referenced in sales records. Remove the sales records first or archive the recipe instead.');
+            }
+
+            // First delete recipe ingredients
+            const { error: ingredientsError } = await supabase
+                .from('recipe_ingredients')
+                .delete()
+                .eq('recipe_id', id);
+
+            if (ingredientsError) {
+                console.error('Error deleting recipe ingredients:', ingredientsError);
+                throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
+            }
+
+            // Then delete the recipe
             const { error } = await supabase
                 .from('recipes')
                 .delete()
@@ -371,16 +381,124 @@ export const recipeService = {
 
             if (error) {
                 console.error('Error deleting recipe:', error);
-                throw error;
+
+                // Check for foreign key violation specifically
+                if (error.message && error.message.includes('violates foreign key constraint')) {
+                    throw new Error('This recipe cannot be deleted because it is referenced by other records in the system. Consider archiving it instead.');
+                }
+
+                throw new Error(`Database error: ${error.message}`);
             }
 
             return true;
         } catch (error) {
             console.error('Exception in deleteRecipe:', error);
+            // Create a proper error object with a message
             if (error instanceof Error) {
                 console.error('Error message:', error.message);
+            } else {
+                // Handle non-Error objects
+                console.error('Non-standard error:', String(error));
             }
-            throw error; // Re-throw the error so it's caught by the hook
+            // Always throw an Error object with a message
+            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe deletion');
+        }
+    },
+
+    /**
+     * Archive a recipe instead of deleting it
+     * This is useful for recipes that are referenced in sales and can't be deleted
+     */
+    async archiveRecipe(id: string): Promise<boolean> {
+        try {
+            // Get the authenticated user
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Update the recipe to mark it as archived
+            const { error } = await supabase
+                .from('recipes')
+                .update({
+                    is_archived: true,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id)
+                .eq('user_id', user.id); // Ensure the user owns this recipe
+
+            if (error) {
+                console.error('Error archiving recipe:', error);
+
+                // If the column doesn't exist, we'll get an error
+                if (error.message && error.message.includes('column "is_archived" of relation "recipes" does not exist')) {
+                    throw new Error('The archive feature is not available. Please contact your administrator to enable this feature.');
+                }
+
+                throw new Error(`Database error: ${error.message}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Exception in archiveRecipe:', error);
+            if (error instanceof Error) {
+                console.error('Error message:', error.message);
+            } else {
+                console.error('Non-standard error:', String(error));
+            }
+            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe archiving');
+        }
+    },
+
+    /**
+     * Unarchive a recipe to make it active again
+     */
+    async unarchiveRecipe(id: string): Promise<boolean> {
+        try {
+            // Get the authenticated user
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Update the recipe to mark it as unarchived
+            const { error } = await supabase
+                .from('recipes')
+                .update({
+                    is_archived: false,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id)
+                .eq('user_id', user.id); // Ensure the user owns this recipe
+
+            if (error) {
+                console.error('Error unarchiving recipe:', error);
+                throw new Error(`Database error: ${error.message}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Exception in unarchiveRecipe:', error);
+            if (error instanceof Error) {
+                console.error('Error message:', error.message);
+            } else {
+                console.error('Non-standard error:', String(error));
+            }
+            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe unarchiving');
         }
     },
 

@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-const animate = require("tailwindcss-animate");
+import animate from "tailwindcss-animate";
 
 module.exports = {
   darkMode: ["class"],
@@ -20,7 +20,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ["var(--font-lufga)", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

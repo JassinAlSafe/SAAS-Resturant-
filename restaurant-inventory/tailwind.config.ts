@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import { fontFamily } from "tailwindcss/defaultTheme";
 import animate from "tailwindcss-animate";
 
 const config = {
@@ -27,7 +26,7 @@ const config = {
         },
         extend: {
             fontFamily: {
-                sans: ["var(--font-sans)", ...fontFamily.sans],
+                sans: ['var(--font-lufga)', 'sans-serif'],
             },
             colors: {
                 border: "hsl(var(--border))",

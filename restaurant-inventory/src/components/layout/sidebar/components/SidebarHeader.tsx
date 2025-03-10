@@ -20,8 +20,8 @@ export function SidebarHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between border-b border-border/40",
-        open ? "px-4 py-4" : "px-0 py-4"
+        "flex items-center border-b border-gray-200 dark:border-gray-800",
+        open ? "px-4 py-5" : "px-0 py-5"
       )}
     >
       <Link
@@ -34,8 +34,8 @@ export function SidebarHeader({
         {!logoUrl ? (
           <div
             className={cn(
-              "flex items-center justify-center rounded-md bg-primary/10 text-primary shadow-sm",
-              open ? "h-10 w-10" : "h-10 w-10"
+              "flex items-center justify-center rounded-md bg-teal-500/10 text-teal-500 shadow-sm",
+              open ? "h-8 w-8" : "h-8 w-8"
             )}
           >
             <BookOpenIcon className="h-5 w-5" />
@@ -43,26 +43,23 @@ export function SidebarHeader({
         ) : (
           <div
             className={cn(
-              "rounded-md overflow-hidden border border-border/40 shadow-sm",
-              open ? "h-10 w-10" : "h-10 w-10"
+              "rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm",
+              open ? "h-8 w-8" : "h-8 w-8"
             )}
           >
             <Image
               src={logoUrl}
               alt={businessName}
-              width={40}
-              height={40}
+              width={32}
+              height={32}
               className="h-full w-full object-cover"
             />
           </div>
         )}
         {open && (
           <div className="flex flex-col">
-            <span className="font-semibold truncate text-sm">
+            <span className="font-semibold text-gray-900 dark:text-white text-sm">
               {businessName}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Inventory System
             </span>
           </div>
         )}

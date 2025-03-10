@@ -14,7 +14,13 @@ import { useBusinessProfile } from "@/lib/business-profile-context";
 import { useMediaQueries } from "@/hooks/use-media-query";
 import { navItems } from "./nav-items"; // Import navItems directly
 import { useUser } from "@/hooks/use-user";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { SettingsIcon, HelpCircleIcon } from "lucide-react";
 
 // Custom hook for sidebar state management
 const useSidebarState = () => {
@@ -59,7 +65,7 @@ export function Sidebar({ children }: SidebarProps) {
   const { profile } = useBusinessProfile();
   const { user, handleLogout } = useUser();
 
-  const businessName = profile?.name || "Restaurant Manager";
+  const businessName = profile?.name || "Enelys";
   const logoUrl = profile?.logo || "";
 
   // Toggle a section expanded/collapsed
@@ -77,7 +83,7 @@ export function Sidebar({ children }: SidebarProps) {
         <aside
           className={cn(
             "fixed top-0 left-0 h-full z-40 transition-all duration-200 ease-in-out",
-            "bg-card dark:bg-gray-950 border-r border-border/40 shadow-sm",
+            "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
             open ? "w-64" : "w-16"
           )}
           style={{ pointerEvents: "auto" }}
@@ -98,14 +104,60 @@ export function Sidebar({ children }: SidebarProps) {
               />
             </div>
 
-            {/* Navigation */}
-            <div className="flex-1 overflow-y-auto py-2">
+            {/* Navigation - Main Menu */}
+            <div className="flex-1 overflow-y-auto py-4">
+              <div className={cn(open ? "px-4 mb-2" : "px-0 mb-2")}>
+                <p
+                  className={cn(
+                    "text-xs font-medium text-gray-500 uppercase tracking-wider",
+                    !open && "text-center"
+                  )}
+                >
+                  {open ? "MAIN MENU" : ""}
+                </p>
+              </div>
               <SidebarNavigation
                 open={open}
                 expandedSections={expandedSections}
                 toggleSection={toggleSection}
                 navItems={navItems}
               />
+            </div>
+
+            {/* Other Section */}
+            <div className="px-4 py-2">
+              <p
+                className={cn(
+                  "text-xs font-medium text-gray-500 uppercase tracking-wider mb-2",
+                  !open && "text-center"
+                )}
+              >
+                {open ? "OTHER" : ""}
+              </p>
+              <div className="space-y-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                    !open && "justify-center px-2"
+                  )}
+                >
+                  <SettingsIcon className={cn("h-5 w-5", open && "mr-2")} />
+                  {open && "Setting"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                    !open && "justify-center px-2"
+                  )}
+                >
+                  <HelpCircleIcon className={cn("h-5 w-5", open && "mr-2")} />
+                  {open && "Help Center"}
+                </Button>
+              </div>
             </div>
 
             {/* User Profile */}

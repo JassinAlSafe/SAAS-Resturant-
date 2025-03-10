@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { lufga } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "ShelfWise | Smart Inventory Management",
@@ -30,11 +30,6 @@ export const viewport: Viewport = {
   ],
 };
 
-const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,7 +41,7 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
+          lufga.variable
         )}
       >
         <ThemeProvider

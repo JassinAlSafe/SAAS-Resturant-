@@ -64,10 +64,10 @@ export function SidebarNavigation({
                     <button
                       className={cn(
                         "flex items-center justify-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        "hover:bg-primary/10 hover:text-primary",
+                        "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-500",
                         hasActiveChild
-                          ? "text-primary bg-primary/10 border-l-4 border-primary"
-                          : "text-muted-foreground",
+                          ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
+                          : "text-gray-600 dark:text-gray-400",
                         item.className
                       )}
                     >
@@ -79,11 +79,11 @@ export function SidebarNavigation({
                   <PopoverContent
                     side="right"
                     align="start"
-                    className="p-0 w-48 rounded-md border border-border/40"
+                    className="p-0 w-48 rounded-md border border-gray-200 dark:border-gray-800"
                     onInteractOutside={() => setHoveredSection(null)}
                   >
-                    <div className="bg-card py-1 rounded-md shadow-md">
-                      <div className="px-3 py-2 text-sm font-medium text-primary border-b border-border/40 mb-1">
+                    <div className="bg-white dark:bg-gray-900 py-1 rounded-md shadow-md">
+                      <div className="px-3 py-2 text-sm font-medium text-teal-500 border-b border-gray-200 dark:border-gray-800 mb-1">
                         {item.name}
                       </div>
                       {item.items.map((child) => {
@@ -99,8 +99,8 @@ export function SidebarNavigation({
                               className={cn(
                                 "flex items-center px-3 py-2 text-sm transition-colors",
                                 isActive
-                                  ? "text-primary bg-primary/10 font-medium"
-                                  : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                  ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 font-medium"
+                                  : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                               )}
                               onClick={() => setHoveredSection(null)}
                             >
@@ -126,10 +126,10 @@ export function SidebarNavigation({
                   onClick={() => toggleSection(item.name)}
                   className={cn(
                     "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    "hover:bg-primary/10 hover:text-primary",
+                    "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-500",
                     hasActiveChild
-                      ? "text-primary bg-primary/10 border-l-4 border-primary"
-                      : "text-muted-foreground",
+                      ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
+                      : "text-gray-600 dark:text-gray-400",
                     !open && "justify-center"
                   )}
                 >
@@ -167,8 +167,8 @@ export function SidebarNavigation({
                             className={cn(
                               "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
                               isActive
-                                ? "text-primary bg-primary/10 font-medium border-l-2 border-primary"
-                                : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 font-medium border-l-2 border-teal-500"
+                                : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                             )}
                           >
                             {child.icon && (
@@ -199,8 +199,8 @@ export function SidebarNavigation({
                     className={cn(
                       "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       isActive
-                        ? "text-primary bg-primary/10 border-l-4 border-primary"
-                        : "text-muted-foreground hover:text-primary hover:bg-primary/10",
+                        ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
+                        : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800",
                       !open && "justify-center",
                       item.className
                     )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,31 +9,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CURRENCIES, Currency, useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency-context";
 
 export function CurrencySelector() {
-  const { currency, setCurrency } = useCurrency();
+  // Since we're now standardized on Swedish Krona, this component will
+  // just display the current currency without allowing changes
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1 px-2">
-          <span>{currency.code}</span>
-          <span className="text-xs">({currency.symbol})</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {Object.values(CURRENCIES).map((curr) => (
-          <DropdownMenuItem
-            key={curr.code}
-            onClick={() => setCurrency(curr)}
-            className={currency.code === curr.code ? "bg-accent" : ""}
-          >
-            <span className="mr-2">{curr.symbol}</span>
-            <span>{curr.name}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium">SEK</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 data-[state=open]:bg-muted flex items-center gap-1 px-2"
+        disabled
+      >
+        <span className="text-sm">kr</span>
+      </Button>
+    </div>
   );
 }

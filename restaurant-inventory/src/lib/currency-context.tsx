@@ -1,82 +1,33 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, ReactNode } from "react";
 
-// Define currency types
-export type CurrencyCode = "SEK" | "USD" | "EUR" | "GBP";
-
-export interface Currency {
-  code: CurrencyCode;
-  symbol: string;
-  name: string;
+interface CurrencyContextProps {
+  formatCurrency: (amount: number) => string;
 }
 
-// Available currencies
-export const CURRENCIES: Record<CurrencyCode, Currency> = {
-  SEK: { code: "SEK", symbol: "kr", name: "Swedish Krona" },
-  USD: { code: "USD", symbol: "$", name: "US Dollar" },
-  EUR: { code: "EUR", symbol: "€", name: "Euro" },
-  GBP: { code: "GBP", symbol: "£", name: "British Pound" },
-};
-
-interface CurrencyContextType {
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
-  formatCurrency: (amount: number | undefined | null) => string;
-}
-
-const CurrencyContext = createContext<CurrencyContextType | undefined>(
+const CurrencyContext = createContext<CurrencyContextProps | undefined>(
   undefined
 );
 
-export interface CurrencyProviderProps {
-  children: React.ReactNode;
-  defaultCurrency?: CurrencyCode;
-}
-
-export function CurrencyProvider({
-  children,
-  defaultCurrency = "SEK",
-}: CurrencyProviderProps) {
-  // Default to SEK or the provided default
-  const [currency, setCurrency] = useState<Currency>(
-    CURRENCIES[defaultCurrency]
-  );
-
-  // Load saved currency preference from localStorage on client side
-  useEffect(() => {
-    const savedCurrency = localStorage.getItem("preferredCurrency");
-    if (savedCurrency && Object.keys(CURRENCIES).includes(savedCurrency)) {
-      setCurrency(CURRENCIES[savedCurrency as CurrencyCode]);
-    }
-  }, []);
-
-  // Save currency preference when it changes
-  useEffect(() => {
-    localStorage.setItem("preferredCurrency", currency.code);
-  }, [currency]);
-
-  // Format currency with the current symbol
-  const formatCurrency = (amount: number | undefined | null): string => {
-    // Handle undefined or null values
-    const safeAmount = amount ?? 0;
-
-    // For SEK, the symbol comes after the amount
-    if (currency.code === "SEK") {
-      return `${safeAmount.toFixed(2)} ${currency.symbol}`;
-    }
-    // For other currencies, the symbol comes before the amount
-    return `${currency.symbol}${safeAmount.toFixed(2)}`;
+export function CurrencyProvider({ children }: { children: ReactNode }) {
+  // Standardized to Swedish Krona
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("sv-SE", {
+      style: "currency",
+      currency: "SEK",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, formatCurrency }}>
+    <CurrencyContext.Provider value={{ formatCurrency }}>
       {children}
     </CurrencyContext.Provider>
   );
 }
 
-// Custom hook to use the currency context
 export function useCurrency() {
   const context = useContext(CurrencyContext);
   if (context === undefined) {

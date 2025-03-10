@@ -17,30 +17,25 @@ import {
   MinusCircle,
   Info,
   Pencil,
-  Trash,
-  Plus,
-  Minus,
+  Trash2,
 } from "lucide-react";
 import { InventoryItem } from "@/lib/types";
 import { useCurrency } from "@/lib/currency-context";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-import { CustomCheckbox } from "@/components/ui/custom-checkbox";
-import { CustomToggle } from "@/components/ui/custom-toggle";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEditClick: (item: InventoryItem) => void;
   onDeleteClick: (item: InventoryItem) => void;
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
-  isCompactView?: boolean;
-  onCategoryClick?: (category: string) => void;
 }
 
 export default function InventoryTable({
@@ -48,81 +43,9 @@ export default function InventoryTable({
   onEditClick,
   onDeleteClick,
   onUpdateQuantity,
-  isCompactView = false,
-  onCategoryClick,
 }: InventoryTableProps) {
   const { formatCurrency } = useCurrency();
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [isBulkActionsVisible, setIsBulkActionsVisible] = useState(false);
-  const [bulkQuantityChange, setBulkQuantityChange] = useState(1);
-
-  useEffect(() => {
-    // Reset selected items when items change
-    setSelectedItems(new Set());
-    updateBulkActionsVisibility(new Set());
-  }, [items]);
-
-  const updateBulkActionsVisibility = (selectedSet: Set<string>) => {
-    setIsBulkActionsVisible(selectedSet.size > 0);
-  };
-
-  const handleSelectItem = (itemId: string, isSelected: boolean) => {
-    const newSelectedItems = new Set(selectedItems);
-
-    if (isSelected) {
-      newSelectedItems.add(itemId);
-    } else {
-      newSelectedItems.delete(itemId);
-    }
-
-    setSelectedItems(newSelectedItems);
-    updateBulkActionsVisibility(newSelectedItems);
-  };
-
-  const handleSelectAll = (isSelected: boolean) => {
-    if (isSelected) {
-      const allIds = new Set(items.map((item) => item.id));
-      setSelectedItems(allIds);
-      updateBulkActionsVisibility(allIds);
-    } else {
-      setSelectedItems(new Set());
-      updateBulkActionsVisibility(new Set());
-    }
-  };
-
-  const handleBulkDelete = () => {
-    // Confirm before proceeding
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${selectedItems.size} items?`
-      )
-    ) {
-      // Execute delete for each selected item
-      selectedItems.forEach((itemId) => {
-        const item = items.find((i) => i.id === itemId);
-        if (item) {
-          onDeleteClick(item);
-        }
-      });
-
-      // Reset selection
-      setSelectedItems(new Set());
-      updateBulkActionsVisibility(new Set());
-    }
-  };
-
-  const handleBulkUpdateQuantity = (increase: boolean) => {
-    if (bulkQuantityChange <= 0) return;
-
-    selectedItems.forEach((itemId) => {
-      const item = items.find((i) => i.id === itemId);
-      if (item && onUpdateQuantity) {
-        const delta = increase ? bulkQuantityChange : -bulkQuantityChange;
-        const newQuantity = Math.max(0, item.quantity + delta);
-        onUpdateQuantity(itemId, newQuantity);
-      }
-    });
-  };
+  const [compactMode, setCompactMode] = useState(false);
 
   // Helper function to pluralize units correctly
   const formatUnit = (quantity: number, unit: string): string => {
@@ -138,12 +61,6 @@ export default function InventoryTable({
       bottle: "bottles",
       piece: "pieces",
       unit: "units",
-      bag: "bags",
-      container: "containers",
-      pack: "packs",
-      package: "packages",
-      jar: "jars",
-      carton: "cartons",
     };
 
     return quantity === 1
@@ -180,14 +97,6 @@ export default function InventoryTable({
     return item.quantity === 0;
   };
 
-  // Check if item is approaching reorder level (warning level)
-  const isApproachingReorderLevel = (item: InventoryItem): boolean => {
-    const reorderLevel = getReorderLevel(item);
-    // Warning level is 30% above reorder level
-    const warningThreshold = reorderLevel * 1.3;
-    return item.quantity > reorderLevel && item.quantity <= warningThreshold;
-  };
-
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
@@ -201,305 +110,203 @@ export default function InventoryTable({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Bulk Actions Panel */}
-      {isBulkActionsVisible && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-border/40 shadow-sm p-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Badge
-                variant="secondary"
-                className="bg-primary/10 text-primary font-medium px-3 py-1.5"
-              >
-                {selectedItems.size} item{selectedItems.size !== 1 ? "s" : ""}{" "}
-                selected
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSelectAll(false)}
-                className="text-sm"
-              >
-                Clear selection
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Quantity:</span>
-                <div className="flex items-center rounded-md border shadow-sm">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="px-2 h-8"
-                    onClick={() =>
-                      setBulkQuantityChange(Math.max(1, bulkQuantityChange - 1))
-                    }
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <input
-                    type="number"
-                    value={bulkQuantityChange}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val > 0) setBulkQuantityChange(val);
-                    }}
-                    className="w-14 text-center h-8 border-x focus:outline-none focus:ring-1 focus:ring-ring"
-                    min="1"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="px-2 h-8"
-                    onClick={() =>
-                      setBulkQuantityChange(bulkQuantityChange + 1)
-                    }
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleBulkUpdateQuantity(true)}
-                className="bg-green-50 text-green-600 hover:bg-green-100 border border-green-200"
-              >
-                <PlusCircle className="h-4 w-4 mr-1.5" />
-                Add to stock
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleBulkUpdateQuantity(false)}
-                className="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200"
-              >
-                <MinusCircle className="h-4 w-4 mr-1.5" />
-                Remove from stock
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleBulkDelete}
-                className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-              >
-                <Trash className="h-4 w-4 mr-1.5" />
-                Delete selected
-              </Button>
-            </div>
-          </div>
+    <div className="rounded-md border">
+      <div className="flex items-center justify-end p-2 border-b bg-muted/30">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="compact-mode"
+            checked={compactMode}
+            onCheckedChange={setCompactMode}
+          />
+          <Label htmlFor="compact-mode" className="text-sm cursor-pointer">
+            Compact View
+          </Label>
         </div>
-      )}
+      </div>
 
-      {/* Main Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-b">
-              <TableHead className="w-[50px]">
-                <CustomCheckbox
-                  checked={
-                    items.length > 0 && selectedItems.size === items.length
-                  }
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all items"
-                />
-              </TableHead>
-              <TableHead className="font-semibold">Name</TableHead>
-              <TableHead className="font-semibold">Category</TableHead>
-              <TableHead className="font-semibold">Quantity</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold hidden md:table-cell">
+            <TableRow className="bg-muted/50">
+              <TableHead className="font-medium">Name</TableHead>
+              <TableHead className="font-medium">Category</TableHead>
+              <TableHead className="font-medium">Quantity</TableHead>
+              <TableHead className="font-medium hidden md:table-cell">
                 Reorder Level
               </TableHead>
-              <TableHead className="font-semibold hidden md:table-cell text-right">
-                Unit Cost
+              <TableHead className="font-medium hidden sm:table-cell">
+                Cost
               </TableHead>
-              <TableHead className="w-[100px] text-right">Actions</TableHead>
+              <TableHead className="text-right font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => {
+              // Calculate stock status
               const lowStock = isLowStock(item);
               const outOfStock = isOutOfStock(item);
-              const approachingReorder = isApproachingReorderLevel(item);
               const reorderLevel = getReorderLevel(item);
 
               return (
                 <TableRow
                   key={item.id}
                   className={`
-                    ${isCompactView ? "h-12" : "h-16"}
-                    ${
-                      outOfStock
-                        ? "bg-red-50/50 dark:bg-red-950/10"
-                        : lowStock
-                        ? "bg-yellow-50/50 dark:bg-yellow-950/10"
-                        : approachingReorder
-                        ? "bg-orange-50/50 dark:bg-orange-950/10"
-                        : ""
-                    }
+                    ${outOfStock ? "bg-red-50 dark:bg-red-950/20" : ""}
+                    ${lowStock ? "bg-yellow-50 dark:bg-yellow-950/20" : ""}
                     hover:bg-muted/50 transition-colors
+                    ${compactMode ? "h-12" : ""}
                   `}
                 >
-                  <TableCell className="w-[50px]">
-                    <CustomCheckbox
-                      checked={selectedItems.has(item.id)}
-                      onCheckedChange={(checked) =>
-                        handleSelectItem(item.id, checked === true)
-                      }
-                      aria-label={`Select ${item.name}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {(lowStock || outOfStock || approachingReorder) && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <AlertTriangle
-                                className={`
-                                  ${
-                                    outOfStock
-                                      ? "text-red-500"
-                                      : lowStock
-                                      ? "text-yellow-500"
-                                      : "text-orange-400"
-                                  }
-                                  h-4 w-4
-                                `}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {outOfStock
-                                ? "Out of stock"
-                                : lowStock
-                                ? "Low stock"
-                                : "Approaching reorder level"}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                  <TableCell
+                    className={`font-medium ${compactMode ? "py-2" : ""}`}
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {(lowStock || outOfStock) && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <AlertTriangle
+                                    className={`
+                                    ${
+                                      outOfStock
+                                        ? "text-red-500"
+                                        : "text-yellow-500"
+                                    }
+                                    inline mr-1 h-4 w-4 stroke-[2px]
+                                  `}
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {outOfStock ? "Out of stock!" : "Low stock!"}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <span className="truncate max-w-[180px]">
+                          {item.name}
+                        </span>
+                      </div>
+
+                      {!compactMode && outOfStock && (
+                        <Badge variant="destructive" className="mt-1 w-fit">
+                          Out of stock
+                        </Badge>
                       )}
-                      <span className="font-medium">{item.name}</span>
+                      {!compactMode && lowStock && !outOfStock && (
+                        <Badge
+                          variant="outline"
+                          className="mt-1 w-fit text-yellow-600 border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20"
+                        >
+                          Low stock
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => onCategoryClick?.(item.category)}
-                    >
+                  <TableCell className={compactMode ? "py-2" : ""}>
+                    <Badge variant="outline" className="font-normal">
                       {item.category}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {onUpdateQuantity ? (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => handleQuickUpdate(item, false)}
-                          disabled={item.quantity <= 0}
-                        >
-                          <MinusCircle className="h-4 w-4" />
-                        </Button>
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => {
-                            const newQty = parseInt(e.target.value);
-                            if (!isNaN(newQty) && newQty >= 0) {
-                              onUpdateQuantity(item.id, newQty);
-                            }
-                          }}
-                          className="w-16 h-8 rounded-md border text-center"
-                        />
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => handleQuickUpdate(item, true)}
-                        >
-                          <PlusCircle className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <span>{formatUnit(item.quantity, item.unit)}</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        outOfStock
-                          ? "destructive"
-                          : lowStock
-                          ? "warning"
-                          : approachingReorder
-                          ? "outline"
-                          : "secondary"
-                      }
-                      className={`
-                        ${
-                          outOfStock
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            : lowStock
-                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                            : approachingReorder
-                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                        }
-                      `}
-                    >
-                      {outOfStock
-                        ? "Out of stock"
-                        : lowStock
-                        ? "Low stock"
-                        : approachingReorder
-                        ? "Reorder soon"
-                        : "In stock"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      <span>
-                        {reorderLevel} {item.unit}
+                  <TableCell
+                    className={`${
+                      lowStock || outOfStock ? "text-red-600 font-medium" : ""
+                    } ${compactMode ? "py-2" : ""}`}
+                  >
+                    <div className="flex items-center gap-1">
+                      {onUpdateQuantity && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => handleQuickUpdate(item, false)}
+                              >
+                                <MinusCircle className="h-5 w-5 stroke-[2px]" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Decrease quantity</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+
+                      <span className="min-w-[60px] text-center">
+                        {item.quantity} {formatUnit(item.quantity, item.unit)}
                       </span>
+
+                      {onUpdateQuantity && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                onClick={() => handleQuickUpdate(item, true)}
+                              >
+                                <PlusCircle className="h-5 w-5 stroke-[2px]" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Increase quantity</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell
+                    className={`hidden md:table-cell ${
+                      compactMode ? "py-2" : ""
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      {reorderLevel} {formatUnit(reorderLevel, item.unit)}
                       {(lowStock || outOfStock) && (
                         <TooltipProvider>
                           <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="h-4 w-4 text-muted-foreground" />
+                            <TooltipTrigger asChild>
+                              <span className="ml-2">
+                                <Info className="h-4 w-4 text-blue-500 stroke-[2px]" />
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Current stock is{" "}
                               {outOfStock
-                                ? "depleted"
-                                : `below reorder level of ${reorderLevel} ${item.unit}`}
+                                ? "Item needs to be restocked immediately!"
+                                : "Item is below reorder level"}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-right">
+                  <TableCell
+                    className={`hidden sm:table-cell ${
+                      compactMode ? "py-2" : ""
+                    }`}
+                  >
                     {formatCurrency(item.cost_per_unit)}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                  <TableCell
+                    className={`text-right ${compactMode ? "py-2" : ""}`}
+                  >
+                    <div className="flex justify-end gap-2">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/20"
                               onClick={() => onEditClick(item)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-4 w-4 mr-1 stroke-[2px]" />
+                              <span className="hidden sm:inline">Edit</span>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Edit item</TooltipContent>
+                          <TooltipContent>Edit item details</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
 
@@ -507,15 +314,16 @@ export default function InventoryTable({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                               onClick={() => onDeleteClick(item)}
                             >
-                              <Trash className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-1 stroke-[2px]" />
+                              <span className="hidden sm:inline">Delete</span>
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Delete item</TooltipContent>
+                          <TooltipContent>Delete this item</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>

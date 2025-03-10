@@ -23,6 +23,7 @@ import {
   FiAlertTriangle,
   FiStar,
   FiDollarSign,
+  FiArchive,
 } from "react-icons/fi";
 import {
   Tooltip,
@@ -46,6 +47,7 @@ interface RecipeTableProps {
   onDeleteClick: (recipe: Dish) => void;
   onViewIngredientsClick?: (recipe: Dish) => void;
   onDuplicateClick?: (recipe: Dish) => void;
+  onUnarchiveClick?: (recipe: Dish) => void;
   onBulkAction?: (action: string, recipes: Dish[]) => void;
 }
 
@@ -56,6 +58,7 @@ export default function RecipeTable({
   onDeleteClick,
   onViewIngredientsClick,
   onDuplicateClick,
+  onUnarchiveClick,
   onBulkAction,
 }: RecipeTableProps) {
   // Get currency formatter
@@ -74,12 +77,19 @@ export default function RecipeTable({
     if (selectedRecipes.size === recipes.length) {
       setSelectedRecipes(new Set());
     } else {
-      setSelectedRecipes(new Set(recipes.map((recipe) => recipe.id)));
+      // Only select non-archived recipes for bulk actions
+      const selectableRecipes = recipes
+        .filter((recipe) => !recipe.isArchived)
+        .map((recipe) => recipe.id);
+      setSelectedRecipes(new Set(selectableRecipes));
     }
   };
 
   // Handle select recipe
   const handleSelectRecipe = (recipeId: string) => {
+    const recipe = recipes.find((r) => r.id === recipeId);
+    if (recipe?.isArchived) return; // Don't allow selecting archived recipes
+
     const newSelected = new Set(selectedRecipes);
     if (newSelected.has(recipeId)) {
       newSelected.delete(recipeId);
@@ -165,6 +175,131 @@ export default function RecipeTable({
     return <div className="flex">{stars}</div>;
   };
 
+  // Add a function to render the archived badge
+  const renderArchivedBadge = (isArchived?: boolean) => {
+    if (!isArchived) return null;
+
+    return (
+      <Badge
+        variant="outline"
+        className="ml-2 bg-amber-50 text-amber-700 border-amber-200"
+      >
+        <FiArchive className="mr-1 h-3 w-3" />
+        Archived
+      </Badge>
+    );
+  };
+
+  // Render actions for a recipe
+  const renderActions = (recipe: Dish) => {
+    return (
+      <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
+                onClick={() =>
+                  onViewIngredientsClick && onViewIngredientsClick(recipe)
+                }
+              >
+                <FiEye className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>View recipe details</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
+                onClick={() => onEditClick(recipe)}
+              >
+                <FiEdit2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit recipe</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {onDuplicateClick && !recipe.isArchived && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-green-600 hover:bg-green-100 rounded-full"
+                  onClick={() => onDuplicateClick(recipe)}
+                >
+                  <FiCopy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Duplicate recipe</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        {recipe.isArchived && onUnarchiveClick ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-amber-600 hover:bg-amber-100 rounded-full"
+                  onClick={() => onUnarchiveClick(recipe)}
+                >
+                  <FiArchive className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Unarchive recipe</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          !recipe.isArchived && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-red-600 hover:bg-red-100 rounded-full"
+                    onClick={() => onDeleteClick(recipe)}
+                  >
+                    <FiTrash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete recipe</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )
+        )}
+      </div>
+    );
+  };
+
+  // Get the count of selectable (non-archived) recipes
+  const selectableRecipesCount = recipes.filter(
+    (recipe) => !recipe.isArchived
+  ).length;
+
   return (
     <div>
       {/* Bulk actions */}
@@ -203,11 +338,11 @@ export default function RecipeTable({
                 <TableHead className="w-[50px] py-3">
                   <CustomCheckbox
                     checked={
-                      selectedRecipes.size === recipes.length &&
-                      recipes.length > 0
+                      selectedRecipes.size === selectableRecipesCount &&
+                      selectableRecipesCount > 0
                     }
                     onCheckedChange={handleSelectAll}
-                    disabled={recipes.length === 0}
+                    disabled={selectableRecipesCount === 0}
                   />
                 </TableHead>
               )}
@@ -261,6 +396,7 @@ export default function RecipeTable({
                       <CustomCheckbox
                         checked={selectedRecipes.has(recipe.id)}
                         onCheckedChange={() => handleSelectRecipe(recipe.id)}
+                        disabled={recipe.isArchived}
                       />
                     </TableCell>
                   )}
@@ -281,8 +417,11 @@ export default function RecipeTable({
                         </div>
                       )}
                       <div>
-                        <div className="font-medium text-gray-900">
-                          {recipe.name}
+                        <div className="font-medium">
+                          <div className="flex items-center">
+                            {recipe.name}
+                            {renderArchivedBadge(recipe.isArchived)}
+                          </div>
                         </div>
                         {recipe.description && (
                           <div className="text-xs text-gray-500 truncate max-w-[200px] mt-1">
@@ -393,84 +532,7 @@ export default function RecipeTable({
                     {renderPopularity(recipe.popularity)}
                   </TableCell>
                   <TableCell className="py-4 text-right">
-                    <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
-                              onClick={() =>
-                                onViewIngredientsClick &&
-                                onViewIngredientsClick(recipe)
-                              }
-                            >
-                              <FiEye className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View recipe details</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
-                              onClick={() => onEditClick(recipe)}
-                            >
-                              <FiEdit2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit recipe</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      {onDuplicateClick && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-green-600 hover:bg-green-100 rounded-full"
-                                onClick={() => onDuplicateClick(recipe)}
-                              >
-                                <FiCopy className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Duplicate recipe</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-600 hover:bg-red-100 rounded-full"
-                              onClick={() => onDeleteClick(recipe)}
-                            >
-                              <FiTrash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Delete recipe</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                    {renderActions(recipe)}
                   </TableCell>
                 </TableRow>
               ))

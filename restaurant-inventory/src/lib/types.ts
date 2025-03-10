@@ -25,6 +25,7 @@ export interface Dish {
   ingredients: DishIngredient[];
   createdAt: string;
   updatedAt: string;
+  isArchived?: boolean;
 }
 
 // DishIngredient interface for the relationship between dishes and ingredients
@@ -202,3 +203,12 @@ export type PurchaseOrderItem = {
   cost_per_unit: number;
   inventory_item?: InventoryItem;
 };
+
+export interface CategoryStat {
+  id: string;
+  name: string;
+  count: number;
+  change: number;
+  icon: React.ReactNode;
+  color: string;
+}

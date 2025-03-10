@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, List, Eye } from "lucide-react";
+import { Plus } from "lucide-react";
 import InventoryTable from "./components/InventoryTable";
 import InventoryActions from "./components/InventoryActions";
 import { InventoryModals } from "./components/modals";
 import { InventoryItem } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
 import { useInventory } from "./hooks/useInventory";
-import { InventoryStats } from "./components/InventoryStats";
-import { InventoryCategoryValue } from "./components/InventoryCategoryValue";
-import { CustomToggle } from "@/components/ui/custom-toggle";
 
 export default function Inventory() {
   const { toast } = useToast();
@@ -32,7 +30,6 @@ export default function Inventory() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
-  const [isCompactView, setIsCompactView] = useState(false);
 
   // Helper function to check if an item is low on stock
   const isLowStock = (item: InventoryItem): boolean => {
@@ -212,10 +209,6 @@ export default function Inventory() {
   const totalItems = items.length;
   const lowStockCount = items.filter((item) => isLowStock(item)).length;
   const outOfStockCount = items.filter((item) => isOutOfStock(item)).length;
-  const totalValue = items.reduce(
-    (total, item) => total + item.quantity * item.cost_per_unit,
-    0
-  );
 
   if (isLoading) {
     return (
@@ -262,70 +255,21 @@ export default function Inventory() {
         />
       </div>
 
-      {/* Inventory Statistics */}
-      <InventoryStats
-        totalItems={totalItems}
-        lowStockItems={lowStockCount}
-        outOfStockItems={outOfStockCount}
-        totalValue={totalValue}
-      />
-
-      {/* Category Value Breakdown */}
-      <InventoryCategoryValue items={items} />
-
-      <div className="flex flex-wrap justify-between items-center mb-4">
-        <div className="flex items-center space-x-3 bg-white dark:bg-gray-800 px-4 py-2.5 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
-          <CustomToggle
-            id="low-stock-filter"
-            checked={showLowStockOnly}
-            onCheckedChange={setShowLowStockOnly}
-            size="sm"
-            color="primary"
-            label="Show low/out of stock only"
-          />
-        </div>
-
+      <div className="flex items-center justify-end mb-2">
         <div className="flex items-center space-x-2">
-          <div className="bg-white dark:bg-gray-800 p-1.5 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`px-3 ${
-                !isCompactView
-                  ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground font-medium shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-750"
-              } transition-colors`}
-              onClick={() => setIsCompactView(false)}
-            >
-              <List
-                className={`h-4 w-4 mr-1.5 ${
-                  !isCompactView
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-gray-500 dark:text-gray-400"
-                } stroke-[2px]`}
-              />
-              Standard
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`px-3 ${
-                isCompactView
-                  ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground font-medium shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-750"
-              } transition-colors`}
-              onClick={() => setIsCompactView(true)}
-            >
-              <Eye
-                className={`h-4 w-4 mr-1.5 ${
-                  isCompactView
-                    ? "text-primary dark:text-primary-foreground"
-                    : "text-gray-500 dark:text-gray-400"
-                } stroke-[2px]`}
-              />
-              Compact
-            </Button>
-          </div>
+          <Button
+            variant={showLowStockOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+            className="h-8"
+          >
+            {showLowStockOnly ? "Hide Regular Stock" : "Show Low Stock Only"}
+          </Button>
+          <Label htmlFor="low-stock-filter" className="text-sm cursor-pointer">
+            {showLowStockOnly
+              ? "Showing low/out of stock only"
+              : "Showing all items"}
+          </Label>
         </div>
       </div>
 
@@ -334,8 +278,6 @@ export default function Inventory() {
         onEditClick={openEditModal}
         onDeleteClick={openDeleteModal}
         onUpdateQuantity={handleQuickQuantityUpdate}
-        isCompactView={isCompactView}
-        onCategoryClick={(category) => setSelectedCategory(category)}
       />
 
       {/* Floating Add Button for Mobile */}
