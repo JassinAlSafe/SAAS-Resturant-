@@ -6,7 +6,6 @@ import { DashboardStats, CategoryStat } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useCurrency } from "@/lib/currency-context";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-header";

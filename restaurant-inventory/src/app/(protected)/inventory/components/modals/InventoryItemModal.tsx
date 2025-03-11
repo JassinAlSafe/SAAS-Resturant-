@@ -22,20 +22,36 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InventoryItem, Supplier } from "@/lib/types";
-import { FiInfo, FiZap, FiClipboard, FiSettings } from "react-icons/fi";
+import {
+  FiInfo,
+  FiZap,
+  FiClipboard,
+  FiSettings,
+  FiImage,
+} from "react-icons/fi";
 import { useMediaQueries } from "@/hooks/use-media-query";
 import { CustomToggle } from "@/components/ui/custom-toggle";
+import Image from "next/image";
+
+// Extended InventoryItem type to include possible image_url
+interface ExtendedInventoryItem extends InventoryItem {
+  image_url?: string;
+}
+
+// Interface for form data that includes both snake_case and camelCase properties
+interface InventoryFormData
+  extends Omit<InventoryItem, "id" | "created_at" | "updated_at"> {
+  reorderLevel?: number;
+  expiryDate?: string;
+  image_url?: string;
+}
 
 interface InventoryItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (
-    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
-  ) => void;
-  onUpdate?: (
-    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
-  ) => void;
-  item?: InventoryItem;
+  onSave: (itemData: InventoryFormData) => void;
+  onUpdate?: (itemData: InventoryFormData) => void;
+  item?: ExtendedInventoryItem;
   customCategories?: string[];
   suppliers?: Supplier[];
   userRole?: "admin" | "manager" | "staff";
@@ -65,6 +81,8 @@ export default function InventoryItemModal({
   const [location, setLocation] = useState("");
   const [activeTab, setActiveTab] = useState("basic");
   const [quickMode, setQuickMode] = useState(userRole === "staff");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageError, setImageError] = useState(false);
 
   // Check if we're on a mobile device
   const { isMobile } = useMediaQueries();
@@ -97,9 +115,11 @@ export default function InventoryItemModal({
         setCategory(item.category);
         setCostPerUnit(item.cost_per_unit);
         setMinimumStockLevel(item.minimum_stock_level || 0);
-        setReorderPoint(item.reorder_point || 0);
+        setReorderPoint(item.reorder_level || 0);
         setSupplierId(item.supplier_id || "");
         setLocation(item.location || "");
+        setImageUrl(item.image_url || "");
+        setImageError(false);
         // If editing, default to full mode for managers/admins
         setQuickMode(userRole === "staff");
       } else {
@@ -114,6 +134,8 @@ export default function InventoryItemModal({
         setReorderPoint(0);
         setSupplierId("");
         setLocation("");
+        setImageUrl("");
+        setImageError(false);
         // Default to quick mode for staff
         setQuickMode(userRole === "staff");
       }
@@ -130,17 +152,16 @@ export default function InventoryItemModal({
     const finalCategory = newCategory.trim() ? newCategory : category;
 
     // Create item data object
-    const itemData = {
+    const itemData: InventoryFormData = {
       name,
-      description: quickMode ? "" : description,
-      quantity,
+      quantity: Number(quantity),
       unit,
       category: finalCategory,
-      cost_per_unit: quickMode ? 0 : costPerUnit,
-      minimum_stock_level: quickMode ? 0 : minimumStockLevel,
-      reorder_point: quickMode ? 0 : reorderPoint,
+      cost: quickMode ? 0 : Number(costPerUnit),
+      cost_per_unit: quickMode ? 0 : Number(costPerUnit),
+      reorderLevel: quickMode ? 0 : Number(reorderPoint),
       supplier_id: quickMode ? undefined : supplierId || undefined,
-      location: quickMode ? "" : location || undefined,
+      image_url: quickMode ? undefined : imageUrl || undefined,
     };
 
     // Call appropriate function based on if we're adding or editing
@@ -330,6 +351,44 @@ export default function InventoryItemModal({
         {!quickMode && (
           <>
             <div className="space-y-2">
+              <Label
+                htmlFor="imageUrl"
+                className="font-medium flex items-center gap-1.5"
+              >
+                <FiImage className="h-4 w-4" />
+                Product Image URL
+              </Label>
+              <Input
+                id="imageUrl"
+                value={imageUrl}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setImageError(false);
+                }}
+                placeholder="Enter image URL"
+                className="focus:ring-2 focus:ring-primary/20"
+              />
+              {imageUrl && (
+                <div className="mt-2 relative h-24 w-24 rounded overflow-hidden border border-gray-200 dark:border-gray-800">
+                  <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    {!imageError ? (
+                      <Image
+                        src={imageUrl}
+                        alt="Product preview"
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                        onError={() => setImageError(true)}
+                      />
+                    ) : (
+                      <FiImage className="h-8 w-8 text-muted-foreground/50" />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="costPerUnit" className="font-medium">
                 Cost Per Unit*
               </Label>
@@ -385,7 +444,7 @@ export default function InventoryItemModal({
 
           <div className="space-y-2">
             <Label htmlFor="reorderPoint" className="font-medium">
-              Reorder Point
+              Reorder Level
             </Label>
             <Input
               id="reorderPoint"

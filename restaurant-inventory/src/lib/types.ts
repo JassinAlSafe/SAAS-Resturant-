@@ -81,7 +81,28 @@ export type User = {
   mfa_enabled?: boolean;
 };
 
-// Inventory item type
+// Database row type for ingredients table
+export interface IngredientRow {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  cost: number;
+  minimum_stock_level?: number;
+  reorder_level?: number;
+  reorder_point?: number;
+  supplier_id?: string;
+  location?: string;
+  expiry_date?: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+  suppliers?: Supplier | null;
+}
+
+// Inventory item type that matches both database schema and frontend needs
 export type InventoryItem = {
   id: string;
   name: string;
@@ -89,13 +110,24 @@ export type InventoryItem = {
   category: string;
   unit: string;
   quantity: number;
-  cost_per_unit: number;
+  cost: number; // Base cost field from DB
+  cost_per_unit: number; // Frontend display alias
   minimum_stock_level?: number;
+  reorder_level?: number;
   reorder_point?: number;
   supplier_id?: string;
   location?: string;
-  created_at: Date | string;
-  updated_at: Date | string;
+  expiry_date?: string;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// Form data type for inventory items
+export type InventoryFormData = Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'> & {
+  supplierId?: string; // Frontend alias for supplier_id
+  expiryDate?: string; // Frontend alias for expiry_date
+  reorderLevel?: number; // Frontend alias for reorder_level
 };
 
 // Supplier category enum

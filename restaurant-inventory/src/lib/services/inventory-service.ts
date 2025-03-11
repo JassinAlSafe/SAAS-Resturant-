@@ -1,23 +1,46 @@
-import { supabase } from '@/lib/supabase';
-import { InventoryItem, IngredientRow } from '@/lib/types';
+import { supabase } from '../supabase';
+import type { InventoryItem, InventoryFormData } from '../types';
+import { InventoryServiceError } from '../errors';
 
-/**
- * Custom error class for inventory service
- */
-export class InventoryServiceError extends Error {
-    code?: string;
-    details?: string;
+// Database response type
+type DbIngredient = {
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    cost: number;
 
-    constructor(message: string, options?: { code?: string, details?: string }) {
-        super(message);
-        this.name = 'InventoryServiceError';
-        this.code = options?.code;
-        this.details = options?.details;
+    reorder_level: number | null;
+    supplier_id: string | null;
+    expiry_date: string | null;
+    image_url: string | null;
+    created_at: string;
+    updated_at: string;
+};
 
-        // This is needed for instanceof checks in TypeScript
-        Object.setPrototypeOf(this, InventoryServiceError.prototype);
-    }
-}
+// Transform database response to InventoryItem
+const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
+    return {
+        id: data.id,
+        name: data.name,
+        description: undefined,
+        category: data.category,
+        quantity: data.quantity,
+        unit: data.unit,
+        cost: data.cost,
+        cost_per_unit: data.cost,
+        minimum_stock_level: undefined,
+        reorder_level: data.reorder_level || undefined,
+        reorder_point: undefined,
+        supplier_id: data.supplier_id || undefined,
+        location: undefined,
+        expiry_date: data.expiry_date || undefined,
+        image_url: data.image_url || undefined,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+    };
+};
 
 export const inventoryService = {
     /**
@@ -49,23 +72,7 @@ export const inventoryService = {
             }
 
             // Transform the data to match our InventoryItem interface
-            return data.map((item: IngredientRow) => ({
-                id: item.id,
-                name: item.name,
-                category: item.category,
-                quantity: item.quantity,
-                unit: item.unit,
-                cost_per_unit: item.cost,
-                reorderLevel: item.reorder_level,
-                minimum_stock_level: item.minimum_stock_level,
-                reorder_point: item.reorder_point,
-                supplier_id: item.supplier_id,
-                location: item.location,
-                expiryDate: item.expiry_date || undefined,
-                supplierId: item.supplier_id || undefined,
-                created_at: item.created_at,
-                updated_at: item.updated_at
-            }));
+            return data.map((item: DbIngredient) => mapDbToInventoryItem(item));
         } catch (error) {
             console.error('Error in getItems:', error);
 
@@ -116,23 +123,7 @@ export const inventoryService = {
             }
 
             // Transform the data to match our InventoryItem interface
-            return data.map((item: IngredientRow) => ({
-                id: item.id,
-                name: item.name,
-                category: item.category,
-                quantity: item.quantity,
-                unit: item.unit,
-                cost_per_unit: item.cost,
-                reorderLevel: item.reorder_level,
-                minimum_stock_level: item.minimum_stock_level,
-                reorder_point: item.reorder_point,
-                supplier_id: item.supplier_id,
-                location: item.location,
-                expiryDate: item.expiry_date || undefined,
-                supplierId: item.supplier_id || undefined,
-                created_at: item.created_at,
-                updated_at: item.updated_at
-            }));
+            return data.map((item: DbIngredient) => mapDbToInventoryItem(item));
         } catch (error) {
             console.error('Error in getSoonToExpireItems:', error);
 
@@ -151,73 +142,54 @@ export const inventoryService = {
     /**
      * Add a new inventory item
      */
-    async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
+    async addItem(item: InventoryFormData): Promise<InventoryItem | null> {
         try {
-            // Check if supabase client is properly initialized
             if (!supabase) {
                 throw new InventoryServiceError('Supabase client is not initialized');
             }
 
-            // Convert to snake_case for the database
+            const dbData = {
+                name: item.name,
+                category: item.category,
+                quantity: item.quantity,
+                unit: item.unit,
+                cost: item.cost_per_unit,
+                reorder_level: item.reorderLevel ?? 0,
+                supplier_id: item.supplierId || item.supplier_id || null,
+                expiry_date: item.expiryDate || item.expiry_date || null,
+                image_url: item.image_url || null
+            };
+
             const { data, error } = await supabase
                 .from('ingredients')
-                .insert({
-                    name: item.name,
-                    category: item.category,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    reorder_level: item.reorderLevel,
-                    cost: item.cost_per_unit,
-                    minimum_stock_level: item.minimum_stock_level,
-                    reorder_point: item.reorder_point,
-                    expiry_date: item.expiryDate || null,
-                    supplier_id: item.supplierId || null,
-                    location: item.location || null
-                })
+                .insert(dbData)
                 .select()
                 .single();
 
             if (error) {
-                console.error('Error adding inventory item:', error);
-                throw new InventoryServiceError('Failed to add inventory item', {
+                const errorMessage = `Failed to add inventory item: ${error.message}`;
+                const errorDetails = {
                     code: error.code,
-                    details: error.details || error.message
-                });
+                    details: error.details,
+                    hint: error.hint,
+                    message: error.message
+                };
+                console.error('Error adding inventory item:', errorDetails);
+                throw new InventoryServiceError(errorMessage, errorDetails);
             }
 
             if (!data) {
                 throw new InventoryServiceError('No data returned after adding item');
             }
 
-            // Transform the response to match our InventoryItem interface
-            return {
-                id: data.id,
-                name: data.name,
-                category: data.category,
-                quantity: data.quantity,
-                unit: data.unit,
-                cost_per_unit: data.cost,
-                reorderLevel: data.reorder_level,
-                minimum_stock_level: data.minimum_stock_level,
-                reorder_point: data.reorder_point,
-                supplier_id: data.supplier_id || null,
-                location: data.location,
-                expiryDate: data.expiry_date || null,
-                supplierId: data.supplier_id || null,
-                created_at: data.created_at,
-                updated_at: data.updated_at
-            };
+            return mapDbToInventoryItem(data as DbIngredient);
         } catch (error) {
             console.error('Error in addItem:', error);
-
-            // If it's already our custom error type, just rethrow it
             if (error instanceof InventoryServiceError) {
                 throw error;
             }
-
-            // Otherwise wrap in our custom error
             throw new InventoryServiceError(
-                error instanceof Error ? error.message : 'Unknown error occurred'
+                `Failed to add inventory item: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
             );
         }
     },
@@ -225,21 +197,21 @@ export const inventoryService = {
     /**
      * Update an existing inventory item
      */
-    async updateItem(id: string, updates: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>>): Promise<InventoryItem | null> {
+    async updateItem(id: string, updates: Partial<InventoryFormData>): Promise<InventoryItem | null> {
         try {
-            // Convert to snake_case for the database
             const dbUpdates: Record<string, unknown> = {};
+
             if (updates.name !== undefined) dbUpdates.name = updates.name;
             if (updates.category !== undefined) dbUpdates.category = updates.category;
             if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
             if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
-            if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
             if (updates.cost_per_unit !== undefined) dbUpdates.cost = updates.cost_per_unit;
-            if (updates.minimum_stock_level !== undefined) dbUpdates.minimum_stock_level = updates.minimum_stock_level;
-            if (updates.reorder_point !== undefined) dbUpdates.reorder_point = updates.reorder_point;
-            if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
+            if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel ?? 0;
             if (updates.supplierId !== undefined) dbUpdates.supplier_id = updates.supplierId;
-            if (updates.location !== undefined) dbUpdates.location = updates.location;
+            if (updates.supplier_id !== undefined) dbUpdates.supplier_id = updates.supplier_id;
+            if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
+            if (updates.expiry_date !== undefined) dbUpdates.expiry_date = updates.expiry_date;
+            if (updates.image_url !== undefined) dbUpdates.image_url = updates.image_url;
 
             const { data, error } = await supabase
                 .from('ingredients')
@@ -250,30 +222,25 @@ export const inventoryService = {
 
             if (error) {
                 console.error('Error updating inventory item:', error);
-                throw error;
+                throw new InventoryServiceError('Failed to update inventory item', {
+                    code: error.code,
+                    details: error.details || error.message
+                });
             }
 
-            // Transform the response to match our InventoryItem interface
-            return {
-                id: data.id,
-                name: data.name,
-                category: data.category,
-                quantity: data.quantity,
-                unit: data.unit,
-                cost_per_unit: data.cost,
-                reorderLevel: data.reorder_level,
-                minimum_stock_level: data.minimum_stock_level,
-                reorder_point: data.reorder_point,
-                supplier_id: data.supplier_id || null,
-                location: data.location,
-                expiryDate: data.expiry_date || null,
-                supplierId: data.supplier_id || null,
-                created_at: data.created_at,
-                updated_at: data.updated_at
-            };
+            if (!data) {
+                throw new InventoryServiceError('No data returned after updating item');
+            }
+
+            return mapDbToInventoryItem(data as DbIngredient);
         } catch (error) {
             console.error('Error in updateItem:', error);
-            return null;
+            if (error instanceof InventoryServiceError) {
+                throw error;
+            }
+            throw new InventoryServiceError(
+                error instanceof Error ? error.message : 'Unknown error occurred'
+            );
         }
     },
 
@@ -328,4 +295,4 @@ export const inventoryService = {
     addIngredient: function (data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>) { return this.addItem(data); },
     updateIngredient: function (id: string, data: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>>) { return this.updateItem(id, data); },
     deleteIngredient: function (id: string) { return this.deleteItem(id); }
-}; 
+};

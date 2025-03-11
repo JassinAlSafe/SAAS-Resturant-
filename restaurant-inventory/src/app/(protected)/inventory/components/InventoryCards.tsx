@@ -4,8 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InventoryItem } from "@/lib/types";
-import { FiEdit2, FiTrash2, FiPackage } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiPackage, FiImage } from "react-icons/fi";
 import { useCurrency } from "@/lib/currency-context";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import Image from "next/image";
+
+// Extended InventoryItem type to include possible image_url
+interface ExtendedInventoryItem extends InventoryItem {
+  image_url?: string;
+}
 
 interface InventoryCardsProps {
   items: InventoryItem[];
@@ -20,95 +28,157 @@ export function InventoryCards({
 }: InventoryCardsProps) {
   const { formatCurrency } = useCurrency();
 
+  // Get stock status letter
+  const getStockStatusLetter = (item: InventoryItem): string => {
+    if (item.quantity === 0) return "C";
+    if (item.quantity <= (item.reorder_point || item.minimum_stock_level || 5))
+      return "B";
+    return "A";
+  };
+
+  // Get stock status color
+  const getStockStatusColor = (item: InventoryItem): string => {
+    const status = getStockStatusLetter(item);
+    if (status === "C")
+      return "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/30";
+    if (status === "B")
+      return "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30";
+    return "text-green-600 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/30";
+  };
+
   if (items.length === 0) {
     return (
-      <div className="text-center py-12 bg-muted/20 rounded-lg">
-        <FiPackage className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-medium">No items found</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          No inventory items match your current filters.
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="text-center py-16 bg-muted/10 rounded-lg border border-dashed border-muted"
+      >
+        <FiPackage className="mx-auto h-16 w-16 text-muted-foreground/50" />
+        <h3 className="mt-6 text-xl font-medium">No items found</h3>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          No inventory items match your current filters. Try adjusting your
+          search criteria or category selection.
         </p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {items.map((item) => {
-        // Calculate stock status
-        const isLowStock = item.quantity <= item.reorderLevel;
-        const isOutOfStock = item.quantity === 0;
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {items.map((item, index) => {
+        const stockStatus = getStockStatusLetter(item);
+        const stockStatusColor = getStockStatusColor(item);
+        const extendedItem = item as ExtendedInventoryItem;
 
         return (
-          <Card key={item.id} className="overflow-hidden">
-            <div className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium text-lg truncate">{item.name}</h3>
-                  <Badge variant="outline" className="mt-1">
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+          >
+            <Card className="overflow-hidden h-full flex flex-col bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+              <div className="relative">
+                <div className="absolute top-3 right-3 z-10">
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center font-medium text-sm",
+                      stockStatusColor
+                    )}
+                  >
+                    {stockStatus}
+                  </div>
+                </div>
+                <div className="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                  {extendedItem.image_url ? (
+                    <Image
+                      src={extendedItem.image_url}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 300px"
+                      className="object-cover"
+                      priority={index < 4}
+                    />
+                  ) : (
+                    <FiImage className="h-16 w-16 text-muted-foreground/30" />
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 flex-grow flex flex-col">
+                <div className="mb-2">
+                  <Badge variant="outline" className="mb-2 font-normal">
                     {item.category}
                   </Badge>
+                  <h3 className="font-medium text-lg leading-tight line-clamp-2">
+                    {item.name}
+                  </h3>
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {item.description}
+                    </p>
+                  )}
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-blue-600"
-                    onClick={() => onEditClick(item)}
-                    title="Edit item"
-                  >
-                    <FiEdit2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-red-600"
-                    onClick={() => onDeleteClick(item)}
-                    title="Delete item"
-                  >
-                    <FiTrash2 className="h-4 w-4" />
-                  </Button>
+
+                <div className="mt-auto space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">SKU:</span>
+                    <span className="font-mono text-xs">
+                      {item.id.substring(0, 8)}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Stock:
+                    </span>
+                    <span
+                      className={cn(
+                        "font-medium",
+                        stockStatus === "C" && "text-red-600 dark:text-red-400",
+                        stockStatus === "B" &&
+                          "text-amber-600 dark:text-amber-400"
+                      )}
+                    >
+                      {item.quantity} {item.unit}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">
+                      Price:
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(item.cost_per_unit)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Quantity:
-                  </span>
-                  <span
-                    className={isLowStock ? "text-red-600 font-medium" : ""}
-                  >
-                    {item.quantity} {item.unit}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Reorder Level:
-                  </span>
-                  <span>
-                    {item.reorderLevel} {item.unit}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Cost:</span>
-                  <span>{formatCurrency(item.cost_per_unit)}</span>
-                </div>
-              </div>
+              <div className="border-t border-gray-100 dark:border-gray-800 p-3 flex justify-between">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  onClick={() => onEditClick(item)}
+                >
+                  <FiEdit2 className="h-4 w-4 mr-1.5" />
+                  Edit
+                </Button>
 
-              {/* Stock Status Indicators */}
-              {isOutOfStock && (
-                <div className="mt-3 py-1 px-2 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 text-xs font-medium rounded">
-                  Out of stock
-                </div>
-              )}
-              {isLowStock && !isOutOfStock && (
-                <div className="mt-3 py-1 px-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 text-xs font-medium rounded">
-                  Low stock
-                </div>
-              )}
-            </div>
-          </Card>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  onClick={() => onDeleteClick(item)}
+                >
+                  <FiTrash2 className="h-4 w-4 mr-1.5" />
+                  Delete
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
         );
       })}
     </div>

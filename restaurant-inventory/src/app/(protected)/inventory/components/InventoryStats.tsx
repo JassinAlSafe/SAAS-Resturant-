@@ -8,6 +8,8 @@ import {
   FiAlertCircle,
   FiDollarSign,
 } from "react-icons/fi";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface InventoryStatsProps {
   totalItems: number;
@@ -24,43 +26,72 @@ export function InventoryStats({
 }: InventoryStatsProps) {
   const { formatCurrency } = useCurrency();
 
+  // Calculate percentages safely to avoid NaN
+  const lowStockPercentage =
+    totalItems > 0 ? Math.round((lowStockItems / totalItems) * 100) : 0;
+
+  const outOfStockPercentage =
+    totalItems > 0 ? Math.round((outOfStockItems / totalItems) * 100) : 0;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <StatCard
-        title="Total Items"
-        value={totalItems.toString()}
-        icon={<FiPackage className="h-5 w-5" />}
-        description="Items in inventory"
-        color="blue"
-      />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <StatCard
+          title="Total Items"
+          value={totalItems.toString()}
+          icon={<FiPackage className="h-5 w-5" />}
+          description="Items in inventory"
+          color="blue"
+        />
+      </motion.div>
 
-      <StatCard
-        title="Low Stock"
-        value={lowStockItems.toString()}
-        icon={<FiAlertTriangle className="h-5 w-5" />}
-        description={`${Math.round(
-          (lowStockItems / totalItems) * 100
-        )}% of inventory`}
-        color="yellow"
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <StatCard
+          title="Low Stock"
+          value={lowStockItems.toString()}
+          icon={<FiAlertTriangle className="h-5 w-5" />}
+          description={`${lowStockPercentage}% of inventory`}
+          color="yellow"
+          showAlert={lowStockItems > 0}
+        />
+      </motion.div>
 
-      <StatCard
-        title="Out of Stock"
-        value={outOfStockItems.toString()}
-        icon={<FiAlertCircle className="h-5 w-5" />}
-        description={`${Math.round(
-          (outOfStockItems / totalItems) * 100
-        )}% of inventory`}
-        color="red"
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <StatCard
+          title="Out of Stock"
+          value={outOfStockItems.toString()}
+          icon={<FiAlertCircle className="h-5 w-5" />}
+          description={`${outOfStockPercentage}% of inventory`}
+          color="red"
+          showAlert={outOfStockItems > 0}
+        />
+      </motion.div>
 
-      <StatCard
-        title="Total Value"
-        value={formatCurrency(totalValue)}
-        icon={<FiDollarSign className="h-5 w-5" />}
-        description="Inventory value"
-        color="green"
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        <StatCard
+          title="Total Value"
+          value={formatCurrency(totalValue)}
+          icon={<FiDollarSign className="h-5 w-5" />}
+          description="Inventory value"
+          color="green"
+        />
+      </motion.div>
     </div>
   );
 }
@@ -71,28 +102,85 @@ interface StatCardProps {
   icon: React.ReactNode;
   description: string;
   color: "blue" | "green" | "yellow" | "red";
+  showAlert?: boolean;
 }
 
-function StatCard({ title, value, icon, description, color }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  icon,
+  description,
+  color,
+  showAlert = false,
+}: StatCardProps) {
   const colorClasses = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-    green:
-      "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-    yellow:
-      "bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400",
-    red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+    blue: {
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      text: "text-blue-600 dark:text-blue-400",
+      border: "border-blue-100 dark:border-blue-800/30",
+      ring: "group-hover:ring-blue-200 dark:group-hover:ring-blue-800/30",
+    },
+    green: {
+      bg: "bg-green-50 dark:bg-green-900/20",
+      text: "text-green-600 dark:text-green-400",
+      border: "border-green-100 dark:border-green-800/30",
+      ring: "group-hover:ring-green-200 dark:group-hover:ring-green-800/30",
+    },
+    yellow: {
+      bg: "bg-yellow-50 dark:bg-yellow-900/20",
+      text: "text-yellow-600 dark:text-yellow-400",
+      border: "border-yellow-100 dark:border-yellow-800/30",
+      ring: "group-hover:ring-yellow-200 dark:group-hover:ring-yellow-800/30",
+    },
+    red: {
+      bg: "bg-red-50 dark:bg-red-900/20",
+      text: "text-red-600 dark:text-red-400",
+      border: "border-red-100 dark:border-red-800/30",
+      ring: "group-hover:ring-red-200 dark:group-hover:ring-red-800/30",
+    },
   };
 
   return (
-    <Card className="p-4">
+    <Card
+      className={cn(
+        "p-5 border transition-all duration-200 group hover:shadow-md",
+        showAlert && `border-l-4 ${colorClasses[color].border}`,
+        "hover:ring-2 hover:ring-offset-1 dark:hover:ring-offset-gray-950",
+        colorClasses[color].ring
+      )}
+    >
       <div className="flex items-center">
-        <div className={`p-2 rounded-full ${colorClasses[color]}`}>{icon}</div>
+        <div
+          className={cn(
+            "p-3 rounded-full",
+            colorClasses[color].bg,
+            colorClasses[color].text
+          )}
+        >
+          {icon}
+        </div>
         <div className="ml-4">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <h3 className="text-2xl font-bold mt-1">{value}</h3>
+          <h3 className="text-2xl font-bold mt-1 tracking-tight">{value}</h3>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
       </div>
+
+      {showAlert && (
+        <div
+          className={cn(
+            "mt-3 h-1 rounded-full overflow-hidden",
+            colorClasses[color].bg
+          )}
+        >
+          <motion.div
+            className={cn("h-full", colorClasses[color].text, "bg-current")}
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
+        </div>
+      )}
     </Card>
   );
 }

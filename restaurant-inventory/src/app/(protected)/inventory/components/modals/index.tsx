@@ -2,6 +2,13 @@ import InventoryItemModal from "../modals/InventoryItemModal";
 import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
 import { InventoryItem, Supplier } from "@/lib/types";
 
+// Interface for form data that includes both snake_case and camelCase properties
+interface InventoryFormData
+  extends Omit<InventoryItem, "id" | "created_at" | "updated_at"> {
+  reorderLevel?: number;
+  expiryDate?: string;
+}
+
 type InventoryModalsProps = {
   isModalOpen: boolean;
   selectedItem?: InventoryItem;
@@ -9,12 +16,8 @@ type InventoryModalsProps = {
   itemToDelete: InventoryItem | null;
   onCloseModal: () => void;
   onCloseDeleteDialog: () => void;
-  onSaveItem: (
-    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
-  ) => void;
-  onUpdateItem: (
-    itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
-  ) => void;
+  onSaveItem: (itemData: InventoryFormData) => void;
+  onUpdateItem: (itemData: InventoryFormData) => void;
   onDeleteItem: () => void;
   customCategories: string[];
   suppliers?: Supplier[];
