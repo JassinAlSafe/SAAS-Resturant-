@@ -7,10 +7,12 @@ import InventoryTable from "./components/InventoryTable";
 import { InventoryCards } from "./components/InventoryCards";
 import InventoryFilters from "./components/InventoryFilters";
 import { InventoryModals } from "./components/modals";
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, Supplier } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useInventory } from "./hooks/useInventory";
 import { motion } from "framer-motion";
+import { usePermission } from "@/lib/permission-context";
+import { supplierService } from "@/lib/services/supplier-service";
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
@@ -21,6 +23,7 @@ interface InventoryFormData
 
 export default function Inventory() {
   const { toast } = useToast();
+  const { userRole } = usePermission();
   const {
     items,
     categories,
@@ -41,6 +44,7 @@ export default function Inventory() {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [sortField, setSortField] = useState("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   // Helper function to check if an item is low on stock
   const isLowStock = (item: InventoryItem): boolean => {
@@ -79,6 +83,20 @@ export default function Inventory() {
 
     setFilteredItems(result);
   }, [items, searchQuery, selectedCategory, showLowStockOnly]);
+
+  // Fetch suppliers
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const supplierData = await supplierService.getSuppliers();
+        setSuppliers(supplierData);
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+      }
+    };
+
+    fetchSuppliers();
+  }, []);
 
   // Modal handlers
   const openAddModal = () => setIsAddModalOpen(true);
@@ -318,6 +336,8 @@ export default function Inventory() {
         onUpdateItem={updateItem}
         onDeleteItem={deleteItem}
         customCategories={categories}
+        suppliers={suppliers}
+        userRole={userRole as "admin" | "manager" | "staff"}
       />
     </div>
   );

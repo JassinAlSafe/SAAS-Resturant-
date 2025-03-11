@@ -29,7 +29,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Image from "next/image";
 
 // Extended InventoryItem type to include possible image_url
 interface ExtendedInventoryItem extends InventoryItem {
@@ -451,14 +450,12 @@ export default function InventoryTable({
                           {!compactMode && (
                             <div className="w-10 h-10 flex-shrink-0 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center overflow-hidden relative">
                               {(item as ExtendedInventoryItem).image_url ? (
-                                <Image
+                                <img
                                   src={
                                     (item as ExtendedInventoryItem).image_url!
                                   }
                                   alt={item.name}
-                                  fill
-                                  sizes="40px"
-                                  className="object-cover"
+                                  className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <ImageIcon className="h-5 w-5 text-muted-foreground/50" />
@@ -590,149 +587,338 @@ export default function InventoryTable({
                     {/* Expanded row with additional details */}
                     {isExpanded && (
                       <tr className="bg-gray-50/50 dark:bg-gray-900/20">
-                        <td colSpan={9} className="px-4 py-4">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Product Image Section */}
-                            {(item as ExtendedInventoryItem).image_url && (
-                              <div className="md:col-span-3 mb-4">
-                                <div className="h-48 w-full sm:w-64 mx-auto relative rounded-md overflow-hidden border border-gray-200 dark:border-gray-800">
-                                  <Image
-                                    src={
-                                      (item as ExtendedInventoryItem).image_url!
-                                    }
-                                    alt={item.name}
-                                    fill
-                                    sizes="(max-width: 640px) 100vw, 256px"
-                                    className="object-cover"
-                                    priority
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <h4 className="text-sm font-medium mb-2">
-                                Stock Information
-                              </h4>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    Reorder Level:
-                                  </span>
-                                  <span>
-                                    {reorderLevel} {item.unit}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    Total Value:
-                                  </span>
-                                  <span>
-                                    {formatCurrency(
-                                      item.cost_per_unit * item.quantity
-                                    )}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">
-                                    Status:
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      itemIsOutOfStock &&
-                                        "text-red-600 dark:text-red-400",
-                                      itemIsLowStock &&
-                                        !itemIsOutOfStock &&
-                                        "text-amber-600 dark:text-amber-400",
-                                      !itemIsLowStock &&
-                                        !itemIsOutOfStock &&
-                                        "text-green-600 dark:text-green-400"
-                                    )}
-                                  >
-                                    {itemIsOutOfStock
-                                      ? "Out of Stock"
-                                      : itemIsLowStock
-                                      ? "Low Stock"
-                                      : "In Stock"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {item.supplier_id && (
-                              <div>
-                                <h4 className="text-sm font-medium mb-2">
-                                  Supplier Information
-                                </h4>
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex justify-between">
-                                    <span className="text-muted-foreground">
-                                      Supplier ID:
-                                    </span>
-                                    <span>{item.supplier_id}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <h4 className="text-sm font-medium mb-2">
-                                Actions
-                              </h4>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8"
-                                  onClick={() => onEditClick(item)}
-                                >
-                                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-                                  onClick={() => onDeleteClick(item)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Delete
-                                </Button>
-                              </div>
-
-                              {onUpdateQuantity && (
-                                <div className="mt-3">
-                                  <h4 className="text-xs font-medium mb-1.5">
-                                    Update Quantity
-                                  </h4>
-                                  <div className="flex items-center">
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-l-md rounded-r-none border-r-0"
-                                      onClick={() =>
-                                        handleQuickUpdate(item, false)
-                                      }
-                                      disabled={item.quantity <= 0}
-                                    >
-                                      <MinusCircle className="h-4 w-4" />
-                                    </Button>
-                                    <div className="h-8 px-3 flex items-center justify-center border border-input bg-background min-w-[40px]">
-                                      {item.quantity}
+                        <td colSpan={9} className="p-0">
+                          <div className="p-6 border-t border-gray-200 dark:border-gray-800">
+                            <div className="flex flex-col lg:flex-row gap-8">
+                              {/* Left Column - Image */}
+                              <div className="lg:w-1/3 xl:w-1/4">
+                                {(item as ExtendedInventoryItem).image_url ? (
+                                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm">
+                                    <div className="aspect-square relative">
+                                      <img
+                                        src={
+                                          (item as ExtendedInventoryItem)
+                                            .image_url!
+                                        }
+                                        alt={item.name}
+                                        className="w-full h-full object-contain p-4"
+                                      />
                                     </div>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-r-md rounded-l-none border-l-0"
-                                      onClick={() =>
-                                        handleQuickUpdate(item, true)
-                                      }
-                                    >
-                                      <PlusCircle className="h-4 w-4" />
-                                    </Button>
+                                    <div className="p-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 text-center">
+                                      <span className="text-xs text-muted-foreground">
+                                        Product Image
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 flex items-center justify-center aspect-square">
+                                    <div className="text-center p-6">
+                                      <ImageIcon className="h-12 w-12 text-muted-foreground/40 mx-auto" />
+                                      <p className="mt-2 text-sm text-muted-foreground">
+                                        No image available
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Right Column - Content */}
+                              <div className="flex-1 flex flex-col gap-6">
+                                {/* Top section - Item details and quick actions */}
+                                <div className="flex flex-col md:flex-row gap-6">
+                                  {/* Item Details Card */}
+                                  <div className="flex-1 bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+                                    <h3 className="text-lg font-medium mb-4 flex items-center">
+                                      <Package className="mr-2 h-5 w-5 text-primary/70" />
+                                      Item Details
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                                      <div>
+                                        <div className="text-sm text-muted-foreground">
+                                          Item ID
+                                        </div>
+                                        <div className="font-mono text-xs mt-1">
+                                          {item.id}
+                                        </div>
+                                      </div>
+
+                                      <div>
+                                        <div className="text-sm text-muted-foreground">
+                                          Category
+                                        </div>
+                                        <div className="mt-1">
+                                          <Badge
+                                            variant="outline"
+                                            className="font-normal"
+                                          >
+                                            {item.category}
+                                          </Badge>
+                                        </div>
+                                      </div>
+
+                                      {item.description && (
+                                        <div className="md:col-span-2">
+                                          <div className="text-sm text-muted-foreground">
+                                            Description
+                                          </div>
+                                          <div className="mt-1 text-sm">
+                                            {item.description}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {(item as ExtendedInventoryItem)
+                                        .expiry_date && (
+                                        <div>
+                                          <div className="text-sm text-muted-foreground">
+                                            Expiry Date
+                                          </div>
+                                          <div className="mt-1 text-sm">
+                                            {new Date(
+                                              (
+                                                item as ExtendedInventoryItem
+                                              ).expiry_date!
+                                            ).toLocaleDateString()}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Stock Information Card */}
+                                  <div className="md:w-72 bg-white dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+                                    <h3 className="text-lg font-medium mb-4 flex items-center">
+                                      <ArrowUpDown className="mr-2 h-5 w-5 text-primary/70" />
+                                      Stock Status
+                                    </h3>
+
+                                    <div className="space-y-4">
+                                      <div>
+                                        <div className="flex justify-between items-center text-sm">
+                                          <span className="text-muted-foreground">
+                                            Current Stock:
+                                          </span>
+                                          <span className="font-medium flex items-center gap-1">
+                                            <span
+                                              className={cn(
+                                                itemIsOutOfStock &&
+                                                  "text-red-600 dark:text-red-400",
+                                                itemIsLowStock &&
+                                                  !itemIsOutOfStock &&
+                                                  "text-amber-600 dark:text-amber-400"
+                                              )}
+                                            >
+                                              {item.quantity}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {formatUnit(
+                                                item.quantity,
+                                                item.unit
+                                              )}
+                                            </span>
+                                          </span>
+                                        </div>
+
+                                        <div className="mt-1.5">
+                                          <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                            <div
+                                              className={cn(
+                                                "h-full rounded-full",
+                                                itemIsOutOfStock &&
+                                                  "bg-red-500",
+                                                itemIsLowStock &&
+                                                  !itemIsOutOfStock &&
+                                                  "bg-amber-500",
+                                                !itemIsLowStock &&
+                                                  !itemIsOutOfStock &&
+                                                  "bg-green-500"
+                                              )}
+                                              style={{
+                                                width: `${Math.min(
+                                                  100,
+                                                  (item.quantity /
+                                                    (getReorderLevel(item) *
+                                                      2)) *
+                                                    100
+                                                )}%`,
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground">
+                                          Reorder Level:
+                                        </span>
+                                        <span>
+                                          {reorderLevel}{" "}
+                                          {formatUnit(reorderLevel, item.unit)}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground">
+                                          Total Value:
+                                        </span>
+                                        <span className="font-medium">
+                                          {formatCurrency(
+                                            item.cost_per_unit * item.quantity
+                                          )}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground">
+                                          Unit Price:
+                                        </span>
+                                        <span>
+                                          {formatCurrency(item.cost_per_unit)} /{" "}
+                                          {item.unit}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex justify-between items-center text-sm">
+                                        <span className="text-muted-foreground">
+                                          Status:
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            "px-2 py-1 rounded-full text-xs font-medium",
+                                            itemIsOutOfStock &&
+                                              "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+                                            itemIsLowStock &&
+                                              !itemIsOutOfStock &&
+                                              "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+                                            !itemIsLowStock &&
+                                              !itemIsOutOfStock &&
+                                              "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                          )}
+                                        >
+                                          {itemIsOutOfStock
+                                            ? "Out of Stock"
+                                            : itemIsLowStock
+                                            ? "Low Stock"
+                                            : "In Stock"}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
+
+                                {/* Bottom section - Actions & Quantity updates */}
+                                <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                                  <div className="border-b border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/50 px-5 py-3">
+                                    <h3 className="font-medium">
+                                      Item Actions
+                                    </h3>
+                                  </div>
+
+                                  <div className="p-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                      {/* Quantity Update Section */}
+                                      {onUpdateQuantity && (
+                                        <div className="bg-blue-50/50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900 p-4">
+                                          <div className="flex items-center gap-2 mb-3">
+                                            <ArrowUpDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <h4 className="font-medium text-blue-700 dark:text-blue-400">
+                                              Update Quantity
+                                            </h4>
+                                          </div>
+
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-sm text-muted-foreground">
+                                              Current:{" "}
+                                              <span className="font-medium text-foreground">
+                                                {item.quantity}{" "}
+                                                {formatUnit(
+                                                  item.quantity,
+                                                  item.unit
+                                                )}
+                                              </span>
+                                            </div>
+
+                                            <div className="flex items-center">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                  handleQuickUpdate(item, false)
+                                                }
+                                                disabled={item.quantity <= 0}
+                                                className="h-8 rounded-r-none border-r-0 bg-white dark:bg-gray-900"
+                                              >
+                                                <MinusCircle className="h-3.5 w-3.5" />
+                                              </Button>
+                                              <div className="h-8 w-10 flex items-center justify-center border-y border-input bg-white dark:bg-gray-900 text-sm font-medium">
+                                                {item.quantity}
+                                              </div>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                  handleQuickUpdate(item, true)
+                                                }
+                                                className="h-8 rounded-l-none border-l-0 bg-white dark:bg-gray-900"
+                                              >
+                                                <PlusCircle className="h-3.5 w-3.5" />
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Edit/Delete Section */}
+                                      <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <Pencil className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                                          <h4 className="font-medium text-gray-700 dark:text-gray-300">
+                                            Manage Item
+                                          </h4>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                          <Button
+                                            variant="default"
+                                            size="sm"
+                                            onClick={() => onEditClick(item)}
+                                            className="h-9 px-4 flex-1"
+                                          >
+                                            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                                            Edit Details
+                                          </Button>
+
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onDeleteClick(item)}
+                                            className="h-9 px-3 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 dark:border-red-900 dark:text-red-500"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                            Delete
+                                          </Button>
+                                        </div>
+                                      </div>
+
+                                      {/* Additional Actions */}
+                                      <div className="sm:col-span-2 flex flex-wrap gap-2 mt-2 border-t pt-4 dark:border-gray-800">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-8 text-xs text-muted-foreground"
+                                          onClick={() =>
+                                            toggleExpanded(item.id)
+                                          }
+                                        >
+                                          <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                                          Collapse Details
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </td>
