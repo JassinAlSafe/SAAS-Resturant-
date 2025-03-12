@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Currency, CURRENCIES, CurrencyCode } from "./currency-context";
+import { Currency, CurrencyCode } from "./currency-context";
+import { CURRENCIES } from "./currency-constants";
 
 interface CurrencyContextType {
   currency: Currency;
