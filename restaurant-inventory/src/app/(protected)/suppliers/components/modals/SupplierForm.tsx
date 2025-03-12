@@ -22,9 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { CustomSwitch } from "@/components/ui/custom-switch";
 import { Badge } from "@/components/ui/badge";
-import { FiX } from "react-icons/fi";
+import {
+  FiX,
+  FiUser,
+  FiMail,
+  FiPhone,
+  FiMapPin,
+  FiTag,
+  FiImage,
+} from "react-icons/fi";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const phoneRegex = /^(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
 
@@ -44,6 +54,7 @@ const supplierFormSchema = z.object({
   isPreferred: z.boolean().default(false),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
   logo: z.string().optional(),
+  rating: z.number().default(0),
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
@@ -86,6 +97,7 @@ export default function SupplierForm({
       isPreferred: supplier?.isPreferred ?? false,
       status: supplier?.status ?? "ACTIVE",
       logo: supplier?.logo ?? "",
+      rating: supplier?.rating ?? 0,
     },
   });
 
@@ -93,21 +105,38 @@ export default function SupplierForm({
     onSubmit(data);
   };
 
+  const isEditing = !!supplier;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <h3 className="text-lg font-medium">Basic Information</h3>
+          <p className="text-sm text-gray-500">
+            Enter the core details about the supplier
+          </p>
+          <Separator className="my-2" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           {/* Name Field */}
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Name <span className="text-red-500">*</span>
+                <FormLabel className="flex items-center gap-2">
+                  <span>Name</span> <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter supplier name" {...field} />
+                  <div className="relative">
+                    <Input
+                      placeholder="Enter supplier name"
+                      className="pl-9 bg-gray-50"
+                      {...field}
+                    />
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -120,9 +149,18 @@ export default function SupplierForm({
             name="contactName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact Person</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  Contact Person
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter contact person name" {...field} />
+                  <div className="relative">
+                    <Input
+                      placeholder="Enter contact person name"
+                      className="pl-9 bg-gray-50"
+                      {...field}
+                    />
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -135,14 +173,18 @@ export default function SupplierForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="flex items-center gap-2">Email</FormLabel>
                 <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="Enter email address"
-                    list="email-suggestions"
-                    {...field}
-                  />
+                  <div className="relative">
+                    <Input
+                      type="email"
+                      placeholder="Enter email address"
+                      list="email-suggestions"
+                      className="pl-9 bg-gray-50"
+                      {...field}
+                    />
+                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
                 </FormControl>
                 <datalist id="email-suggestions">
                   <option value="@gmail.com" />
@@ -161,29 +203,33 @@ export default function SupplierForm({
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone</FormLabel>
+                <FormLabel className="flex items-center gap-2">Phone</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="(123) 456-7890"
-                    {...field}
-                    onChange={(e) => {
-                      // Auto-format phone number
-                      let value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 10) {
-                        if (value.length > 6) {
-                          value = `(${value.slice(0, 3)}) ${value.slice(
-                            3,
-                            6
-                          )}-${value.slice(6)}`;
-                        } else if (value.length > 3) {
-                          value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
-                        } else if (value.length > 0) {
-                          value = `(${value}`;
+                  <div className="relative">
+                    <Input
+                      placeholder="(123) 456-7890"
+                      className="pl-9 bg-gray-50"
+                      {...field}
+                      onChange={(e) => {
+                        // Auto-format phone number
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 10) {
+                          if (value.length > 6) {
+                            value = `(${value.slice(0, 3)}) ${value.slice(
+                              3,
+                              6
+                            )}-${value.slice(6)}`;
+                          } else if (value.length > 3) {
+                            value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+                          } else if (value.length > 0) {
+                            value = `(${value}`;
+                          }
                         }
-                      }
-                      field.onChange(value);
-                    }}
-                  />
+                        field.onChange(value);
+                      }}
+                    />
+                    <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -197,78 +243,105 @@ export default function SupplierForm({
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <span>Address</span>
+              </FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Enter complete address"
-                  className="resize-none"
-                  {...field}
-                />
+                <div className="relative">
+                  <Textarea
+                    placeholder="Enter complete address"
+                    className="resize-none pl-9 pt-3 bg-gray-50 min-h-[80px]"
+                    {...field}
+                  />
+                  <FiMapPin className="absolute left-3 top-7 text-gray-400" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Categories Field */}
-        <FormField
-          control={form.control}
-          name="categories"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Categories <span className="text-red-500">*</span>
-              </FormLabel>
-              <div className="space-y-2">
-                <Select
-                  onValueChange={(value) => {
-                    const category = value as SupplierCategory;
-                    if (!field.value.includes(category)) {
-                      field.onChange([...field.value, category]);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(SupplierCategory).map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category.replace("_", " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-wrap gap-2">
-                  {field.value.map((category) => (
-                    <Badge
-                      key={category}
-                      variant="outline"
-                      className={`flex items-center gap-1 ${categoryColors[category]}`}
-                    >
-                      {category.replace("_", " ")}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          field.onChange(
-                            field.value.filter((c) => c !== category)
-                          )
-                        }
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <FiX className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <FormMessage />
-              </div>
-            </FormItem>
-          )}
-        />
+        <div className="space-y-1 pt-2">
+          <h3 className="text-lg font-medium">Categories & Settings</h3>
+          <p className="text-sm text-gray-500">
+            Configure supplier categories and additional settings
+          </p>
+          <Separator className="my-2" />
+        </div>
 
-        {/* Status and Preferred Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-6">
+          {/* Categories Field */}
+          <FormField
+            control={form.control}
+            name="categories"
+            render={({ field }) => (
+              <FormItem className="lg:col-span-2">
+                <FormLabel className="flex items-center gap-2">
+                  <span>Categories</span>{" "}
+                  <span className="text-red-500">*</span>
+                </FormLabel>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Select
+                      onValueChange={(value) => {
+                        const category = value as SupplierCategory;
+                        if (!field.value.includes(category)) {
+                          field.onChange([...field.value, category]);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="pl-9 bg-gray-50">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(SupplierCategory).map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category.replace("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FiTag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                  </div>
+                  <div
+                    className={cn(
+                      "flex flex-wrap gap-2 min-h-[40px] p-3 border rounded-md border-dashed border-gray-300",
+                      field.value.length > 0 ? "bg-gray-50" : "bg-gray-50/50"
+                    )}
+                  >
+                    {field.value.length === 0 && (
+                      <p className="text-sm text-gray-400">
+                        No categories selected
+                      </p>
+                    )}
+                    {field.value.map((category) => (
+                      <Badge
+                        key={category}
+                        variant="outline"
+                        className={`flex items-center gap-1 ${categoryColors[category]} transition-all hover:shadow-sm`}
+                      >
+                        {category.replace("_", " ")}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            field.onChange(
+                              field.value.filter((c) => c !== category)
+                            )
+                          }
+                          className="text-muted-foreground hover:text-foreground rounded-full p-0.5 hover:bg-black/5"
+                        >
+                          <FiX className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
+          {/* Status Field */}
           <FormField
             control={form.control}
             name="status"
@@ -279,36 +352,19 @@ export default function SupplierForm({
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-gray-50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    <SelectItem value="ACTIVE" className="text-green-600">
+                      Active
+                    </SelectItem>
+                    <SelectItem value="INACTIVE" className="text-red-600">
+                      Inactive
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="isPreferred"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel>Preferred Supplier</FormLabel>
-                  <div className="text-sm text-muted-foreground">
-                    Mark as a preferred supplier
-                  </div>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
               </FormItem>
             )}
           />
@@ -320,22 +376,65 @@ export default function SupplierForm({
           name="logo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Logo URL</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Logo URL
+              </FormLabel>
               <FormControl>
-                <Input placeholder="Enter logo URL" type="url" {...field} />
+                <div className="relative">
+                  <Input
+                    placeholder="Enter logo URL"
+                    type="url"
+                    className="pl-9 bg-gray-50"
+                    {...field}
+                  />
+                  <FiImage className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {/* Preferred Supplier Field */}
+        <FormField
+          control={form.control}
+          name="isPreferred"
+          render={({ field }) => (
+            <FormItem className="mt-4">
+              <FormControl>
+                <CustomSwitch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  label="Preferred Supplier"
+                  description="Mark as a preferred supplier"
+                  isLoading={form.formState.isSubmitting}
+                  size="sm"
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         {/* Form Actions */}
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white pb-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="px-8 py-2"
+          >
             Cancel
           </Button>
-          <Button type="submit">
-            {supplier ? "Update" : "Create"} Supplier
+          <Button
+            type="submit"
+            className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting
+              ? "Saving..."
+              : isEditing
+              ? "Update Supplier"
+              : "Create Supplier"}
           </Button>
         </div>
       </form>

@@ -8,7 +8,7 @@ interface RecipeWithIngredients {
     price: number;
     food_cost?: number;
     category?: string;
-    allergens?: string[];
+    allergies?: string[];
     popularity?: number;
     image_url?: string;
     created_at?: string;
@@ -55,7 +55,7 @@ export const recipeService = {
                     price,
                     food_cost,
                     category,
-                    allergens,
+                    allergies,
                     popularity,
                     image_url,
                     created_at,
@@ -98,7 +98,7 @@ export const recipeService = {
                 price: recipe.price,
                 foodCost: recipe.food_cost || 0,
                 category: recipe.category || '',
-                allergens: recipe.allergens || [],
+                allergies: recipe.allergies || [],
                 popularity: recipe.popularity || 0,
                 imageUrl: recipe.image_url || '',
                 ingredients: recipe.recipe_ingredients?.map(ingredient => ({
@@ -137,7 +137,7 @@ export const recipeService = {
           price,
           food_cost,
           category,
-          allergens,
+          allergies,
           popularity,
           image_url,
           created_at,
@@ -166,7 +166,7 @@ export const recipeService = {
                 price: recipe.price,
                 foodCost: recipe.food_cost,
                 category: recipe.category,
-                allergens: recipe.allergens,
+                allergies: recipe.allergies,
                 popularity: recipe.popularity,
                 imageUrl: recipe.image_url,
                 ingredients: recipe.recipe_ingredients?.map(item => ({
@@ -206,7 +206,7 @@ export const recipeService = {
                     price: dish.price,
                     food_cost: dish.foodCost,
                     category: dish.category,
-                    allergens: dish.allergens,
+                    allergies: dish.allergies,
                     popularity: dish.popularity,
                     image_url: dish.imageUrl,
                     user_id: user.id // Include the user_id
@@ -256,7 +256,7 @@ export const recipeService = {
                 price: dish.price,
                 foodCost: dish.foodCost,
                 category: dish.category,
-                allergens: dish.allergens,
+                allergies: dish.allergies,
                 popularity: dish.popularity,
                 imageUrl: dish.imageUrl,
                 ingredients: dish.ingredients || [],
@@ -304,7 +304,7 @@ export const recipeService = {
                     price: dish.price,
                     food_cost: dish.foodCost,
                     category: dish.category,
-                    allergens: dish.allergens,
+                    allergies: dish.allergies,
                     popularity: dish.popularity,
                     image_url: dish.imageUrl,
                     is_archived: dish.isArchived,

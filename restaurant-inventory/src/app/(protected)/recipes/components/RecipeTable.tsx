@@ -1,11 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Dish, Ingredient } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useCurrency } from "@/lib/currency-context";
-import { CustomCheckbox } from "@/components/ui/custom-checkbox";
+import { Dish } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -14,532 +9,247 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  FiEdit2,
-  FiTrash2,
-  FiList,
-  FiCopy,
-  FiEye,
-  FiAlertTriangle,
-  FiStar,
-  FiDollarSign,
-  FiArchive,
-} from "react-icons/fi";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { FiEdit2, FiTrash2, FiCopy, FiArchive, FiList } from "react-icons/fi";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import Image from "next/image";
+import { useCurrency } from "@/lib/currency-context";
 
 interface RecipeTableProps {
   recipes: Dish[];
-  ingredients?: Ingredient[];
-  onEditClick: (recipe: Dish) => void;
-  onDeleteClick: (recipe: Dish) => void;
-  onViewIngredientsClick?: (recipe: Dish) => void;
-  onDuplicateClick?: (recipe: Dish) => void;
-  onUnarchiveClick?: (recipe: Dish) => void;
-  onBulkAction?: (action: string, recipes: Dish[]) => void;
+  showArchivedRecipes?: boolean;
+  onEdit: (recipe: Dish) => void;
+  onDelete: (recipe: Dish) => void;
+  onDuplicate: (recipe: Dish) => void;
+  onArchive: (recipe: Dish) => void;
 }
 
 export default function RecipeTable({
   recipes,
-  ingredients = [],
-  onEditClick,
-  onDeleteClick,
-  onViewIngredientsClick,
-  onDuplicateClick,
-  onUnarchiveClick,
-  onBulkAction,
+  showArchivedRecipes = false,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onArchive,
 }: RecipeTableProps) {
-  // Get currency formatter
   const { formatCurrency } = useCurrency();
-
-  // State for bulk selection
-  const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(
-    new Set()
-  );
-  const [showIngredientsFor, setShowIngredientsFor] = useState<string | null>(
-    null
-  );
-
-  // Handle select all
-  const handleSelectAll = () => {
-    if (selectedRecipes.size === recipes.length) {
-      setSelectedRecipes(new Set());
-    } else {
-      // Only select non-archived recipes for bulk actions
-      const selectableRecipes = recipes
-        .filter((recipe) => !recipe.isArchived)
-        .map((recipe) => recipe.id);
-      setSelectedRecipes(new Set(selectableRecipes));
-    }
-  };
-
-  // Handle select recipe
-  const handleSelectRecipe = (recipeId: string) => {
-    const recipe = recipes.find((r) => r.id === recipeId);
-    if (recipe?.isArchived) return; // Don't allow selecting archived recipes
-
-    const newSelected = new Set(selectedRecipes);
-    if (newSelected.has(recipeId)) {
-      newSelected.delete(recipeId);
-    } else {
-      newSelected.add(recipeId);
-    }
-    setSelectedRecipes(newSelected);
-  };
-
-  // Handle bulk delete
-  const handleBulkDelete = () => {
-    if (onBulkAction && selectedRecipes.size > 0) {
-      const selectedRecipesList = recipes.filter((recipe) =>
-        selectedRecipes.has(recipe.id)
-      );
-      onBulkAction("delete", selectedRecipesList);
-      setSelectedRecipes(new Set());
-    }
-  };
-
-  // Handle bulk export
-  const handleBulkExport = () => {
-    if (onBulkAction && selectedRecipes.size > 0) {
-      const selectedRecipesList = recipes.filter((recipe) =>
-        selectedRecipes.has(recipe.id)
-      );
-      onBulkAction("export", selectedRecipesList);
-    }
-  };
 
   // Calculate profit margin
   const calculateProfitMargin = (price: number, foodCost: number = 0) => {
-    if (foodCost <= 0) return null;
+    if (!price || !foodCost || foodCost <= 0) return null;
     const margin = ((price - foodCost) / price) * 100;
     return margin.toFixed(1) + "%";
   };
 
-  // Get ingredient name by ID
-  const getIngredientName = (ingredientId: string) => {
-    const ingredient = ingredients.find((ing) => ing.id === ingredientId);
-    return ingredient ? ingredient.name : "Unknown Ingredient";
-  };
-
-  // Render allergen badges
-  const renderAllergens = (allergens: string[] | null = []) => {
-    if (!allergens || !allergens.length)
-      return <span className="text-gray-400">None</span>;
-
-    return (
-      <div className="flex flex-wrap gap-1">
-        {allergens.map((allergen) => (
-          <Badge
-            key={allergen}
-            variant="outline"
-            className="bg-red-50 text-red-700 border-red-200 text-xs"
-          >
-            {allergen}
-          </Badge>
-        ))}
-      </div>
-    );
-  };
-
-  // Render popularity stars
-  const renderPopularity = (popularity: number = 0) => {
-    const stars = [];
-    const maxStars = 5;
-    const filledStars = Math.round(popularity * maxStars);
-
-    for (let i = 0; i < maxStars; i++) {
-      stars.push(
-        <FiStar
-          key={i}
-          className={`h-4 w-4 ${
-            i < filledStars
-              ? "text-yellow-500 fill-yellow-500"
-              : "text-gray-300"
-          }`}
-        />
-      );
-    }
-
-    return <div className="flex">{stars}</div>;
-  };
-
-  // Add a function to render the archived badge
-  const renderArchivedBadge = (isArchived?: boolean) => {
-    if (!isArchived) return null;
-
-    return (
-      <Badge
-        variant="outline"
-        className="ml-2 bg-amber-50 text-amber-700 border-amber-200"
-      >
-        <FiArchive className="mr-1 h-3 w-3" />
-        Archived
-      </Badge>
-    );
-  };
-
-  // Render actions for a recipe
-  const renderActions = (recipe: Dish) => {
-    return (
-      <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
-                onClick={() =>
-                  onViewIngredientsClick && onViewIngredientsClick(recipe)
-                }
-              >
-                <FiEye className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>View recipe details</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-blue-600 hover:bg-blue-100 rounded-full"
-                onClick={() => onEditClick(recipe)}
-              >
-                <FiEdit2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Edit recipe</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {onDuplicateClick && !recipe.isArchived && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-green-600 hover:bg-green-100 rounded-full"
-                  onClick={() => onDuplicateClick(recipe)}
-                >
-                  <FiCopy className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Duplicate recipe</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-
-        {recipe.isArchived && onUnarchiveClick ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-amber-600 hover:bg-amber-100 rounded-full"
-                  onClick={() => onUnarchiveClick(recipe)}
-                >
-                  <FiArchive className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Unarchive recipe</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          !recipe.isArchived && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-red-600 hover:bg-red-100 rounded-full"
-                    onClick={() => onDeleteClick(recipe)}
-                  >
-                    <FiTrash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Delete recipe</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )
-        )}
-      </div>
-    );
-  };
-
-  // Get the count of selectable (non-archived) recipes
-  const selectableRecipesCount = recipes.filter(
-    (recipe) => !recipe.isArchived
-  ).length;
+  // Filter recipes based on archive status
+  const filteredRecipes = recipes.filter(
+    (recipe) => recipe.isArchived === showArchivedRecipes
+  );
 
   return (
-    <div>
-      {/* Bulk actions */}
-      {selectedRecipes.size > 0 && onBulkAction && (
-        <div className="flex items-center justify-between gap-3 p-4 mb-6 bg-blue-50 border border-blue-100 rounded-lg shadow-sm">
-          <span className="text-sm font-medium text-blue-700">
-            {selectedRecipes.size} recipe{selectedRecipes.size > 1 ? "s" : ""}{" "}
-            selected
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBulkExport}
-              className="bg-white hover:bg-blue-50 border-blue-200 text-blue-700"
-            >
-              Export Selected
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBulkDelete}
-              className="bg-white hover:bg-red-50 border-red-200 text-red-700"
-            >
-              Delete Selected
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="overflow-x-auto rounded-lg border border-gray-100 shadow-sm">
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow className="border-b border-gray-200">
-              {onBulkAction && (
-                <TableHead className="w-[50px] py-3">
-                  <CustomCheckbox
-                    checked={
-                      selectedRecipes.size === selectableRecipesCount &&
-                      selectableRecipesCount > 0
-                    }
-                    onCheckedChange={handleSelectAll}
-                    disabled={selectableRecipesCount === 0}
-                  />
-                </TableHead>
-              )}
-              <TableHead className="min-w-[200px] py-3 font-semibold text-gray-700">
-                Recipe
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Category
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Price
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Food Cost
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Margin
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Ingredients
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Allergens
-              </TableHead>
-              <TableHead className="py-3 font-semibold text-gray-700">
-                Popularity
-              </TableHead>
-              <TableHead className="py-3 text-right font-semibold text-gray-700">
-                Actions
-              </TableHead>
+    <div className="rounded-lg border border-gray-100 shadow-sm overflow-hidden bg-white">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent border-gray-100">
+            <TableHead className="w-[300px] bg-gray-50/50 font-medium">
+              Recipe Name
+            </TableHead>
+            <TableHead className="bg-gray-50/50 font-medium">
+              Category
+            </TableHead>
+            <TableHead className="bg-gray-50/50 font-medium">Price</TableHead>
+            <TableHead className="bg-gray-50/50 font-medium">
+              Food Cost
+            </TableHead>
+            <TableHead className="bg-gray-50/50 font-medium">Margin</TableHead>
+            <TableHead className="bg-gray-50/50 font-medium">
+              Allergens
+            </TableHead>
+            <TableHead className="bg-gray-50/50 font-medium text-right">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredRecipes.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="h-32 text-center">
+                <div className="flex flex-col items-center justify-center text-gray-500">
+                  <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <FiList className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {showArchivedRecipes
+                      ? "No archived recipes found"
+                      : "No recipes found"}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {showArchivedRecipes
+                      ? "Archive a recipe to see it here"
+                      : "Add a new recipe to get started"}
+                  </p>
+                </div>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {recipes.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={onBulkAction ? 10 : 9}
-                  className="text-center py-12 text-muted-foreground"
-                >
-                  No recipes found matching your search.
-                </TableCell>
-              </TableRow>
-            ) : (
-              recipes.map((recipe) => (
+          ) : (
+            filteredRecipes.map((recipe) => {
+              const margin = calculateProfitMargin(
+                recipe.price,
+                recipe.foodCost
+              );
+
+              return (
                 <TableRow
                   key={recipe.id}
-                  className="group border-b border-gray-100 hover:bg-blue-50/30 transition-colors"
+                  className="group hover:bg-gray-50/50 transition-colors border-gray-100"
                 >
-                  {onBulkAction && (
-                    <TableCell className="py-4">
-                      <CustomCheckbox
-                        checked={selectedRecipes.has(recipe.id)}
-                        onCheckedChange={() => handleSelectRecipe(recipe.id)}
-                        disabled={recipe.isArchived}
-                      />
-                    </TableCell>
-                  )}
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-3">
-                      {recipe.imageUrl ? (
-                        <div className="relative h-12 w-12 rounded-md overflow-hidden shadow-sm">
-                          <Image
-                            src={recipe.imageUrl}
-                            alt={recipe.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-12 w-12 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 shadow-sm">
-                          <FiList className="h-5 w-5" />
-                        </div>
+                  <TableCell className="py-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">
+                        {recipe.name}
+                      </span>
+                      {recipe.description && (
+                        <span className="text-sm text-gray-500 truncate max-w-[280px] mt-0.5">
+                          {recipe.description}
+                        </span>
                       )}
-                      <div>
-                        <div className="font-medium">
-                          <div className="flex items-center">
-                            {recipe.name}
-                            {renderArchivedBadge(recipe.isArchived)}
-                          </div>
-                        </div>
-                        {recipe.description && (
-                          <div className="text-xs text-gray-500 truncate max-w-[200px] mt-1">
-                            {recipe.description}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     {recipe.category ? (
                       <Badge
-                        variant="outline"
-                        className="bg-blue-50 text-blue-700 border-blue-200 px-2.5 py-1"
+                        variant="secondary"
+                        className="font-normal bg-gray-100 text-gray-700 border-0"
                       >
                         {recipe.category}
                       </Badge>
                     ) : (
-                      <span className="text-gray-400 text-sm">
-                        Uncategorized
-                      </span>
+                      <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-4 font-medium text-gray-900">
+                  <TableCell className="font-medium">
                     {formatCurrency(recipe.price)}
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     {recipe.foodCost ? (
-                      <span className="text-gray-700">
+                      <span className="text-gray-600">
                         {formatCurrency(recipe.foodCost)}
                       </span>
                     ) : (
-                      <span className="text-gray-400 text-sm italic">
-                        Not calculated
-                      </span>
+                      <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-4">
-                    {recipe.foodCost ? (
+                  <TableCell>
+                    {margin ? (
                       <Badge
-                        variant="outline"
-                        className={`px-2.5 py-1 ${
-                          (recipe.price - recipe.foodCost) / recipe.price > 0.3
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : (recipe.price - recipe.foodCost) / recipe.price >
-                              0.15
-                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                            : "bg-red-50 text-red-700 border-red-200"
-                        }`}
+                        variant={
+                          parseFloat(margin) > 30
+                            ? "default"
+                            : parseFloat(margin) > 15
+                            ? "warning"
+                            : "destructive"
+                        }
+                        className="font-normal"
                       >
-                        {calculateProfitMargin(recipe.price, recipe.foodCost)}
+                        {margin}
                       </Badge>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="py-4">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 px-3 rounded-full"
-                          onClick={() => setShowIngredientsFor(recipe.id)}
-                        >
-                          <span className="font-medium mr-1">
-                            {recipe.ingredients.length}
-                          </span>
-                          <span className="text-xs">View</span>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>
-                            Ingredients for {recipe.name}
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-2 max-h-[60vh] overflow-y-auto py-4">
-                          {recipe.ingredients.length === 0 ? (
-                            <p className="text-gray-500">
-                              No ingredients added to this recipe.
-                            </p>
-                          ) : (
-                            <ul className="space-y-2">
-                              {recipe.ingredients.map((ingredient) => (
-                                <li
-                                  key={ingredient.ingredientId}
-                                  className="flex justify-between items-center p-3 rounded-md border border-gray-100 hover:bg-gray-50"
-                                >
-                                  <span className="font-medium">
-                                    {getIngredientName(ingredient.ingredientId)}
-                                  </span>
-                                  <span className="text-gray-600">
-                                    {ingredient.quantity} units
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                  <TableCell>
+                    {recipe.allergies && recipe.allergies.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {recipe.allergies.map((allergen) => (
+                          <Badge
+                            key={allergen}
+                            variant="outline"
+                            className="font-normal text-xs bg-transparent"
+                          >
+                            {allergen}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">None</span>
+                    )}
                   </TableCell>
-                  <TableCell className="py-4">
-                    {renderAllergens(recipe.allergens)}
-                  </TableCell>
-                  <TableCell className="py-4">
-                    {renderPopularity(recipe.popularity)}
-                  </TableCell>
-                  <TableCell className="py-4 text-right">
-                    {renderActions(recipe)}
+                  <TableCell>
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
+                              onClick={() => onEdit(recipe)}
+                            >
+                              <FiEdit2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit recipe</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
+                              onClick={() => onDuplicate(recipe)}
+                            >
+                              <FiCopy className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Duplicate recipe</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
+                              onClick={() => onArchive(recipe)}
+                            >
+                              <FiArchive className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {recipe.isArchived ? "Unarchive" : "Archive"} recipe
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {!recipe.isArchived && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => onDelete(recipe)}
+                              >
+                                <FiTrash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete recipe</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TooltipProvider>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

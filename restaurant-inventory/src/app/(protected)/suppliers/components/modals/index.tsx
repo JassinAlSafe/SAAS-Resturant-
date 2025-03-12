@@ -45,17 +45,22 @@ export function SupplierModals({
   return (
     <>
       <Dialog open={isModalOpen} onOpenChange={onCloseModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent
+          className="max-w-4xl w-[95%] p-5 max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="pb-2">
             <DialogTitle>
               {selectedSupplier ? "Edit" : "Add"} Supplier
             </DialogTitle>
           </DialogHeader>
-          <SupplierForm
-            supplier={selectedSupplier ?? undefined}
-            onSubmit={onSaveSupplier}
-            onCancel={onCloseModal}
-          />
+          <div className="mt-2">
+            <SupplierForm
+              supplier={selectedSupplier ?? undefined}
+              onSubmit={onSaveSupplier}
+              onCancel={onCloseModal}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -1,19 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { ApiError } from "@/components/ui/api-error";
 import { useSuppliers } from "./hooks/useSuppliers";
 import { useSupplierModals } from "./hooks/useSupplierModals";
-import { useSupplierFilters } from "./hooks/useSupplierFilters";
 import { useSupplierExport } from "./hooks/useSupplierExport";
 import SupplierTable from "./components/SupplierTable";
-import SupplierSearch from "./components/SupplierSearch";
-import SupplierActions from "./components/SupplierActions";
 import SupplierHeader from "./components/SupplierHeader";
 import SupplierLoading from "./components/SupplierLoading";
 import EmptySuppliers from "./components/EmptySuppliers";
 import { SupplierModals } from "./components/modals";
 import { toast } from "sonner";
 import { Supplier, SupplierCategory } from "@/lib/types";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function Suppliers() {
   // Use our custom hooks
@@ -39,15 +40,12 @@ export default function Suppliers() {
     closeDeleteDialog,
   } = useSupplierModals();
 
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedCategory,
-    setSelectedCategory,
-    filteredSuppliers,
-  } = useSupplierFilters(suppliers);
+  // Local search and filter state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<SupplierCategory | null>(null);
 
-  const { handleExportSuppliers } = useSupplierExport(filteredSuppliers);
+  const { handleExportSuppliers } = useSupplierExport(suppliers);
 
   // Handle saving a supplier (either add or update)
   const handleSaveSupplier = async (
@@ -84,97 +82,109 @@ export default function Suppliers() {
 
   // Handle bulk actions
   const handleBulkAction = async (action: string, suppliers: Supplier[]) => {
-    try {
-      switch (action) {
-        case "export":
-          await handleExportSuppliers(suppliers);
-          toast.success("Suppliers exported successfully");
-          break;
-        case "delete":
-          await bulkDeleteSuppliers(suppliers.map((s) => s.id));
-          toast.success("Suppliers deleted successfully");
-          break;
-        default:
-          console.warn("Unknown bulk action:", action);
+    if (action === "delete") {
+      try {
+        await bulkDeleteSuppliers(suppliers.map((s) => s.id));
+        toast.success(`${suppliers.length} suppliers deleted successfully`);
+      } catch (error) {
+        toast.error("Failed to delete suppliers");
+        console.error(error);
       }
-    } catch (error) {
-      toast.error(`Failed to ${action} suppliers`);
-      console.error(error);
+    } else if (action === "export") {
+      handleExportSuppliers(suppliers);
     }
   };
 
-  // Handle category filter change
+  // Handle category filter changes
   const handleCategoryFilterChange = (category: SupplierCategory | null) => {
     setSelectedCategory(category);
   };
 
-  // Loading state
+  // Show loading state
   if (isLoading) {
     return <SupplierLoading />;
   }
 
-  // Error state
+  // Show error state
   if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <SupplierHeader />
-        </div>
-
-        <ApiError title="Supplier Data Error" message={error} />
-      </div>
-    );
+    return <ApiError error={error} />;
   }
 
-  // Empty state
+  // Filter suppliers based on search term and selected category
+  const filteredSuppliers = suppliers.filter((supplier) => {
+    // Filter by search term
+    const matchesSearch =
+      !searchTerm ||
+      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (supplier.contactName &&
+        supplier.contactName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())) ||
+      (supplier.email &&
+        supplier.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (supplier.phone &&
+        supplier.phone.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Filter by category
+    const matchesCategory =
+      !selectedCategory || supplier.categories.includes(selectedCategory);
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Show empty state
   if (suppliers.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <SupplierHeader />
-          <SupplierActions
-            onAddClick={openAddModal}
-            onExportClick={handleExportSuppliers}
-          />
+      <div className="w-full py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          <SupplierHeader totalSuppliers={0} />
+          <div>
+            <Button size="default" onClick={openAddModal} className="gap-1">
+              <Plus className="h-4 w-4" />
+              Add Supplier
+            </Button>
+          </div>
         </div>
-
         <EmptySuppliers onAddClick={openAddModal} />
-
-        <SupplierModals
-          isModalOpen={isModalOpen}
-          selectedSupplier={selectedSupplier}
-          isDeleteDialogOpen={isDeleteDialogOpen}
-          supplierToDelete={supplierToDelete}
-          onCloseModal={closeModal}
-          onCloseDeleteDialog={closeDeleteDialog}
-          onSaveSupplier={handleSaveSupplier}
-          onDeleteSupplier={handleDeleteSupplier}
-        />
       </div>
     );
   }
 
   // Main view with suppliers
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <SupplierHeader />
-        <SupplierActions
-          onAddClick={openAddModal}
-          onExportClick={handleExportSuppliers}
+    <div className="w-full py-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <SupplierHeader
+          totalSuppliers={suppliers.length}
+          error={error?.message}
+          retry={error ? () => window.location.reload() : undefined}
         />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <Button
+            size="default"
+            onClick={openAddModal}
+            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Supplier
+          </Button>
+        </motion.div>
       </div>
 
-      <SupplierSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
-
-      <SupplierTable
-        suppliers={filteredSuppliers}
-        onEditClick={openEditModal}
-        onDeleteClick={openDeleteDialog}
-        onBulkAction={handleBulkAction}
-        selectedCategory={selectedCategory}
-        onCategoryFilterChange={handleCategoryFilterChange}
-      />
+      <div className="mb-6">
+        <SupplierTable
+          suppliers={filteredSuppliers}
+          onEditClick={openEditModal}
+          onDeleteClick={openDeleteDialog}
+          onBulkAction={handleBulkAction}
+          selectedCategory={selectedCategory}
+          onCategoryFilterChange={handleCategoryFilterChange}
+        />
+      </div>
 
       <SupplierModals
         isModalOpen={isModalOpen}

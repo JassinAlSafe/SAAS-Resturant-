@@ -2,57 +2,71 @@
 
 import { useState } from "react";
 import { Dish } from "@/lib/types";
+import { RecipeModalType, RecipeModalsHookReturn } from "../types";
 
-export function useRecipeModals() {
-  // Form modal state
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedRecipe, setSelectedRecipe] = useState<Dish | undefined>(
-    undefined
-  );
+export function useRecipeModals(): RecipeModalsHookReturn {
+  const [modalType, setModalType] = useState<RecipeModalType>(null);
+  const [currentRecipe, setCurrentRecipe] = useState<Dish | null>(null);
+  const [recipesToDelete, setRecipesToDelete] = useState<Dish[]>([]);
+  const [showArchiveOption, setShowArchiveOption] = useState(false);
+  const [showBulkArchiveOption, setShowBulkArchiveOption] = useState(false);
 
-  // Delete confirmation dialog state
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [recipeToDelete, setRecipeToDelete] = useState<Dish | null>(null);
-
-  // Open modal for adding a new recipe
   const openAddModal = () => {
-    setSelectedRecipe(undefined);
-    setIsFormOpen(true);
+    setModalType("add");
+    setCurrentRecipe(null);
   };
 
-  // Open modal for editing a recipe
   const openEditModal = (recipe: Dish) => {
-    setSelectedRecipe(recipe);
-    setIsFormOpen(true);
+    setModalType("edit");
+    setCurrentRecipe(recipe);
   };
 
-  // Open delete confirmation dialog
-  const openDeleteDialog = (recipe: Dish) => {
-    setRecipeToDelete(recipe);
-    setIsDeleteDialogOpen(true);
+  const openDeleteModal = (recipe: Dish) => {
+    setModalType("delete");
+    setCurrentRecipe(recipe);
+    setShowArchiveOption(false);
   };
 
-  // Close recipe form modal
-  const closeFormModal = () => {
-    setIsFormOpen(false);
-    setSelectedRecipe(undefined);
+  const openBulkDeleteModal = (recipes: Dish[]) => {
+    setModalType("bulkDelete");
+    setRecipesToDelete(recipes);
+    setShowBulkArchiveOption(false);
   };
 
-  // Close delete dialog
-  const closeDeleteDialog = () => {
-    setIsDeleteDialogOpen(false);
-    setRecipeToDelete(null);
+  const openViewIngredientsModal = (recipe: Dish) => {
+    setModalType("viewIngredients");
+    setCurrentRecipe(recipe);
+  };
+
+  const closeModal = () => {
+    setModalType(null);
+    setCurrentRecipe(null);
+    setRecipesToDelete([]);
+    setShowArchiveOption(false);
+    setShowBulkArchiveOption(false);
+  };
+
+  const setArchiveOption = (show: boolean) => {
+    setShowArchiveOption(show);
+  };
+
+  const setBulkArchiveOption = (show: boolean) => {
+    setShowBulkArchiveOption(show);
   };
 
   return {
-    isFormOpen,
-    selectedRecipe,
-    isDeleteDialogOpen,
-    recipeToDelete,
+    modalType,
+    currentRecipe,
+    recipesToDelete,
+    showArchiveOption,
+    showBulkArchiveOption,
     openAddModal,
     openEditModal,
-    openDeleteDialog,
-    closeFormModal,
-    closeDeleteDialog,
+    openDeleteModal,
+    openBulkDeleteModal,
+    openViewIngredientsModal,
+    closeModal,
+    setArchiveOption,
+    setBulkArchiveOption,
   };
 }

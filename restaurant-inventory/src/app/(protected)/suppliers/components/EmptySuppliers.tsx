@@ -9,23 +9,23 @@ interface EmptySuppliersProps {
 
 export default function EmptySuppliers({ onAddClick }: EmptySuppliersProps) {
   return (
-    <div className="bg-white border rounded-lg shadow-sm flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="bg-blue-50 p-6 rounded-full mb-6 border border-blue-100">
-        <FiUsers className="h-12 w-12 text-blue-600" />
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-full mb-8 border border-blue-100 shadow-md">
+        <FiUsers className="h-14 w-14 text-blue-600" />
       </div>
-      <h2 className="text-xl font-semibold mb-2 text-gray-900">
+      <h2 className="text-2xl font-bold mb-3 text-gray-900 tracking-tight">
         Your Supplier List is Empty
       </h2>
-      <p className="text-gray-500 max-w-md mb-8">
+      <p className="text-gray-500 max-w-md mb-8 text-base">
         Add suppliers to keep track of your vendors and their contact
         information. You&apos;ll be able to link inventory items to specific
         suppliers.
       </p>
       <Button
         onClick={onAddClick}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-sm"
+        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-5 h-auto rounded-xl shadow-md transition-all duration-200 font-medium text-base"
       >
-        <FiPlus className="mr-2 h-4 w-4" />
+        <FiPlus className="mr-2 h-5 w-5" />
         Add Your First Supplier
       </Button>
     </div>

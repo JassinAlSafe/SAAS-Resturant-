@@ -90,15 +90,14 @@ export function InventoryCards({
                     {stockStatus}
                   </div>
                 </div>
-                <div className="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                <div className="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative">
                   {extendedItem.image_url ? (
                     <Image
                       src={extendedItem.image_url}
                       alt={item.name}
                       fill
-                      sizes="(max-width: 768px) 100vw, 300px"
+                      sizes="(max-width: 768px) 100vw, 400px"
                       className="object-cover"
-                      priority={index < 4}
                     />
                   ) : (
                     <FiImage className="h-16 w-16 text-muted-foreground/30" />
@@ -154,28 +153,27 @@ export function InventoryCards({
                     </span>
                   </div>
                 </div>
-              </div>
 
-              <div className="border-t border-gray-100 dark:border-gray-800 p-3 flex justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                  onClick={() => onEditClick(item)}
-                >
-                  <FiEdit2 className="h-4 w-4 mr-1.5" />
-                  Edit
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  onClick={() => onDeleteClick(item)}
-                >
-                  <FiTrash2 className="h-4 w-4 mr-1.5" />
-                  Delete
-                </Button>
+                <div className="mt-4 pt-3 border-t flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditClick(item)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                  >
+                    <FiEdit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDeleteClick(item)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  >
+                    <FiTrash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
               </div>
             </Card>
           </motion.div>

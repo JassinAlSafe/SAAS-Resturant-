@@ -338,7 +338,7 @@ export const salesService = {
                     description,
                     category,
                     food_cost,
-                    allergens,
+                    allergies,
                     popularity,
                     image_url,
                     created_at,
@@ -369,7 +369,7 @@ export const salesService = {
                 description?: string;
                 category?: string;
                 food_cost?: number;
-                allergens?: string[];
+                allergies?: string[];
                 popularity?: number;
                 image_url?: string;
                 created_at?: string;
@@ -385,7 +385,7 @@ export const salesService = {
                 price: recipe.price,
                 foodCost: recipe.food_cost || 0,
                 category: recipe.category || '',
-                allergens: recipe.allergens || [],
+                allergies: recipe.allergies || [],
                 popularity: recipe.popularity || 0,
                 imageUrl: recipe.image_url || '',
                 ingredients: recipe.recipe_ingredients?.map((item) => ({
