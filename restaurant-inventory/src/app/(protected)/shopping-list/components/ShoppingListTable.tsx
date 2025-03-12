@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiList } from "react-icons/fi";
 import { Check } from "lucide-react";
 import {
   Tooltip,
@@ -96,30 +96,31 @@ export default function ShoppingListTable({
 
   return (
     <div className="space-y-4">
-      {/* Bulk actions */}
       {selectedItems.size > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg shadow-sm">
-          <span className="text-sm font-medium text-blue-700">
-            {selectedItems.size} item{selectedItems.size > 1 ? "s" : ""}{" "}
-            selected
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBulkMarkAsPurchased}
-            className="bg-white hover:bg-green-50 border-green-200 text-green-700"
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Mark All as Purchased
-          </Button>
+        <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-md">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-blue-700">
+              {selectedItems.size} item{selectedItems.size > 1 ? "s" : ""}{" "}
+              selected
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkMarkAsPurchased}
+              className="bg-white hover:bg-green-50 border-green-200 text-green-700"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Mark All as Purchased
+            </Button>
+          </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-100 shadow-sm overflow-hidden bg-white">
         <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow className="border-b border-gray-200">
-              <TableHead className="w-[50px] py-3">
+          <TableHeader>
+            <TableRow className="hover:bg-transparent border-gray-100">
+              <TableHead className="w-[50px] bg-gray-50/50 font-medium">
                 <div className="flex items-center justify-center">
                   <CustomCheckbox
                     id="select-all"
@@ -133,25 +134,21 @@ export default function ShoppingListTable({
                   />
                 </div>
               </TableHead>
-              <TableHead className="py-3 font-medium text-gray-700">
-                Item
-              </TableHead>
-              <TableHead className="py-3 font-medium text-gray-700">
+              <TableHead className="bg-gray-50/50 font-medium">Item</TableHead>
+              <TableHead className="bg-gray-50/50 font-medium">
                 Category
               </TableHead>
-              <TableHead className="py-3 font-medium text-gray-700">
+              <TableHead className="bg-gray-50/50 font-medium">
                 Quantity
               </TableHead>
-              <TableHead className="py-3 font-medium text-gray-700">
-                Cost
-              </TableHead>
-              <TableHead className="py-3 font-medium text-gray-700">
+              <TableHead className="bg-gray-50/50 font-medium">Cost</TableHead>
+              <TableHead className="bg-gray-50/50 font-medium">
                 Source
               </TableHead>
-              <TableHead className="py-3 text-center font-medium text-gray-700">
+              <TableHead className="bg-gray-50/50 font-medium text-center">
                 Purchased
               </TableHead>
-              <TableHead className="py-3 text-center font-medium text-gray-700 w-[80px]">
+              <TableHead className="bg-gray-50/50 font-medium text-right w-[80px]">
                 Actions
               </TableHead>
             </TableRow>
@@ -159,22 +156,29 @@ export default function ShoppingListTable({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-center py-12 text-gray-500"
-                >
-                  No items found matching your filters.
+                <TableCell colSpan={8} className="h-32 text-center">
+                  <div className="flex flex-col items-center justify-center text-gray-500">
+                    <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                      <FiList className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-900">
+                      No items found
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Try adjusting your filters or add new items
+                    </p>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               items.map((item) => (
                 <TableRow
                   key={item.id}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    item.isPurchased ? "bg-green-50" : ""
+                  className={`group hover:bg-gray-50/50 transition-colors border-gray-100 ${
+                    item.isPurchased ? "bg-green-50/30" : ""
                   }`}
                 >
-                  <TableCell className="py-4">
+                  <TableCell>
                     <div className="flex items-center justify-center">
                       {!item.isPurchased ? (
                         <CustomCheckbox
@@ -191,40 +195,45 @@ export default function ShoppingListTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 font-medium text-gray-900">
-                    <div className="flex items-center">
-                      <span>{item.name}</span>
+                  <TableCell className="py-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">
+                        {item.name}
+                      </span>
                       {item.isPurchased && (
-                        <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs font-normal mt-1 w-fit bg-green-100 text-green-800 border-green-200"
+                        >
                           Purchased
                         </Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     <Badge
-                      variant="outline"
-                      className="bg-gray-50 text-gray-700"
+                      variant="secondary"
+                      className="font-normal bg-gray-100 text-gray-700 border-0"
                     >
                       {item.category}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     <span className="font-medium text-gray-900">
                       {item.quantity}
                     </span>
                     <span className="text-gray-500 ml-1">{item.unit}</span>
                   </TableCell>
-                  <TableCell className="py-4 font-medium text-gray-900">
+                  <TableCell className="font-medium text-gray-900">
                     {formatCurrency(item.estimatedCost)}
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     <Badge
                       variant={item.isAutoGenerated ? "secondary" : "outline"}
                       className={
                         item.isAutoGenerated
-                          ? "bg-purple-100 text-purple-800 border-purple-200"
-                          : "bg-blue-100 text-blue-800 border-blue-200"
+                          ? "bg-purple-50 text-purple-700 border-purple-200"
+                          : "bg-blue-50 text-blue-700 border-blue-200"
                       }
                     >
                       {item.isAutoGenerated
@@ -232,7 +241,7 @@ export default function ShoppingListTable({
                         : "Manual (User)"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell>
                     <div className="flex items-center justify-center">
                       <TooltipProvider>
                         <Tooltip>
@@ -252,27 +261,31 @@ export default function ShoppingListTable({
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>
-                              {item.isPurchased
-                                ? "Purchased"
-                                : "Mark as purchased"}
-                            </p>
+                            {item.isPurchased
+                              ? "Item purchased"
+                              : "Mark as purchased"}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex justify-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 rounded-full text-red-600 hover:text-red-800 hover:bg-red-50"
-                        onClick={() => onRemoveItem(item.id)}
-                        title="Remove item"
-                      >
-                        <FiTrash2 className="h-4 w-4" />
-                      </Button>
+                  <TableCell>
+                    <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onRemoveItem(item.id)}
+                              className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                            >
+                              <FiTrash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remove item</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </TableCell>
                 </TableRow>

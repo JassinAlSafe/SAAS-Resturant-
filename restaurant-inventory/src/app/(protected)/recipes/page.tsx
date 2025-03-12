@@ -79,9 +79,9 @@ export default function RecipesPage() {
     // Allergen filter
     const matchesAllergens =
       filterCriteria.allergens.length === 0 ||
-      (recipe.allergens &&
+      (recipe.allergies &&
         filterCriteria.allergens.every((allergen) =>
-          recipe.allergens?.includes(allergen)
+          recipe.allergies?.includes(allergen)
         ));
 
     // Price range filter

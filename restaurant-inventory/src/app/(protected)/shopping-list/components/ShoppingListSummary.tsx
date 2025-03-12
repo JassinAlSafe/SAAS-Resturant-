@@ -2,6 +2,9 @@
 
 import { useCurrency } from "@/lib/currency-context";
 import { ShoppingListItem } from "@/lib/services/shopping-list-service";
+import { Progress } from "@/components/ui/progress";
+import { FiShoppingBag, FiTrendingUp } from "react-icons/fi";
+import { LuCoins } from "react-icons/lu";
 
 interface ShoppingListSummaryProps {
   items: ShoppingListItem[];
@@ -27,47 +30,45 @@ export default function ShoppingListSummary({
     totalItems > 0 ? Math.round((purchasedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="bg-white p-6 rounded-lg border shadow-sm mb-6">
-      <h3 className="font-medium text-lg text-gray-900 mb-4">
-        Shopping List Summary
-      </h3>
+    <div>
+      <h3 className="text-lg font-medium mb-4">Shopping List Summary</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-gray-500 mb-1">Total Cost</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(totalCost)}
-          </p>
+        <div className="bg-primary/5 border border-primary/10 rounded-md p-4">
+          <div className="flex items-center gap-2 mb-2 text-primary">
+            <LuCoins className="h-4 w-4" />
+            <p className="text-sm font-medium">Total Cost (SEK)</p>
+          </div>
+          <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
         </div>
 
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-gray-500 mb-1">Items Remaining</p>
+        <div className="bg-blue-50/50 border border-blue-200 rounded-md p-4">
+          <div className="flex items-center gap-2 mb-2 text-blue-700">
+            <FiShoppingBag className="h-4 w-4" />
+            <p className="text-sm font-medium">Items Remaining</p>
+          </div>
           <div className="flex items-baseline">
-            <p className="text-2xl font-bold text-gray-900">{activeItems}</p>
-            <span className="text-sm text-gray-500 ml-1">
+            <p className="text-2xl font-bold">{activeItems}</p>
+            <span className="text-sm text-muted-foreground ml-1">
               of {totalItems} total
             </span>
           </div>
         </div>
 
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-          <p className="text-sm text-gray-500 mb-1">Purchase Progress</p>
+        <div className="bg-green-50/50 border border-green-200 rounded-md p-4">
+          <div className="flex items-center gap-2 mb-2 text-green-700">
+            <FiTrendingUp className="h-4 w-4" />
+            <p className="text-sm font-medium">Purchase Progress</p>
+          </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium">
                 {purchasedItems} items purchased
               </span>
-              <span className="text-sm font-bold text-gray-900">
-                {percentComplete}%
-              </span>
+              <span className="text-sm font-bold">{percentComplete}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div
-                className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-                style={{ width: `${percentComplete}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
+            <Progress value={percentComplete} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>0%</span>
               <span>50%</span>
               <span>100%</span>

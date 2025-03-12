@@ -1,35 +1,41 @@
 "use client";
 
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { CurrencySelector } from "@/components/currency-selector";
-import { FiBarChart2, FiFileText } from "react-icons/fi";
+import { BarChart3, History } from "lucide-react";
 
 interface SalesActionsProps {
   onViewReports?: () => void;
   onViewHistory?: () => void;
 }
 
-export default function SalesActions({
+const SalesActions: React.FC<SalesActionsProps> = ({
   onViewReports,
   onViewHistory,
-}: SalesActionsProps) {
+}) => {
   return (
     <div className="flex items-center gap-2">
-      <CurrencySelector />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onViewReports}
+        className="flex items-center gap-1.5"
+      >
+        <BarChart3 className="h-4 w-4" />
+        <span>View Reports</span>
+      </Button>
 
-      {onViewHistory && (
-        <Button variant="outline" size="sm" onClick={onViewHistory}>
-          <FiFileText className="mr-2 h-4 w-4" />
-          Sales History
-        </Button>
-      )}
-
-      {onViewReports && (
-        <Button variant="outline" size="sm" onClick={onViewReports}>
-          <FiBarChart2 className="mr-2 h-4 w-4" />
-          Reports
-        </Button>
-      )}
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={onViewHistory}
+        className="flex items-center gap-1.5"
+      >
+        <History className="h-4 w-4" />
+        <span>View History</span>
+      </Button>
     </div>
   );
-}
+};
+
+export default SalesActions;

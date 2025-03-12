@@ -4,7 +4,6 @@ import { useShoppingList } from "./hooks/useShoppingList";
 import { useShoppingListFilters } from "./hooks/useShoppingListFilters";
 import { useAddShoppingItem } from "./hooks/useAddShoppingItem";
 import { useShoppingListExport } from "./hooks/useShoppingListExport";
-import { ApiError } from "@/components/ui/api-error";
 
 import ShoppingListTable from "./components/ShoppingListTable";
 import ShoppingListFilters from "./components/ShoppingListFilters";
@@ -64,14 +63,14 @@ export default function ShoppingList() {
   // Error state
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+      <div className="w-full py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <ShoppingListHeader
             error={error}
             retry={fetchInventoryAndGenerateList}
+            totalItems={shoppingList.length}
           />
         </div>
-        <ApiError title="Shopping List Error" message={error} />
       </div>
     );
   }
@@ -79,9 +78,9 @@ export default function ShoppingList() {
   // Empty state
   if (shoppingList.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <ShoppingListHeader />
+      <div className="w-full py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <ShoppingListHeader totalItems={0} />
           <ShoppingListActions
             onAddClick={toggleAddItemForm}
             onRefreshClick={fetchInventoryAndGenerateList}
@@ -116,9 +115,9 @@ export default function ShoppingList() {
 
   // Main view with items
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <ShoppingListHeader />
+    <div className="w-full py-6 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <ShoppingListHeader totalItems={filteredItems.length} />
         <ShoppingListActions
           onAddClick={toggleAddItemForm}
           onRefreshClick={fetchInventoryAndGenerateList}

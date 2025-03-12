@@ -23,3 +23,4 @@ supabase db push
 ## Migration Files
 
 - `add_image_url_to_ingredients.sql` - Adds the `image_url` column to the `ingredients` table to support image URLs for inventory items.
+- `20240708_create_shopping_list_table.sql` - Creates the `shopping_list` table to store shopping list items and associated database triggers for inventory updates.

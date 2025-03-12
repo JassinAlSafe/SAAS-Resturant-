@@ -24,6 +24,7 @@ type AuthContextType = {
   profile: User | null;
   session: Session | null;
   isLoading: boolean;
+  isRole: (roles: string[]) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
     email: string,
@@ -42,6 +43,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Function to check if user has a specific role
+  const isRole = async (roles: string[]): Promise<boolean> => {
+    try {
+      // If no profile or user, they don't have any role
+      if (!profile || !user) return false;
+
+      // Check if the profile has a role property and if it's included in the requested roles
+      if (profile.role && roles.includes(profile.role)) {
+        return true;
+      }
+
+      // If checking for roles like 'admin' or 'manager' and we need to check the database
+      // We can fetch from user_roles table if needed for more complex setups
+      if (roles.includes("any") && profile.role) {
+        // 'any' role means any authenticated user with a role
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -312,6 +338,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     session,
     isLoading,
+    isRole,
     signIn,
     signUp,
     signOut,

@@ -53,7 +53,7 @@ export function useAddShoppingItem(
 
     // Create item data
     const itemData = {
-      inventoryItemId: "", // Empty for manual items
+      inventoryItemId: null, // Null for manual items
       name: newItemName,
       quantity: newItemQuantity,
       unit: newItemUnit,

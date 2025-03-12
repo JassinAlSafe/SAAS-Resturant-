@@ -449,5 +449,109 @@ export const salesService = {
             console.error('Exception in updateInventoryFromSales:', error);
             return false;
         }
+    },
+
+    /**
+     * Update a sale record
+     */
+    async updateSale(sale: Sale): Promise<boolean> {
+        try {
+            // Get the authenticated user
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Ensure the user owns this sale record
+            const { data: saleCheck, error: checkError } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('id', sale.id)
+                .eq('user_id', user.id)
+                .single();
+
+            if (checkError || !saleCheck) {
+                console.error('Sale not found or not owned by user:', checkError);
+                return false;
+            }
+
+            // Update the sale record
+            const { error } = await supabase
+                .from('sales')
+                .update({
+                    quantity: sale.quantity,
+                    total_amount: sale.totalAmount,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', sale.id)
+                .eq('user_id', user.id);
+
+            if (error) {
+                console.error('Error updating sale:', error);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Exception in updateSale:', error);
+            return false;
+        }
+    },
+
+    /**
+     * Delete a sale record
+     */
+    async deleteSale(saleId: string): Promise<boolean> {
+        try {
+            // Get the authenticated user
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError) {
+                console.error('Authentication error:', authError);
+                throw new Error(`Authentication failed: ${authError.message}`);
+            }
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Ensure the user owns this sale record
+            const { data: saleCheck, error: checkError } = await supabase
+                .from('sales')
+                .select('id')
+                .eq('id', saleId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (checkError || !saleCheck) {
+                console.error('Sale not found or not owned by user:', checkError);
+                return false;
+            }
+
+            // Delete the sale record
+            const { error } = await supabase
+                .from('sales')
+                .delete()
+                .eq('id', saleId)
+                .eq('user_id', user.id);
+
+            if (error) {
+                console.error('Error deleting sale:', error);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Exception in deleteSale:', error);
+            return false;
+        }
     }
 }; 
