@@ -5,6 +5,11 @@ import { Dish } from "@/lib/types";
 import { format } from "date-fns";
 
 export function useSalesEntry(dishes: Dish[]) {
+  // Add logging for dishes
+  useEffect(() => {
+    console.log("useSalesEntry dishes:", dishes);
+  }, [dishes]);
+
   // Form state
   const [salesEntries, setSalesEntries] = useState<{ [key: string]: number }>(
     {}
@@ -37,20 +42,81 @@ export function useSalesEntry(dishes: Dish[]) {
   // Handle quantity change
   const handleQuantityChange = useCallback(
     (dishId: string, quantity: number) => {
-      setSalesEntries((prev) => ({
-        ...prev,
-        [dishId]: quantity,
-      }));
+      console.log("Handling quantity change:", {
+        dishId,
+        quantity,
+        currentEntries: salesEntries,
+        dishExists: dishes.some((d) => d.id === dishId),
+        dish: dishes.find((d) => d.id === dishId),
+      });
+
+      setSalesEntries((prev) => {
+        const newEntries = {
+          ...prev,
+          [dishId]: quantity,
+        };
+
+        // Calculate new total immediately
+        const newTotal = Object.entries(newEntries).reduce((sum, [id, qty]) => {
+          const dish = dishes.find((d) => d.id === id);
+          if (!dish) return sum;
+          return sum + dish.price * qty;
+        }, 0);
+
+        console.log("New total after quantity change:", {
+          newEntries,
+          newTotal,
+          dishes: dishes.map((d) => ({
+            id: d.id,
+            name: d.name,
+            price: d.price,
+          })),
+        });
+
+        return newEntries;
+      });
     },
-    []
+    [dishes, salesEntries]
   );
 
   // Calculate total for all entries
   const calculateTotal = useCallback(() => {
-    return Object.entries(salesEntries).reduce((total, [dishId, quantity]) => {
+    if (!dishes.length) {
+      console.warn("No dishes available for total calculation");
+      return 0;
+    }
+
+    console.log("Calculating total with:", {
+      entries: salesEntries,
+      availableDishes: dishes.map((d) => ({
+        id: d.id,
+        name: d.name,
+        price: d.price,
+      })),
+    });
+
+    let runningTotal = 0;
+    for (const [dishId, quantity] of Object.entries(salesEntries)) {
       const dish = dishes.find((d) => d.id === dishId);
-      return total + (dish ? dish.price * quantity : 0);
-    }, 0);
+      if (!dish) {
+        console.warn(`Dish not found for id: ${dishId}`);
+        continue;
+      }
+
+      const dishTotal = dish.price * quantity;
+      runningTotal += dishTotal;
+
+      console.log("Added to total:", {
+        dishName: dish.name,
+        price: dish.price,
+        quantity,
+        dishTotal,
+        runningTotal,
+      });
+    }
+
+    console.log("Final total:", runningTotal);
+    return runningTotal;
   }, [salesEntries, dishes]);
 
   // Toggle inventory impact visibility

@@ -46,7 +46,7 @@ export interface SalesEntryFormProps {
     dateString: string;
     onDateChange: (date: string) => void;
     onQuantityChange: (dishId: string, quantity: number) => void;
-    onSubmit: () => Promise<void>;
+    onSubmit: () => Promise<boolean>;
     onAddDishFromRecipe: (recipeId: string) => void;
     total: number;
     isSubmitting: boolean;

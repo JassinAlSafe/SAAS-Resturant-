@@ -50,6 +50,8 @@ export function useSalesPage() {
 
     // Handle sales submission
     const handleSubmitSales = async () => {
+        store.setError(null);
+        store.set({ isSubmitting: true });
         try {
             const entries = Object.entries(store.salesEntries)
                 .filter(([_, quantity]) => quantity > 0)
@@ -71,7 +73,8 @@ export function useSalesPage() {
                 toast.error('No sales to record', {
                     description: 'Please enter quantities for at least one dish.'
                 });
-                return;
+                store.set({ isSubmitting: false });
+                return false;
             }
 
             // Save each sale entry
@@ -99,10 +102,14 @@ export function useSalesPage() {
             // Clear form
             store.clearAllQuantities();
             toast.success('Sales recorded successfully');
+            store.set({ isSubmitting: false });
+            return true;
         } catch (error) {
             console.error('Error submitting sales:', error);
             toast.error('Failed to record sales');
             store.setError(error as Error);
+            store.set({ isSubmitting: false });
+            return false;
         }
     };
 

@@ -278,11 +278,12 @@ export default function SalesPage() {
             <div className="p-6">
               <div className="mb-6">
                 <SalesFilter
+                  startDate={salesPage.filterDate || undefined}
                   searchTerm={salesPage.searchTerm}
-                  onSearchChange={salesPage.setSearchTerm}
-                  selectedDate={salesPage.filterDate}
-                  onDateChange={salesPage.setFilterDate}
-                  onResetFilters={salesPage.resetFilters}
+                  onFilterChange={(filters) => {
+                    salesPage.setSearchTerm(filters.searchTerm || "");
+                    salesPage.setFilterDate(filters.startDate || null);
+                  }}
                 />
               </div>
 
