@@ -1,23 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { FiUserPlus } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
+import { AuthBackground } from "@/components/auth/AuthBackground";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -30,6 +25,7 @@ export default function SignupPage() {
   const { signUp } = useAuth();
   const { error: showError, success: showSuccess } = useNotificationHelpers();
   const { startTransition } = useTransition();
+  const { theme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,26 +80,60 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <div className="w-full max-w-md">
-        <Card className="border-slate-200 shadow-lg">
-          <CardHeader className="space-y-1">
-            <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-sm">
-                <span className="text-lg font-bold">R</span>
+    <div className="relative min-h-screen flex">
+      {/* Left side - pattern */}
+      <div className="hidden lg:block w-1/2 relative">
+        <AuthBackground />
+      </div>
+
+      {/* Right side - signup form */}
+      <div className="w-full lg:w-1/2 bg-white dark:bg-slate-900 flex flex-col">
+        {/* Back to website link */}
+        <Link
+          href="/"
+          className="absolute top-8 left-8 text-sm text-slate-500 hover:text-slate-600 flex items-center gap-2 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
+        >
+          <FiArrowLeft className="h-4 w-4" />
+          Back to website
+        </Link>
+
+        {/* Logo - positioned in top right */}
+        <div className="absolute top-8 right-8">
+          <div className="relative h-8 w-8">
+            <Image
+              src={
+                theme === "dark"
+                  ? "/assets/brand/logo-light.png"
+                  : "/assets/brand/logo-dark.png"
+              }
+              alt="ShelfWise Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Form content - centered vertically and horizontally */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-[440px] px-8">
+            <div className="space-y-2 mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                Welcome!
+              </h1>
+              <div className="flex gap-1 text-base text-slate-600 dark:text-slate-400">
+                <span>Create a free account to get started</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-slate-800">
-              Create an Account
-            </CardTitle>
-            <CardDescription className="text-center text-slate-500">
-              Sign up to access the restaurant inventory system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label
+                  htmlFor="name"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Full Name
+                </Label>
                 <Input
                   id="name"
                   placeholder="John Doe"
@@ -111,10 +141,16 @@ export default function SignupPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   disabled={isLoading || success}
+                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -123,10 +159,16 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading || success}
+                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label
+                  htmlFor="password"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -135,10 +177,16 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading || success}
+                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
+                  Confirm Password
+                </Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -147,39 +195,67 @@ export default function SignupPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   disabled={isLoading || success}
+                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
                 />
               </div>
+
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-sm"
                 disabled={isLoading || success}
               >
                 {isLoading ? (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center">
                     <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                     Creating account...
                   </div>
                 ) : (
-                  <div className="flex items-center">
-                    <FiUserPlus className="mr-2 h-4 w-4" />
-                    Sign Up
-                  </div>
+                  "Create Account"
                 )}
               </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-slate-500">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-blue-600 hover:text-blue-500"
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full h-11 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors"
+                type="button"
               >
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </Card>
+                <Image
+                  src="/assets/logo/google-icon-logo-svgrepo-com.svg"
+                  alt="Google"
+                  width={18}
+                  height={18}
+                  className="mr-2 opacity-75"
+                />
+                <span className="text-sm font-medium">
+                  Continue with Google
+                </span>
+              </Button>
+            </form>
+
+            <div className="text-center mt-8">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
