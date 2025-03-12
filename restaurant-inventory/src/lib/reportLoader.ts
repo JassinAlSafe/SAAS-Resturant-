@@ -39,8 +39,20 @@ export const prefetchReportData = async (type: 'sales' | 'inventory', dateRange:
     console.log(`Prefetched ${type} data for range: ${dateRange.from} to ${dateRange.to}`);
 };
 
+interface SalesReport {
+    sales: Array<{ date: string; amount: number }>;
+    topDishes: Array<{ name: string; count: number }>;
+}
+
+interface InventoryReport {
+    items: Array<{ name: string; quantity: number; value: number }>;
+}
+
 // Get data from cache or generate if not available
-export const getReportData = async (type: 'sales' | 'inventory', dateRange: DateRange): Promise<any> => {
+export const getReportData = async <T extends 'sales' | 'inventory'>(
+    type: T,
+    dateRange: DateRange
+): Promise<T extends 'sales' ? SalesReport : InventoryReport> => {
     const cacheKey = getCacheKey(type, dateRange);
 
     // Return from cache if available

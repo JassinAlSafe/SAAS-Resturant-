@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { BusinessProfile } from "@/lib/types";
-import { CurrencyCode, useCurrency, CURRENCIES } from "@/lib/currency-context";
+import { CurrencyCode, CURRENCIES } from "@/lib/currency-context";
 import { businessProfileService } from "@/lib/services/business-profile-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { useBusinessProfile } from "@/lib/business-profile-context";
+import { useCurrency } from "@/lib/currency-provider";
 
 export function useBusinessProfileForm(userId: string) {
     const {
@@ -194,8 +195,10 @@ export function useBusinessProfileForm(userId: string) {
             setProfile(updatedProfile);
 
             // Update the app-wide currency context
-            // @ts-ignore - This is a known issue with the currency types
-            setCurrency(CURRENCIES[currency]);
+            setCurrency({
+                ...CURRENCIES[currency],
+                code: currency
+            });
 
             showSuccess(
                 "Currency Updated",
@@ -219,13 +222,17 @@ export function useBusinessProfileForm(userId: string) {
     ) => {
         // Update local state first
         const updatedTax = {
-            ...profile?.taxSettings,
-            [field]: value,
+            rate: field === 'taxRate' ? value as number : profile?.taxSettings.rate ?? 0,
+            enabled: field === 'taxEnabled' ? value as boolean : profile?.taxSettings.enabled ?? false,
+            name: field === 'taxName' ? value as string : profile?.taxSettings.name ?? ''
         };
-        setProfile(prevProfile => ({
-            ...prevProfile,
-            taxSettings: updatedTax,
-        }));
+        setProfile(prevProfile => {
+            if (!prevProfile) return null;
+            return {
+                ...prevProfile,
+                taxSettings: updatedTax
+            };
+        });
 
         // Then update in the database
         try {

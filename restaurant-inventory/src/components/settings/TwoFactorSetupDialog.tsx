@@ -1,12 +1,10 @@
 import { useState } from "react";
 import {
-  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +55,7 @@ export default function TwoFactorSetupDialog({
       } else {
         setError("Invalid code. Please enter a valid 6-digit code.");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setIsVerifying(false);
@@ -72,8 +70,8 @@ export default function TwoFactorSetupDialog({
             <DialogTitle>Set Up Two-Factor Authentication</DialogTitle>
             <DialogDescription>
               Two-factor authentication adds an extra layer of security to your
-              account. Once configured, you'll need to enter a verification code
-              from your authenticator app when signing in.
+              account. Once configured, you&apos;ll need to enter a verification
+              code from your authenticator app when signing in.
             </DialogDescription>
           </DialogHeader>
 
@@ -140,8 +138,8 @@ export default function TwoFactorSetupDialog({
                 {secretKey}
               </code>
               <p className="mt-2 text-xs text-slate-500">
-                If you can't scan the QR code, you can manually enter this code
-                into your app.
+                If you can&apos;t scan the QR code, you can manually enter this
+                code into your app.
               </p>
             </div>
           </div>
@@ -210,8 +208,8 @@ export default function TwoFactorSetupDialog({
             <div className="rounded-md bg-green-50 p-4">
               <p className="text-sm text-green-800">
                 Your account is now protected with an additional layer of
-                security. You'll need to enter a verification code from your
-                authenticator app when signing in.
+                security. You&apos;ll need to enter a verification code from
+                your authenticator app when signing in.
               </p>
             </div>
 

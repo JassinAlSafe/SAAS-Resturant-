@@ -128,7 +128,7 @@ export function PaymentMethods({
   const handleSetDefault = async (paymentMethodId: string) => {
     setIsLoading(true);
     try {
-      await subscriptionService.updatePaymentMethod(userId, paymentMethodId, {
+      await subscriptionService.updatePaymentMethod(paymentMethodId, {
         isDefault: true,
       });
 
@@ -155,10 +155,7 @@ export function PaymentMethods({
 
     setIsLoading(true);
     try {
-      await subscriptionService.deletePaymentMethod(
-        userId,
-        paymentMethodToDelete.id
-      );
+      await subscriptionService.deletePaymentMethod(paymentMethodToDelete.id);
 
       success(
         "Payment Method Removed",
@@ -198,7 +195,7 @@ export function PaymentMethods({
   };
 
   // Get card icon based on brand
-  const getCardIcon = (brand: string) => {
+  const getCardIcon = () => {
     // In a real app, you might use different icons for different card brands
     return <FiCreditCard className="h-5 w-5" />;
   };
@@ -224,7 +221,7 @@ export function PaymentMethods({
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    {getCardIcon(method.brand || "")}
+                    {getCardIcon()}
                     <div>
                       <div className="font-medium">
                         {method.brand} •••• {method.lastFour}

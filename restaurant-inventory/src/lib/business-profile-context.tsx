@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import { BusinessProfile } from "@/lib/types";
 import { businessProfileService } from "@/lib/services/business-profile-service";
@@ -56,7 +57,7 @@ export function BusinessProfileProvider({
   const auth = useAuth();
 
   // Function to fetch the business profile
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     // Check if user is authenticated
     if (!auth.user?.id) {
       setIsLoading(false);
@@ -77,7 +78,7 @@ export function BusinessProfileProvider({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [auth.user?.id]);
 
   // Load profile on initial mount or when user changes
   useEffect(() => {
@@ -89,7 +90,7 @@ export function BusinessProfileProvider({
       setIsLoading(false);
       setError(null);
     }
-  }, [auth.user?.id]);
+  }, [auth.user?.id, fetchProfile]);
 
   // Function to manually refresh the profile
   const refreshProfile = async () => {

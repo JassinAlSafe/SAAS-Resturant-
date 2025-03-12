@@ -2,8 +2,13 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { FiUpload } from "react-icons/fi";
 
+interface BackupData {
+  version: string;
+  data: Record<string, unknown>;
+}
+
 type BackupFileUploadProps = {
-  onFileSelected: (backupData: any) => void;
+  onFileSelected: (backupData: BackupData) => void;
   isLoading: boolean;
 };
 

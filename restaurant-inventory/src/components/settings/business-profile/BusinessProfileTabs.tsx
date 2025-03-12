@@ -61,6 +61,16 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleTaxSettingsUpdate = (settings: {
+    taxRate: number;
+    taxEnabled: boolean;
+    taxName: string;
+  }) => {
+    Object.entries(settings).forEach(([field, value]) => {
+      handleTaxUpdate(field as "taxRate" | "taxEnabled" | "taxName", value);
+    });
+  };
+
   // Loading state
   if (isLoading && !profile) {
     return (
@@ -227,7 +237,7 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
                 taxEnabled={taxEnabled}
                 taxName={taxName}
                 isLoading={isLoading}
-                onUpdate={handleTaxUpdate}
+                onUpdate={handleTaxSettingsUpdate}
               />
             </CardContent>
           </Card>

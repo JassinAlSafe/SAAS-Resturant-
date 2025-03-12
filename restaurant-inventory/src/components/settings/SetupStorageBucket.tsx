@@ -18,16 +18,28 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
+interface StoragePolicy {
+  policyname: string;
+  permissive: boolean;
+}
+
+interface ResultDetails {
+  policies?: StoragePolicy[];
+  bucketExists?: boolean;
+  message?: string;
+  error?: string;
+}
+
 export function SetupStorageBucket() {
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [bucketExists, setBucketExists] = useState<boolean | null>(null);
-  const [policies, setPolicies] = useState<any[]>([]);
+  const [policies, setPolicies] = useState<StoragePolicy[]>([]);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
-    details?: any;
+    details?: ResultDetails;
   } | null>(null);
 
   // Check if the bucket already exists
@@ -73,15 +85,17 @@ export function SetupStorageBucket() {
         setResult({
           success: false,
           message: errorData.message || "Failed to check policies",
-          details: errorData,
+          details: errorData as ResultDetails,
         });
       }
     } catch (error) {
       console.error("Error checking policies:", error);
       setResult({
         success: false,
-        message: error instanceof Error ? error.message : "Unknown error",
-        details: error,
+        message: "An error occurred while setting up the bucket",
+        details: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       });
     } finally {
       setIsLoading(false);
@@ -124,7 +138,9 @@ export function SetupStorageBucket() {
       setResult({
         success: false,
         message: "An error occurred while setting up the bucket",
-        details: error,
+        details: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       });
     } finally {
       setIsLoading(false);
@@ -143,7 +159,7 @@ export function SetupStorageBucket() {
             </CardDescription>
           </div>
           {bucketExists !== null && !isChecking && (
-            <Badge variant={bucketExists ? "success" : "destructive"}>
+            <Badge variant={bucketExists ? "default" : "destructive"}>
               {bucketExists ? "Bucket Exists" : "Bucket Missing"}
             </Badge>
           )}

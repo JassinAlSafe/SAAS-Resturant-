@@ -1,3 +1,5 @@
+import { CurrencyCode } from "./currency-context";
+
 // Ingredient interface
 export interface Ingredient {
   id: string;
@@ -243,4 +245,50 @@ export interface CategoryStat {
   change: number;
   icon: React.ReactNode;
   color: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  userId: string;
+  type: string;
+  brand?: string;
+  lastFour?: string;
+  expiryMonth: number;
+  expiryYear: number;
+  isDefault: boolean;
+  name?: string;
+  createdAt: string;
+}
+
+interface OperatingHours {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+export interface BusinessProfile {
+  id: string;
+  name: string;
+  type: string;
+  email: string;
+  phone: string;
+  website: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  logo?: string;
+  operatingHours: Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', OperatingHours>;
+  defaultCurrency: string;
+  taxSettings: {
+    rate: number;
+    enabled: boolean;
+    name: string;
+  };
+  taxRate: number;
+  taxEnabled: boolean;
+  taxName: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
