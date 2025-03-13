@@ -8,10 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import { InventoryUsageViewProps } from "../types";
 import { InventoryRow } from "./InventoryRow";
 import { useEffect, useState } from "react";
 import { ChartData } from "chart.js";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 // Default empty chart data to use as fallback
 const emptyChartData: ChartData<"line"> = {
@@ -28,6 +31,7 @@ const emptyChartData: ChartData<"line"> = {
 
 export const InventoryUsageView = ({
   inventoryUsageData,
+  onRefresh,
 }: InventoryUsageViewProps) => {
   const [chartData, setChartData] = useState<ChartData<"line">>(emptyChartData);
 
@@ -51,70 +55,101 @@ export const InventoryUsageView = ({
     <div className="space-y-6">
       {/* Chart */}
       <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
-        <h3 className="text-sm font-medium mb-4">Ingredient Usage Trends</h3>
-        <div className="h-[280px] md:h-[320px]">
-          {!hasData && (
-            <div className="h-full flex items-center justify-center flex-col">
-              <p className="text-muted-foreground">
-                No data available for the selected period
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Try selecting a different date range
-              </p>
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium">Ingredient Usage Trends</h3>
+          {onRefresh && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="sr-only">Refresh data</span>
+            </Button>
           )}
-
-          {hasData && (
-            <Line
-              data={chartData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: "top" as const,
-                    display: true,
-                    labels: {
-                      boxWidth: 12,
-                      padding: 10,
-                      font: {
-                        size: 11,
+        </div>
+        <div className="h-[280px] md:h-[320px]">
+          <ErrorBoundary
+            fallback={
+              <div className="h-full flex items-center justify-center">
+                <p className="text-sm text-muted-foreground">
+                  Error loading chart data
+                </p>
+              </div>
+            }
+          >
+            {!hasData ? (
+              <div className="h-full flex items-center justify-center flex-col">
+                <p className="text-muted-foreground">
+                  No data available for the selected period
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Try selecting a different date range
+                </p>
+                {onRefresh && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRefresh}
+                    className="mt-4"
+                  >
+                    Refresh Data
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Line
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "top" as const,
+                      display: true,
+                      labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                          size: 11,
+                        },
+                        usePointStyle: true,
+                        pointStyle: "circle",
                       },
-                      usePointStyle: true,
-                      pointStyle: "circle",
                     },
-                  },
-                  title: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  x: {
-                    grid: {
+                    title: {
                       display: false,
                     },
-                    ticks: {
-                      font: {
-                        size: 10,
-                      },
-                      maxRotation: 45,
-                      minRotation: 45,
-                    },
                   },
-                  y: {
-                    grid: {
-                      color: "rgba(0, 0, 0, 0.05)",
-                    },
-                    ticks: {
-                      font: {
-                        size: 10,
+                  scales: {
+                    x: {
+                      grid: {
+                        display: false,
+                      },
+                      ticks: {
+                        font: {
+                          size: 10,
+                        },
+                        maxRotation: 45,
+                        minRotation: 45,
                       },
                     },
+                    y: {
+                      grid: {
+                        color: "rgba(0, 0, 0, 0.05)",
+                      },
+                      ticks: {
+                        font: {
+                          size: 10,
+                        },
+                      },
+                    },
                   },
-                },
-              }}
-            />
-          )}
+                }}
+              />
+            )}
+          </ErrorBoundary>
         </div>
       </div>
 
@@ -141,43 +176,28 @@ export const InventoryUsageView = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <InventoryRow
-                  name="Tomatoes"
-                  stock="2 kg"
-                  usage="5.5 kg"
-                  depletion="2.5 days"
-                  depleted={true}
-                />
-                <InventoryRow
-                  name="Chicken Breast"
-                  stock="1.5 kg"
-                  usage="4.1 kg"
-                  depletion="2.6 days"
-                  depleted={true}
-                />
-                <InventoryRow
-                  name="Mozzarella Cheese"
-                  stock="0.5 kg"
-                  usage="2.8 kg"
-                  depletion="1.3 days"
-                  depleted={true}
-                />
-                <InventoryRow
-                  name="Flour"
-                  stock="8 kg"
-                  usage="8.5 kg"
-                  depletion="6.6 days"
-                  depleted={false}
-                  warning={true}
-                />
-                <InventoryRow
-                  name="Eggs"
-                  stock="24 pcs"
-                  usage="36 pcs"
-                  depletion="4.7 days"
-                  depleted={false}
-                  warning={true}
-                />
+                {!hasData ? (
+                  <TableRow>
+                    <TableHead
+                      colSpan={4}
+                      className="text-center h-32 text-muted-foreground"
+                    >
+                      No inventory data available
+                    </TableHead>
+                  </TableRow>
+                ) : (
+                  inventoryUsageData.inventory?.map((item) => (
+                    <InventoryRow
+                      key={item.name}
+                      name={item.name}
+                      stock={item.stock}
+                      usage={item.usage}
+                      depletion={item.depletion}
+                      depleted={item.depleted}
+                      warning={item.warning}
+                    />
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

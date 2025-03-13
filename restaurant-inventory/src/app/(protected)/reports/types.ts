@@ -26,29 +26,23 @@ export interface SalesAnalyticsViewProps {
     salesData: ChartData<"bar">;
     topDishesData: ChartData<"pie">;
     formatCurrency: (amount: number) => string;
-    previousPeriodData: any;
+    previousPeriodData: MetricsData | null;
+    getPercentageChange: (current: number, previous: number) => number;
 }
 
 export interface InventoryUsageViewProps {
-    inventoryUsageData: ChartData<"line">;
+    inventoryUsageData: InventoryUsageData;
+    onRefresh?: () => void;
 }
 
 export interface SalesMetricCardProps {
     title: string;
     value: string | number;
-    change: string;
+    change: string | number;
     positive: boolean;
     previousValue?: string | number;
     tooltip?: string;
-}
-
-export interface InventoryRowProps {
-    name: string;
-    stock: string;
-    usage: string;
-    depletion: string;
-    depleted: boolean;
-    warning?: boolean;
+    className?: string;
 }
 
 // Data Types
@@ -66,4 +60,24 @@ export interface ReportFilters {
     category: string;
     minAmount?: number;
     maxAmount?: number;
+}
+
+export interface InventoryItem {
+    name: string;
+    stock: string;
+    usage: string;
+    depletion: string;
+    depleted: boolean;
+    warning?: boolean;
+}
+
+export interface InventoryUsageData {
+    labels: string[];
+    datasets: {
+        label: string;
+        data: number[];
+        borderColor: string;
+        backgroundColor: string;
+    }[];
+    inventory?: InventoryItem[];
 }

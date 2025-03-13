@@ -1,7 +1,8 @@
 "use client";
 
-import { TableRow, TableCell } from "@/components/ui/table";
-import { InventoryRowProps } from "../types";
+import { cn } from "@/lib/utils";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { InventoryItem } from "../types";
 
 export const InventoryRow = ({
   name,
@@ -9,24 +10,27 @@ export const InventoryRow = ({
   usage,
   depletion,
   depleted,
-  warning = false,
-}: InventoryRowProps) => (
-  <TableRow>
-    <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">
-      {name}
-    </TableCell>
-    <TableCell className="text-xs md:text-sm py-2 md:py-4">{stock}</TableCell>
-    <TableCell className="text-xs md:text-sm py-2 md:py-4">{usage}</TableCell>
-    <TableCell
-      className={`font-medium text-xs md:text-sm py-2 md:py-4 ${
-        depleted
-          ? "text-red-600"
-          : warning
-          ? "text-orange-600"
-          : "text-green-600"
-      }`}
-    >
-      {depletion}
-    </TableCell>
-  </TableRow>
-);
+  warning,
+}: InventoryItem) => {
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{name}</TableCell>
+      <TableCell>{stock}</TableCell>
+      <TableCell>{usage}</TableCell>
+      <TableCell>
+        <span
+          className={cn(
+            "px-2 py-1 rounded-full text-xs font-medium",
+            depleted
+              ? "bg-destructive/10 text-destructive"
+              : warning
+              ? "bg-warning/10 text-warning"
+              : "bg-success/10 text-success"
+          )}
+        >
+          {depletion}
+        </span>
+      </TableCell>
+    </TableRow>
+  );
+};

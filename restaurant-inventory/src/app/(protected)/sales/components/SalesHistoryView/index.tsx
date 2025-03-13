@@ -155,13 +155,21 @@ export default function SalesHistoryView() {
         startDate,
         "yyyyMMdd"
       )}-to-${format(endDate, "yyyyMMdd")}`;
-      generateSalesExcel(salesData, filename);
+
+      // Ensure formatCurrency is available
+      if (typeof formatCurrency !== "function") {
+        console.error("formatCurrency is not available");
+        toast.error("Error exporting data");
+        return;
+      }
+
+      generateSalesExcel(salesData, filename, formatCurrency);
       toast.success("Sales data exported successfully");
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export sales data");
     }
-  }, [salesData, startDate, endDate]);
+  }, [salesData, startDate, endDate, formatCurrency]);
 
   return (
     <div className="space-y-8 p-6">

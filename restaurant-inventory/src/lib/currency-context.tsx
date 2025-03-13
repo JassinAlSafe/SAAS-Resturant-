@@ -13,12 +13,12 @@ const CurrencyContext = createContext<CurrencyContextProps | undefined>(
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   // Standardized to Swedish Krona
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("sv-SE", {
-      style: "currency",
-      currency: "SEK",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+    return (
+      new Intl.NumberFormat("sv-SE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount) + " kr"
+    );
   };
 
   return (

@@ -3,7 +3,6 @@
 import Card from "@/components/Card";
 import { Bar, Pie } from "react-chartjs-2";
 import { SalesAnalyticsViewProps } from "../types";
-import { SalesMetricCard } from "./SalesMetricCard";
 import { useState } from "react";
 import {
   Dialog,
@@ -20,6 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "./EmptyState";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const SalesAnalyticsView = ({
   salesData,
@@ -36,8 +37,38 @@ export const SalesAnalyticsView = ({
   const [showDishDetails, setShowDishDetails] = useState(false);
   const [showDayDetails, setShowDayDetails] = useState(false);
 
-  // Handle click on a dish in the pie chart
-  const handleDishClick = (event: any, elements: any) => {
+  // Check if we have data to display
+  const hasData = salesData?.datasets?.[0]?.data?.length > 0;
+  const hasDishData = (topDishesData?.labels?.length ?? 0) > 0;
+
+  if (!hasData && !hasDishData) {
+    return (
+      <EmptyState
+        title="No sales data available"
+        description="There are no sales recorded for the selected date range. Try selecting a different period or add some sales."
+      />
+    );
+  }
+
+  // Calculate metrics with proper type safety
+  const totalSales = salesData.datasets[0].data.reduce(
+    (a, b) => (typeof a === "number" && typeof b === "number" ? a + b : 0),
+    0
+  ) as number;
+
+  const totalOrders = salesData.datasets[0].data.reduce(
+    (a, b) =>
+      typeof a === "number" && typeof b === "number"
+        ? a + Math.round((b as number) / 25)
+        : 0,
+    0
+  ) as number;
+
+  const avgDailySales = totalSales / (salesData.labels?.length ?? 1);
+  const avgOrderValue = totalSales / (totalOrders || 1);
+
+  // Type-safe event handlers
+  const handleDishClick = (_event: unknown, elements: { index: number }[]) => {
     if (elements.length > 0) {
       const index = elements[0].index;
       setSelectedDishIndex(index);
@@ -45,8 +76,7 @@ export const SalesAnalyticsView = ({
     }
   };
 
-  // Handle click on a day in the bar chart
-  const handleDayClick = (event: any, elements: any) => {
+  const handleDayClick = (_event: unknown, elements: { index: number }[]) => {
     if (elements.length > 0) {
       const index = elements[0].index;
       setSelectedDateIndex(index);
@@ -56,167 +86,163 @@ export const SalesAnalyticsView = ({
 
   return (
     <div className="space-y-6">
-      {/* Metrics Cards - Group by type */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          Sales Metrics
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <SalesMetricCard
-            title="Total Sales"
-            value={formatCurrency(10500)}
-            change="+12%"
-            positive={true}
-            previousValue={formatCurrency(previousPeriodData?.totalSales || 0)}
-            tooltip="Total revenue from all sales during the selected period."
-          />
-          <SalesMetricCard
-            title="Average Daily Sales"
-            value={formatCurrency(1500)}
-            change="+8%"
-            positive={true}
-            previousValue={formatCurrency(
-              previousPeriodData?.avgDailySales || 0
-            )}
-            tooltip="Average daily revenue calculated as Total Sales ÷ Number of Days."
-          />
-          <SalesMetricCard
-            title="Total Orders"
-            value="420"
-            change="+15%"
-            positive={true}
-            previousValue={previousPeriodData?.totalOrders.toString() || "0"}
-            tooltip="Total number of orders processed during the selected period."
-          />
-          <SalesMetricCard
-            title="Average Order Value"
-            value={formatCurrency(25)}
-            change="-3%"
-            positive={false}
-            previousValue={formatCurrency(
-              previousPeriodData?.avgOrderValue || 0
-            )}
-            tooltip="Average value per order calculated as Total Sales ÷ Total Orders."
-          />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Sales
+            </CardTitle>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalSales)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              vs. {formatCurrency(previousPeriodData?.totalSales || 0)} last
+              period
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Average Daily Sales
+            </CardTitle>
+            <div className="text-2xl font-bold">
+              {formatCurrency(avgDailySales)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              vs. {formatCurrency(previousPeriodData?.avgDailySales || 0)} last
+              period
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Orders
+            </CardTitle>
+            <div className="text-2xl font-bold">{totalOrders}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              vs. {previousPeriodData?.totalOrders.toString() || "0"} last
+              period
+            </p>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Average Order Value
+            </CardTitle>
+            <div className="text-2xl font-bold">
+              {formatCurrency(avgOrderValue)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              vs. {formatCurrency(previousPeriodData?.avgOrderValue || 0)} last
+              period
+            </p>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
-          <h3 className="text-sm font-medium mb-4">Daily Sales</h3>
-          <div className="h-[280px] md:h-[320px]">
-            <Bar
-              data={salesData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                onClick: handleDayClick,
-                plugins: {
-                  legend: {
-                    position: "top" as const,
-                    display: true,
-                    labels: {
-                      boxWidth: 12,
-                      font: {
-                        size: 11,
-                      },
-                      usePointStyle: true,
-                      pointStyle: "circle",
-                    },
-                  },
-                  title: {
-                    display: false,
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label: function (context) {
-                        return `Sales: ${formatCurrency(context.parsed.y)}`;
-                      },
-                    },
-                  },
-                },
-                scales: {
-                  x: {
-                    grid: {
-                      display: false,
-                    },
-                    ticks: {
-                      font: {
-                        size: 10,
-                      },
-                      maxRotation: 45,
-                      minRotation: 45,
-                    },
-                  },
-                  y: {
-                    grid: {
-                      color: "rgba(0, 0, 0, 0.05)",
-                    },
-                    ticks: {
-                      font: {
-                        size: 10,
-                      },
-                      callback: function (value) {
-                        return formatCurrency(value as number);
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click on a bar to see details for that day
-          </p>
-        </div>
-
-        <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
-          <h3 className="text-sm font-medium mb-4">Top Selling Dishes</h3>
-          <div className="h-[280px] md:h-[320px] flex items-center justify-center">
-            <div className="w-full max-w-[240px]">
-              <Pie
-                data={topDishesData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  onClick: handleDishClick,
-                  plugins: {
-                    legend: {
-                      position: "bottom" as const,
-                      display: true,
-                      labels: {
-                        boxWidth: 12,
-                        font: {
-                          size: 11,
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Daily Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hasData ? (
+              <div className="h-[350px]">
+                <Bar
+                  data={salesData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: handleDayClick,
+                    plugins: {
+                      legend: {
+                        position: "top",
+                        align: "end",
+                        labels: {
+                          boxWidth: 8,
+                          usePointStyle: true,
+                          pointStyle: "circle",
                         },
-                        padding: 10,
-                        usePointStyle: true,
-                        pointStyle: "circle",
                       },
-                    },
-                    tooltip: {
-                      callbacks: {
-                        label: function (context) {
-                          const value = context.parsed;
-                          const total = context.dataset.data.reduce(
-                            (a: number, b: number) => a + b,
-                            0
-                          );
-                          const percentage = Math.round((value * 100) / total);
-                          return `${context.label}: ${percentage}% (${value} orders)`;
+                      tooltip: {
+                        callbacks: {
+                          label: (context) =>
+                            `${context.dataset.label}: ${formatCurrency(
+                              context.parsed.y
+                            )}`,
                         },
                       },
                     },
-                  },
-                }}
+                    scales: {
+                      x: {
+                        grid: {
+                          display: false,
+                        },
+                        ticks: {
+                          maxRotation: 45,
+                          minRotation: 45,
+                        },
+                      },
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => formatCurrency(value as number),
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            ) : (
+              <EmptyState
+                title="No daily sales data"
+                description="There are no sales recorded for this period."
               />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Click on a slice to see dish details
-          </p>
-        </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">
+              Top Selling Dishes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hasDishData ? (
+              <div className="h-[350px] flex items-center justify-center">
+                <div className="w-full max-w-[240px]">
+                  <Pie
+                    data={topDishesData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      onClick: handleDishClick,
+                      plugins: {
+                        legend: {
+                          position: "bottom",
+                          labels: {
+                            boxWidth: 8,
+                            usePointStyle: true,
+                            pointStyle: "circle",
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                title="No dish data"
+                description="There are no dishes sold in this period."
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Dish Details Dialog */}
@@ -225,7 +251,7 @@ export const SalesAnalyticsView = ({
           <DialogHeader>
             <DialogTitle>
               {selectedDishIndex !== null &&
-                topDishesData.labels[selectedDishIndex]}{" "}
+                (topDishesData.labels?.[selectedDishIndex] as string)}{" "}
               Details
             </DialogTitle>
           </DialogHeader>
@@ -263,9 +289,9 @@ export const SalesAnalyticsView = ({
                 </TableHeader>
                 <TableBody>
                   {/* Sample data - would be real data in production */}
-                  {salesData.labels.slice(0, 5).map((date, i) => (
+                  {(salesData.labels ?? []).slice(0, 5).map((date, i) => (
                     <TableRow key={i}>
-                      <TableCell>{date}</TableCell>
+                      <TableCell>{date as string}</TableCell>
                       <TableCell>
                         {Math.round(Math.random() * 10) + 1}
                       </TableCell>
@@ -295,7 +321,7 @@ export const SalesAnalyticsView = ({
           <DialogHeader>
             <DialogTitle>
               {selectedDateIndex !== null &&
-                salesData.labels[selectedDateIndex]}{" "}
+                (salesData.labels?.[selectedDateIndex] as string)}{" "}
               Sales
             </DialogTitle>
           </DialogHeader>
@@ -306,7 +332,8 @@ export const SalesAnalyticsView = ({
                   <p className="text-xs text-muted-foreground">Total Sales</p>
                   <p className="text-lg font-medium">
                     {formatCurrency(
-                      salesData.datasets[0].data[selectedDateIndex]
+                      (salesData.datasets[0].data[selectedDateIndex] ??
+                        0) as number
                     )}
                   </p>
                 </div>
@@ -314,7 +341,8 @@ export const SalesAnalyticsView = ({
                   <p className="text-xs text-muted-foreground">Orders</p>
                   <p className="text-lg font-medium">
                     {Math.round(
-                      salesData.datasets[0].data[selectedDateIndex] / 25
+                      ((salesData.datasets[0].data[selectedDateIndex] ??
+                        0) as number) / 25
                     )}
                   </p>
                 </div>
@@ -329,9 +357,9 @@ export const SalesAnalyticsView = ({
                 </TableHeader>
                 <TableBody>
                   {/* Sample data - would be real data in production */}
-                  {topDishesData.labels.map((dish, i) => (
+                  {(topDishesData.labels ?? []).map((dish, i) => (
                     <TableRow key={i}>
-                      <TableCell>{dish}</TableCell>
+                      <TableCell>{dish as string}</TableCell>
                       <TableCell>{Math.round(Math.random() * 8) + 1}</TableCell>
                       <TableCell>
                         {formatCurrency(Math.random() * 150 + 50)}

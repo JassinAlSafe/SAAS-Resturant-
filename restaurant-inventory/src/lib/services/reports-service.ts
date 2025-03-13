@@ -188,14 +188,14 @@ export const reportsService = {
                 labels,
                 datasets: [
                     {
-                        label: 'Sales',
+                        label: 'Sales (SEK)',
                         data: Array.from(salesByDay.values()),
                         backgroundColor: 'rgba(59, 130, 246, 0.5)',
                         borderColor: 'rgb(59, 130, 246)',
                         borderWidth: 2,
                     },
                     {
-                        label: 'Costs',
+                        label: 'Costs (SEK)',
                         data: Array.from(costsByDay.values()),
                         backgroundColor: 'rgba(239, 68, 68, 0.5)',
                         borderColor: 'rgb(239, 68, 68)',

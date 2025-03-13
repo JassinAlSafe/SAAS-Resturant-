@@ -13,19 +13,27 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
-// Remove the react-error-boundary import
 import { ErrorBoundary } from "@/components/error-boundary";
-
-// Components
-import {
-  PageHeader,
-  SalesAnalyticsView,
-  InventoryUsageView,
-  LoadingIndicator,
-} from "./components";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Calendar, Download, FileBarChart2 } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { format } from "date-fns";
+
+// Components
+import {
+  SalesAnalyticsView,
+  InventoryUsageView,
+  DateRangeSelector,
+} from "./components";
 
 // Hooks
 import { useReports } from "./hooks/useReports";
@@ -43,26 +51,26 @@ ChartJS.register(
   LineElement
 );
 
+// Define TabType if not already defined
+// type TabType = 'sales' | 'inventory';
+
 function ReportsContent() {
   // Use our custom hook to manage state and data
   const {
     activeTab,
-    setActiveTab,
+    setActiveTab: setActiveTabState,
     dateRange,
     setDateRange,
     customDateRange,
     setCustomDateRange,
-    isLoading,
     salesData,
     topDishesData,
     inventoryUsageData,
     formatCurrency,
-    handleExportReport,
-    metrics,
     previousPeriodData,
-    getPercentageChange,
     error,
     refetchData,
+    getPercentageChange,
   } = useReports();
 
   if (error) {
@@ -71,7 +79,9 @@ function ReportsContent() {
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
-          {error.message || "Failed to load report data"}
+          {typeof error === "object" && "message" in error
+            ? (error as { message: string }).message
+            : "Failed to load report data"}
         </AlertDescription>
         <Button
           variant="outline"
@@ -86,45 +96,103 @@ function ReportsContent() {
   }
 
   return (
-    <>
-      <PageHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        handleExportReport={handleExportReport}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        customDateRange={customDateRange}
-        setCustomDateRange={setCustomDateRange}
-      />
-
-      {isLoading ? (
-        <LoadingIndicator />
-      ) : (
-        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
-          {/* Sales Analytics Content */}
-          {activeTab === "sales" && (
-            <SalesAnalyticsView
-              salesData={salesData || { labels: [], datasets: [] }}
-              topDishesData={topDishesData || { labels: [], datasets: [] }}
-              formatCurrency={formatCurrency}
-              previousPeriodData={previousPeriodData}
-            />
-          )}
-
-          {/* Inventory Usage Content */}
-          {activeTab === "inventory" && (
-            <InventoryUsageView
-              inventoryUsageData={
-                inventoryUsageData || {
-                  labels: [],
-                  datasets: [],
-                }
-              }
-            />
-          )}
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:justify-between md:items-center">
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <FileBarChart2 className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Reports & Analytics
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              View sales performance and inventory usage analytics
+            </p>
+          </div>
         </div>
-      )}
-    </>
+
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+          <HoverCard>
+            <HoverCardTrigger>
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Last updated: {format(new Date(), "HH:mm:ss")}
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent>
+              Data is automatically refreshed every 5 minutes. Click the refresh
+              button for real-time updates.
+            </HoverCardContent>
+          </HoverCard>
+
+          <div className="flex items-center gap-2">
+            <DateRangeSelector
+              dateRange={dateRange}
+              setDateRange={setDateRange}
+              customDateRange={customDateRange}
+              setCustomDateRange={setCustomDateRange}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={refetchData}
+              title="Refresh data"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              title="Export data"
+              onClick={() => {
+                // TODO: Implement export functionality
+                toast.info("Coming soon", {
+                  description:
+                    "Export functionality will be available in the next update.",
+                });
+              }}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="my-4" />
+
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) =>
+          setActiveTabState(value as "sales" | "inventory")
+        }
+        className="space-y-4"
+      >
+        <TabsList>
+          <TabsTrigger value="sales">Sales</TabsTrigger>
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sales">
+          <SalesAnalyticsView
+            salesData={salesData || { labels: [], datasets: [] }}
+            topDishesData={topDishesData || { labels: [], datasets: [] }}
+            formatCurrency={formatCurrency}
+            previousPeriodData={previousPeriodData}
+            getPercentageChange={getPercentageChange}
+          />
+        </TabsContent>
+        <TabsContent value="inventory">
+          <InventoryUsageView
+            inventoryUsageData={
+              inventoryUsageData || {
+                labels: [],
+                datasets: [],
+              }
+            }
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
@@ -138,7 +206,8 @@ export default function Reports() {
               Something went wrong
             </h2>
             <p className="mb-4 text-muted-foreground">
-              We encountered an error while loading the reports
+              {error.message ||
+                "We encountered an error while loading the reports"}
             </p>
             <Button onClick={reset}>Try again</Button>
           </div>

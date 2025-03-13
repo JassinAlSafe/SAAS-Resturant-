@@ -1,108 +1,70 @@
 # Restaurant Inventory Management System
 
-A comprehensive inventory management system for restaurants, built with Next.js, TypeScript, and Supabase.
+A modern inventory management system for restaurants built with Next.js, Supabase, and Clerk Authentication.
 
 ## Features
 
-### Inventory Management
+- **Inventory Management**: Track ingredients, stock levels, and usage
+- **Sales Tracking**: Record daily sales and analyze trends
+- **Reports & Analytics**: Generate insights from your restaurant data
+- **User Authentication**: Secure login with role-based access control
 
-- Track inventory items with detailed information (name, category, quantity, unit, reorder level, cost)
-- Add, edit, and delete inventory items
-- Filter and search inventory items
-- Low stock alerts for items below reorder levels
+## Tech Stack
 
-### NEW: Expiry Date Tracking
-
-- Track expiry dates for perishable inventory items
-- Dashboard widget showing expired and soon-to-expire items
-- Color-coded alerts based on expiry timeframe (expired, critical, warning)
-- Quick navigation to manage expiring items
-
-### NEW: Supplier Management
-
-- Maintain a database of suppliers with contact information
-- Associate inventory items with specific suppliers
-- Add, edit, and delete supplier records
-- Search and filter supplier information
-
-### Recipe Management
-
-- Create and manage recipes with ingredient requirements
-- Calculate recipe costs based on ingredient prices
-- Track recipe usage and popularity
-
-### Sales Tracking
-
-- Record sales data for menu items
-- View sales trends and analytics
-- Generate reports on popular items and revenue
-
-### User Management
-
-- Role-based access control (admin, manager, staff)
-- Secure authentication with Supabase Auth
-- User profile management
-
-## Technology Stack
-
-- **Frontend**: Next.js, React, TypeScript, TailwindCSS, Shadcn UI
-- **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **State Management**: React Context API
-- **Styling**: TailwindCSS with custom components
+- **Frontend**: Next.js 14 (App Router), React, TypeScript, TailwindCSS, Shadcn UI
+- **Backend**: Supabase (PostgreSQL)
+- **Authentication**: Clerk
 - **Deployment**: Vercel
-
-## Database Schema
-
-The application uses a PostgreSQL database with the following main tables:
-
-- `ingredients`: Stores inventory items with quantities, costs, categories, expiry dates, and supplier references
-- `suppliers`: Stores supplier information including contact details
-- `recipes`: Stores recipe information
-- `recipe_ingredients`: Junction table for recipe-ingredient relationships
-- `sales`: Records sales data
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or later)
-- npm or yarn
+- Node.js 18+ and npm
 - Supabase account
+- Clerk account
 
 ### Installation
 
-1. Clone the repository
+1. Clone the repository:
 
-```bash
-git clone https://github.com/yourusername/restaurant-inventory.git
-cd restaurant-inventory
-```
+   ```bash
+   git clone https://github.com/yourusername/restaurant-inventory.git
+   cd restaurant-inventory
+   ```
 
-2. Install dependencies
+2. Install dependencies:
 
-```bash
-npm install
-# or
-yarn install
-```
+   ```bash
+   npm install
+   ```
 
-3. Set up environment variables
-   Create a `.env.local` file in the root directory with the following variables:
+3. Set up environment variables:
 
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+   - Copy `.env.example` to `.env.local`
+   - Fill in your Supabase and Clerk credentials
 
-4. Run the development server
+4. Run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+   ```bash
+   npm run dev
+   ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Database Setup
+
+This project uses Supabase as the database. The SQL migrations are located in the `supabase/migrations` directory.
+
+To set up the database:
+
+1. Create a new Supabase project
+2. Run the migrations in the Supabase SQL editor
+3. Update your environment variables with the Supabase URL and anon key
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
