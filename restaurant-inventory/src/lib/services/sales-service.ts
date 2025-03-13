@@ -256,15 +256,16 @@ export const salesService = {
                 }));
             }
 
-            const { data: dishesData, error: dishesError } = await supabase
-                .from('dishes')
+            // Instead of looking up dishes table, look up recipes table
+            const { data: recipesData, error: recipesError } = await supabase
+                .from('recipes')
                 .select('id, name')
                 .in('id', validDishIds);
 
-            if (dishesError) {
-                console.error('Error fetching dish names:', dishesError);
-                console.error('Query details:', { table: 'dishes', ids: validDishIds });
-                // Continue without dish names from the dishes table, but use input dish names if available
+            if (recipesError) {
+                console.error('Error fetching recipe names:', recipesError);
+                console.error('Query details:', { table: 'recipes', ids: validDishIds });
+                // Continue without dish names from the recipes table, but use input dish names if available
                 return data.map((sale: SaleRecord) => ({
                     id: sale.id,
                     dishId: sale.dish_id,
@@ -277,16 +278,16 @@ export const salesService = {
                 }));
             }
 
-            console.log('Dishes data returned:', dishesData);
+            console.log('Recipes data returned:', recipesData);
 
             // Create a map of dish IDs to dish names
             const dishNameMap = new Map();
-            if (dishesData && dishesData.length > 0) {
-                dishesData.forEach((dish: { id: string, name: string }) => {
-                    dishNameMap.set(dish.id, dish.name);
+            if (recipesData && recipesData.length > 0) {
+                recipesData.forEach((recipe: { id: string, name: string }) => {
+                    dishNameMap.set(recipe.id, recipe.name);
                 });
             } else {
-                console.warn('No dish data returned from query');
+                console.warn('No recipe data returned from query');
             }
 
             console.log('Dish name map:', Object.fromEntries(dishNameMap));
@@ -552,6 +553,121 @@ export const salesService = {
         } catch (error) {
             console.error('Exception in deleteSale:', error);
             return false;
+        }
+    },
+
+    exportSalesToExcel: async (startDate: string, endDate: string) => {
+        try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                return { success: false, error: 'User not authenticated' };
+            }
+
+            // Fetch sales data for the specified date range
+            const { data: sales, error: salesError } = await supabase
+                .from('sales')
+                .select('*')
+                .eq('user_id', user.id)
+                .gte('date', startDate)
+                .lte('date', endDate)
+                .order('date', { ascending: false });
+
+            if (salesError) throw salesError;
+
+            // Fetch recipes for dish details
+            const { data: recipes, error: recipesError } = await supabase
+                .from('recipes')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (recipesError) throw recipesError;
+
+            // Create interfaces that match our actual database structure
+            interface SaleRecord {
+                id: string;
+                dish_id: string;
+                quantity: number;
+                total_amount: number;
+                date: string;
+                created_at: string;
+                user_id: string;
+                notes?: string;
+                [key: string]: string | number | boolean | object | null | undefined;
+            }
+
+            interface RecipeRecord {
+                id: string;
+                name: string;
+                price: number;
+                category?: string;
+                user_id: string;
+                [key: string]: string | number | boolean | object | null | undefined;
+            }
+
+            interface ExportItem {
+                date: string;
+                dish_name: string;
+                quantity: number;
+                price: number;
+                total: number;
+                category: string;
+            }
+
+            interface ExportSale {
+                id: string;
+                date: string;
+                items: ExportItem[];
+                total: number;
+            }
+
+            // Group sales by date for the export
+            const salesByDate = (sales as SaleRecord[]).reduce((acc, sale) => {
+                const dateKey = sale.date;
+                if (!acc[dateKey]) {
+                    acc[dateKey] = {
+                        id: dateKey, // Use date as ID for the group
+                        date: dateKey,
+                        items: [],
+                        total: 0
+                    };
+                }
+
+                // Find corresponding recipe
+                const recipe = (recipes as RecipeRecord[]).find(r => r.id === sale.dish_id);
+
+                if (recipe) {
+                    const item: ExportItem = {
+                        date: sale.date,
+                        dish_name: recipe.name || 'Unknown Dish',
+                        quantity: sale.quantity,
+                        price: recipe.price || 0,
+                        total: sale.total_amount || recipe.price * sale.quantity,
+                        category: recipe.category || 'Uncategorized'
+                    };
+
+                    acc[dateKey].items.push(item);
+                    acc[dateKey].total += item.total;
+                }
+
+                return acc;
+            }, {} as Record<string, ExportSale>);
+
+            // Convert to array
+            const salesData = Object.values(salesByDate);
+
+            return {
+                success: true,
+                data: salesData
+            };
+        } catch (error) {
+            console.error('Error exporting sales data:', error);
+            return {
+                success: false,
+                error: error
+            };
         }
     }
 }; 

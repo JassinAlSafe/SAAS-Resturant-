@@ -5,10 +5,10 @@ import { useSalesEntry } from "./useSalesEntry";
 import { useSalesFilter } from "./useSalesFilter";
 import { useSaleNotes } from "./useSaleNotes";
 import { Recipe, InventoryImpactItem } from "../types";
-import { Dish } from "@/lib/types";
+import { Dish } from "../../../../lib/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { salesService } from "@/lib/services/sales-service";
+import { salesService } from "../../../../lib/services/sales-service";
 
 // Re-export all hooks from a single file for more convenient imports
 export { useSales, useSalesEntry, useSalesFilter, useSaleNotes };
@@ -122,9 +122,19 @@ export function useSalesPage(initialDishes: Dish[] = []) {
   useEffect(() => {
     if (salesHook.dishes.length === 0) return;
 
-    // This effect only updates when salesHook.dishes actually changes
-    // It doesn't run on every render because we're using it in the dependency array
-  }, [salesHook.dishes]);
+    console.log("Updating entry hook with dishes:", salesHook.dishes.length);
+
+    // Create a combined list of dishes including custom dishes
+    const allDishes = [...salesHook.dishes, ...customDishes];
+
+    // Update the entryHook with the dishes - but avoid the dependency loop
+    // by not including entryHook in the dependency array
+    if (entryHook.updateDishes) {
+      entryHook.updateDishes(allDishes);
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salesHook.dishes, customDishes]); // Removed entryHook from dependencies
 
   // Function to check for low stock after sales entry - wrap in useCallback
   const checkLowStockAlerts = useCallback(async () => {
@@ -285,7 +295,7 @@ export function useSalesPage(initialDishes: Dish[] = []) {
   return {
     // Data
     sales: salesHook.sales,
-    dishes: [...salesHook.dishes, ...customDishes],
+    dishes: entryHook.dishes,
     recipes: recipes,
     salesEntries: entryHook.salesEntries,
     filteredSales: filterHook.filteredSales,

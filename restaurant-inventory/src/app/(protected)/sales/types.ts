@@ -4,6 +4,11 @@ import { Dish } from "@/lib/types";
 
 export type ShiftType = "Breakfast" | "Lunch" | "Dinner" | "All";
 
+export enum TabType {
+    DAILY_SALES = "daily",
+    SALES_HISTORY = "history"
+}
+
 export interface SaleEntry {
     id: string;
     date: string;
@@ -56,6 +61,8 @@ export interface SalesEntryFormProps {
     onClearAll?: () => void;
     onLoadPreviousDay?: () => void;
     hasPreviousDayTemplate?: boolean;
+    activeTab?: TabType;
+    onTabChange?: (tab: TabType) => void;
 }
 
 export interface SalesFilterProps {

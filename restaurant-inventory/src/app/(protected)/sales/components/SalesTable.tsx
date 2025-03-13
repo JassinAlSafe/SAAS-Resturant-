@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sale } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency-provider";
 import {
   Table,
   TableBody,

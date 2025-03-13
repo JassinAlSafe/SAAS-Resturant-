@@ -1,4 +1,4 @@
-import { CurrencyCode } from "./currency-context";
+// Type definitions for the Restaurant Inventory Management System
 
 // Ingredient interface
 export interface Ingredient {

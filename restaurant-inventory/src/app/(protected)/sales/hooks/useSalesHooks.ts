@@ -135,15 +135,53 @@ export function useSalesPage() {
     };
 
     return {
-        ...store,
+        // Data
+        sales: salesApi.sales,
+        dishes: salesApi.dishes,
+        recipes: salesApi.recipes,
+        salesEntries: store.salesEntries,
         filteredSales,
-        handleSubmitSales,
+        selectedSale: store.selectedSale,
+        dateString: store.dateString,
+        lowStockAlerts: store.lowStockAlerts,
+
+        // States
+        isLoading: salesApi.isLoading,
+        error: salesApi.error,
+        isSubmitting: store.isSubmitting,
+        showInventoryImpact: store.showInventoryImpact,
+        isNotesModalOpen: store.isNotesModalOpen,
+
+        // Actions
+        handleQuantityChange: store.handleQuantityChange,
+        setDateString: store.setDateString,
+        calculateTotal: store.calculateTotal,
+        toggleInventoryImpact: store.toggleInventoryImpact,
+        resetForm: store.resetForm,
+        clearAllQuantities: store.clearAllQuantities,
         loadPreviousDayTemplate,
         hasPreviousDayTemplate: useMemo(() => {
             const previousDate = new Date(store.dateString);
             previousDate.setDate(previousDate.getDate() - 1);
             const prevDateStr = previousDate.toISOString().split('T')[0];
             return store.sales.some(sale => sale.date === prevDateStr);
-        }, [store.sales, store.dateString])
+        }, [store.sales, store.dateString]),
+        onAddDishFromRecipe: store.onAddDishFromRecipe,
+
+        // Search and filtering
+        searchTerm: store.searchTerm,
+        setSearchTerm: store.setSearchTerm,
+        filterDate: store.filterDate,
+        setFilterDate: store.setFilterDate,
+        resetFilters: store.resetFilters,
+
+        // Notes
+        openNotesModal: store.openNotesModal,
+        closeNotesModal: store.closeNotesModal,
+
+        // API operations
+        fetchSalesAndDishes: salesApi.fetchSalesAndDishes,
+        calculateInventoryImpact: salesApi.calculateInventoryImpact,
+        handleSubmitSales,
     };
 } 

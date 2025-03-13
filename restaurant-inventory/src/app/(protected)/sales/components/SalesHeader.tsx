@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { FileBarChart2 } from "lucide-react";
-import SalesActions from "./SalesActions";
+import { FileBarChart2, FileSpreadsheet, BarChart2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SalesHeaderProps {
   totalSales?: number;
@@ -48,10 +48,31 @@ const SalesHeader: React.FC<SalesHeaderProps> = ({
           </div>
         )}
 
-        <SalesActions
-          onViewReports={onViewReports}
-          onViewHistory={onViewHistory}
-        />
+        <div className="flex gap-2">
+          {onViewHistory && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={onViewHistory}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Sales History
+            </Button>
+          )}
+
+          {onViewReports && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2"
+              onClick={onViewReports}
+            >
+              <BarChart2 className="mr-2 h-4 w-4" />
+              Reports
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

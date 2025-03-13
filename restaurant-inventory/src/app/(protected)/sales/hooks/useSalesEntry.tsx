@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Dish } from "@/lib/types";
 import { format } from "date-fns";
 
-export function useSalesEntry(dishes: Dish[]) {
+export function useSalesEntry(initialDishes: Dish[]) {
+  // Store dishes in state so they can be updated
+  const [dishes, setDishes] = useState<Dish[]>(initialDishes);
+
   // Add logging for dishes
   useEffect(() => {
     console.log("useSalesEntry dishes:", dishes);
@@ -45,7 +48,6 @@ export function useSalesEntry(dishes: Dish[]) {
       console.log("Handling quantity change:", {
         dishId,
         quantity,
-        currentEntries: salesEntries,
         dishExists: dishes.some((d) => d.id === dishId),
         dish: dishes.find((d) => d.id === dishId),
       });
@@ -76,7 +78,7 @@ export function useSalesEntry(dishes: Dish[]) {
         return newEntries;
       });
     },
-    [dishes, salesEntries]
+    [dishes]
   );
 
   // Calculate total for all entries
@@ -117,7 +119,7 @@ export function useSalesEntry(dishes: Dish[]) {
 
     console.log("Final total:", runningTotal);
     return runningTotal;
-  }, [salesEntries, dishes]);
+  }, [dishes]);
 
   // Toggle inventory impact visibility
   const toggleInventoryImpact = () => {
@@ -176,5 +178,12 @@ export function useSalesEntry(dishes: Dish[]) {
     clearAllQuantities,
     adjustQuantitiesByPercentage,
     hasPreviousDayTemplate: !!previousDayEntries,
+    updateDishes: (newDishes: Dish[]) => {
+      console.log("Updating dishes in useSalesEntry:", newDishes.length);
+      if (newDishes.length > 0) {
+        setDishes(newDishes);
+      }
+    },
+    dishes,
   };
 }

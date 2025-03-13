@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { SaleEntry, ShiftType, Recipe, InventoryImpactItem } from "../types";
+import { SaleEntry, Recipe, InventoryImpactItem } from "../types";
 import { Dish } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 
@@ -152,9 +152,9 @@ export const useSalesStore = create<SalesState>((set, get) => ({
 
         return dish.ingredients.map(ing => ({
             ingredientId: ing.ingredientId,
-            name: ing.name || 'Unknown',
+            name: 'Ingredient',
             quantityUsed: ing.quantity * quantity,
-            unit: ing.unit || 'units'
+            unit: 'units'
         }));
     },
 
@@ -178,7 +178,7 @@ export const useSalesStore = create<SalesState>((set, get) => ({
 
             // Convert entries to array format
             const entries = Object.entries(state.salesEntries)
-                .filter(([_, quantity]) => quantity > 0)
+                .filter(([, quantity]) => quantity > 0)
                 .map(([dishId, quantity]) => {
                     const dish = state.dishes.find(d => d.id === dishId);
                     if (!dish) {
