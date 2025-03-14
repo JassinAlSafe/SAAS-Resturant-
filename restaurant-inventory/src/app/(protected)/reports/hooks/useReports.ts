@@ -9,7 +9,7 @@ import { reportsService, ReportMetrics } from '@/lib/services/reports-service';
 import { ChartData } from 'chart.js';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/lib/supabase/client';
-import { useCurrency } from '@/lib/currency-provider';
+import { useCurrency } from '@/lib/currency';
 
 // Define more specific types to replace 'any'
 type ActivityLogItem = {
