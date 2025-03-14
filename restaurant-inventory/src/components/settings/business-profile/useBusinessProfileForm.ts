@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { BusinessProfile } from "@/lib/types";
-import { CurrencyCode } from "@/lib/currency-context";
+import { CurrencyCode, useCurrency, CURRENCIES } from "@/lib/currency";
 import { businessProfileService } from "@/lib/services/business-profile-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { useBusinessProfile } from "@/lib/business-profile-context";
-import { useCurrency } from "@/lib/currency-provider";
-import { CURRENCIES } from "@/lib/currency-constants";
 
 export function useBusinessProfileForm(userId: string) {
     const {

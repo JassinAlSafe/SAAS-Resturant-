@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 
 export function CurrencySelector() {
   // Since we're now standardized on Swedish Krona, this component will

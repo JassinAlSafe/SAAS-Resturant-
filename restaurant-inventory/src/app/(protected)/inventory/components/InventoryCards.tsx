@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InventoryItem } from "@/lib/types";
 import { FiEdit2, FiTrash2, FiPackage, FiImage } from "react-icons/fi";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import Image from "next/image";

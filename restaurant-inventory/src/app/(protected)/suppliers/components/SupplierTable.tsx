@@ -56,9 +56,13 @@ interface SupplierTableProps {
   suppliers: Supplier[];
   onEditClick: (supplier: Supplier) => void;
   onDeleteClick: (supplier: Supplier) => void;
-  onBulkAction?: (action: string, suppliers: Supplier[]) => void;
-  selectedCategory?: SupplierCategory | null;
-  onCategoryFilterChange?: (category: SupplierCategory | null) => void;
+  onBulkAction: (action: string, suppliers: Supplier[]) => Promise<void>;
+  selectedCategory: SupplierCategory | null;
+  onCategoryFilterChange: (category: SupplierCategory | null) => void;
+  isLoading?: boolean;
+  isDeleting?: boolean;
+  isBulkDeleting?: boolean;
+  isExporting?: boolean;
 }
 
 export default function SupplierTable({
@@ -68,6 +72,7 @@ export default function SupplierTable({
   onBulkAction,
   selectedCategory,
   onCategoryFilterChange,
+  isLoading,
 }: SupplierTableProps) {
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<string>>(
     new Set()
@@ -75,7 +80,6 @@ export default function SupplierTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Get supplier stats
   const stats = calculateSupplierStats(suppliers, selectedSuppliers);
@@ -107,19 +111,16 @@ export default function SupplierTable({
   const handleBulkAction = async (action: string) => {
     if (selectedSuppliers.size === 0) return;
 
-    setIsLoading(true);
     try {
       const selectedSuppliersList = suppliers.filter((s) =>
         selectedSuppliers.has(s.id)
       );
-      await onBulkAction?.(action, selectedSuppliersList);
+      await onBulkAction(action, selectedSuppliersList);
       if (action === "delete") {
         clearSelection();
       }
     } catch (error) {
       console.error("Error performing bulk action:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

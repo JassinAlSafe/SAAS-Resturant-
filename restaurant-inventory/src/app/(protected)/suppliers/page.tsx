@@ -15,9 +15,20 @@ import { Supplier, SupplierCategory } from "@/lib/types";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-export default function Suppliers() {
-  // Use our custom hooks
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: true,
+    },
+  },
+});
+
+function SuppliersContent() {
   const {
     suppliers,
     isLoading,
@@ -26,6 +37,10 @@ export default function Suppliers() {
     updateSupplier,
     deleteSupplier,
     bulkDeleteSuppliers,
+    isAddingSupplier,
+    isUpdatingSupplier,
+    isDeletingSupplier,
+    isBulkDeletingSuppliers,
   } = useSuppliers();
 
   const {
@@ -45,7 +60,7 @@ export default function Suppliers() {
   const [selectedCategory, setSelectedCategory] =
     useState<SupplierCategory | null>(null);
 
-  const { handleExportSuppliers } = useSupplierExport(suppliers);
+  const { handleExportSuppliers, isExporting } = useSupplierExport(suppliers);
 
   // Handle saving a supplier (either add or update)
   const handleSaveSupplier = async (
@@ -54,10 +69,8 @@ export default function Suppliers() {
     try {
       if (selectedSupplier) {
         await updateSupplier(selectedSupplier.id, supplierData);
-        toast.success("Supplier updated successfully");
       } else {
         await addSupplier(supplierData);
-        toast.success("Supplier created successfully");
       }
       closeModal();
     } catch (error) {
@@ -71,7 +84,6 @@ export default function Suppliers() {
     try {
       if (supplierToDelete) {
         await deleteSupplier(supplierToDelete.id);
-        toast.success("Supplier deleted successfully");
         closeDeleteDialog();
       }
     } catch (error) {
@@ -85,13 +97,12 @@ export default function Suppliers() {
     if (action === "delete") {
       try {
         await bulkDeleteSuppliers(suppliers.map((s) => s.id));
-        toast.success(`${suppliers.length} suppliers deleted successfully`);
       } catch (error) {
         toast.error("Failed to delete suppliers");
         console.error(error);
       }
     } else if (action === "export") {
-      handleExportSuppliers(suppliers);
+      handleExportSuppliers();
     }
   };
 
@@ -107,7 +118,7 @@ export default function Suppliers() {
 
   // Show error state
   if (error) {
-    return <ApiError error={error} />;
+    return <ApiError error={error as Error} />;
   }
 
   // Filter suppliers based on search term and selected category
@@ -139,9 +150,14 @@ export default function Suppliers() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <SupplierHeader totalSuppliers={0} />
           <div>
-            <Button size="default" onClick={openAddModal} className="gap-1">
+            <Button
+              size="default"
+              onClick={openAddModal}
+              className="gap-1"
+              disabled={isAddingSupplier}
+            >
               <Plus className="h-4 w-4" />
-              Add Supplier
+              {isAddingSupplier ? "Adding..." : "Add Supplier"}
             </Button>
           </div>
         </div>
@@ -154,11 +170,7 @@ export default function Suppliers() {
   return (
     <div className="w-full py-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <SupplierHeader
-          totalSuppliers={suppliers.length}
-          error={error?.message}
-          retry={error ? () => window.location.reload() : undefined}
-        />
+        <SupplierHeader totalSuppliers={suppliers.length} />
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -168,9 +180,10 @@ export default function Suppliers() {
             size="default"
             onClick={openAddModal}
             className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            disabled={isAddingSupplier}
           >
             <Plus className="h-4 w-4" />
-            Add Supplier
+            {isAddingSupplier ? "Adding..." : "Add Supplier"}
           </Button>
         </motion.div>
       </div>
@@ -183,6 +196,10 @@ export default function Suppliers() {
           onBulkAction={handleBulkAction}
           selectedCategory={selectedCategory}
           onCategoryFilterChange={handleCategoryFilterChange}
+          isLoading={isLoading}
+          isDeleting={isDeletingSupplier}
+          isBulkDeleting={isBulkDeletingSuppliers}
+          isExporting={isExporting}
         />
       </div>
 
@@ -197,5 +214,15 @@ export default function Suppliers() {
         onDeleteSupplier={handleDeleteSupplier}
       />
     </div>
+  );
+}
+
+// Wrap the app with React Query provider
+export default function SuppliersPage() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SuppliersContent />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

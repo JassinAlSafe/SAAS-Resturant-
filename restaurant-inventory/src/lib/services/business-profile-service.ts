@@ -1,5 +1,5 @@
 import { BusinessProfile } from "@/lib/types";
-import { CurrencyCode } from "@/lib/currency-context";
+import { CurrencyCode } from "@/lib/currency";
 import { supabase } from "@/lib/supabase";
 
 // Define the database schema structure

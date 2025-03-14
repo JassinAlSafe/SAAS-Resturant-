@@ -6,7 +6,7 @@ import { format, subDays, startOfMonth } from "date-fns";
 import { FileSpreadsheet } from "lucide-react";
 import { salesService } from "@/lib/services/sales-service";
 import { generateSalesExcel } from "@/lib/utils/excel-utils";
-import { useCurrency } from "@/lib/currency-provider";
+import { useCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 import { SalesChart } from "@/app/(protected)/sales/components/SalesChart";
 import { DateRangeSelector } from "@/app/(protected)/sales/components/SalesHistoryView/DateRangeSelector";

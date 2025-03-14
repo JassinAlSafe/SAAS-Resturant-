@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useCurrency } from "@/lib/currency-provider";
+import { useCurrency } from "@/lib/currency";
 import { Loader2 } from "lucide-react";
 
 interface SalesEntryFooterProps {

@@ -2,213 +2,133 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { Users, Star, Building, ShoppingCart, UserCheck } from "lucide-react";
-import { Supplier } from "@/lib/types";
+import {
+  FiUsers,
+  FiStar,
+  FiUserCheck,
+  FiUserX,
+  FiShoppingCart,
+} from "react-icons/fi";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface SupplierStatsProps {
-  stats: {
-    totalSuppliers: number;
-    activeSuppliers: number;
-    inactiveSuppliers: number;
-    preferredSuppliers: number;
-    categoriesCount: number;
-    lastOrderDays: number;
-  };
+interface SupplierStats {
+  totalSuppliers: number;
+  activeSuppliers: number;
+  inactiveSuppliers: number;
+  preferredSuppliers: number;
+  categoriesCount: number;
+  lastOrderDays: number;
+}
+
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon: React.ReactNode;
+  color: string;
+  isLoading?: boolean;
+}
+
+const StatCard = ({
+  title,
+  value,
+  subtitle,
+  icon,
+  color,
+  isLoading,
+}: StatCardProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`relative flex flex-col p-6 rounded-xl border bg-white dark:bg-slate-950 shadow-sm ${color}`}
+  >
+    {isLoading ? (
+      <>
+        <Skeleton className="h-6 w-32 mb-2" />
+        <Skeleton className="h-8 w-16 mb-1" />
+        <Skeleton className="h-4 w-24" />
+      </>
+    ) : (
+      <>
+        <div className="flex items-center gap-2 mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+          {icon}
+          {title}
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            {value}
+          </span>
+          {subtitle && (
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {subtitle}
+            </span>
+          )}
+        </div>
+      </>
+    )}
+  </motion.div>
+);
+
+interface SupplierStatsDashboardProps {
+  stats: SupplierStats;
   isLoading?: boolean;
 }
 
 export function SupplierStatsDashboard({
   stats,
-  isLoading = false,
-}: SupplierStatsProps) {
-  // Animation variants for staggered card animation
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  };
-
-  // If we're still loading data, show skeleton cards
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {[...Array(5)].map((_, index) => (
-          <Card
-            key={index}
-            className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 animate-pulse"
-          >
-            <div className="w-10 h-10 rounded-md bg-slate-200 dark:bg-slate-800"></div>
-            <div className="flex-1">
-              <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded mb-2"></div>
-              <div className="h-5 w-16 bg-slate-200 dark:bg-slate-800 rounded"></div>
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
+  isLoading,
+}: SupplierStatsDashboardProps) {
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
-    >
-      {/* Total Suppliers Card */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Card className="flex items-center gap-4 p-4 min-h-[100px] w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md transition-all duration-200">
-          <div className="p-2 rounded-md bg-blue-50 text-blue-600">
-            <Users size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-slate-500 truncate">
-              Total Suppliers
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold">
-                {stats.totalSuppliers}
-              </div>
-              <div className="text-xs text-slate-400 truncate">
-                {stats.categoriesCount} categories
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Preferred Suppliers Card */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Card className="flex items-center gap-4 p-4 min-h-[100px] w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md transition-all duration-200">
-          <div className="p-2 rounded-md bg-yellow-50 text-yellow-600">
-            <Star size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-slate-500 truncate">
-              Preferred Suppliers
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold">
-                {stats.preferredSuppliers}
-              </div>
-              <div className="text-xs text-slate-400 truncate">
-                {stats.totalSuppliers > 0
-                  ? Math.round(
-                      (stats.preferredSuppliers / stats.totalSuppliers) * 100
-                    )
-                  : 0}
-                % preferred
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Active Suppliers Card */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Card className="flex items-center gap-4 p-4 min-h-[100px] w-full border border-slate-200 border-l-4 border-l-green-500 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md hover:border-l-green-600 transition-all duration-200">
-          <div className="p-2 rounded-md bg-green-50 text-green-600">
-            <UserCheck size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-slate-500 truncate">
-              Active Suppliers
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-green-600">
-                {stats.activeSuppliers}
-              </div>
-              <div className="text-xs text-green-500 truncate">
-                {stats.totalSuppliers > 0
-                  ? Math.round(
-                      (stats.activeSuppliers / stats.totalSuppliers) * 100
-                    )
-                  : 0}
-                % active
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Inactive Suppliers Card */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Card className="flex items-center gap-4 p-4 min-h-[100px] w-full border border-slate-200 border-l-4 border-l-amber-500 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md hover:border-l-amber-600 transition-all duration-200">
-          <div className="p-2 rounded-md bg-amber-50 text-amber-600">
-            <Building size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-slate-500 truncate">
-              Inactive Suppliers
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-amber-600">
-                {stats.inactiveSuppliers}
-              </div>
-              <div className="text-xs text-amber-500 truncate">
-                {stats.totalSuppliers > 0
-                  ? Math.round(
-                      (stats.inactiveSuppliers / stats.totalSuppliers) * 100
-                    )
-                  : 0}
-                % inactive
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Last Order Card */}
-      <motion.div
-        variants={item}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.2 }}
-      >
-        <Card className="flex items-center gap-4 p-4 min-h-[100px] w-full border border-slate-200 border-l-4 border-l-purple-500 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md hover:border-l-purple-600 transition-all duration-200">
-          <div className="p-2 rounded-md bg-purple-50 text-purple-600">
-            <ShoppingCart size={20} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm text-slate-500 truncate">
-              Average Order Time
-            </div>
-            <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-purple-600">
-                {stats.lastOrderDays || "N/A"}
-              </div>
-              <div className="text-xs text-purple-500 truncate">
-                {stats.lastOrderDays ? "days ago" : "No data"}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-    </motion.div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <StatCard
+        title="Total Suppliers"
+        value={stats.totalSuppliers}
+        subtitle={`${stats.categoriesCount} categories`}
+        icon={<FiUsers className="h-4 w-4" />}
+        color="hover:border-blue-200 dark:hover:border-blue-800"
+        isLoading={isLoading}
+      />
+      <StatCard
+        title="Preferred Suppliers"
+        value={stats.preferredSuppliers}
+        subtitle={`${(
+          (stats.preferredSuppliers / stats.totalSuppliers) *
+          100
+        ).toFixed(0)}% preferred`}
+        icon={<FiStar className="h-4 w-4 text-yellow-500" />}
+        color="hover:border-yellow-200 dark:hover:border-yellow-800"
+        isLoading={isLoading}
+      />
+      <StatCard
+        title="Active Suppliers"
+        value={stats.activeSuppliers}
+        subtitle={`${(
+          (stats.activeSuppliers / stats.totalSuppliers) *
+          100
+        ).toFixed(0)}% active`}
+        icon={<FiUserCheck className="h-4 w-4 text-green-500" />}
+        color="hover:border-green-200 dark:hover:border-green-800"
+        isLoading={isLoading}
+      />
+      <StatCard
+        title="Inactive Suppliers"
+        value={stats.inactiveSuppliers}
+        subtitle={`${(
+          (stats.inactiveSuppliers / stats.totalSuppliers) *
+          100
+        ).toFixed(0)}% inactive`}
+        icon={<FiUserX className="h-4 w-4 text-orange-500" />}
+        color="hover:border-orange-200 dark:hover:border-orange-800"
+        isLoading={isLoading}
+      />
+      <StatCard
+        title="Average Order Age"
+        value={stats.lastOrderDays === 0 ? "N/A" : `${stats.lastOrderDays}`}
+        subtitle={stats.lastOrderDays === 0 ? "No data" : "days"}
+        icon={<FiShoppingCart className="h-4 w-4 text-purple-500" />}
+        color="hover:border-purple-200 dark:hover:border-purple-800"
+        isLoading={isLoading}
+      />
+    </div>
   );
 }

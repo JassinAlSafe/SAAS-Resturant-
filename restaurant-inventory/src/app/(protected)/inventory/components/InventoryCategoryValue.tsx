@@ -1,17 +1,14 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight, PieChart } from "lucide-react";
-import { InventoryItem } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
+import { useInventoryQuery } from "@/hooks/useInventoryQuery";
 
-interface InventoryCategoryValueProps {
-  items: InventoryItem[];
-}
-
-export function InventoryCategoryValue({ items }: InventoryCategoryValueProps) {
+export function InventoryCategoryValue() {
   const [isExpanded, setIsExpanded] = useState(false);
   const { formatCurrency } = useCurrency();
+  const { items, isLoading } = useInventoryQuery();
 
   // Group items by category and calculate total value per category
   const categoryValues = React.useMemo(() => {
@@ -48,6 +45,24 @@ export function InventoryCategoryValue({ items }: InventoryCategoryValueProps) {
       0
     );
   }, [categoryValues]);
+
+  if (isLoading) {
+    return (
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center">
+              <PieChart className="h-5 w-5 mr-2" />
+              Inventory Value by Category
+            </CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Loading inventory values...
+          </p>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   if (categoryValues.length === 0) {
     return null;

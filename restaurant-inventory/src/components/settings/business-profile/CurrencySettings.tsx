@@ -8,8 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CurrencyCode } from "@/lib/currency-context";
-import { CURRENCIES } from "@/lib/currency-constants";
+import { CurrencyCode, CURRENCIES } from "@/lib/currency";
 
 interface CurrencySettingsProps {
   defaultCurrency: CurrencyCode;

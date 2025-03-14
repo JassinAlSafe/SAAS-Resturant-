@@ -292,3 +292,20 @@ export interface BusinessProfile {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface ShoppingListItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  category: string;
+  notes?: string;
+  is_purchased: boolean;
+  is_auto_generated: boolean;
+  estimated_cost: number;
+  inventory_item_id?: string;
+  added_at: string;
+  purchased_at?: string;
+  user_id?: string;
+  business_profile_id?: string;
+}

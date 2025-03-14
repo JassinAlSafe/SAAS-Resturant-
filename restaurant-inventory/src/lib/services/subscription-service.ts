@@ -5,7 +5,7 @@ import {
     Invoice,
     InvoiceItem
 } from "@/lib/types";
-import { CurrencyCode } from "@/lib/currency-context";
+import { CurrencyCode } from "@/lib/currency";
 
 // Mock subscription plans
 const mockSubscriptionPlans: SubscriptionPlan[] = [

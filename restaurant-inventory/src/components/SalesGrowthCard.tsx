@@ -29,8 +29,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { FiTrendingUp, FiTrendingDown } from "react-icons/fi";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 
 // Define bar chart styling variants
 const barVariants = cva(

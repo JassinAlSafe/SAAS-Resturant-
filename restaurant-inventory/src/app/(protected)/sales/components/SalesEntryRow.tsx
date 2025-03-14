@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dish } from "@/lib/types";
-import { useCurrency } from "@/lib/currency-provider";
+import { useCurrency } from "@/lib/currency";
 import { InventoryImpactItem } from "../types";
 
 interface SalesEntryRowProps {

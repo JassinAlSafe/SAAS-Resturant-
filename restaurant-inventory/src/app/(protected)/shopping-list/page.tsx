@@ -1,163 +1,142 @@
 "use client";
 
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useShoppingList } from "./hooks/useShoppingList";
-import { useShoppingListFilters } from "./hooks/useShoppingListFilters";
-import { useAddShoppingItem } from "./hooks/useAddShoppingItem";
-import { useShoppingListExport } from "./hooks/useShoppingListExport";
-
 import ShoppingListTable from "./components/ShoppingListTable";
-import ShoppingListFilters from "./components/ShoppingListFilters";
-import ShoppingListActions from "./components/ShoppingListActions";
 import ShoppingListHeader from "./components/ShoppingListHeader";
-import ShoppingListSummary from "./components/ShoppingListSummary";
-import ShoppingListLoading from "./components/ShoppingListLoading";
-import EmptyShoppingList from "./components/EmptyShoppingList";
-import AddShoppingListItem from "./components/AddShoppingListItem";
+import ShoppingListModals from "./components/modals";
+import { ShoppingListItem } from "@/lib/types";
+import { Loader2 } from "lucide-react";
 
-export default function ShoppingList() {
-  // Use our custom hooks
+// Create a client
+const queryClient = new QueryClient();
+
+// Wrap the main content in the QueryClientProvider
+export default function ShoppingListPage() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ShoppingListContent />
+    </QueryClientProvider>
+  );
+}
+
+function ShoppingListContent() {
+  const [selectedItem, setSelectedItem] = useState<ShoppingListItem | null>(
+    null
+  );
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
   const {
     shoppingList,
     categories,
     isLoading,
     error,
-    fetchInventoryAndGenerateList,
     addItem,
-    markAsPurchased,
+    updateItem,
     removeItem,
+    markAsPurchased,
+    generateList,
+    isAddingItem,
+    isUpdatingItem,
+    isDeletingItem,
+    isMarkingAsPurchased,
+    isGeneratingList,
   } = useShoppingList();
 
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedCategory,
-    setSelectedCategory,
-    showPurchased,
-    setShowPurchased,
-    filteredItems,
-  } = useShoppingListFilters(shoppingList);
+  // Filter shopping list based on search term and category
+  const filteredList = shoppingList.filter((item) => {
+    const matchesSearch = item.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "all" || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const {
-    isAddingItem,
-    newItemName,
-    setNewItemName,
-    newItemQuantity,
-    setNewItemQuantity,
-    newItemUnit,
-    setNewItemUnit,
-    newItemCategory,
-    setNewItemCategory,
-    newItemCost,
-    setNewItemCost,
-    toggleAddItemForm,
-    handleAddItem,
-  } = useAddShoppingItem(addItem);
+  // Calculate total estimated cost
+  const totalEstimatedCost = filteredList.reduce(
+    (total, item) => total + item.estimated_cost,
+    0
+  );
 
-  const { handleExportShoppingList } = useShoppingListExport(filteredItems);
+  // Handle item deletion with proper type handling
+  const handleDeleteItem = async (id: string) => {
+    await removeItem(id);
+  };
 
-  // Loading state
+  // Handle item update with proper type handling
+  const handleUpdateItem = async (updates: Partial<ShoppingListItem>) => {
+    if (selectedItem) {
+      await updateItem({ id: selectedItem.id, updates });
+    }
+  };
+
   if (isLoading) {
-    return <ShoppingListLoading />;
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="w-full py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <ShoppingListHeader
-            error={error}
-            retry={fetchInventoryAndGenerateList}
-            totalItems={shoppingList.length}
-          />
-        </div>
+      <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
+        <p className="text-lg font-medium text-destructive">
+          Error loading shopping list
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Please try refreshing the page
+        </p>
       </div>
     );
   }
 
-  // Empty state
-  if (shoppingList.length === 0) {
-    return (
-      <div className="w-full py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <ShoppingListHeader totalItems={0} />
-          <ShoppingListActions
-            onAddClick={toggleAddItemForm}
-            onRefreshClick={fetchInventoryAndGenerateList}
-            onExportClick={() => handleExportShoppingList()}
-          />
-        </div>
-
-        <AddShoppingListItem
-          isVisible={isAddingItem}
-          itemName={newItemName}
-          onItemNameChange={setNewItemName}
-          itemQuantity={newItemQuantity}
-          onItemQuantityChange={setNewItemQuantity}
-          itemUnit={newItemUnit}
-          onItemUnitChange={setNewItemUnit}
-          itemCategory={newItemCategory}
-          onItemCategoryChange={setNewItemCategory}
-          itemCost={newItemCost}
-          onItemCostChange={setNewItemCost}
-          categories={categories}
-          onAddItem={handleAddItem}
-          onCancel={toggleAddItemForm}
-        />
-
-        <EmptyShoppingList
-          onAddClick={toggleAddItemForm}
-          onRefreshClick={fetchInventoryAndGenerateList}
-        />
-      </div>
-    );
-  }
-
-  // Main view with items
   return (
-    <div className="w-full py-6 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <ShoppingListHeader totalItems={filteredItems.length} />
-        <ShoppingListActions
-          onAddClick={toggleAddItemForm}
-          onRefreshClick={fetchInventoryAndGenerateList}
-          onExportClick={() => handleExportShoppingList(filteredItems)}
-        />
-      </div>
-
-      <AddShoppingListItem
-        isVisible={isAddingItem}
-        itemName={newItemName}
-        onItemNameChange={setNewItemName}
-        itemQuantity={newItemQuantity}
-        onItemQuantityChange={setNewItemQuantity}
-        itemUnit={newItemUnit}
-        onItemUnitChange={setNewItemUnit}
-        itemCategory={newItemCategory}
-        onItemCategoryChange={setNewItemCategory}
-        itemCost={newItemCost}
-        onItemCostChange={setNewItemCost}
-        categories={categories}
-        onAddItem={handleAddItem}
-        onCancel={toggleAddItemForm}
-      />
-
-      <ShoppingListSummary items={filteredItems} />
-
-      <ShoppingListFilters
+    <div className="container mx-auto py-6">
+      <ShoppingListHeader
+        onAddItem={() => setIsAddModalOpen(true)}
+        onGenerateList={generateList}
+        isGenerating={isGeneratingList}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
-        showPurchased={showPurchased}
-        onShowPurchasedChange={setShowPurchased}
         categories={categories}
+        totalEstimatedCost={totalEstimatedCost}
       />
 
       <ShoppingListTable
-        items={filteredItems}
-        onMarkPurchased={markAsPurchased}
-        onRemoveItem={removeItem}
+        items={filteredList}
+        onEditItem={(item: ShoppingListItem) => {
+          setSelectedItem(item);
+          setIsEditModalOpen(true);
+        }}
+        onDeleteItem={handleDeleteItem}
+        onTogglePurchased={(id: string, isPurchased: boolean) =>
+          markAsPurchased({ id, isPurchased })
+        }
+        isDeleting={isDeletingItem}
+        isUpdating={isMarkingAsPurchased}
+      />
+
+      <ShoppingListModals
+        selectedItem={selectedItem}
+        isAddModalOpen={isAddModalOpen}
+        isEditModalOpen={isEditModalOpen}
+        onCloseAddModal={() => setIsAddModalOpen(false)}
+        onCloseEditModal={() => {
+          setIsEditModalOpen(false);
+          setSelectedItem(null);
+        }}
+        onAdd={addItem}
+        onUpdate={handleUpdateItem}
+        categories={categories}
+        isSubmitting={isAddingItem || isUpdatingItem}
       />
     </div>
   );

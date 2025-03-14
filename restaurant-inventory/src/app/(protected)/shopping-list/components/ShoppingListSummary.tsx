@@ -1,6 +1,6 @@
 "use client";
 
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 import { ShoppingListItem } from "@/lib/services/shopping-list-service";
 import { Progress } from "@/components/ui/progress";
 import { FiShoppingBag, FiTrendingUp } from "react-icons/fi";

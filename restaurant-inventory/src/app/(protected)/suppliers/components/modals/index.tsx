@@ -21,7 +21,7 @@ import SupplierForm from "./SupplierForm";
 
 interface SupplierModalsProps {
   isModalOpen: boolean;
-  selectedSupplier: Supplier | null;
+  selectedSupplier: Supplier | null | undefined;
   isDeleteDialogOpen: boolean;
   supplierToDelete: Supplier | null;
   onCloseModal: () => void;

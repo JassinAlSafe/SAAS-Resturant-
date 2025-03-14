@@ -1,153 +1,116 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Supplier } from "@/lib/types";
-import { supplierService } from "@/lib/services/supplier-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
+import {
+  fetchSuppliers,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+  bulkDeleteSuppliers,
+} from "@/lib/api/suppliers";
 
 export function useSuppliers() {
-  // State for suppliers data
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Notifications
+  const queryClient = useQueryClient();
   const { success, error: showError } = useNotificationHelpers();
 
-  // Fetch suppliers
-  const fetchSuppliers = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const fetchedSuppliers = await supplierService.getSuppliers();
-      setSuppliers(fetchedSuppliers);
-    } catch (err) {
-      console.error("Error fetching suppliers:", err);
-      setError("Failed to load suppliers data. Please try again later.");
-      showError(
-        "Failed to load suppliers",
-        "There was an error loading your supplier data."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Query for fetching suppliers
+  const {
+    data: suppliers = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchSuppliers,
+  });
 
-  // Handle adding a new supplier
-  const addSupplier = async (
-    supplierData: Omit<Supplier, "id" | "createdAt" | "updatedAt">
-  ) => {
-    try {
-      const newSupplier = await supplierService.addSupplier(supplierData);
-      if (newSupplier) {
-        setSuppliers((prev) => [...prev, newSupplier]);
-        success(
-          "Supplier Added",
-          `${newSupplier.name} has been added to your suppliers list.`
-        );
-        return newSupplier;
-      }
-      return null;
-    } catch (err) {
+  // Mutation for adding a supplier
+  const addSupplierMutation = useMutation({
+    mutationFn: createSupplier,
+    onSuccess: (newSupplier) => {
+      queryClient.setQueryData<Supplier[]>(["suppliers"], (old = []) => [
+        ...old,
+        newSupplier,
+      ]);
+      success(
+        "Supplier Added",
+        `${newSupplier.name} has been added to your suppliers list.`
+      );
+    },
+    onError: (err: Error) => {
       console.error("Error adding supplier:", err);
-      showError(
-        "Failed to add supplier",
-        "There was an error adding this supplier."
-      );
-      return null;
-    }
-  };
+      showError("Failed to add supplier", err.message);
+    },
+  });
 
-  // Handle updating an existing supplier
-  const updateSupplier = async (
-    id: string,
-    supplierData: Partial<Omit<Supplier, "id" | "createdAt" | "updatedAt">>
-  ) => {
-    try {
-      const updatedSupplier = await supplierService.updateSupplier(
-        id,
-        supplierData
+  // Mutation for updating a supplier
+  const updateSupplierMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Supplier> }) =>
+      updateSupplier(id, data),
+    onSuccess: (updatedSupplier) => {
+      queryClient.setQueryData<Supplier[]>(["suppliers"], (old = []) =>
+        old.map((s) => (s.id === updatedSupplier.id ? updatedSupplier : s))
       );
-      if (updatedSupplier) {
-        setSuppliers((prev) =>
-          prev.map((s) => (s.id === id ? updatedSupplier : s))
-        );
-        success(
-          "Supplier Updated",
-          `${updatedSupplier.name} has been updated.`
-        );
-        return updatedSupplier;
-      }
-      return null;
-    } catch (err) {
+      success(
+        "Supplier Updated",
+        `${updatedSupplier.name} has been updated successfully.`
+      );
+    },
+    onError: (err: Error) => {
       console.error("Error updating supplier:", err);
-      showError(
-        "Failed to update supplier",
-        "There was an error updating this supplier."
-      );
-      return null;
-    }
-  };
+      showError("Failed to update supplier", err.message);
+    },
+  });
 
-  // Handle deleting a supplier
-  const deleteSupplier = async (id: string) => {
-    try {
-      const isDeleted = await supplierService.deleteSupplier(id);
-      if (isDeleted) {
-        setSuppliers((prev) => prev.filter((s) => s.id !== id));
-        success(
-          "Supplier Deleted",
-          "The supplier has been removed from your list."
-        );
-        return true;
-      }
-      return false;
-    } catch (err) {
+  // Mutation for deleting a supplier
+  const deleteSupplierMutation = useMutation({
+    mutationFn: deleteSupplier,
+    onSuccess: (_, id) => {
+      queryClient.setQueryData<Supplier[]>(["suppliers"], (old = []) =>
+        old.filter((s) => s.id !== id)
+      );
+      success(
+        "Supplier Deleted",
+        "The supplier has been removed successfully."
+      );
+    },
+    onError: (err: Error) => {
       console.error("Error deleting supplier:", err);
-      showError(
-        "Failed to delete supplier",
-        "There was an error deleting this supplier."
-      );
-      return false;
-    }
-  };
+      showError("Failed to delete supplier", err.message);
+    },
+  });
 
-  // Handle bulk deleting suppliers
-  const bulkDeleteSuppliers = async (ids: string[]) => {
-    try {
-      const isDeleted = await supplierService.bulkDeleteSuppliers(ids);
-      if (isDeleted) {
-        setSuppliers((prev) => prev.filter((s) => !ids.includes(s.id)));
-        success(
-          "Suppliers Deleted",
-          `${ids.length} suppliers have been removed from your list.`
-        );
-        return true;
-      }
-      return false;
-    } catch (err) {
+  // Mutation for bulk deleting suppliers
+  const bulkDeleteSuppliersMutation = useMutation({
+    mutationFn: bulkDeleteSuppliers,
+    onSuccess: (_, ids) => {
+      queryClient.setQueryData<Supplier[]>(["suppliers"], (old = []) =>
+        old.filter((s) => !ids.includes(s.id))
+      );
+      success(
+        "Suppliers Deleted",
+        `${ids.length} suppliers have been removed successfully.`
+      );
+    },
+    onError: (err: Error) => {
       console.error("Error bulk deleting suppliers:", err);
-      showError(
-        "Failed to delete suppliers",
-        "There was an error deleting the selected suppliers."
-      );
-      return false;
-    }
-  };
-
-  // Load suppliers on hook initialization
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
+      showError("Failed to delete suppliers", err.message);
+    },
+  });
 
   return {
     suppliers,
     isLoading,
     error,
-    fetchSuppliers,
-    addSupplier,
-    updateSupplier,
-    deleteSupplier,
-    bulkDeleteSuppliers,
+    addSupplier: addSupplierMutation.mutateAsync,
+    updateSupplier: (id: string, data: Partial<Supplier>) =>
+      updateSupplierMutation.mutateAsync({ id, data }),
+    deleteSupplier: deleteSupplierMutation.mutateAsync,
+    bulkDeleteSuppliers: bulkDeleteSuppliersMutation.mutateAsync,
+    isAddingSupplier: addSupplierMutation.isPending,
+    isUpdatingSupplier: updateSupplierMutation.isPending,
+    isDeletingSupplier: deleteSupplierMutation.isPending,
+    isBulkDeletingSuppliers: bulkDeleteSuppliersMutation.isPending,
   };
 }

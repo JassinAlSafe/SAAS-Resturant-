@@ -14,16 +14,15 @@ import {
   FiArrowRight,
   FiActivity,
 } from "react-icons/fi";
-import StatCard from "@/components/StatCard";
-import Card from "@/components/Card";
-import SalesGrowthCard from "@/components/SalesGrowthCard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DashboardStats } from "@/lib/types";
-import { useCurrency } from "@/lib/currency-context";
+import { DashboardStats, CategoryStat } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import StatCard from "@/components/StatCard";
+import SalesGrowthCard from "@/components/SalesGrowthCard";
 import ExpiryAlerts from "@/components/dashboard/ExpiryAlerts";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import type { CategoryStat } from "@/lib/types";
+import { useCurrency } from "@/lib/currency";
 
 interface OverviewTabProps {
   stats: DashboardStats;
@@ -35,7 +34,7 @@ interface OverviewTabProps {
     timestamp: string;
     user: string;
   }[];
-  isLoading: boolean;
+  isLoading?: boolean;
 }
 
 export function OverviewTab({
@@ -43,17 +42,36 @@ export function OverviewTab({
   salesData,
   categoryStats,
   recentActivity,
-  isLoading,
+  isLoading = false,
 }: OverviewTabProps) {
   const router = useRouter();
-  const { formatCurrency } = useCurrency();
+
+  // Safely use the currency provider, with a fallback if it fails
+  const currencyContext = useCurrency();
+
+  // Create a format function that works regardless of context availability
+  const formatCurrencyFn = (amount: number) => {
+    try {
+      return currencyContext.formatCurrency(amount);
+    } catch (error) {
+      // Fallback formatting if the context method fails
+      console.error("Currency formatting error:", error);
+      if (!amount && amount !== 0) return "0.00 kr";
+      return (
+        new Intl.NumberFormat("sv-SE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(amount) + " kr"
+      );
+    }
+  };
 
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
         <StatCard
           title="Total Inventory Value"
-          value={formatCurrency(stats.totalInventoryValue)}
+          value={formatCurrencyFn(stats.totalInventoryValue)}
           icon={<FiPackage className="h-5 w-5" />}
           variant="primary"
           footer={
@@ -79,7 +97,7 @@ export function OverviewTab({
         />
         <StatCard
           title="Monthly Sales"
-          value={formatCurrency(stats.monthlySales)}
+          value={formatCurrencyFn(stats.monthlySales)}
           icon={<FiDollarSign className="h-5 w-5" />}
           variant="success"
           footer={

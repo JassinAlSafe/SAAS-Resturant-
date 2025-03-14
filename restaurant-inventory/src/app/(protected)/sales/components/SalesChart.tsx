@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useCurrency } from "@/lib/currency-provider";
+import { useCurrency } from "@/lib/currency";
 
 interface SalesChartProps {
   data: Array<{

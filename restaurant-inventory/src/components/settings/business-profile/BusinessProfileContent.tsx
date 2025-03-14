@@ -15,8 +15,7 @@ import { OperatingHoursForm } from "@/components/settings/business-profile/Opera
 import { LogoUpload } from "@/components/settings/business-profile/LogoUpload";
 import { CurrencySettings } from "@/components/settings/business-profile/CurrencySettings";
 import { TaxSettings } from "@/components/settings/business-profile/TaxSettings";
-import { CurrencyProvider } from "@/lib/currency-provider";
-import { CurrencyCode } from "@/lib/currency-context";
+import { CurrencyCode, CurrencyProvider } from "@/lib/currency";
 import { BusinessProfile } from "@/lib/types";
 
 interface BusinessData {

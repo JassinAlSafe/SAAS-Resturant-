@@ -21,9 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FiPlus, FiTrash2, FiSave, FiX } from "react-icons/fi";
-import { Card } from "@/components/ui/card";
-import { useCurrency } from "@/lib/currency-context";
+import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { useCurrency } from "@/lib/currency";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";

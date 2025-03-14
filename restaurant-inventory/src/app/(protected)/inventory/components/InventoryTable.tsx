@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { InventoryItem } from "@/lib/types";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 import { motion } from "framer-motion";
 import { Package, LayoutGrid } from "lucide-react";
 
