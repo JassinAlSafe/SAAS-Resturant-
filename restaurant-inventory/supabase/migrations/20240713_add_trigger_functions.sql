@@ -80,7 +80,7 @@ DECLARE
   total_cost DECIMAL(10,2) := 0;
 BEGIN
   -- Calculate total cost based on current ingredients
-  SELECT COALESCE(SUM(ri.quantity * i.cost_per_unit), 0)
+  SELECT COALESCE(SUM(ri.quantity * i.cost), 0)
   INTO total_cost
   FROM recipe_ingredients ri
   JOIN ingredients i ON ri.ingredient_id = i.id

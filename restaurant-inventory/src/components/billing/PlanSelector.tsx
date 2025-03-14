@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FiCheck, FiX, FiInfo } from "react-icons/fi";
-import { useCurrency } from "@/lib/currency-context";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FiCheck, FiInfo } from "react-icons/fi";
+import { useCurrency } from "@/lib/currency";
 import { subscriptionService } from "@/lib/services/subscription-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import {

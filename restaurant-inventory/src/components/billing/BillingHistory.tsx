@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { FiDownload, FiFileText, FiExternalLink } from "react-icons/fi";
 import { format } from "date-fns";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 
 interface BillingHistoryProps {
   invoices: Invoice[];

@@ -73,7 +73,7 @@ export const recipeService = {
                 // First try with is_archived column
                 try {
                     query = query.or('is_archived.is.null,is_archived.eq.false');
-                } catch (e) {
+                } catch {
                     // If the column doesn't exist, just continue without filtering
                     console.log('is_archived column may not exist, continuing without filtering');
                 }
@@ -204,7 +204,7 @@ export const recipeService = {
                     name: dish.name,
                     description: dish.description,
                     price: dish.price,
-                    food_cost: dish.foodCost,
+                    food_cost: dish.foodCost || 0, // Ensure a default value
                     category: dish.category,
                     allergies: dish.allergies,
                     popularity: dish.popularity,
@@ -228,11 +228,32 @@ export const recipeService = {
 
             // Then, insert recipe ingredients
             if (dish.ingredients && dish.ingredients.length > 0) {
-                const ingredientsToInsert = dish.ingredients.map(ingredient => ({
-                    recipe_id: recipe.id,
-                    ingredient_id: ingredient.ingredientId,
-                    quantity: ingredient.quantity
-                }));
+                // Get all ingredient IDs
+                const ingredientIds = dish.ingredients.map(ing => ing.ingredientId);
+
+                // Fetch ingredient data to get units
+                const { data: ingredientsData, error: ingredientsFetchError } = await supabase
+                    .from('ingredients')
+                    .select('id, unit, cost')
+                    .in('id', ingredientIds);
+
+                if (ingredientsFetchError) {
+                    console.error('Error fetching ingredients data:', ingredientsFetchError);
+                    await supabase.from('recipes').delete().eq('id', recipe.id);
+                    throw ingredientsFetchError;
+                }
+
+                const ingredientsToInsert = dish.ingredients.map(ingredient => {
+                    // Find the corresponding ingredient to get its unit
+                    const ingredientData = ingredientsData.find(ing => ing.id === ingredient.ingredientId);
+
+                    return {
+                        recipe_id: recipe.id,
+                        ingredient_id: ingredient.ingredientId,
+                        quantity: ingredient.quantity,
+                        unit: ingredientData?.unit || 'piece' // Provide a default unit as fallback
+                    };
+                });
 
                 console.log('Inserting ingredients:', ingredientsToInsert);
 
@@ -512,7 +533,7 @@ export const recipeService = {
             // Get all ingredient IDs
             const ingredientIds = ingredients.map(ing => ing.ingredientId);
 
-            // Get ingredient costs from database
+            // Get ingredient costs from database - ensure we only use columns that exist
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('id, cost')

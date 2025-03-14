@@ -19,7 +19,7 @@ import {
   FiPlay,
 } from "react-icons/fi";
 import { format, differenceInDays } from "date-fns";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 import { subscriptionService } from "@/lib/services/subscription-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import {

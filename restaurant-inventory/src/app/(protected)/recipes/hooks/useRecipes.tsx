@@ -41,7 +41,7 @@ export function useRecipes() {
           quantity: item.quantity,
           unit: item.unit,
           reorderLevel: item.minimum_stock_level || 0,
-          cost: item.cost_per_unit || 0,
+          cost: item.cost || 0,
           createdAt:
             typeof item.created_at === "string"
               ? item.created_at

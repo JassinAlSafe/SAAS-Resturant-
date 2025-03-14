@@ -34,6 +34,7 @@ export interface Dish {
 export interface DishIngredient {
   ingredientId: string;
   quantity: number;
+  unit?: string;
 }
 
 // Sales interface
