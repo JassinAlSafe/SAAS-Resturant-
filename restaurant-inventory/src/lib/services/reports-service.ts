@@ -75,355 +75,505 @@ export interface ReportMetrics {
     profitMargin: number;
 }
 
+import { inventoryService } from './inventory-service';
+import { salesService } from './sales-service';
+import { subDays, parseISO } from 'date-fns';
+
+interface SalesDataResponse {
+    chartData: ChartData<'bar'>;
+    metrics: ReportMetrics;
+}
+
+interface TopDishInfo {
+    dishId: string;
+    dishName: string;
+    quantity: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+    ingredients: {
+        id: string;
+        name: string;
+        quantity: number;
+        unit: string;
+    }[];
+}
+
 export const reportsService = {
-    async getSalesData(dateRange: DateRange): Promise<{
-        chartData: ChartData<"bar">;
-        metrics: ReportMetrics;
-    }> {
+    /**
+     * Get sales data for the selected date range
+     */
+    async getSalesData(dateRange: DateRange): Promise<SalesDataResponse> {
+        if (!dateRange.from || !dateRange.to) {
+            throw new Error("Invalid date range");
+        }
+
+        const fromDate = format(dateRange.from, "yyyy-MM-dd");
+        const toDate = format(dateRange.to, "yyyy-MM-dd");
+
         try {
-            const { from, to } = dateRange;
-            if (!from || !to) throw new Error("Invalid date range");
-
-            console.log('Fetching sales data for range:', {
-                from: format(from, 'yyyy-MM-dd'),
-                to: format(to, 'yyyy-MM-dd')
-            });
-
-            // Get sales data with recipe ingredients and their costs
-            const { data: salesData, error: salesError } = await supabase
+            // Fetch sales data from the database
+            const { data: salesData, error } = await supabase
                 .from('sales')
-                .select(`
-                    id,
-                    quantity,
-                    total_amount,
-                    date,
-                    recipes!inner (
-                        id,
-                        name,
-                        recipe_ingredients!inner (
-                            quantity,
-                            ingredients!inner (
-                                id,
-                                name,
-                                cost
-                            )
-                        )
-                    )
-                `)
-                .filter('date', 'gte', format(from, 'yyyy-MM-dd'))
-                .filter('date', 'lte', format(to, 'yyyy-MM-dd'))
-                .order('date', { ascending: true })
-                .returns<SaleWithRecipe[]>();
+                .select('*, recipes:dish_id(name, price, food_cost)')
+                .gte('date', fromDate)
+                .lte('date', toDate)
+                .order('date', { ascending: true });
 
-            if (salesError) {
-                console.error('Supabase error details:', salesError);
-                throw new Error(`Failed to fetch sales data: ${JSON.stringify(salesError)}`);
-            }
+            if (error) throw error;
 
-            if (!salesData) {
-                console.log('No sales data found');
-                return {
-                    chartData: {
-                        labels: [],
-                        datasets: []
-                    },
-                    metrics: {
-                        totalSales: 0,
-                        avgDailySales: 0,
-                        totalOrders: 0,
-                        avgOrderValue: 0,
-                        grossProfit: 0,
-                        profitMargin: 0
-                    }
-                };
-            }
-
-            console.log('Found sales records:', salesData.length);
-
-            // Get all days in the range
-            const days = eachDayOfInterval({ start: from, end: to });
-            const labels = days.map(day => format(day, 'MMM d'));
-
-            // Initialize sales values for each day
-            const salesByDay = new Map(days.map(day => [format(day, 'yyyy-MM-dd'), 0]));
-            const costsByDay = new Map(days.map(day => [format(day, 'yyyy-MM-dd'), 0]));
-
-            // Aggregate sales data and calculate actual costs by day
-            salesData.forEach(sale => {
-                const date = format(new Date(sale.date), 'yyyy-MM-dd');
-                salesByDay.set(date, (salesByDay.get(date) || 0) + sale.total_amount);
-
-                // Calculate actual costs based on ingredients
-                const recipeCost = sale.recipes?.recipe_ingredients?.reduce((total: number, ri: { ingredients?: { cost: number }, quantity: number }) => {
-                    const ingredientCost = ri.ingredients?.cost || 0;
-                    return total + (ingredientCost * ri.quantity);
-                }, 0) || 0;
-
-                const totalCost = recipeCost * sale.quantity;
-                costsByDay.set(date, (costsByDay.get(date) || 0) + totalCost);
+            // Generate all dates in the range for consistent charting
+            const allDates = eachDayOfInterval({
+                start: dateRange.from,
+                end: dateRange.to
             });
 
-            // Calculate metrics
-            const totalSales = Array.from(salesByDay.values()).reduce((sum, sale) => sum + sale, 0);
-            const totalCosts = Array.from(costsByDay.values()).reduce((sum, cost) => sum + cost, 0);
-            const totalOrders = salesData.length;
+            // Group sales by date
+            const salesByDate: Record<string, { total: number, orders: number }> = {};
 
-            console.log('Calculated metrics:', {
-                totalSales,
-                totalCosts,
-                totalOrders
+            // Initialize each date with zero values
+            allDates.forEach(date => {
+                const dateStr = format(date, "yyyy-MM-dd");
+                salesByDate[dateStr] = { total: 0, orders: 0 };
             });
 
-            const metrics: ReportMetrics = {
-                totalSales,
-                avgDailySales: totalSales / days.length,
-                totalOrders,
-                avgOrderValue: totalOrders > 0 ? totalSales / totalOrders : 0,
-                grossProfit: totalSales - totalCosts,
-                profitMargin: totalSales > 0 ? ((totalSales - totalCosts) / totalSales) * 100 : 0
-            };
+            // Aggregate actual sales data
+            salesData?.forEach(sale => {
+                const dateStr = typeof sale.date === 'string' ? sale.date : format(sale.date, "yyyy-MM-dd");
+                if (!salesByDate[dateStr]) {
+                    salesByDate[dateStr] = { total: 0, orders: 0 };
+                }
+                salesByDate[dateStr].total += sale.total_amount || 0;
+                salesByDate[dateStr].orders += 1;
+            });
 
-            // Create chart data
-            const chartData: ChartData<"bar"> = {
-                labels,
+            // Extract totals for metrics calculation
+            const totalSales = Object.values(salesByDate).reduce((sum, day) => sum + day.total, 0);
+            const totalOrders = Object.values(salesByDate).reduce((sum, day) => sum + day.orders, 0);
+            const avgDailySales = totalSales / allDates.length;
+            const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+
+            // Calculate profit if food cost data is available
+            let grossProfit = 0;
+            let totalCost = 0;
+            salesData?.forEach(sale => {
+                const foodCost = sale.recipes?.food_cost || 0;
+                totalCost += foodCost * (sale.quantity || 1);
+                grossProfit += (sale.total_amount || 0) - (foodCost * (sale.quantity || 1));
+            });
+            const profitMargin = totalSales > 0 ? (grossProfit / totalSales) * 100 : 0;
+
+            // Format the chart data
+            const chartData: ChartData<'bar'> = {
+                labels: allDates.map(date => format(date, "MMM d")),
                 datasets: [
                     {
-                        label: 'Sales (SEK)',
-                        data: Array.from(salesByDay.values()),
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                        borderColor: 'rgb(59, 130, 246)',
-                        borderWidth: 2,
-                    },
-                    {
-                        label: 'Costs (SEK)',
-                        data: Array.from(costsByDay.values()),
-                        backgroundColor: 'rgba(239, 68, 68, 0.5)',
-                        borderColor: 'rgb(239, 68, 68)',
-                        borderWidth: 2,
+                        label: 'Sales',
+                        data: allDates.map(date => salesByDate[format(date, "yyyy-MM-dd")].total),
+                        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+                        borderColor: 'rgba(53, 162, 235, 1)',
+                        borderWidth: 1
                     }
                 ]
             };
 
-            return { chartData, metrics };
+            return {
+                chartData,
+                metrics: {
+                    totalSales,
+                    avgDailySales,
+                    totalOrders,
+                    avgOrderValue,
+                    grossProfit,
+                    profitMargin
+                }
+            };
         } catch (error) {
             console.error('Error fetching sales data:', error);
             throw error;
         }
     },
 
-    async getTopDishes(dateRange: DateRange): Promise<ChartData<"pie">> {
+    /**
+     * Get top selling dishes data for the selected date range
+     */
+    async getTopDishes(dateRange: DateRange): Promise<ChartData<'pie'>> {
+        if (!dateRange.from || !dateRange.to) {
+            throw new Error("Invalid date range");
+        }
+
+        const fromDate = format(dateRange.from, "yyyy-MM-dd");
+        const toDate = format(dateRange.to, "yyyy-MM-dd");
+
         try {
-            const { from, to } = dateRange;
-            if (!from || !to) throw new Error("Invalid date range");
-
-            // Get sales with dish information
-            const { data: salesData, error: salesError } = await supabase
+            // Modified query to work with actual database schema
+            // Fetch sales data from the database grouped by dish
+            const { data: salesData, error } = await supabase
                 .from('sales')
-                .select('quantity, total_amount, dish:dish_id(name)')
-                .gte('date', format(from, 'yyyy-MM-dd'))
-                .lte('date', format(to, 'yyyy-MM-dd'))
-                .returns<Sale[]>();
+                .select('dish_id, quantity, total_amount, recipes:dish_id(name)')
+                .gte('date', fromDate)
+                .lte('date', toDate);
 
-            if (salesError) throw salesError;
+            if (error) throw error;
 
-            // Aggregate sales by dish
-            const dishSales = (salesData || []).reduce((acc: Record<string, { total: number; count: number }>, sale: Sale) => {
-                const dishName = sale.dish?.name || 'Unknown Dish';
-                if (!acc[dishName]) {
-                    acc[dishName] = { total: 0, count: 0 };
+            // Group sales by dish
+            const dishSales: Record<string, { name: string, quantity: number, revenue: number }> = {};
+            salesData?.forEach(sale => {
+                const dishId = sale.dish_id;
+                if (!dishSales[dishId]) {
+                    // Use the recipe name from the joined table instead of dish_name
+                    dishSales[dishId] = {
+                        name: sale.recipes?.name || 'Unknown',
+                        quantity: 0,
+                        revenue: 0
+                    };
                 }
-                acc[dishName].total += sale.total_amount;
-                acc[dishName].count += sale.quantity;
-                return acc;
-            }, {});
+                dishSales[dishId].quantity += sale.quantity || 0;
+                dishSales[dishId].revenue += sale.total_amount || 0;
+            });
 
-            // Sort dishes by total sales and get top 5
-            type DishSaleEntry = [string, { total: number; count: number }];
-            const topDishes = Object.entries(dishSales)
-                .sort(([, a], [, b]: DishSaleEntry) => b.total - a.total)
+            // Rest of the function remains the same
+            // Sort and take top 5 dishes by revenue
+            const topDishes = Object.values(dishSales)
+                .sort((a, b) => b.revenue - a.revenue)
                 .slice(0, 5);
 
-            // Calculate percentages
-            const totalSales = topDishes.reduce((sum, [, data]: DishSaleEntry) => sum + data.total, 0);
-            const labels = topDishes.map(([name]: DishSaleEntry) => name);
-            const data = topDishes.map(([, data]: DishSaleEntry) =>
-                Math.round((data.total / totalSales) * 100)
-            );
+            // If we have fewer than 5 dishes, add an "Other" category
+            const otherDishes = Object.values(dishSales)
+                .sort((a, b) => b.revenue - a.revenue)
+                .slice(5);
 
-            return {
-                labels,
-                datasets: [{
-                    data,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.7)',
-                        'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)',
-                        'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)'
-                    ],
-                    borderWidth: 1
-                }]
+            // Calculate total revenue for percentage
+            const totalRevenue = Object.values(dishSales).reduce((sum, dish) => sum + dish.revenue, 0);
+
+            // Prepare chart data
+            const chartData: ChartData<'pie'> = {
+                labels: [...topDishes.map(dish => dish.name), otherDishes.length > 0 ? 'Other' : null].filter(Boolean) as string[],
+                datasets: [
+                    {
+                        data: [
+                            ...topDishes.map(dish => Math.round((dish.revenue / totalRevenue) * 100)),
+                            otherDishes.length > 0 ? Math.round((otherDishes.reduce((sum, dish) => sum + dish.revenue, 0) / totalRevenue) * 100) : null
+                        ].filter(Boolean) as number[],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',  // Red
+                            'rgba(54, 162, 235, 0.7)',  // Blue
+                            'rgba(255, 206, 86, 0.7)',  // Yellow
+                            'rgba(75, 192, 192, 0.7)',  // Green
+                            'rgba(153, 102, 255, 0.7)', // Purple
+                            'rgba(128, 128, 128, 0.7)', // Gray for "Other"
+                        ],
+                        borderWidth: 1
+                    }
+                ]
             };
+
+            return chartData;
         } catch (error) {
-            console.error('Error fetching top dishes:', error);
+            console.error('Error fetching top dishes data:', error);
             throw error;
         }
     },
 
-    async getInventoryUsage(dateRange: DateRange): Promise<ChartData<"line">> {
+    /**
+     * Get detailed information about a specific dish
+     */
+    async getDishDetails(dishId: string, dateRange: DateRange): Promise<TopDishInfo | null> {
+        if (!dateRange.from || !dateRange.to) {
+            throw new Error("Invalid date range");
+        }
+
+        const fromDate = format(dateRange.from, "yyyy-MM-dd");
+        const toDate = format(dateRange.to, "yyyy-MM-dd");
+
         try {
-            const { from, to } = dateRange;
-            if (!from || !to) throw new Error("Invalid date range");
+            // Fetch the dish details
+            const { data: dishData, error: dishError } = await supabase
+                .from('recipes')
+                .select('id, name, price, food_cost')
+                .eq('id', dishId)
+                .single();
 
-            console.log('Fetching inventory usage for range:', {
-                from: format(from, 'yyyy-MM-dd'),
-                to: format(to, 'yyyy-MM-dd')
-            });
+            if (dishError || !dishData) throw dishError || new Error('Dish not found');
 
-            // Get all days in the range
-            const days = eachDayOfInterval({ start: from, end: to });
-            const labels = days.map((day: Date) => format(day, 'MMM d'));
-
-            // Get inventory usage data with explicit join
-            const { data: usageData, error: usageError } = await supabase
-                .from('recipe_ingredients')
-                .select(`
-                    quantity,
-                    ingredients!inner (
-                        id,
-                        name,
-                        unit,
-                        category,
-                        cost
-                    ),
-                    recipes!inner (
-                        id,
-                        name,
-                        price
-                    )
-                `)
-                .returns<RecipeIngredient[]>();
-
-            if (usageError) {
-                console.error('Supabase error:', usageError);
-                throw new Error(`Failed to fetch inventory data: ${JSON.stringify(usageError)}`);
-            }
-
-            // Get sales data for the date range
+            // Fetch sales for this dish in the date range
             const { data: salesData, error: salesError } = await supabase
                 .from('sales')
-                .select('*')
-                .filter('date', 'gte', format(from, 'yyyy-MM-dd'))
-                .filter('date', 'lte', format(to, 'yyyy-MM-dd'))
-                .order('date', { ascending: true })
-                .returns<SaleRecord[]>();
+                .select('quantity, total_amount, date')
+                .eq('dish_id', dishId)
+                .gte('date', fromDate)
+                .lte('date', toDate);
 
-            if (salesError) {
-                console.error('Supabase error:', salesError);
-                throw new Error(`Failed to fetch sales data: ${JSON.stringify(salesError)}`);
-            }
+            if (salesError) throw salesError;
 
-            if (!usageData || !salesData || usageData.length === 0) {
-                console.log('No data found:', { usageData: !!usageData, salesData: !!salesData });
-                return {
-                    labels: [],
-                    datasets: []
+            // Fetch the ingredients for this dish
+            const { data: ingredientsData, error: ingredientsError } = await supabase
+                .from('dish_ingredients')
+                .select('quantity, ingredients:ingredient_id(id, name, unit)')
+                .eq('dish_id', dishId);
+
+            if (ingredientsError) throw ingredientsError;
+
+            // Calculate total quantity and revenue
+            const totalQuantity = salesData?.reduce((sum, sale) => sum + (sale.quantity || 0), 0) || 0;
+            const totalRevenue = salesData?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
+
+            // Calculate the cost and profit
+            const unitCost = dishData.food_cost || 0;
+            const totalCost = unitCost * totalQuantity;
+            const profit = totalRevenue - totalCost;
+
+            return {
+                dishId: dishData.id,
+                dishName: dishData.name,
+                quantity: totalQuantity,
+                revenue: totalRevenue,
+                cost: totalCost,
+                profit: profit,
+                ingredients: ingredientsData?.map(item => ({
+                    id: item.ingredients?.id || '',
+                    name: item.ingredients?.name || 'Unknown',
+                    quantity: item.quantity || 0,
+                    unit: item.ingredients?.unit || ''
+                })) || []
+            };
+        } catch (error) {
+            console.error(`Error fetching details for dish ${dishId}:`, error);
+            return null;
+        }
+    },
+
+    /**
+     * Get inventory usage data based on sales and recipes
+     */
+    async getInventoryUsageData(dateRange: DateRange) {
+        if (!dateRange.from || !dateRange.to) {
+            throw new Error("Invalid date range");
+        }
+
+        const fromDate = format(dateRange.from, "yyyy-MM-dd");
+        const toDate = format(dateRange.to, "yyyy-MM-dd");
+
+        try {
+            // Fetch current inventory items
+            const inventoryItems = await inventoryService.getItems();
+
+            // Fetch sales in date range
+            const { data: sales, error: salesError } = await supabase
+                .from('sales')
+                .select('id, dish_id, quantity, date')
+                .gte('date', fromDate)
+                .lte('date', toDate);
+
+            if (salesError) throw salesError;
+
+            // Get recipe ingredients
+            const { data: dishIngredients, error: ingredientsError } = await supabase
+                .from('dish_ingredients')
+                .select('dish_id, ingredient_id, quantity');
+
+            if (ingredientsError) throw ingredientsError;
+
+            // Generate all dates in the range
+            const allDates = eachDayOfInterval({
+                start: dateRange.from,
+                end: dateRange.to
+            });
+            const dateLabels = allDates.map(date => format(date, "MMM d"));
+
+            // Create a mapping of ingredients to track usage
+            const ingredientUsage: Record<string, {
+                name: string,
+                usage: number[],
+                totalUsage: number,
+                currentStock: number,
+                unit: string,
+                minimumLevel?: number
+            }> = {};
+
+            // Initialize ingredient usage tracking
+            inventoryItems.forEach(item => {
+                ingredientUsage[item.id] = {
+                    name: item.name,
+                    usage: Array(allDates.length).fill(0),
+                    totalUsage: 0,
+                    currentStock: item.quantity,
+                    unit: item.unit,
+                    minimumLevel: item.minimum_stock_level
                 };
-            }
+            });
 
-            // Create a map of all ingredients used in dishes
-            const ingredientUsageMap = new Map<string, IngredientUsage>();
-            usageData.forEach(record => {
-                const { ingredients, recipes, quantity: recipeQuantity } = record;
+            // Calculate ingredient usage from sales
+            sales?.forEach(sale => {
+                const dateIndex = allDates.findIndex(date =>
+                    format(date, "yyyy-MM-dd") === (typeof sale.date === 'string' ? sale.date : format(sale.date, "yyyy-MM-dd"))
+                );
 
-                // Initialize ingredient in the map if not exists
-                if (!ingredientUsageMap.has(ingredients.id)) {
-                    ingredientUsageMap.set(ingredients.id, {
-                        name: ingredients.name,
-                        unit: ingredients.unit,
-                        category: ingredients.category,
-                        dishes: new Map(),
-                        dailyUsage: new Map()
-                    });
-                }
+                if (dateIndex === -1) return;
 
-                // Add dish relationship
-                ingredientUsageMap.get(ingredients.id)!.dishes.set(recipes.id, {
-                    name: recipes.name,
-                    quantityPerDish: recipeQuantity
+                const relevantIngredients = dishIngredients?.filter(di => di.dish_id === sale.dish_id) || [];
+
+                relevantIngredients.forEach(ingredient => {
+                    if (!ingredient.ingredient_id) return;
+
+                    const ingredientData = ingredientUsage[ingredient.ingredient_id];
+                    if (!ingredientData) return;
+
+                    const usageAmount = (ingredient.quantity || 0) * (sale.quantity || 0);
+                    ingredientData.usage[dateIndex] += usageAmount;
+                    ingredientData.totalUsage += usageAmount;
                 });
             });
 
-            // Process sales to calculate ingredient usage
-            salesData.forEach(sale => {
-                const date = format(new Date(sale.date), 'yyyy-MM-dd');
+            // Filter to top 5 ingredients by usage
+            const topIngredients = Object.entries(ingredientUsage)
+                .filter(([_, data]) => data.totalUsage > 0)
+                .sort((a, b) => b[1].totalUsage - a[1].totalUsage)
+                .slice(0, 5);
 
-                // For each ingredient that's used in this dish
-                ingredientUsageMap.forEach((ingredientData) => {
-                    const dishInfo = ingredientData.dishes.get(sale.dish_id);
-                    if (dishInfo) {
-                        const quantityUsed = dishInfo.quantityPerDish * sale.quantity;
-
-                        // Initialize or update daily usage
-                        const currentUsage = ingredientData.dailyUsage.get(date) || 0;
-                        ingredientData.dailyUsage.set(date, currentUsage + quantityUsed);
-                    }
-                });
-            });
-
-            // Calculate total usage for each ingredient
-            const ingredientTotals = Array.from(ingredientUsageMap.values())
-                .map(ingredient => ({
-                    name: ingredient.name,
-                    unit: ingredient.unit,
-                    category: ingredient.category,
-                    total: Array.from(ingredient.dailyUsage.values())
-                        .reduce((sum, qty) => sum + qty, 0)
-                }))
-                .sort((a, b) => b.total - a.total);
-
-            // Get top 3 most used ingredients
-            const topIngredients = ingredientTotals.slice(0, 3);
-
-            // Create datasets for the chart
-            const datasets = topIngredients.map((ingredient, index) => {
-                const ingredientData = Array.from(ingredientUsageMap.values())
-                    .find(data => data.name === ingredient.name);
-
-                const data = days.map(day => {
-                    const dateStr = format(day, 'yyyy-MM-dd');
-                    return ingredientData?.dailyUsage.get(dateStr) || 0;
-                });
-
+            // Prepare datasets for chart
+            const datasets = topIngredients.map(([id, data], index) => {
                 const colors = [
-                    ['rgb(255, 99, 132)', 'rgba(255, 99, 132, 0.5)'],
-                    ['rgb(54, 162, 235)', 'rgba(54, 162, 235, 0.5)'],
-                    ['rgb(255, 206, 86)', 'rgba(255, 206, 86, 0.5)']
+                    { bg: 'rgba(255, 99, 132, 0.2)', border: 'rgba(255, 99, 132, 1)' },
+                    { bg: 'rgba(54, 162, 235, 0.2)', border: 'rgba(54, 162, 235, 1)' },
+                    { bg: 'rgba(255, 206, 86, 0.2)', border: 'rgba(255, 206, 86, 1)' },
+                    { bg: 'rgba(75, 192, 192, 0.2)', border: 'rgba(75, 192, 192, 1)' },
+                    { bg: 'rgba(153, 102, 255, 0.2)', border: 'rgba(153, 102, 255, 1)' },
                 ];
 
                 return {
-                    label: `${ingredient.name} (${ingredient.unit})`,
-                    data,
-                    borderColor: colors[index][0],
-                    backgroundColor: colors[index][1],
-                    tension: 0.3
+                    label: data.name,
+                    data: data.usage,
+                    borderColor: colors[index % colors.length].border,
+                    backgroundColor: colors[index % colors.length].bg,
+                    tension: 0.1
                 };
             });
 
+            // Calculate depletion rates and prepare inventory summary
+            const inventory = Object.values(ingredientUsage)
+                .filter(data => data.totalUsage > 0)
+                .sort((a, b) => b.totalUsage - a.totalUsage)
+                .map(data => {
+                    // Calculate average daily usage
+                    const avgDailyUsage = data.totalUsage / allDates.length;
+
+                    // Calculate days until depletion
+                    const daysUntilDepletion = avgDailyUsage > 0
+                        ? Math.round(data.currentStock / avgDailyUsage)
+                        : Infinity;
+
+                    // Determine status
+                    const depleted = daysUntilDepletion <= 2;
+                    const warning = daysUntilDepletion <= 7 && daysUntilDepletion > 2;
+                    const belowMinimum = data.minimumLevel !== undefined && data.currentStock < data.minimumLevel;
+
+                    return {
+                        name: data.name,
+                        stock: `${data.currentStock} ${data.unit}`,
+                        usage: `${data.totalUsage.toFixed(1)} ${data.unit}`,
+                        depletion: daysUntilDepletion === Infinity ? 'N/A' : `${daysUntilDepletion} days`,
+                        depleted: depleted || belowMinimum,
+                        warning: warning
+                    };
+                });
+
             return {
-                labels,
-                datasets
+                labels: dateLabels,
+                datasets,
+                inventory
             };
         } catch (error) {
-            console.error('Error fetching inventory usage:', error);
+            console.error('Error generating inventory usage data:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get executive dashboard summary data
+     */
+    async getDashboardSummary() {
+        try {
+            // Get today's date and previous periods
+            const today = new Date();
+            const lastWeek = {
+                from: subDays(today, 7),
+                to: today
+            };
+            const previousWeek = {
+                from: subDays(today, 14),
+                to: subDays(today, 8)
+            };
+
+            // Get sales data for current and previous periods
+            const currentSales = await this.getSalesData(lastWeek);
+            const previousSales = await this.getSalesData(previousWeek);
+
+            // Get inventory status
+            const inventoryItems = await inventoryService.getItems();
+            const lowStockItems = inventoryItems.filter(item => {
+                const minimumLevel = item.minimum_stock_level || item.reorder_level || 5;
+                return item.quantity <= minimumLevel && item.quantity > 0;
+            });
+            const outOfStockItems = inventoryItems.filter(item => item.quantity === 0);
+
+            // Provide fallback data if inventory usage fails
+            let inventoryUsage;
+            let criticalItems = [];
+
+            try {
+                // Get inventory usage data for forecasting
+                inventoryUsage = await this.getInventoryUsageData(lastWeek);
+
+                // Identify critical items (projected to deplete within 3 days)
+                if (inventoryUsage && inventoryUsage.inventory) {
+                    criticalItems = inventoryUsage.inventory
+                        .filter(item => {
+                            const daysUntilDepletion = item.depletion === 'N/A'
+                                ? Infinity
+                                : parseInt(item.depletion.split(' ')[0]);
+                            return daysUntilDepletion <= 3 && daysUntilDepletion !== Infinity;
+                        })
+                        .slice(0, 5); // Top 5 most critical
+                }
+            } catch (error) {
+                console.warn('Error fetching inventory usage data, using fallback:', error);
+                criticalItems = lowStockItems.slice(0, 5).map(item => ({
+                    name: item.name,
+                    depletion: "Soon",
+                    depleted: true,
+                    warning: true
+                }));
+            }
+
+            // Get top selling dishes with error handling
+            let topDishes = { labels: [] };
+            try {
+                topDishes = await this.getTopDishes(lastWeek);
+            } catch (error) {
+                console.warn('Error fetching top dishes data, using fallback:', error);
+                topDishes = { labels: [] };
+            }
+
+            // Calculate key metrics
+            const salesGrowth = previousSales.metrics.totalSales > 0
+                ? ((currentSales.metrics.totalSales - previousSales.metrics.totalSales) / previousSales.metrics.totalSales) * 100
+                : 0;
+
+            return {
+                currentSales: currentSales.metrics.totalSales,
+                previousSales: previousSales.metrics.totalSales,
+                salesGrowth,
+                profitMargin: currentSales.metrics.profitMargin,
+                lowStockCount: lowStockItems.length,
+                outOfStockCount: outOfStockItems.length,
+                criticalItems,
+                topDishes: topDishes.labels.slice(0, 3),
+                recentActivity: [], // To be implemented with actual activity logs
+            };
+        } catch (error) {
+            console.error('Error generating dashboard summary:', error);
             throw error;
         }
     }
-}; 
+};

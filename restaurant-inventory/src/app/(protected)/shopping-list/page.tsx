@@ -59,7 +59,7 @@ function ShoppingListContent() {
 
   // Calculate total estimated cost
   const totalEstimatedCost = filteredList.reduce(
-    (total, item) => total + item.estimated_cost,
+    (total, item) => total + (item.estimatedCost || 0),
     0
   );
 

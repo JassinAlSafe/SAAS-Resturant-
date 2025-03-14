@@ -6,13 +6,17 @@ import { InventoryServiceError } from '../errors';
 type DbIngredient = {
     id: string;
     name: string;
+    description: string | null;
     category: string;
     quantity: number;
     unit: string;
     cost: number;
 
+    minimum_stock_level: number | null;
     reorder_level: number | null;
+    reorder_point: number | null;
     supplier_id: string | null;
+    location: string | null;
     expiry_date: string | null;
     image_url: string | null;
     created_at: string;
@@ -24,17 +28,17 @@ const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
     return {
         id: data.id,
         name: data.name,
-        description: undefined,
+        description: data.description || undefined,
         category: data.category,
         quantity: data.quantity,
         unit: data.unit,
         cost: data.cost,
         cost_per_unit: data.cost,
-        minimum_stock_level: undefined,
+        minimum_stock_level: data.minimum_stock_level || undefined,
         reorder_level: data.reorder_level || undefined,
-        reorder_point: undefined,
+        reorder_point: data.reorder_point || undefined,
         supplier_id: data.supplier_id || undefined,
-        location: undefined,
+        location: data.location || undefined,
         expiry_date: data.expiry_date || undefined,
         image_url: data.image_url || undefined,
         created_at: data.created_at,
@@ -150,12 +154,16 @@ export const inventoryService = {
 
             const dbData = {
                 name: item.name,
+                description: item.description || null,
                 category: item.category,
                 quantity: item.quantity,
                 unit: item.unit,
                 cost: item.cost_per_unit,
-                reorder_level: item.reorderLevel ?? 0,
+                minimum_stock_level: item.minimum_stock_level || null,
+                reorder_level: item.reorderLevel || null,
+                reorder_point: item.reorder_point || null,
                 supplier_id: item.supplierId || item.supplier_id || null,
+                location: item.location || null,
                 expiry_date: item.expiryDate || item.expiry_date || null,
                 image_url: item.image_url || null
             };
@@ -202,13 +210,17 @@ export const inventoryService = {
             const dbUpdates: Record<string, unknown> = {};
 
             if (updates.name !== undefined) dbUpdates.name = updates.name;
+            if (updates.description !== undefined) dbUpdates.description = updates.description;
             if (updates.category !== undefined) dbUpdates.category = updates.category;
             if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
             if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
             if (updates.cost_per_unit !== undefined) dbUpdates.cost = updates.cost_per_unit;
-            if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel ?? 0;
+            if (updates.minimum_stock_level !== undefined) dbUpdates.minimum_stock_level = updates.minimum_stock_level;
+            if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
+            if (updates.reorder_point !== undefined) dbUpdates.reorder_point = updates.reorder_point;
             if (updates.supplierId !== undefined) dbUpdates.supplier_id = updates.supplierId;
             if (updates.supplier_id !== undefined) dbUpdates.supplier_id = updates.supplier_id;
+            if (updates.location !== undefined) dbUpdates.location = updates.location;
             if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
             if (updates.expiry_date !== undefined) dbUpdates.expiry_date = updates.expiry_date;
             if (updates.image_url !== undefined) dbUpdates.image_url = updates.image_url;

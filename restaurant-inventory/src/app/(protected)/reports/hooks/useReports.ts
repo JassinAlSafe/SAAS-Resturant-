@@ -9,15 +9,41 @@ import { reportsService, ReportMetrics } from '@/lib/services/reports-service';
 import { ChartData } from 'chart.js';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/lib/supabase/client';
-import { useCurrency } from '@/lib/currency';
+import { useCurrency } from '@/lib/currency-provider';
+
+// Define more specific types to replace 'any'
+type ActivityLogItem = {
+    id: string;
+    timestamp: Date | string;
+    action: string;
+    description: string;
+    userId?: string;
+};
+
+interface ExecutiveSummary {
+    currentSales: number;
+    previousSales: number;
+    salesGrowth: number;
+    profitMargin: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+    criticalItems: Array<{
+        name: string;
+        depletion: string;
+        depleted: boolean;
+        warning: boolean;
+    }>;
+    topDishes: string[];
+    recentActivity: ActivityLogItem[];
+}
 
 export const useReports = () => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
 
     // Tab state with useEffect to handle hydration
-    const [activeTab, setActiveTab] = useState<TabType>('sales');
-    const [storedTab, setStoredTab] = useLocalStorage<TabType>('reports-active-tab', 'sales');
+    const [activeTab, setActiveTab] = useState<TabType>('executive');
+    const [storedTab, setStoredTab] = useLocalStorage<TabType>('reports-active-tab', 'executive');
 
     // Sync state with localStorage after hydration
     useEffect(() => {
@@ -26,6 +52,7 @@ export const useReports = () => {
 
     // Update both states when tab changes
     const handleTabChange = useCallback((tab: TabType) => {
+        console.log('Tab changed to:', tab);
         setActiveTab(tab);
         setStoredTab(tab);
     }, [setStoredTab]);
@@ -63,6 +90,8 @@ export const useReports = () => {
         inventory: [],
     });
 
+    const [executiveSummary, setExecutiveSummary] = useState<ExecutiveSummary | null>(null);
+
     // Calculate percentage change
     const getPercentageChange = useCallback((current: number, previous: number) => {
         if (previous === 0) return 0;
@@ -92,16 +121,24 @@ export const useReports = () => {
             const fromDate = format(dateRange.from, "yyyy-MM-dd");
             const toDate = format(dateRange.to, "yyyy-MM-dd");
 
+            console.log('Fetching inventory data for range:', { fromDate, toDate });
+
             // Fetch ingredients data
             const { data: ingredients, error: ingredientsError } = await supabase
                 .from("ingredients")
                 .select("id, name, quantity, unit");
+
+            console.log('Ingredients fetch result:', {
+                count: ingredients?.length || 0,
+                error: ingredientsError?.message
+            });
 
             if (ingredientsError) {
                 throw new Error(ingredientsError.message);
             }
 
             if (!ingredients || ingredients.length === 0) {
+                console.log('No ingredients found');
                 setInventoryData({
                     labels: [],
                     datasets: [],
@@ -123,6 +160,11 @@ export const useReports = () => {
                 .lte("date", toDate)
                 .order("date", { ascending: true });
 
+            console.log('Sales fetch result:', {
+                count: sales?.length || 0,
+                error: salesError?.message
+            });
+
             if (salesError) {
                 throw new Error(salesError.message);
             }
@@ -135,6 +177,11 @@ export const useReports = () => {
                     ingredient_id,
                     quantity
                 `);
+
+            console.log('Dish ingredients fetch result:', {
+                count: dishIngredients?.length || 0,
+                error: dishIngredientsError?.message
+            });
 
             if (dishIngredientsError) {
                 throw new Error(dishIngredientsError.message);
@@ -149,6 +196,8 @@ export const useReports = () => {
                 acc[dateStr].push(sale);
                 return acc;
             }, {} as Record<string, { dish_id: string; quantity: number }[]>) || {};
+
+            console.log('Sales grouped by date:', Object.keys(salesByDate).length, 'days');
 
             // Calculate ingredient usage by date
             const ingredientUsageByDate: Record<string, Record<string, number>> = {};
@@ -175,6 +224,11 @@ export const useReports = () => {
             Object.entries(salesByDate).forEach(([dateStr, dateSales]) => {
                 dateSales.forEach(sale => {
                     const relevantIngredients = dishIngredients?.filter(di => di.dish_id === sale.dish_id) || [];
+                    console.log(`Processing sale on ${dateStr}:`, {
+                        dishId: sale.dish_id,
+                        quantity: sale.quantity,
+                        ingredientsUsed: relevantIngredients.length
+                    });
 
                     relevantIngredients.forEach(ingredient => {
                         const usageAmount = (ingredient.quantity || 0) * (sale.quantity || 0);
@@ -224,6 +278,12 @@ export const useReports = () => {
                 };
             });
 
+            console.log('Setting inventory data:', {
+                labels: chartLabels.length,
+                datasets: datasets.length,
+                inventory: inventory.length
+            });
+
             setInventoryData({
                 labels: chartLabels,
                 datasets,
@@ -232,6 +292,7 @@ export const useReports = () => {
         } catch (err) {
             const message =
                 err instanceof Error ? err.message : "Failed to fetch inventory data";
+            console.error('Error in fetchInventoryData:', message);
             setError(message);
             toast({
                 variant: "destructive",
@@ -243,6 +304,38 @@ export const useReports = () => {
         }
     }, [dateRange, toast, generateRandomColor]);
 
+    // Fetch executive summary data with better error handling
+    const fetchExecutiveSummary = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const summary = await reportsService.getDashboardSummary();
+            setExecutiveSummary(summary);
+        } catch (error) {
+            console.error('Error fetching executive summary:', error);
+            // Instead of setting error state, just provide fallback data
+            // This prevents the entire UI from showing an error state
+            setExecutiveSummary({
+                currentSales: 0,
+                previousSales: 0,
+                salesGrowth: 0,
+                profitMargin: 0,
+                lowStockCount: 0,
+                outOfStockCount: 0,
+                criticalItems: [],
+                topDishes: [],
+                recentActivity: []
+            });
+            // Show toast notification instead of error state
+            toast({
+                variant: "destructive",
+                title: "Executive summary could not be loaded",
+                description: "Some data may be unavailable. You can still view individual reports."
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+
     // Fetch data based on active tab and date range
     const fetchData = useCallback(async () => {
         if (!dateRange?.from || !dateRange?.to) return;
@@ -250,40 +343,78 @@ export const useReports = () => {
         setIsLoading(true);
         setError(null);
 
+        console.log('Fetching data for tab:', activeTab);
+
         try {
+            // Always attempt to fetch executive summary data
+            await fetchExecutiveSummary().catch(err => {
+                console.warn("Failed to fetch executive summary:", err);
+                // Don't set error state here, just log the issue
+            });
+
             if (activeTab === 'sales') {
-                // Fetch current period data
-                const { chartData, metrics: currentMetrics } = await reportsService.getSalesData(dateRange);
-                setSalesData(chartData);
-                setMetrics(currentMetrics);
+                try {
+                    // Fetch current period data
+                    const { chartData, metrics: currentMetrics } = await reportsService.getSalesData(dateRange);
+                    setSalesData(chartData);
+                    setMetrics(currentMetrics);
+                } catch (err) {
+                    console.error('Error fetching sales data:', err);
+                    setSalesData(null);
+                    // Show fallback metrics
+                    setMetrics({
+                        totalSales: 0,
+                        avgDailySales: 0,
+                        totalOrders: 0,
+                        avgOrderValue: 0,
+                        grossProfit: 0,
+                        profitMargin: 0
+                    });
+                }
 
-                // Fetch top dishes data
-                const topDishes = await reportsService.getTopDishes(dateRange);
-                setTopDishesData(topDishes);
+                try {
+                    // Fetch top dishes data
+                    const topDishes = await reportsService.getTopDishes(dateRange);
+                    setTopDishesData(topDishes);
+                } catch (err) {
+                    console.error('Error fetching top dishes data:', err);
+                    setTopDishesData(null);
+                }
 
-                // Calculate previous period for comparison
-                const daysDifference = Math.floor((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-                const previousRange = {
-                    from: subDays(dateRange.from, daysDifference),
-                    to: subDays(dateRange.from, 1)
-                };
-                const { metrics: previousMetrics } = await reportsService.getSalesData(previousRange);
-                setPreviousPeriodData(previousMetrics);
-            } else {
-                // Fetch inventory usage data
-                await fetchInventoryData();
+                try {
+                    // Calculate previous period for comparison
+                    const daysDifference = Math.floor((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+                    const previousRange = {
+                        from: subDays(dateRange.from, daysDifference),
+                        to: subDays(dateRange.from, 1)
+                    };
+                    const { metrics: previousMetrics } = await reportsService.getSalesData(previousRange);
+                    setPreviousPeriodData(previousMetrics);
+                } catch (err) {
+                    console.error('Error fetching previous period data:', err);
+                    setPreviousPeriodData(null);
+                }
+            } else if (activeTab === 'inventory') {
+                console.log('Fetching inventory data...');
+                try {
+                    // Fetch inventory usage data
+                    await fetchInventoryData();
+                } catch (err) {
+                    console.error('Error fetching inventory data:', err);
+                    // Don't set error state for this
+                }
             }
-
-            setIsLoading(false);
         } catch (err) {
             console.error('Error fetching report data:', err);
             setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        } finally {
             setIsLoading(false);
         }
-    }, [activeTab, dateRange, fetchInventoryData]);
+    }, [activeTab, dateRange, fetchInventoryData, fetchExecutiveSummary]);
 
     const handleDateChange = useCallback(
         (newDate: DateRange | undefined) => {
+            console.log('Date range changed:', newDate);
             setDateRange(newDate);
             // Only fetch if we have a complete date range
             if (newDate?.from && newDate?.to) {
@@ -295,13 +426,17 @@ export const useReports = () => {
 
     // Function to manually refresh data
     const refreshData = useCallback(() => {
+        console.log('Manual refresh triggered');
         fetchData();
     }, [fetchData]);
 
     // Fetch data when tab or date range changes
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (dateRange?.from && dateRange?.to) {
+            console.log('Effect triggered - fetching data for tab:', activeTab);
+            fetchData();
+        }
+    }, [activeTab, dateRange, fetchData]);
 
     return {
         activeTab,
@@ -314,14 +449,14 @@ export const useReports = () => {
         error,
         salesData,
         topDishesData,
-        inventoryUsageData: null, // We're not using this anymore
+        inventoryUsageData: inventoryData,
+        executiveSummary,
         formatCurrency,
         handleExportReport: () => { }, // Placeholder for export functionality
         metrics,
         previousPeriodData,
         getPercentageChange,
         refetchData: fetchData,
-        inventoryData,
         refreshData,
     };
 };

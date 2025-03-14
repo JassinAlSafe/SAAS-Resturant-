@@ -1,12 +1,10 @@
 // Report Types
 export type DateRangeType = "week" | "month" | "quarter" | "custom";
-export type TabType = "sales" | "inventory";
+export type TabType = "sales" | "inventory" | "executive"; // Make sure all values match what's used in Tabs
 
-// Date Range Type
-export interface DateRange {
-    from: Date | undefined;
-    to: Date | undefined;
-}
+// Date Range Type - Use react-day-picker's DateRange instead of defining our own
+import { DateRange } from 'react-day-picker';
+export type { DateRange };
 
 // Chart Data Types
 export interface ChartDataset {
@@ -50,6 +48,7 @@ export interface InventoryUsageData extends ChartData {
         backgroundColor: string;
         tension: number;
     }>;
+    inventory?: InventoryItem[];
 }
 
 // Components Props Types
@@ -75,13 +74,17 @@ export interface PageHeaderProps {
     activeTab: TabType;
     setActiveTab: (tab: TabType) => void;
     handleExportReport: () => void;
+    dateRange: DateRange | undefined;
+    setDateRange: (range: DateRange | undefined) => void;
+    customDateRange: DateRange | undefined;
+    setCustomDateRange: (range: DateRange | undefined) => void;
 }
 
 export interface DateRangeSelectorProps {
-    dateRange: DateRangeType;
-    setDateRange: (range: DateRangeType) => void;
-    customDateRange: DateRange;
-    setCustomDateRange: (range: DateRange) => void;
+    dateRange: DateRange | undefined;
+    setDateRange: (range: DateRange | undefined) => void;
+    customDateRange: DateRange | undefined;
+    setCustomDateRange: (range: DateRange | undefined) => void;
 }
 
 export interface SalesAnalyticsViewProps {
@@ -94,8 +97,50 @@ export interface SalesAnalyticsViewProps {
         totalOrders: number;
         avgOrderValue: number;
     };
+    getPercentageChange: (current: number, previous: number) => number;
+    dateRange: DateRange | undefined; // Make it required, not optional
 }
 
 export interface InventoryUsageViewProps {
     inventoryUsageData: InventoryUsageData;
-} 
+    onRefresh?: () => void;
+}
+
+export interface ExecutiveDashboardProps {
+    salesData: {
+        currentSales: number;
+        previousSales: number;
+        salesGrowth: number;
+        profitMargin: number;
+    };
+    inventoryData: {
+        lowStockCount: number;
+        outOfStockCount: number;
+        criticalItems: Array<{
+            name: string;
+            depletion: string;
+            depleted: boolean;
+            warning: boolean;
+        }>;
+    };
+    topDishes: string[];
+    formatCurrency: (value: number) => string;
+}
+
+export interface InventoryItem {
+    name: string;
+    stock: string;
+    usage: string;
+    depletion: string;
+    depleted: boolean;
+    warning?: boolean;
+}
+
+export interface MetricsData {
+    totalSales: number;
+    avgDailySales: number;
+    totalOrders: number;
+    avgOrderValue: number;
+    grossProfit: number;
+    profitMargin: number;
+}

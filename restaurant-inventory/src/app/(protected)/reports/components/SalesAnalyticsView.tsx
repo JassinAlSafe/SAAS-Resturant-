@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import Card from "@/components/Card";
 import { Bar, Pie } from "react-chartjs-2";
-import { SalesAnalyticsViewProps } from "../types";
-import { useState } from "react";
+import { SalesAnalyticsViewProps } from "../types"; // Remove DateRange import from here
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -21,23 +22,91 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "./EmptyState";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoIcon, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DishDetailsModal } from "./DishDetailsModal";
 
 export const SalesAnalyticsView = ({
   salesData,
   topDishesData,
   formatCurrency,
   previousPeriodData,
+  getPercentageChange,
+  dateRange,
 }: SalesAnalyticsViewProps) => {
-  const [selectedDishIndex, setSelectedDishIndex] = useState<number | null>(
-    null
-  );
   const [selectedDateIndex, setSelectedDateIndex] = useState<number | null>(
     null
   );
   const [showDishDetails, setShowDishDetails] = useState(false);
   const [showDayDetails, setShowDayDetails] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dishDetails, setDishDetails] = useState({
+    dishId: "",
+    dishName: "",
+    quantity: 0,
+    revenue: 0,
+    cost: 0,
+    profit: 0,
+    ingredients: [] as Array<{
+      id: string;
+      name: string;
+      quantity: number;
+      unit: string;
+    }>,
+  });
 
-  // Check if we have data to display
+  const handleDishClick = useCallback(
+    async (_event: unknown, elements: { index: number }[]) => {
+      if (elements.length === 0 || !topDishesData.labels) return;
+
+      const index = elements[0].index;
+      const dishName = topDishesData.labels[index] as string;
+      if (!dishName || dishName === "Other") return;
+
+      setIsLoading(true);
+
+      try {
+        const mockDishDetails = {
+          dishId: `dish-${index}`,
+          dishName,
+          quantity: Math.floor(Math.random() * 100) + 20,
+          revenue: Math.random() * 2000 + 500,
+          cost: Math.random() * 800 + 200,
+          profit: Math.random() * 1200 + 300,
+          ingredients: [
+            { id: "ing-1", name: "Tomatoes", quantity: 0.2, unit: "kg" },
+            { id: "ing-2", name: "Onions", quantity: 0.1, unit: "kg" },
+            { id: "ing-3", name: "Chicken", quantity: 0.3, unit: "kg" },
+          ],
+        };
+
+        setDishDetails(mockDishDetails);
+        setShowDishDetails(true);
+      } catch (error) {
+        console.error("Error fetching dish details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [topDishesData.labels]
+  );
+
+  const handleDayClick = useCallback(
+    (_event: unknown, elements: { index: number }[]) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        setSelectedDateIndex(index);
+        setShowDayDetails(true);
+      }
+    },
+    []
+  );
+
   const hasData = salesData?.datasets?.[0]?.data?.length > 0;
   const hasDishData = (topDishesData?.labels?.length ?? 0) > 0;
 
@@ -50,7 +119,6 @@ export const SalesAnalyticsView = ({
     );
   }
 
-  // Calculate metrics with proper type safety
   const totalSales = salesData.datasets[0].data.reduce(
     (a, b) => (typeof a === "number" && typeof b === "number" ? a + b : 0),
     0
@@ -67,78 +135,229 @@ export const SalesAnalyticsView = ({
   const avgDailySales = totalSales / (salesData.labels?.length ?? 1);
   const avgOrderValue = totalSales / (totalOrders || 1);
 
-  // Type-safe event handlers
-  const handleDishClick = (_event: unknown, elements: { index: number }[]) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      setSelectedDishIndex(index);
-      setShowDishDetails(true);
-    }
-  };
-
-  const handleDayClick = (_event: unknown, elements: { index: number }[]) => {
-    if (elements.length > 0) {
-      const index = elements[0].index;
-      setSelectedDateIndex(index);
-      setShowDayDetails(true);
-    }
-  };
+  const periodLabel =
+    dateRange && dateRange.from && dateRange.to
+      ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(
+          dateRange.to,
+          "MMM d, yyyy"
+        )}`
+      : "selected period";
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               Total Sales
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="h-3 w-3" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Sum of all sales in the selected period</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <div className="text-2xl font-bold">
               {formatCurrency(totalSales)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              vs. {formatCurrency(previousPeriodData?.totalSales || 0)} last
-              period
-            </p>
+            <div className="flex items-center mt-1 text-xs">
+              {previousPeriodData?.totalSales !== undefined && (
+                <>
+                  vs. {formatCurrency(previousPeriodData.totalSales)} last
+                  period
+                  <span
+                    className={`ml-2 flex items-center ${
+                      getPercentageChange(
+                        totalSales,
+                        previousPeriodData.totalSales
+                      ) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {getPercentageChange(
+                      totalSales,
+                      previousPeriodData.totalSales
+                    ) >= 0 ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(
+                      getPercentageChange(
+                        totalSales,
+                        previousPeriodData.totalSales
+                      )
+                    )}
+                    %
+                  </span>
+                </>
+              )}
+            </div>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               Average Daily Sales
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="h-3 w-3" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Average sales per day in the selected period</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <div className="text-2xl font-bold">
               {formatCurrency(avgDailySales)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              vs. {formatCurrency(previousPeriodData?.avgDailySales || 0)} last
-              period
-            </p>
+            <div className="flex items-center mt-1 text-xs">
+              {previousPeriodData?.avgDailySales !== undefined && (
+                <>
+                  vs. {formatCurrency(previousPeriodData.avgDailySales)} last
+                  period
+                  <span
+                    className={`ml-2 flex items-center ${
+                      getPercentageChange(
+                        avgDailySales,
+                        previousPeriodData.avgDailySales
+                      ) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {getPercentageChange(
+                      avgDailySales,
+                      previousPeriodData.avgDailySales
+                    ) >= 0 ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(
+                      getPercentageChange(
+                        avgDailySales,
+                        previousPeriodData.avgDailySales
+                      )
+                    )}
+                    %
+                  </span>
+                </>
+              )}
+            </div>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               Total Orders
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="h-3 w-3" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total number of orders in the selected period</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <div className="text-2xl font-bold">{totalOrders}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              vs. {previousPeriodData?.totalOrders.toString() || "0"} last
-              period
-            </p>
+            <div className="flex items-center mt-1 text-xs">
+              {previousPeriodData?.totalOrders !== undefined && (
+                <>
+                  vs. {previousPeriodData.totalOrders.toString() || "0"} last
+                  period
+                  <span
+                    className={`ml-2 flex items-center ${
+                      getPercentageChange(
+                        totalOrders,
+                        previousPeriodData.totalOrders
+                      ) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {getPercentageChange(
+                      totalOrders,
+                      previousPeriodData.totalOrders
+                    ) >= 0 ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(
+                      getPercentageChange(
+                        totalOrders,
+                        previousPeriodData.totalOrders
+                      )
+                    )}
+                    %
+                  </span>
+                </>
+              )}
+            </div>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               Average Order Value
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <InfoIcon className="h-3 w-3" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Average revenue per order</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <div className="text-2xl font-bold">
               {formatCurrency(avgOrderValue)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              vs. {formatCurrency(previousPeriodData?.avgOrderValue || 0)} last
-              period
-            </p>
+            <div className="flex items-center mt-1 text-xs">
+              {previousPeriodData?.avgOrderValue !== undefined && (
+                <>
+                  vs. {formatCurrency(previousPeriodData.avgOrderValue)} last
+                  period
+                  <span
+                    className={`ml-2 flex items-center ${
+                      getPercentageChange(
+                        avgOrderValue,
+                        previousPeriodData.avgOrderValue
+                      ) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {getPercentageChange(
+                      avgOrderValue,
+                      previousPeriodData.avgOrderValue
+                    ) >= 0 ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(
+                      getPercentageChange(
+                        avgOrderValue,
+                        previousPeriodData.avgOrderValue
+                      )
+                    )}
+                    %
+                  </span>
+                </>
+              )}
+            </div>
           </CardHeader>
         </Card>
       </div>
@@ -230,6 +449,12 @@ export const SalesAnalyticsView = ({
                             pointStyle: "circle",
                           },
                         },
+                        tooltip: {
+                          callbacks: {
+                            label: (context) =>
+                              `${context.label}: ${context.raw}% of sales`,
+                          },
+                        },
                       },
                     }}
                   />
@@ -245,77 +470,6 @@ export const SalesAnalyticsView = ({
         </Card>
       </div>
 
-      {/* Dish Details Dialog */}
-      <Dialog open={showDishDetails} onOpenChange={setShowDishDetails}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDishIndex !== null &&
-                (topDishesData.labels?.[selectedDishIndex] as string)}{" "}
-              Details
-            </DialogTitle>
-          </DialogHeader>
-          {selectedDishIndex !== null && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-xs text-muted-foreground">Total Orders</p>
-                  <p className="text-lg font-medium">
-                    {topDishesData.datasets[0].data[selectedDishIndex]}
-                  </p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-xs text-muted-foreground">% of Sales</p>
-                  <p className="text-lg font-medium">
-                    {Math.round(
-                      (topDishesData.datasets[0].data[selectedDishIndex] *
-                        100) /
-                        topDishesData.datasets[0].data.reduce(
-                          (a, b) => a + b,
-                          0
-                        )
-                    )}
-                    %
-                  </p>
-                </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Orders</TableHead>
-                    <TableHead>Revenue</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* Sample data - would be real data in production */}
-                  {(salesData.labels ?? []).slice(0, 5).map((date, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{date as string}</TableCell>
-                      <TableCell>
-                        {Math.round(Math.random() * 10) + 1}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(Math.random() * 200 + 50)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDishDetails(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Day Details Dialog */}
       <Dialog open={showDayDetails} onOpenChange={setShowDayDetails}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -356,7 +510,6 @@ export const SalesAnalyticsView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Sample data - would be real data in production */}
                   {(topDishesData.labels ?? []).map((dish, i) => (
                     <TableRow key={i}>
                       <TableCell>{dish as string}</TableCell>
@@ -380,6 +533,21 @@ export const SalesAnalyticsView = ({
           )}
         </DialogContent>
       </Dialog>
+
+      <DishDetailsModal
+        isOpen={showDishDetails}
+        onClose={() => setShowDishDetails(false)}
+        dishName={dishDetails.dishName}
+        dishId={dishDetails.dishId}
+        quantity={dishDetails.quantity}
+        revenue={dishDetails.revenue}
+        cost={dishDetails.cost}
+        profit={dishDetails.profit}
+        ingredients={dishDetails.ingredients}
+        formatCurrency={formatCurrency}
+        isLoading={isLoading}
+        periodLabel={periodLabel}
+      />
     </div>
   );
 };

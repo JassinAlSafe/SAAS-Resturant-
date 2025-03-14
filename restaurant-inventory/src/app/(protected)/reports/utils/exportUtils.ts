@@ -2,6 +2,24 @@ import { exportToExcel } from "@/lib/utils/export";
 import { toast } from "sonner";
 import { SalesData, TopDishesData, InventoryUsageData, DateRangeType } from "../types";
 
+// Define a more specific type for Excel data rows
+type SalesReportRow = {
+    Date: string;
+    Revenue: string;
+    Orders: string | number;
+    "Average Order": string;
+};
+
+type TopDishesRow = {
+    Dish: string;
+    Percentage: string;
+};
+
+type InventoryReportRow = {
+    Date: string;
+    [ingredientName: string]: string;
+};
+
 /**
  * Export sales report data to Excel
  */
@@ -13,7 +31,7 @@ export const exportSalesReport = async (
 ) => {
     try {
         // Format data for export based on the current tab and date range
-        const salesReportData = [
+        const salesReportData: SalesReportRow[] = [
             {
                 Date: "Header Row",
                 Revenue: "Values in your currency",
@@ -21,21 +39,21 @@ export const exportSalesReport = async (
                 "Average Order": "Values in your currency",
             },
             ...salesData.labels.map((date, index) => ({
-                Date: date,
-                Revenue: formatCurrency(salesData.datasets[0].data[index]),
-                Orders: Math.floor(salesData.datasets[0].data[index] / 25), // Approximate order count
+                Date: date as string,
+                Revenue: formatCurrency(salesData.datasets[0].data[index] as number),
+                Orders: Math.floor((salesData.datasets[0].data[index] as number) / 25), // Approximate order count
                 "Average Order": formatCurrency(
-                    salesData.datasets[0].data[index] /
-                    Math.floor(salesData.datasets[0].data[index] / 25)
+                    (salesData.datasets[0].data[index] as number) /
+                    Math.floor((salesData.datasets[0].data[index] as number) / 25)
                 ),
             })),
         ];
 
         // Add top dishes data
-        const topDishesRows = [
+        const topDishesRows: TopDishesRow[] = [
             { Dish: "Top Dishes", Percentage: "% of Sales" },
             ...topDishesData.labels.map((dish, index) => ({
-                Dish: dish,
+                Dish: dish as string,
                 Percentage: `${topDishesData.datasets[0].data[index]}%`,
             })),
         ];
@@ -72,7 +90,7 @@ export const exportInventoryReport = async (
 ) => {
     try {
         // Format data for export based on inventory usage
-        const inventoryReportData = [
+        const inventoryReportData: InventoryReportRow[] = [
             {
                 Date: "Header Row",
                 ...inventoryUsageData.datasets
@@ -83,7 +101,7 @@ export const exportInventoryReport = async (
                     }, {} as Record<string, string>),
             },
             ...inventoryUsageData.labels.map((date, dateIndex) => {
-                const rowData: Record<string, string> = { Date: date };
+                const rowData: Record<string, string> = { Date: date as string };
 
                 inventoryUsageData.datasets.forEach((dataset) => {
                     rowData[dataset.label] = `${dataset.data[dateIndex]} kg`;
@@ -110,4 +128,4 @@ export const exportInventoryReport = async (
         console.error("Error exporting inventory report:", error);
         toast.error("There was an error exporting your inventory report.");
     }
-}; 
+};
