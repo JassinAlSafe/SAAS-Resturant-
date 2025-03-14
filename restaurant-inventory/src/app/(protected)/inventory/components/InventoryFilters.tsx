@@ -26,6 +26,7 @@ import {
   FiPlus,
   FiSliders,
   FiTag,
+  FiDatabase,
 } from "react-icons/fi";
 import {
   Popover,
@@ -57,6 +58,7 @@ interface InventoryFiltersProps {
   viewMode?: "table" | "cards";
   onViewModeChange?: (mode: "table" | "cards") => void;
   onAddClick?: () => void;
+  onSeedDataClick?: () => void;
 }
 
 export default function InventoryFilters({
@@ -76,6 +78,7 @@ export default function InventoryFilters({
   viewMode = "table",
   onViewModeChange = () => {},
   onAddClick = () => {},
+  onSeedDataClick,
 }: InventoryFiltersProps) {
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
 
@@ -184,6 +187,26 @@ export default function InventoryFilters({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+
+            {onSeedDataClick && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={onSeedDataClick}
+                    >
+                      <FiDatabase className="h-4 w-4" />
+                      <span className="hidden sm:inline">Seed Test Data</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>Add test data for demonstration</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
 
           <div className="flex items-center gap-2 ml-auto">

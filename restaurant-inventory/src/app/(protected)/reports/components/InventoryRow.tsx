@@ -2,21 +2,20 @@
 
 import { cn } from "@/lib/utils";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { InventoryItem } from "../types";
+import { InventoryItemDetail } from "../types";
 
-export const InventoryRow = ({
-  name,
-  stock,
-  usage,
-  depletion,
-  depleted,
-  warning,
-}: InventoryItem) => {
+export const InventoryRow = ({ item }: { item: InventoryItemDetail }) => {
+  // Calculate depletion status
+  const depleted = item.daysUntilDepletion <= 3;
+  const warning = item.daysUntilDepletion > 3 && item.daysUntilDepletion <= 7;
+  const depletionText =
+    item.daysUntilDepletion === 999 ? "N/A" : `${item.daysUntilDepletion} days`;
+
   return (
     <TableRow>
-      <TableCell className="font-medium">{name}</TableCell>
-      <TableCell>{stock}</TableCell>
-      <TableCell>{usage}</TableCell>
+      <TableCell className="font-medium">{item.name}</TableCell>
+      <TableCell>{`${item.currentStock} ${item.unit}`}</TableCell>
+      <TableCell>{`${item.usage.toFixed(1)} ${item.unit}`}</TableCell>
       <TableCell>
         <span
           className={cn(
@@ -28,7 +27,7 @@ export const InventoryRow = ({
               : "bg-success/10 text-success"
           )}
         >
-          {depletion}
+          {depletionText}
         </span>
       </TableCell>
     </TableRow>

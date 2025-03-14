@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { SaleEntry, Recipe, InventoryImpactItem } from "../types";
 import { Dish } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import { salesService } from "@/lib/services/sales-service";
 
 interface SalesState {
     // Data
@@ -251,20 +252,10 @@ export const useSalesStore = create<SalesState>((set, get) => ({
                 // Update inventory if enabled
                 if (state.showInventoryImpact) {
                     console.log('Updating inventory...');
-                    for (const entry of entries) {
-                        const impacts = state.calculateInventoryImpact(entry.dish_id, entry.quantity);
-                        console.log('Inventory impacts:', impacts);
-
-                        for (const impact of impacts) {
-                            const { error: stockError } = await supabase.rpc('update_ingredient_stock', {
-                                p_ingredient_id: impact.ingredientId,
-                                p_quantity_used: impact.quantityUsed
-                            });
-
-                            if (stockError) {
-                                console.error('Error updating stock:', stockError);
-                            }
-                        }
+                    const success = await salesService.updateInventoryFromSales(newSales);
+                    if (!success) {
+                        console.error('Error updating inventory');
+                        throw new Error('Failed to update inventory');
                     }
                 }
             }

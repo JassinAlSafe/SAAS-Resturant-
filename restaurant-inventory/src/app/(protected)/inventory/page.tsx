@@ -227,6 +227,72 @@ export default function Inventory() {
   const lowStockCount = items.filter((item) => isLowStock(item)).length;
   const outOfStockCount = items.filter((item) => isOutOfStock(item)).length;
 
+  // Function to seed test data
+  const seedTestData = async () => {
+    try {
+      toast({
+        title: "Seeding Data",
+        description: "Adding test data to your inventory...",
+      });
+
+      // Try the primary endpoint first
+      let response = await fetch("/api/seed-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // If the primary endpoint fails, try the backup endpoint
+      if (!response.ok) {
+        console.log(
+          "Primary seed data endpoint failed, trying backup endpoint..."
+        );
+
+        response = await fetch("/api/seed-test-data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        // If both endpoints fail, try the second backup
+        if (!response.ok) {
+          console.log("Backup endpoint failed too, trying secondary backup...");
+
+          response = await fetch("/api/seed-data-backup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error("All seed data endpoints failed");
+      }
+
+      const data = await response.json();
+
+      // Refresh the inventory data after seeding
+      // Note: This will happen automatically if you're using real-time updates
+      // Otherwise you might need to call a refresh function here
+
+      toast({
+        title: "Test Data Added",
+        description: `Successfully added ${data.counts.ingredients} ingredients, ${data.counts.dishes} dishes, and ${data.counts.sales} sales records.`,
+      });
+    } catch (error) {
+      console.error("Error seeding test data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to seed test data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="w-full py-8 space-y-8">
@@ -260,6 +326,7 @@ export default function Inventory() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onAddClick={openAddModal}
+        onSeedDataClick={seedTestData}
       />
 
       {/* Inventory Content */}

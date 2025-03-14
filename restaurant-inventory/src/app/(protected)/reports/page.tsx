@@ -27,12 +27,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useState, useEffect } from "react";
+import { TabType } from "./types/index";
 
 // Components
 import {
   SalesAnalyticsView,
   InventoryUsageView,
   DateRangeSelector,
+  ExecutiveDashboard,
 } from "./components";
 
 // Hooks
@@ -51,10 +54,21 @@ ChartJS.register(
   LineElement
 );
 
-// Define TabType if not already defined
-// type TabType = 'sales' | 'inventory';
-
 function ReportsContent() {
+  const [currentTime, setCurrentTime] = useState("--:--:--");
+
+  useEffect(() => {
+    // Set initial time
+    setCurrentTime(format(new Date(), "HH:mm:ss"));
+
+    // Update time every second
+    const timer = setInterval(() => {
+      setCurrentTime(format(new Date(), "HH:mm:ss"));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   // Use our custom hook to manage state and data
   const {
     activeTab,
@@ -66,11 +80,13 @@ function ReportsContent() {
     salesData,
     topDishesData,
     inventoryUsageData,
+    executiveSummary,
     formatCurrency,
     previousPeriodData,
     error,
     refetchData,
     getPercentageChange,
+    metrics,
   } = useReports();
 
   if (error) {
@@ -107,7 +123,7 @@ function ReportsContent() {
               Reports & Analytics
             </h1>
             <p className="text-sm text-muted-foreground">
-              View sales performance and inventory usage analytics
+              View unified sales, inventory, and business analytics
             </p>
           </div>
         </div>
@@ -117,7 +133,7 @@ function ReportsContent() {
             <HoverCardTrigger>
               <div className="text-sm text-muted-foreground flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Last updated: {format(new Date(), "HH:mm:ss")}
+                Last updated: {currentTime}
               </div>
             </HoverCardTrigger>
             <HoverCardContent>
@@ -163,32 +179,116 @@ function ReportsContent() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(value) =>
-          setActiveTabState(value as "sales" | "inventory")
-        }
+        onValueChange={(value) => {
+          if (
+            value === "sales" ||
+            value === "inventory" ||
+            value === "executive"
+          ) {
+            setActiveTabState(value as TabType);
+          }
+        }}
         className="space-y-4"
       >
         <TabsList>
+          <TabsTrigger value="executive">Executive Summary</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
-        <TabsContent value="sales">
-          <SalesAnalyticsView
-            salesData={salesData || { labels: [], datasets: [] }}
-            topDishesData={topDishesData || { labels: [], datasets: [] }}
-            formatCurrency={formatCurrency}
-            previousPeriodData={previousPeriodData}
-            getPercentageChange={getPercentageChange}
-          />
+
+        <TabsContent value="executive">
+          {executiveSummary ? (
+            <ExecutiveDashboard
+              salesData={{
+                currentSales: executiveSummary.currentSales,
+                previousSales: executiveSummary.previousSales,
+                salesGrowth: executiveSummary.salesGrowth,
+                profitMargin: executiveSummary.profitMargin,
+              }}
+              inventoryData={{
+                lowStockCount: executiveSummary.lowStockCount,
+                outOfStockCount: executiveSummary.outOfStockCount,
+                criticalItems: executiveSummary.criticalItems,
+              }}
+              topDishes={executiveSummary.topDishes as string[]}
+              formatCurrency={formatCurrency}
+            />
+          ) : (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          )}
         </TabsContent>
+
+        <TabsContent value="sales">
+          {salesData && (
+            <SalesAnalyticsView
+              salesData={{
+                labels: (salesData?.labels || []) as string[],
+                datasets:
+                  salesData?.datasets.map((ds) => ({
+                    label: ds.label || "Sales",
+                    data: ds.data as number[],
+                    backgroundColor: ds.backgroundColor as string,
+                    borderColor: ds.borderColor as string,
+                    borderWidth: 1,
+                  })) || [],
+                analytics: {
+                  periodComparison: {
+                    currentPeriod: {
+                      totalSales: metrics?.totalSales || 0,
+                      totalOrders: metrics?.totalOrders || 0,
+                      averageOrderValue: metrics?.avgOrderValue || 0,
+                      topCategories: [],
+                    },
+                    previousPeriod: {
+                      totalSales: previousPeriodData?.totalSales || 0,
+                      totalOrders: previousPeriodData?.totalOrders || 0,
+                      averageOrderValue: previousPeriodData?.avgOrderValue || 0,
+                      topCategories: [],
+                    },
+                    growth: {
+                      sales: getPercentageChange(
+                        metrics?.totalSales || 0,
+                        previousPeriodData?.totalSales || 0
+                      ),
+                      orders: getPercentageChange(
+                        metrics?.totalOrders || 0,
+                        previousPeriodData?.totalOrders || 0
+                      ),
+                      averageOrder: getPercentageChange(
+                        metrics?.avgOrderValue || 0,
+                        previousPeriodData?.avgOrderValue || 0
+                      ),
+                    },
+                  },
+                  peakHours: [],
+                  staffPerformance: [],
+                },
+              }}
+              topDishesData={{
+                labels: (topDishesData?.labels || []) as string[],
+                datasets:
+                  topDishesData?.datasets.map((ds) => ({
+                    label: ds.label || "Dishes",
+                    data: ds.data as number[],
+                    backgroundColor: ds.backgroundColor as string[],
+                    borderWidth: 1,
+                  })) || [],
+                dishAnalytics: [],
+              }}
+              formatCurrency={formatCurrency}
+              previousPeriodData={previousPeriodData || undefined}
+              getPercentageChange={getPercentageChange}
+              dateRange={dateRange}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="inventory">
           <InventoryUsageView
-            inventoryUsageData={
-              inventoryUsageData || {
-                labels: [],
-                datasets: [],
-              }
-            }
+            inventoryUsageData={inventoryUsageData}
+            onRefresh={refetchData}
           />
         </TabsContent>
       </Tabs>

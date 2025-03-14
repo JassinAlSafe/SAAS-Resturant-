@@ -441,10 +441,67 @@ export const salesService = {
      */
     async updateInventoryFromSales(sales: Sale[]): Promise<boolean> {
         try {
-            // Note: In a real implementation, this would reduce inventory quantities based on sales
-            console.log('Would update inventory based on sales:', sales);
+            // Get all dish IDs from sales
+            const dishIds = sales.map(sale => sale.dishId);
 
-            // Simulate success
+            // Fetch recipes for these dishes to get ingredient quantities
+            const { data: recipes, error: recipesError } = await supabase
+                .from('recipes')
+                .select('id, recipe_ingredients(ingredient_id, quantity)')
+                .in('id', dishIds);
+
+            if (recipesError) {
+                console.error('Error fetching recipes:', recipesError);
+                return false;
+            }
+
+            // Create a map of dish IDs to their ingredients
+            const dishIngredientsMap = new Map();
+            recipes?.forEach(recipe => {
+                if (recipe.recipe_ingredients) {
+                    dishIngredientsMap.set(recipe.id, recipe.recipe_ingredients);
+                }
+            });
+
+            // Calculate total quantity used for each ingredient
+            const ingredientUsage = new Map();
+            sales.forEach(sale => {
+                const ingredients = dishIngredientsMap.get(sale.dishId);
+                if (ingredients) {
+                    ingredients.forEach((ing: { ingredient_id: string; quantity: number }) => {
+                        const currentUsage = ingredientUsage.get(ing.ingredient_id) || 0;
+                        ingredientUsage.set(ing.ingredient_id, currentUsage + (ing.quantity * sale.quantity));
+                    });
+                }
+            });
+
+            // Update each ingredient's quantity
+            for (const [ingredientId, quantityUsed] of ingredientUsage.entries()) {
+                // First get current quantity
+                const { data: currentData, error: fetchError } = await supabase
+                    .from('ingredients')
+                    .select('quantity')
+                    .eq('id', ingredientId)
+                    .single();
+
+                if (fetchError || !currentData) {
+                    console.error(`Error fetching ingredient ${ingredientId}:`, fetchError);
+                    return false;
+                }
+
+                const newQuantity = currentData.quantity - quantityUsed;
+
+                const { error: updateError } = await supabase
+                    .from('ingredients')
+                    .update({ quantity: newQuantity })
+                    .eq('id', ingredientId);
+
+                if (updateError) {
+                    console.error(`Error updating ingredient ${ingredientId}:`, updateError);
+                    return false;
+                }
+            }
+
             return true;
         } catch (error) {
             console.error('Exception in updateInventoryFromSales:', error);
