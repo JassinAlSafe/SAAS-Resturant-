@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { User } from "./types";
-import { useRouter } from "next/navigation";
 import { useNotificationHelpers } from "./notification-context";
 
 // Define minimal types to avoid dependencies
@@ -55,7 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
   const { success: showSuccess, error: showError } = useNotificationHelpers();
 
   // Function to check if user has a specific role
@@ -335,10 +333,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error("Error in profile creation:", profileError);
         }
       }
-
-      // Redirect to dashboard after signup, even though email isn't verified yet
-      // This allows users to set up their profile while waiting for verification
-      router.push("/dashboard");
 
       // Check if email confirmation is required
       const isEmailConfirmationRequired = !data.session;
