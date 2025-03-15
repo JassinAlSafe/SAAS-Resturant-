@@ -25,18 +25,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <PermissionProvider>
-          <BusinessProfileProvider>
-            <CurrencyProvider>
-              <NotificationProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <PermissionProvider>
+            <BusinessProfileProvider>
+              <CurrencyProvider>
                 {children}
                 <Toaster />
-              </NotificationProvider>
-            </CurrencyProvider>
-          </BusinessProfileProvider>
-        </PermissionProvider>
-      </AuthProvider>
+              </CurrencyProvider>
+            </BusinessProfileProvider>
+          </PermissionProvider>
+        </AuthProvider>
+      </NotificationProvider>
     </QueryClientProvider>
   );
 }

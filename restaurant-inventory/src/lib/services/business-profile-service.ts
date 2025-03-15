@@ -220,30 +220,78 @@ const businessProfileService = {
         try {
             console.log("Creating new business profile for user:", userId);
 
-            // Use a simplified profile for more reliable creation
-            const newProfile = {
+            // Use a minimal profile with only essential fields to avoid column errors
+            const minimalProfile = {
                 user_id: userId,
                 name: "My Restaurant",
                 type: "casual_dining",
                 operating_hours: defaultBusinessProfile.operatingHours,
                 default_currency: defaultBusinessProfile.defaultCurrency,
-                tax_rate: defaultBusinessProfile.taxRate,
-                tax_enabled: defaultBusinessProfile.taxEnabled,
-                tax_name: defaultBusinessProfile.taxName,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
             };
 
-            console.log("New profile data:", newProfile);
+            console.log("New profile data:", minimalProfile);
 
+            // Try to insert with minimal fields first
             const { data, error } = await supabase
                 .from('business_profiles')
-                .insert(newProfile)
+                .insert(minimalProfile)
                 .select()
                 .single();
 
             if (error) {
                 console.error('Error creating profile:', error);
+
+                // If the error is related to operating_hours (which might be a JSON column)
+                // Try an even more minimal approach
+                if (error.message.includes('operating_hours') || error.message.includes('column')) {
+                    console.log("Trying with ultra-minimal profile due to schema issues");
+
+                    const ultraMinimalProfile = {
+                        user_id: userId,
+                        name: "My Restaurant",
+                        type: "casual_dining",
+                    };
+
+                    const { data: minData, error: minError } = await supabase
+                        .from('business_profiles')
+                        .insert(ultraMinimalProfile)
+                        .select()
+                        .single();
+
+                    if (minError) {
+                        console.error('Error creating minimal profile:', minError);
+                        throw new Error(`Failed to create business profile: ${minError.message}`);
+                    }
+
+                    // Return a profile with default values for missing fields
+                    return {
+                        id: minData.id,
+                        name: minData.name || "My Restaurant",
+                        type: minData.type || "casual_dining",
+                        address: "",
+                        city: "",
+                        state: "",
+                        zipCode: "",
+                        country: "",
+                        phone: "",
+                        email: "",
+                        website: "",
+                        logo: "",
+                        operatingHours: defaultBusinessProfile.operatingHours,
+                        defaultCurrency: minData.default_currency || "USD",
+                        taxRate: 0,
+                        taxEnabled: false,
+                        taxName: "Sales Tax",
+                        taxSettings: {
+                            rate: 0,
+                            enabled: false,
+                            name: "Sales Tax"
+                        },
+                        createdAt: minData.created_at || new Date().toISOString(),
+                        updatedAt: minData.updated_at || new Date().toISOString(),
+                    };
+                }
+
                 throw new Error(`Failed to create business profile: ${error.message}`);
             }
 

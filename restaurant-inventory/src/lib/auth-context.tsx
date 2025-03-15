@@ -3,20 +3,24 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { User } from "./types";
+import { useRouter } from "next/navigation";
+import { useNotificationHelpers } from "./notification-context";
 
 // Define minimal types to avoid dependencies
 type Session = {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number; // Make optional to match Supabase's type
   user: {
     id: string;
+    email?: string;
   };
 };
 
 type SupabaseUser = {
   id: string;
   email?: string;
-  user_metadata?: {
-    name?: string;
-  };
+  identities?: Array<unknown>;
 };
 
 type AuthContextType = {
@@ -25,15 +29,23 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   isRole: (roles: string[]) => Promise<boolean>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
   signUp: (
     email: string,
     password: string,
     name: string
   ) => Promise<{ isEmailConfirmationRequired: boolean }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updatePassword: (token: string, newPassword: string) => Promise<void>;
+  resetPassword: (
+    email: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateUserPassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ success: boolean; error?: string }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,28 +55,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { success: showSuccess, error: showError } = useNotificationHelpers();
 
   // Function to check if user has a specific role
   const isRole = async (roles: string[]): Promise<boolean> => {
+    if (!user) return false;
+
     try {
-      // If no profile or user, they don't have any role
-      if (!profile || !user) return false;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-      // Check if the profile has a role property and if it's included in the requested roles
-      if (profile.role && roles.includes(profile.role)) {
-        return true;
+      if (error || !data) {
+        return false;
       }
 
-      // If checking for roles like 'admin' or 'manager' and we need to check the database
-      // We can fetch from user_roles table if needed for more complex setups
-      if (roles.includes("any") && profile.role) {
-        // 'any' role means any authenticated user with a role
-        return true;
-      }
-
-      return false;
+      return roles.includes(data.role);
     } catch (error) {
-      console.error("Error checking user role:", error);
+      console.error("Error checking role:", error);
       return false;
     }
   };
@@ -231,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -239,22 +250,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         throw error;
       }
-    } catch (error) {
-      console.error("Error signing in:", error);
-      throw error;
+
+      // Set the user and session in state
+      setUser(data.user);
+      setSession(data.session);
+
+      // Fetch the user's profile
+      if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user.id)
+          .single();
+
+        if (!profileError && profileData) {
+          setProfile(profileData as User);
+        }
+      }
+
+      return { success: true };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during sign in";
+      return { success: false, error: errorMessage };
     }
   };
 
   // Sign up with email and password
   const signUp = async (email: string, password: string, name: string) => {
+    setIsLoading(true);
     try {
-      const { error, data } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -262,29 +297,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
 
-      // Check if email confirmation is required
-      const isEmailConfirmationRequired = !data.session;
+      // Check if user needs to confirm their email
+      if (data?.user && data.user.identities?.length === 0) {
+        throw new Error(
+          "This email is already registered. Please log in instead."
+        );
+      }
 
+      // Set the user in state
+      setUser(data.user);
+
+      // Show success notification
+      showSuccess(
+        "Account Created Successfully",
+        "Please check your email to verify your account. You can continue setting up your profile in the meantime."
+      );
+
+      // Create a profile for the new user with basic fields
       if (data.user) {
-        // Create a profile for the new user
-        const { error: profileError } = await supabase.from("profiles").insert([
-          {
+        try {
+          const profileData = {
             id: data.user.id,
             email,
             name,
             role: "staff", // Default role
-          },
-        ]);
+          };
 
-        if (profileError) {
-          throw profileError;
+          // Insert the profile with basic fields
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert([profileData]);
+
+          if (profileError) {
+            console.error("Error creating profile:", profileError);
+          }
+        } catch (profileError) {
+          console.error("Error in profile creation:", profileError);
         }
       }
 
+      // Redirect to dashboard after signup, even though email isn't verified yet
+      // This allows users to set up their profile while waiting for verification
+      router.push("/dashboard");
+
+      // Check if email confirmation is required
+      const isEmailConfirmationRequired = !data.session;
       return { isEmailConfirmationRequired };
-    } catch (error) {
-      console.error("Error signing up:", error);
-      throw error;
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during signup";
+      showError("Signup Failed", errorMessage);
+      return { isEmailConfirmationRequired: false };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -311,15 +378,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         throw error;
       }
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      throw error;
+
+      return { success: true };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during password reset";
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Update password with token
-  const updatePassword = async (token: string, newPassword: string) => {
+  // Update user password with secure confirmation
+  const updateUserPassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
     try {
+      // First verify the current password by attempting to sign in
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user || !userData.user.email) {
+        throw new Error("User not authenticated");
+      }
+
+      // Check if the user has signed in recently (within 24 hours)
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("last_sign_in")
+        .eq("id", userData.user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const lastSignIn = new Date(profileData.last_sign_in);
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // If the user hasn't signed in recently, verify their current password
+      if (lastSignIn < twentyFourHoursAgo) {
+        // Verify current password
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: userData.user.email,
+          password: currentPassword,
+        });
+
+        if (signInError) {
+          throw new Error("Current password is incorrect");
+        }
+      }
+
+      // Update the password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -327,6 +436,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         throw error;
       }
+
+      // Update last sign in time
+      await supabase
+        .from("profiles")
+        .update({ last_sign_in: new Date().toISOString() })
+        .eq("id", userData.user.id);
+
+      return { success: true };
     } catch (error) {
       console.error("Error updating password:", error);
       throw error;
@@ -343,7 +460,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     resetPassword,
-    updatePassword,
+    updateUserPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,14 +15,12 @@ import { FiArrowLeft } from "react-icons/fi";
 import { gsap } from "gsap";
 import { LoginTransition } from "@/components/auth/LoginTransition";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { supabase } from "@/lib/supabase";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AuthError {
   message: string;
-}
-
-interface SignInResult {
-  isEmailConfirmed?: boolean;
-  // Add other properties if needed
 }
 
 export default function LoginPage() {
@@ -31,10 +29,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [emailForResend, setEmailForResend] = useState("");
   const router = useRouter();
   const { theme } = useTheme();
   const { signIn } = useAuth();
-  const { error: showError } = useNotificationHelpers();
+  const { error: showError, success: showSuccess } = useNotificationHelpers();
   const { startTransition } = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -77,19 +79,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setNeedsEmailConfirmation(false);
+    setResendSuccess(false);
 
     try {
-      const result = (await signIn(email, password)) as unknown as SignInResult;
-      const isEmailConfirmed = result?.isEmailConfirmed ?? true;
+      await signIn(email, password);
 
-      if (!isEmailConfirmed) {
-        showError(
-          "Email Not Confirmed",
-          "Please confirm your email before logging in."
-        );
-        setIsLoading(false);
-        return;
-      }
+      // Since we've modified the auth-context to not check for email confirmation,
+      // we'll assume the user is confirmed if they can sign in
 
       // Fade out the form
       await gsap.to(formRef.current, {
@@ -112,6 +109,8 @@ export default function LoginPage() {
 
       const authError = error as AuthError;
       if (authError.message?.includes("Email not confirmed")) {
+        setNeedsEmailConfirmation(true);
+        setEmailForResend(email);
         showError(
           "Email Not Confirmed",
           "Please check your email and confirm your account before logging in."
@@ -125,6 +124,42 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Function to resend confirmation email
+  const handleResendConfirmation = useCallback(async () => {
+    if (!emailForResend || resendingEmail) return;
+
+    setResendingEmail(true);
+    setResendSuccess(false);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: emailForResend,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResendSuccess(true);
+      showSuccess(
+        "Confirmation Email Sent",
+        "Please check your email for the confirmation link."
+      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to resend confirmation email";
+      showError("Failed to Resend", errorMessage);
+    } finally {
+      setResendingEmail(false);
+    }
+  }, [emailForResend, resendingEmail, showSuccess, showError]);
 
   const handleTransitionComplete = () => {
     startTransition(() => {
@@ -187,6 +222,41 @@ export default function LoginPage() {
                 <span>or log in to get started</span>
               </div>
             </div>
+
+            {needsEmailConfirmation && (
+              <Alert className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle className="text-amber-800 dark:text-amber-300">
+                  Email confirmation required
+                </AlertTitle>
+                <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                  <p className="mb-2">
+                    Please check your email and confirm your account before
+                    logging in.
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendConfirmation}
+                      disabled={resendingEmail || resendSuccess}
+                      className="h-8 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-800/50"
+                    >
+                      {resendingEmail ? (
+                        <>
+                          <div className="animate-spin mr-1 h-3 w-3 border-2 border-amber-600 border-t-transparent rounded-full" />
+                          Sending...
+                        </>
+                      ) : resendSuccess ? (
+                        "Email sent!"
+                      ) : (
+                        "Resend confirmation email"
+                      )}
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5" ref={formRef}>
               <div className="space-y-2">

@@ -3,260 +3,222 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { useTheme } from "next-themes";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useAuth } from "@/lib/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
-import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FiArrowLeft } from "react-icons/fi";
-import { AuthBackground } from "@/components/auth/AuthBackground";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+
+// Define the form schema with validation
+const formSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(
+        /[^A-Za-z0-9]/,
+        "Password must contain at least one special character"
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function SignupPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const router = useRouter();
   const { signUp } = useAuth();
-  const { error: showError, success: showSuccess } = useNotificationHelpers();
-  const { startTransition } = useTransition();
-  const { theme } = useTheme();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const { error: showError } = useNotificationHelpers();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Initialize the form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  // Handle form submission
+  const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
-
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      showError("Validation Error", "Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate password strength
-    if (password.length < 8) {
-      showError(
-        "Validation Error",
-        "Password must be at least 8 characters long"
-      );
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const { isEmailConfirmationRequired } = await signUp(
-        email,
-        password,
-        name
-      );
-      setSuccess(true);
+      const { email, password, name } = values;
+      setUserEmail(email);
 
-      if (isEmailConfirmationRequired) {
-        showSuccess(
-          "Email Confirmation Required",
-          "Please check your email to confirm your account before logging in."
-        );
-      } else {
-        showSuccess(
-          "Account Created",
-          "Your account has been created successfully. Redirecting to login page..."
-        );
-        setTimeout(() => {
-          startTransition(() => {
-            router.push("/login");
-          }, "signup");
-        }, 3000);
+      const result = await signUp(email, password, name);
+
+      if (result.isEmailConfirmationRequired) {
+        setSignupComplete(true);
       }
-    } catch (error: any) {
-      showError("Registration Failed", error.message || "Failed to sign up");
+    } catch (error) {
+      console.error("Signup error:", error);
+      showError(
+        "Signup Failed",
+        error instanceof Error
+          ? error.message
+          : "An error occurred during signup"
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="relative min-h-screen flex">
-      {/* Left side - pattern */}
-      <div className="hidden lg:block w-1/2 relative">
-        <AuthBackground />
-      </div>
-
-      {/* Right side - signup form */}
-      <div className="w-full lg:w-1/2 bg-white dark:bg-slate-900 flex flex-col">
-        {/* Back to website link */}
-        <Link
-          href="/"
-          className="absolute top-8 left-8 text-sm text-slate-500 hover:text-slate-600 flex items-center gap-2 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
-        >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to website
-        </Link>
-
-        {/* Logo - positioned in top right */}
-        <div className="absolute top-8 right-8">
-          <div className="relative h-8 w-8">
-            <Image
-              src={
-                theme === "dark"
-                  ? "/assets/brand/logo-light.png"
-                  : "/assets/brand/logo-dark.png"
-              }
-              alt="ShelfWise Logo"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Form content - centered vertically and horizontally */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-[440px] px-8">
-            <div className="space-y-2 mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                Welcome!
-              </h1>
-              <div className="flex gap-1 text-base text-slate-600 dark:text-slate-400">
-                <span>Create a free account to get started</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="name"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Full Name
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  disabled={isLoading || success}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading || success}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="password"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading || success}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="confirmPassword"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  disabled={isLoading || success}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-xs"
-                disabled={isLoading || success}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                    Creating account...
-                  </div>
-                ) : (
-                  "Create Account"
-                )}
-              </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full h-11 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors"
-                type="button"
-              >
-                <Image
-                  src="/assets/logo/google-icon-logo-svgrepo-com.svg"
-                  alt="Google"
-                  width={18}
-                  height={18}
-                  className="mr-2 opacity-75"
-                />
-                <span className="text-sm font-medium">
-                  Continue with Google
-                </span>
-              </Button>
-            </form>
-
-            <div className="text-center mt-8">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
-                >
-                  Sign in
-                </Link>
+  // If signup is complete, show success message
+  if (signupComplete) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              Verify Your Email
+            </CardTitle>
+            <CardDescription className="text-center">
+              We've sent a verification link to {userEmail}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="bg-green-50 p-4 rounded-md border border-green-200">
+              <p className="text-green-800 text-sm">
+                Please check your email and click the verification link to
+                complete your registration. You can continue to the dashboard
+                now, but some features may be limited until you verify your
+                email.
               </p>
             </div>
-          </div>
-        </div>
+            <div className="flex flex-col space-y-2">
+              <Button
+                onClick={() => router.push("/dashboard")}
+                className="w-full"
+              >
+                Continue to Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/login")}
+                className="w-full"
+              >
+                Go to Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
+            Create an Account
+          </CardTitle>
+          <CardDescription className="text-center">
+            Enter your information to create an account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                placeholder="John Doe"
+                {...form.register("name")}
+              />
+              {form.formState.errors.name && (
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.name.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="john@example.com"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.email.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                {...form.register("password")}
+              />
+              {form.formState.errors.password && (
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.password.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                {...form.register("confirmPassword")}
+              />
+              {form.formState.errors.confirmPassword && (
+                <p className="text-red-500 text-sm">
+                  {form.formState.errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Sign Up"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-slate-600">
+            Already have an account?&nbsp;
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Log in
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
