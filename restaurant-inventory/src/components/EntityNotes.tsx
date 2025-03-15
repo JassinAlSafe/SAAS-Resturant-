@@ -238,7 +238,7 @@ export default function EntityNotes({
             .map((note) => (
               <div
                 key={note.id}
-                className="p-4 border rounded-md bg-card shadow-sm"
+                className="p-4 border rounded-md bg-card shadow-xs"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex flex-wrap gap-1">

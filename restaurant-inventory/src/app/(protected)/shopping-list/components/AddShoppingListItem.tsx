@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox, ComboboxOption } from "@/components/ui/combobox";
 import { FiX } from "react-icons/fi";
 
 interface AddShoppingListItemProps {
@@ -50,6 +51,12 @@ export default function AddShoppingListItem({
 
   // Common units
   const units = ["kg", "g", "l", "ml", "units", "boxes", "cans", "bottles"];
+
+  // Format categories for the Combobox
+  const categoryOptions: ComboboxOption[] = [
+    { value: "Other", label: "Other" },
+    ...categories.map((category) => ({ value: category, label: category })),
+  ];
 
   return (
     <Card className="mb-6">
@@ -110,19 +117,13 @@ export default function AddShoppingListItem({
 
           <div className="space-y-2">
             <Label htmlFor="item-category">Category</Label>
-            <Select value={itemCategory} onValueChange={onItemCategoryChange}>
-              <SelectTrigger id="item-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Other">Other</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={categoryOptions}
+              value={itemCategory}
+              onValueChange={onItemCategoryChange}
+              placeholder="Select category"
+              emptyText="No category found"
+            />
           </div>
 
           <div className="space-y-2">

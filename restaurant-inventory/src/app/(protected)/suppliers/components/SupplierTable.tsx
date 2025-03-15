@@ -165,7 +165,7 @@ export default function SupplierTable({
   return (
     <div className="w-full h-full flex flex-col">
       {/* Main content area container with border */}
-      <div className="grid grid-cols-1 gap-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm p-5 md:p-6">
+      <div className="grid grid-cols-1 gap-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xs p-5 md:p-6">
         {/* Section 1: Summary Statistics (Top Area) */}
         <section className="w-full">
           <motion.div
@@ -266,7 +266,7 @@ export default function SupplierTable({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white rounded-xl border shadow-sm overflow-hidden relative"
+              className="bg-white rounded-xl border shadow-xs overflow-hidden relative"
             >
               {isLoading && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center z-10">
@@ -372,7 +372,7 @@ export default function SupplierTable({
                           <TableCell className="py-4">
                             <div className="flex items-center gap-3">
                               {supplier.logo ? (
-                                <div className="h-11 w-11 rounded-lg overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-white">
+                                <div className="h-11 w-11 rounded-lg overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-white">
                                   <Image
                                     src={supplier.logo}
                                     alt={`${supplier.name} logo`}
@@ -382,7 +382,7 @@ export default function SupplierTable({
                                   />
                                 </div>
                               ) : (
-                                <div className="h-11 w-11 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm shrink-0">
+                                <div className="h-11 w-11 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100 shadow-xs shrink-0">
                                   <span className="text-lg font-semibold text-blue-600">
                                     {supplier.name.charAt(0)}
                                   </span>
@@ -489,7 +489,7 @@ export default function SupplierTable({
                               }
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
                                 supplier.status === "ACTIVE"
-                                  ? "bg-green-100 text-green-800 border border-green-200 shadow-sm"
+                                  ? "bg-green-100 text-green-800 border border-green-200 shadow-xs"
                                   : "bg-slate-100 text-slate-800 border border-slate-200"
                               }`}
                             >

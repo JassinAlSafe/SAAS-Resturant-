@@ -68,7 +68,7 @@ export function BillingWrapper({ children, userId }: BillingWrapperProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-2 text-amber-600">
-            <FiAlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <FiAlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">
                 We couldn&apos;t load your subscription information

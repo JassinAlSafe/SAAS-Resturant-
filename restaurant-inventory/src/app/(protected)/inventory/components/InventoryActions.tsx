@@ -62,7 +62,7 @@ export default function InventoryActions({
           <Input
             type="search"
             placeholder="Search by name, category..."
-            className="pl-8 border-muted-foreground/20 shadow-sm focus-visible:ring-blue-500"
+            className="pl-8 border-muted-foreground/20 shadow-xs focus-visible:ring-blue-500"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -72,7 +72,7 @@ export default function InventoryActions({
           <Tooltip>
             <TooltipTrigger asChild>
               <Select value={selectedCategory} onValueChange={onCategoryChange}>
-                <SelectTrigger className="w-[160px] border-muted-foreground/20 shadow-sm">
+                <SelectTrigger className="w-[160px] border-muted-foreground/20 shadow-xs">
                   <div className="flex items-center">
                     <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Category" />

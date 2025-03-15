@@ -97,7 +97,7 @@ export function ResponsiveTable({
         {data.map((item, rowIndex) => (
           <div
             key={rowIndex}
-            className="bg-card border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-card border rounded-lg p-3 shadow-xs hover:shadow-md transition-shadow"
           >
             {headers.map((header) => (
               <div

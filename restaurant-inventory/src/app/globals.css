@@ -1,10 +1,218 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-lufga), system-ui, sans-serif;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
 
 @theme {
   --font-sans: var(--font-lufga);
   --font-mono: var(--font-geist-mono);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@utility animate-collapsible-down {
+  /* Collapsible animations */
+  animation: collapsible-down 0.2s ease-out;
+}
+
+@utility animate-collapsible-up {
+  animation: collapsible-up 0.2s ease-out;
+}
+
+@utility hide-scrollbar {
+  /* Custom Scrollbar Styles */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 dark:bg-muted-foreground/20;
+    @apply rounded-sm;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50 dark:bg-muted-foreground/40;
+  }
+}
+
+@utility mask-bottom-fade {
+  /* Bottom fade for scrollable content */
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  @apply bg-linear-to-b from-background to-transparent;
+}
+
+@utility table-responsive {
+  /* Force tables to be responsive */
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@utility flex-col-mobile {
+  /* Flex utilities for better mobile layouts */
+  @apply flex-col sm:flex-row;
+}
+
+@utility flex-col-reverse-mobile {
+  @apply flex-col-reverse sm:flex-row;
+}
+
+@utility grid-responsive {
+  /* Grid for responsive layouts */
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+}
+
+@utility content-width {
+  /* Content width constraint for readability */
+  @apply max-w-full sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] mx-auto;
+}
+
+@utility text-mobile-body {
+  /* Text size adjustments for mobile */
+  @apply text-sm sm:text-base;
+}
+
+@utility text-mobile-heading {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+
+@utility text-mobile-subheading {
+  @apply text-lg sm:text-xl;
+}
+
+@utility p-mobile {
+  /* Spacing adjustments for mobile */
+  @apply p-3 sm:p-4 md:p-6;
+}
+
+@utility m-mobile {
+  @apply m-2 sm:m-4 md:m-6;
+}
+
+@utility gap-mobile {
+  @apply gap-2 sm:gap-4 md:gap-6;
+}
+
+@utility touch-target {
+  /* Touch-friendly improvements */
+  @apply min-h-[44px] min-w-[44px]; /* iOS minimum touch target size */
+}
+
+@utility responsive-table {
+  /* Improved mobile table accessibility */
+  & td::before {
+    content: attr(data-label);
+    @apply font-semibold text-left mr-2;
+    @apply sr-only sm:not-sr-only; /* Screen reader only on mobile */
+  }
+}
+
+@utility skip-to-content {
+  /* Skip to main content link for keyboard users */
+  @apply sr-only focus:not-sr-only;
+  @apply fixed top-0 left-0 z-50;
+  @apply bg-background text-foreground;
+  @apply px-4 py-2 m-2 rounded-md;
+  @apply focus:outline-hidden focus:ring-2 focus:ring-ring/50;
+  @apply border border-border;
 }
 
 @layer base {
@@ -118,76 +326,78 @@
   }
 }
 
-/* Update sidebar classes to use new consolidated variables */
-.sidebar {
-  @apply bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))];
-  @apply border-[hsl(var(--sidebar-border))];
-}
+@layer utilities {
+  /* Update sidebar classes to use new consolidated variables */
+  .sidebar {
+    @apply bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))];
+    @apply border-[hsl(var(--sidebar-border))];
+  }
 
-/* Add custom sidebar styles */
-.sidebar-item {
-  @apply transition-all duration-200;
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50;
-  @apply focus-visible:bg-[hsl(var(--sidebar-hover))];
-}
+  /* Add custom sidebar styles */
+  .sidebar-item {
+    @apply transition-all duration-200;
+    @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50;
+    @apply focus-visible:bg-[hsl(var(--sidebar-hover))];
+  }
 
-.sidebar-item-active {
-  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-fg))];
-  @apply focus-visible:bg-[hsl(var(--sidebar-active))];
-}
+  .sidebar-item-active {
+    @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-fg))];
+    @apply focus-visible:bg-[hsl(var(--sidebar-active))];
+  }
 
-.sidebar-item-icon {
-  @apply text-[hsl(var(--sidebar-icon))];
-}
+  .sidebar-item-icon {
+    @apply text-[hsl(var(--sidebar-icon))];
+  }
 
-.sidebar-item-icon-active {
-  @apply text-[hsl(var(--sidebar-icon-active))];
-}
+  .sidebar-item-icon-active {
+    @apply text-[hsl(var(--sidebar-icon-active))];
+  }
 
-.sidebar-toggle-button {
-  @apply bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-fg))];
-  @apply hover:bg-[hsl(var(--sidebar-active))] hover:text-[hsl(var(--sidebar-fg))];
-  @apply transition-all duration-200 shadow-sm;
-}
+  .sidebar-toggle-button {
+    @apply bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-fg))];
+    @apply hover:bg-[hsl(var(--sidebar-active))] hover:text-[hsl(var(--sidebar-fg))];
+    @apply transition-all duration-200 shadow-xs;
+  }
 
-/* Tooltip styles for sidebar */
-.sidebar-tooltip {
-  @apply z-50 px-4 py-2 rounded-md shadow-lg;
-  @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
-  @apply transition-opacity duration-200;
-}
+  /* Tooltip styles for sidebar */
+  .sidebar-tooltip {
+    @apply z-50 px-4 py-2 rounded-md shadow-lg;
+    @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
+    @apply transition-opacity duration-200;
+  }
 
-/* Expanded sidebar menu item */
-.sidebar-expanded-item {
-  @apply flex items-center gap-3 px-4 py-3 w-full rounded-md transition-all duration-200;
-  @apply hover:bg-[hsl(var(--sidebar-hover))];
-}
+  /* Expanded sidebar menu item */
+  .sidebar-expanded-item {
+    @apply flex items-center gap-3 px-4 py-3 w-full rounded-md transition-all duration-200;
+    @apply hover:bg-[hsl(var(--sidebar-hover))];
+  }
 
-.sidebar-expanded-item.active {
-  @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
-}
+  .sidebar-expanded-item.active {
+    @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
+  }
 
-/* Collapsed sidebar styles */
-.sidebar-collapsed {
-  @apply w-16 transition-all duration-300 ease-in-out;
-}
+  /* Collapsed sidebar styles */
+  .sidebar-collapsed {
+    @apply w-16 transition-all duration-300 ease-in-out;
+  }
 
-.sidebar-expanded {
-  @apply w-64 transition-all duration-300 ease-in-out;
-}
+  .sidebar-expanded {
+    @apply w-64 transition-all duration-300 ease-in-out;
+  }
 
-/* Hover menu for collapsed sidebar */
-.sidebar-hover-menu {
-  @apply absolute left-16 rounded-md py-2 px-4 shadow-lg z-50;
-  @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
-  @apply opacity-0 pointer-events-none transition-opacity duration-200;
-  @apply focus-within:opacity-100 focus-within:pointer-events-auto;
-  @apply border border-border;
-}
+  /* Hover menu for collapsed sidebar */
+  .sidebar-hover-menu {
+    @apply absolute left-16 rounded-md py-2 px-4 shadow-lg z-50;
+    @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
+    @apply opacity-0 pointer-events-none transition-opacity duration-200;
+    @apply focus-within:opacity-100 focus-within:pointer-events-auto;
+    @apply border border-border;
+  }
 
-.sidebar-item:hover .sidebar-hover-menu,
-.sidebar-item:focus-within .sidebar-hover-menu {
-  @apply opacity-100 pointer-events-auto;
+  .sidebar-item:hover .sidebar-hover-menu,
+  .sidebar-item:focus-within .sidebar-hover-menu {
+    @apply opacity-100 pointer-events-auto;
+  }
 }
 
 @layer components {
@@ -195,7 +405,6 @@
 }
 
 @layer utilities {
-  /* Collapsible animations */
   @keyframes collapsible-down {
     from {
       height: 0;
@@ -214,132 +423,14 @@
     }
   }
 
-  .animate-collapsible-down {
-    animation: collapsible-down 0.2s ease-out;
-  }
-
-  .animate-collapsible-up {
-    animation: collapsible-up 0.2s ease-out;
-  }
-
-  /* Custom Scrollbar Styles */
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 dark:bg-muted-foreground/20;
-    @apply rounded-sm;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50 dark:bg-muted-foreground/40;
-  }
-
-  /* Bottom fade for scrollable content */
-  .mask-bottom-fade {
-    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-    @apply bg-gradient-to-b from-background to-transparent;
-  }
-
-  /* Force tables to be responsive */
-  .table-responsive {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Flex utilities for better mobile layouts */
-  .flex-col-mobile {
-    @apply flex-col sm:flex-row;
-  }
-
-  .flex-col-reverse-mobile {
-    @apply flex-col-reverse sm:flex-row;
-  }
-
-  /* Grid for responsive layouts */
-  .grid-responsive {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
-  }
-
-  /* Content width constraint for readability */
-  .content-width {
-    @apply max-w-full sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] mx-auto;
-  }
-
-  /* Text size adjustments for mobile */
-  .text-mobile-body {
-    @apply text-sm sm:text-base;
-  }
-
-  .text-mobile-heading {
-    @apply text-xl sm:text-2xl md:text-3xl;
-  }
-
-  .text-mobile-subheading {
-    @apply text-lg sm:text-xl;
-  }
-
-  /* Spacing adjustments for mobile */
-  .p-mobile {
-    @apply p-3 sm:p-4 md:p-6;
-  }
-
-  .m-mobile {
-    @apply m-2 sm:m-4 md:m-6;
-  }
-
-  .gap-mobile {
-    @apply gap-2 sm:gap-4 md:gap-6;
-  }
-
   /* Interactive elements accessibility */
   button,
   a,
   [role="button"],
   [tabindex="0"] {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50;
+    @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50;
     @apply focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     @apply dark:focus-visible:ring-offset-[hsl(var(--background))];
-  }
-
-  /* Touch-friendly improvements */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px]; /* iOS minimum touch target size */
-  }
-
-  /* Improved mobile table accessibility */
-  .responsive-table td::before {
-    content: attr(data-label);
-    @apply font-semibold text-left mr-2;
-    @apply sr-only sm:not-sr-only; /* Screen reader only on mobile */
-  }
-
-  /* Skip to main content link for keyboard users */
-  .skip-to-content {
-    @apply sr-only focus:not-sr-only;
-    @apply fixed top-0 left-0 z-50;
-    @apply bg-background text-foreground;
-    @apply px-4 py-2 m-2 rounded-md;
-    @apply focus:outline-none focus:ring-2 focus:ring-ring/50;
-    @apply border border-border;
   }
 }
 
@@ -417,7 +508,7 @@ body {
 /* Remove custom button styles */
 input,
 textarea {
-  @apply focus:outline-none focus:ring-2 focus:ring-ring/50;
+  @apply focus:outline-hidden focus:ring-2 focus:ring-ring/50;
 }
 
 html,

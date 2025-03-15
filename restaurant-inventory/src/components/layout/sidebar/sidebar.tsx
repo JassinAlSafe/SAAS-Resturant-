@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SettingsIcon, HelpCircleIcon } from "lucide-react";
+import Link from "next/link";
 
 // Custom hook for sidebar state management
 const useSidebarState = () => {
@@ -135,17 +136,17 @@ export function Sidebar({ children }: SidebarProps) {
                 {open ? "OTHER" : ""}
               </p>
               <div className="space-y-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <Link
+                  href="/settings"
                   className={cn(
-                    "w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                    "flex w-full items-center px-3 py-2 text-sm font-medium rounded-md",
+                    "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
                     !open && "justify-center px-2"
                   )}
                 >
                   <SettingsIcon className={cn("h-5 w-5", open && "mr-2")} />
-                  {open && "Setting"}
-                </Button>
+                  {open && "Settings"}
+                </Link>
                 <Button
                   variant="ghost"
                   size="sm"

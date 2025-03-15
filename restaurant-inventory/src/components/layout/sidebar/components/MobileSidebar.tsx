@@ -85,11 +85,11 @@ export function MobileSidebar({
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <Link href="/dashboard" className="flex items-center gap-3">
             {!logoUrl ? (
-              <div className="flex items-center justify-center h-10 w-10 rounded-md bg-primary/10 text-primary shadow-sm">
+              <div className="flex items-center justify-center h-10 w-10 rounded-md bg-primary/10 text-primary shadow-xs">
                 <BookOpenIcon className="h-5 w-5" />
               </div>
             ) : (
-              <div className="h-10 w-10 rounded-md overflow-hidden border border-border/40 shadow-sm">
+              <div className="h-10 w-10 rounded-md overflow-hidden border border-border/40 shadow-xs">
                 <Image
                   src={logoUrl}
                   alt={businessName}
@@ -194,7 +194,7 @@ export function MobileSidebar({
                     )}
                   >
                     {item.icon && (
-                      <item.icon className="h-5 w-5 flex-shrink-0 mr-2" />
+                      <item.icon className="h-5 w-5 shrink-0 mr-2" />
                     )}
                     <span className="flex-1 text-left">{item.name}</span>
                     <ChevronDownIcon
@@ -225,7 +225,7 @@ export function MobileSidebar({
                               onClick={() => setOpenMobile(false)}
                             >
                               {child.icon && (
-                                <child.icon className="h-4 w-4 mr-2 flex-shrink-0" />
+                                <child.icon className="h-4 w-4 mr-2 shrink-0" />
                               )}
                               {child.name}
                             </Link>
@@ -259,7 +259,7 @@ export function MobileSidebar({
                   onClick={() => setOpenMobile(false)}
                 >
                   {item.icon && (
-                    <item.icon className="h-5 w-5 flex-shrink-0 mr-2" />
+                    <item.icon className="h-5 w-5 shrink-0 mr-2" />
                   )}
                   <span>{item.name}</span>
                 </Link>

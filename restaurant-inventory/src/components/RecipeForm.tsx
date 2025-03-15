@@ -252,7 +252,7 @@ export default function RecipeForm({
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter dish name"
                     required
-                    className="border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    className="border-gray-200 focus:border-blue-300 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -265,7 +265,7 @@ export default function RecipeForm({
                       setCategory(value === "none" ? "" : value)
                     }
                   >
-                    <SelectTrigger className="border-gray-200 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                    <SelectTrigger className="border-gray-200 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50">
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -287,7 +287,7 @@ export default function RecipeForm({
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Enter a description of the dish"
                     rows={3}
-                    className="border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 resize-none"
+                    className="border-gray-200 focus:border-blue-300 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50 resize-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -303,7 +303,7 @@ export default function RecipeForm({
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="0,00"
                       required
-                      className="pr-12 border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      className="pr-12 border-gray-200 focus:border-blue-300 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
                       kr
@@ -327,7 +327,7 @@ export default function RecipeForm({
                       value={foodCost}
                       onChange={(e) => setFoodCost(e.target.value)}
                       placeholder="0,00"
-                      className="pr-12 border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                      className="pr-12 border-gray-200 focus:border-blue-300 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
                       kr
@@ -410,7 +410,7 @@ export default function RecipeForm({
                                     updateIngredientId(index, value)
                                   }
                                 >
-                                  <SelectTrigger className="border-gray-200 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                  <SelectTrigger className="border-gray-200 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50">
                                     <SelectValue>
                                       {ingredient?.name || "Select ingredient"}
                                     </SelectValue>
@@ -445,7 +445,7 @@ export default function RecipeForm({
                                       parseFloat(e.target.value) || 0
                                     )
                                   }
-                                  className="w-24 border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                  className="w-24 border-gray-200 focus:border-blue-300 focus:ring-3 focus:ring-blue-200 focus:ring-opacity-50"
                                 />
                               </TableCell>
                               <TableCell className="text-gray-500">

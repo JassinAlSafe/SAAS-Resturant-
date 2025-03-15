@@ -50,13 +50,6 @@ export const useReports = () => {
         setActiveTab(storedTab);
     }, [storedTab]);
 
-    // Update both states when tab changes
-    const handleTabChange = useCallback((tab: TabType) => {
-        console.log('Tab changed to:', tab);
-        setActiveTab(tab);
-        setStoredTab(tab);
-    }, [setStoredTab]);
-
     // Date range state
     const today = new Date();
     const defaultFrom = subDays(today, 7);
@@ -254,6 +247,7 @@ export const useReports = () => {
                     data,
                     borderColor: generateRandomColor(),
                     backgroundColor: generateRandomColor(0.5),
+                    tension: 0.4
                 };
             });
 
@@ -392,7 +386,14 @@ export const useReports = () => {
                     setPreviousPeriodData(previousMetrics);
                 } catch (err) {
                     console.error('Error fetching previous period data:', err);
-                    setPreviousPeriodData(null);
+                    setPreviousPeriodData({
+                        totalSales: 0,
+                        avgDailySales: 0,
+                        totalOrders: 0,
+                        avgOrderValue: 0,
+                        grossProfit: 0,
+                        profitMargin: 0
+                    });
                 }
             } else if (activeTab === 'inventory') {
                 console.log('Fetching inventory data...');
@@ -411,6 +412,19 @@ export const useReports = () => {
             setIsLoading(false);
         }
     }, [activeTab, dateRange, fetchInventoryData, fetchExecutiveSummary]);
+
+    // Update both states when tab changes
+    const handleTabChange = useCallback((tab: TabType) => {
+        console.log('Tab changed to:', tab);
+        setActiveTab(tab);
+        setStoredTab(tab);
+
+        // Trigger data fetch if we have a valid date range
+        if (dateRange?.from && dateRange?.to) {
+            console.log('Triggering data fetch for new tab:', tab);
+            fetchData();
+        }
+    }, [setStoredTab, dateRange, fetchData]);
 
     const handleDateChange = useCallback(
         (newDate: DateRange | undefined) => {

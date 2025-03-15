@@ -39,7 +39,7 @@ export const PageHeader = ({
     </div>
 
     {/* Controls Section with consistent spacing */}
-    <div className="bg-card rounded-lg p-4 shadow-sm border border-border/40">
+    <div className="bg-card rounded-lg p-4 shadow-xs border border-border/40">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
         <nav
           role="tablist"

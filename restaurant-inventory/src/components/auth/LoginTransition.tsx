@@ -132,7 +132,7 @@ export const LoginTransition = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-50"
+      className="fixed inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-xs z-50"
       style={{ opacity: 1 }} // Ensure initial visibility
     >
       <div

@@ -62,7 +62,7 @@ export default function StatCard({
   const styles = variantStyles[variant];
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-all">
+    <Card className="shadow-xs hover:shadow-md transition-all">
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div

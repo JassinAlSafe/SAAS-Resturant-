@@ -34,7 +34,7 @@ export function SidebarHeader({
         {!logoUrl ? (
           <div
             className={cn(
-              "flex items-center justify-center rounded-md bg-teal-500/10 text-teal-500 shadow-sm",
+              "flex items-center justify-center rounded-md bg-teal-500/10 text-teal-500 shadow-xs",
               open ? "h-8 w-8" : "h-8 w-8"
             )}
           >
@@ -43,7 +43,7 @@ export function SidebarHeader({
         ) : (
           <div
             className={cn(
-              "rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm",
+              "rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 shadow-xs",
               open ? "h-8 w-8" : "h-8 w-8"
             )}
           >

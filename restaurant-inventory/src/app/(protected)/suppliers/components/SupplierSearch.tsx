@@ -14,7 +14,7 @@ export default function SupplierSearch({
   onSearchChange,
 }: SupplierSearchProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
         <div className="relative flex-1">
           <div className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400">

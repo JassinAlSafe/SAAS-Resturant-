@@ -1,553 +1,508 @@
-"use client";
-
-import { useState, useCallback } from "react";
-import Card from "@/components/Card";
-import { Bar, Pie } from "react-chartjs-2";
-import { SalesAnalyticsViewProps } from "../types"; // Remove DateRange import from here
-import { format } from "date-fns";
+import React from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
   TableHeader,
   TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+  Table,
 } from "@/components/ui/table";
-import { EmptyState } from "./EmptyState";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { InfoIcon, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  PieChart,
+  ListFilter,
+  Download,
+  Info,
+} from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DishDetailsModal } from "./DishDetailsModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { ReportMetrics } from "../types";
 
-export const SalesAnalyticsView = ({
+interface SalesAnalyticsViewProps {
+  salesData: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string | string[];
+      borderColor?: string;
+      borderWidth?: number;
+    }[];
+  };
+  topDishesData: {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      backgroundColor: string | string[];
+      borderColor?: string;
+      borderWidth?: number;
+    }[];
+  };
+  previousPeriodData?: ReportMetrics;
+  dateRange: string;
+  formatCurrency: (amount: number) => string;
+  getPercentageChange: (current: number, previous: number) => number;
+}
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "bottom" as const,
+      labels: {
+        boxWidth: 12,
+        padding: 16,
+        usePointStyle: true,
+      },
+    },
+    tooltip: {
+      padding: 12,
+      caretSize: 6,
+      cornerRadius: 4,
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: "rgba(0, 0, 0, 0.06)",
+      },
+    },
+    x: {
+      grid: {
+        display: false,
+      },
+    },
+  },
+};
+
+export function SalesAnalyticsView({
   salesData,
   topDishesData,
-  formatCurrency,
   previousPeriodData,
-  getPercentageChange,
   dateRange,
-}: SalesAnalyticsViewProps) => {
-  const [selectedDateIndex, setSelectedDateIndex] = useState<number | null>(
-    null
+  formatCurrency,
+  getPercentageChange,
+}: SalesAnalyticsViewProps) {
+  // Extract summary data from charts
+  const totalSales =
+    salesData.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0;
+  const totalTransactions =
+    salesData.datasets[1]?.data.reduce((a, b) => a + b, 0) || 0;
+  const averageOrderValue = totalTransactions
+    ? totalSales / totalTransactions
+    : 0;
+
+  // Calculate percentage changes with null checks and proper property names
+  const salesPercentChange = getPercentageChange(
+    totalSales,
+    previousPeriodData?.totalSales ?? 0
   );
-  const [showDishDetails, setShowDishDetails] = useState(false);
-  const [showDayDetails, setShowDayDetails] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [dishDetails, setDishDetails] = useState({
-    dishId: "",
-    dishName: "",
-    quantity: 0,
-    revenue: 0,
-    cost: 0,
-    profit: 0,
-    ingredients: [] as Array<{
-      id: string;
-      name: string;
-      quantity: number;
-      unit: string;
-    }>,
-  });
-
-  const handleDishClick = useCallback(
-    async (_event: unknown, elements: { index: number }[]) => {
-      if (elements.length === 0 || !topDishesData.labels) return;
-
-      const index = elements[0].index;
-      const dishName = topDishesData.labels[index] as string;
-      if (!dishName || dishName === "Other") return;
-
-      setIsLoading(true);
-
-      try {
-        const mockDishDetails = {
-          dishId: `dish-${index}`,
-          dishName,
-          quantity: Math.floor(Math.random() * 100) + 20,
-          revenue: Math.random() * 2000 + 500,
-          cost: Math.random() * 800 + 200,
-          profit: Math.random() * 1200 + 300,
-          ingredients: [
-            { id: "ing-1", name: "Tomatoes", quantity: 0.2, unit: "kg" },
-            { id: "ing-2", name: "Onions", quantity: 0.1, unit: "kg" },
-            { id: "ing-3", name: "Chicken", quantity: 0.3, unit: "kg" },
-          ],
-        };
-
-        setDishDetails(mockDishDetails);
-        setShowDishDetails(true);
-      } catch (error) {
-        console.error("Error fetching dish details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [topDishesData.labels]
+  const transactionsPercentChange = getPercentageChange(
+    totalTransactions,
+    previousPeriodData?.totalOrders ?? 0
+  );
+  const averageOrderPercentChange = getPercentageChange(
+    averageOrderValue,
+    previousPeriodData?.avgOrderValue ?? 0
   );
 
-  const handleDayClick = useCallback(
-    (_event: unknown, elements: { index: number }[]) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        setSelectedDateIndex(index);
-        setShowDayDetails(true);
-      }
-    },
-    []
-  );
+  // Format the period label for display
+  const getPeriodLabel = () => {
+    switch (dateRange) {
+      case "7d":
+        return "Last 7 days";
+      case "30d":
+        return "Last 30 days";
+      case "90d":
+        return "Last 90 days";
+      case "1y":
+        return "Last 12 months";
+      default:
+        return "Custom period";
+    }
+  };
 
-  const hasData = salesData?.datasets?.[0]?.data?.length > 0;
-  const hasDishData = (topDishesData?.labels?.length ?? 0) > 0;
-
-  if (!hasData && !hasDishData) {
-    return (
-      <EmptyState
-        title="No sales data available"
-        description="There are no sales recorded for the selected date range. Try selecting a different period or add some sales."
-      />
-    );
-  }
-
-  const totalSales = salesData.datasets[0].data.reduce(
-    (a, b) => (typeof a === "number" && typeof b === "number" ? a + b : 0),
-    0
-  ) as number;
-
-  const totalOrders = salesData.datasets[0].data.reduce(
-    (a, b) =>
-      typeof a === "number" && typeof b === "number"
-        ? a + Math.round((b as number) / 25)
-        : 0,
-    0
-  ) as number;
-
-  const avgDailySales = totalSales / (salesData.labels?.length ?? 1);
-  const avgOrderValue = totalSales / (totalOrders || 1);
-
-  const periodLabel =
-    dateRange && dateRange.from && dateRange.to
-      ? `${format(dateRange.from, "MMM d, yyyy")} - ${format(
-          dateRange.to,
-          "MMM d, yyyy"
-        )}`
-      : "selected period";
+  // Generate top dishes for table view
+  const topDishesTable = topDishesData.labels.map((dish, index) => ({
+    name: dish,
+    sales: topDishesData.datasets[0].data[index],
+    rank: index + 1,
+  }));
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Total Sales
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Sum of all sales in the selected period</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalSales)}
-            </div>
-            <div className="flex items-center mt-1 text-xs">
-              {previousPeriodData?.totalSales !== undefined && (
-                <>
-                  vs. {formatCurrency(previousPeriodData.totalSales)} last
-                  period
-                  <span
-                    className={`ml-2 flex items-center ${
-                      getPercentageChange(
-                        totalSales,
-                        previousPeriodData.totalSales
-                      ) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {getPercentageChange(
-                      totalSales,
-                      previousPeriodData.totalSales
-                    ) >= 0 ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {Math.abs(
-                      getPercentageChange(
-                        totalSales,
-                        previousPeriodData.totalSales
-                      )
-                    )}
-                    %
-                  </span>
-                </>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Average Daily Sales
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Average sales per day in the selected period</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-            <div className="text-2xl font-bold">
-              {formatCurrency(avgDailySales)}
-            </div>
-            <div className="flex items-center mt-1 text-xs">
-              {previousPeriodData?.avgDailySales !== undefined && (
-                <>
-                  vs. {formatCurrency(previousPeriodData.avgDailySales)} last
-                  period
-                  <span
-                    className={`ml-2 flex items-center ${
-                      getPercentageChange(
-                        avgDailySales,
-                        previousPeriodData.avgDailySales
-                      ) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {getPercentageChange(
-                      avgDailySales,
-                      previousPeriodData.avgDailySales
-                    ) >= 0 ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {Math.abs(
-                      getPercentageChange(
-                        avgDailySales,
-                        previousPeriodData.avgDailySales
-                      )
-                    )}
-                    %
-                  </span>
-                </>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Total Orders
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Total number of orders in the selected period</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-            <div className="text-2xl font-bold">{totalOrders}</div>
-            <div className="flex items-center mt-1 text-xs">
-              {previousPeriodData?.totalOrders !== undefined && (
-                <>
-                  vs. {previousPeriodData.totalOrders.toString() || "0"} last
-                  period
-                  <span
-                    className={`ml-2 flex items-center ${
-                      getPercentageChange(
-                        totalOrders,
-                        previousPeriodData.totalOrders
-                      ) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {getPercentageChange(
-                      totalOrders,
-                      previousPeriodData.totalOrders
-                    ) >= 0 ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {Math.abs(
-                      getPercentageChange(
-                        totalOrders,
-                        previousPeriodData.totalOrders
-                      )
-                    )}
-                    %
-                  </span>
-                </>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              Average Order Value
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <InfoIcon className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Average revenue per order</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-            <div className="text-2xl font-bold">
-              {formatCurrency(avgOrderValue)}
-            </div>
-            <div className="flex items-center mt-1 text-xs">
-              {previousPeriodData?.avgOrderValue !== undefined && (
-                <>
-                  vs. {formatCurrency(previousPeriodData.avgOrderValue)} last
-                  period
-                  <span
-                    className={`ml-2 flex items-center ${
-                      getPercentageChange(
-                        avgOrderValue,
-                        previousPeriodData.avgOrderValue
-                      ) >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {getPercentageChange(
-                      avgOrderValue,
-                      previousPeriodData.avgOrderValue
-                    ) >= 0 ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {Math.abs(
-                      getPercentageChange(
-                        avgOrderValue,
-                        previousPeriodData.avgOrderValue
-                      )
-                    )}
-                    %
-                  </span>
-                </>
-              )}
-            </div>
-          </CardHeader>
-        </Card>
+    <div className="space-y-8">
+      {/* Page header with date range info */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Sales Analytics</h2>
+          <p className="text-muted-foreground">
+            {getPeriodLabel()} • {format(new Date(), "MMM d, yyyy")}
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs">Download data as CSV or Excel</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                <ListFilter className="h-4 w-4 mr-2" />
+                Filter View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Revenue Only</DropdownMenuItem>
+              <DropdownMenuItem>Transactions Only</DropdownMenuItem>
+              <DropdownMenuItem>Combined View</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Daily Sales</CardTitle>
+      {/* Summary metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total Sales Card */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 h-20 w-20 bg-primary/5 rounded-bl-full"></div>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Sales</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold">
+                {formatCurrency(totalSales)}
+              </CardTitle>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="flex justify-between">
+                    <h4 className="font-semibold">Sales Breakdown</h4>
+                    <Badge variant="outline">{getPeriodLabel()}</Badge>
+                  </div>
+                  <div className="mt-2 text-sm">
+                    <p>Total sales amount for the selected period.</p>
+                    <p className="mt-2">
+                      Previous period:{" "}
+                      {formatCurrency(previousPeriodData?.totalSales ?? 0)}
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
           </CardHeader>
           <CardContent>
-            {hasData ? (
-              <div className="h-[350px]">
-                <Bar
-                  data={salesData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onClick: handleDayClick,
-                    plugins: {
-                      legend: {
-                        position: "top",
-                        align: "end",
-                        labels: {
-                          boxWidth: 8,
-                          usePointStyle: true,
-                          pointStyle: "circle",
-                        },
-                      },
-                      tooltip: {
-                        callbacks: {
-                          label: (context) =>
-                            `${context.dataset.label}: ${formatCurrency(
-                              context.parsed.y
-                            )}`,
-                        },
-                      },
-                    },
-                    scales: {
-                      x: {
-                        grid: {
-                          display: false,
-                        },
-                        ticks: {
-                          maxRotation: 45,
-                          minRotation: 45,
-                        },
-                      },
-                      y: {
-                        beginAtZero: true,
-                        ticks: {
-                          callback: (value) => formatCurrency(value as number),
-                        },
-                      },
-                    },
-                  }}
-                />
-              </div>
-            ) : (
-              <EmptyState
-                title="No daily sales data"
-                description="There are no sales recorded for this period."
-              />
-            )}
+            <div className="flex items-center gap-2">
+              {salesPercentChange >= 0 ? (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-0 font-normal"
+                  >
+                    <ArrowUpRight className="h-3 w-3 mr-1" />
+                    {salesPercentChange.toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-red-50 text-red-700 border-0 font-normal"
+                  >
+                    <ArrowDownRight className="h-3 w-3 mr-1" />
+                    {Math.abs(salesPercentChange).toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Top Selling Dishes
-            </CardTitle>
+        {/* Total Transactions Card */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 h-20 w-20 bg-blue-50 rounded-bl-full"></div>
+          <CardHeader className="pb-2">
+            <CardDescription>Transactions</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold">
+                {totalTransactions.toLocaleString()}
+              </CardTitle>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="flex justify-between">
+                    <h4 className="font-semibold">Transaction Details</h4>
+                    <Badge variant="outline">{getPeriodLabel()}</Badge>
+                  </div>
+                  <div className="mt-2 text-sm">
+                    <p>Total number of orders for the selected period.</p>
+                    <p className="mt-2">
+                      Previous period:{" "}
+                      {(previousPeriodData?.totalOrders ?? 0).toLocaleString()}
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
           </CardHeader>
           <CardContent>
-            {hasDishData ? (
-              <div className="h-[350px] flex items-center justify-center">
-                <div className="w-full max-w-[240px]">
-                  <Pie
+            <div className="flex items-center gap-2">
+              {transactionsPercentChange >= 0 ? (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-0 font-normal"
+                  >
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    {transactionsPercentChange.toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-red-50 text-red-700 border-0 font-normal"
+                  >
+                    <TrendingDown className="h-3 w-3 mr-1" />
+                    {Math.abs(transactionsPercentChange).toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Average Order Value Card */}
+        <Card className="relative overflow-hidden">
+          <div className="absolute top-0 right-0 h-20 w-20 bg-amber-50 rounded-bl-full"></div>
+          <CardHeader className="pb-2">
+            <CardDescription>Average Order Value</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold">
+                {formatCurrency(averageOrderValue)}
+              </CardTitle>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="flex justify-between">
+                    <h4 className="font-semibold">Average Order Details</h4>
+                    <Badge variant="outline">{getPeriodLabel()}</Badge>
+                  </div>
+                  <div className="mt-2 text-sm">
+                    <p>Average amount spent per transaction.</p>
+                    <p className="mt-2">
+                      Previous period:{" "}
+                      {formatCurrency(previousPeriodData?.avgOrderValue ?? 0)}
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              {averageOrderPercentChange >= 0 ? (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-0 font-normal"
+                  >
+                    <ArrowUpRight className="h-3 w-3 mr-1" />
+                    {averageOrderPercentChange.toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Badge
+                    variant="outline"
+                    className="bg-red-50 text-red-700 border-0 font-normal"
+                  >
+                    <ArrowDownRight className="h-3 w-3 mr-1" />
+                    {Math.abs(averageOrderPercentChange).toFixed(1)}%
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    vs. previous period
+                  </span>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sales Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Sales Chart - Takes 2/3 of the space */}
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg font-semibold">
+                  Sales Performance
+                </CardTitle>
+                <CardDescription>
+                  Revenue and transaction trends over time
+                </CardDescription>
+              </div>
+              <Tabs defaultValue="bar" className="w-auto">
+                <TabsList className="grid h-8 w-auto grid-cols-2">
+                  <TabsTrigger
+                    value="bar"
+                    className="h-8 flex items-center gap-1"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only">Bar</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="line"
+                    className="h-8 flex items-center gap-1"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="sr-only sm:not-sr-only">Line</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <Bar data={salesData} options={chartOptions} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Dishes Chart - Takes 1/3 of the space */}
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-lg font-semibold">
+              Top Selling Items
+            </CardTitle>
+            <CardDescription>Distribution by sales volume</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="chart">
+              <TabsList className="grid w-full grid-cols-2 h-9 mb-4">
+                <TabsTrigger value="chart" className="flex items-center gap-1">
+                  <PieChart className="h-4 w-4" />
+                  <span>Chart</span>
+                </TabsTrigger>
+                <TabsTrigger value="table" className="flex items-center gap-1">
+                  <ListFilter className="h-4 w-4" />
+                  <span>Table</span>
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="chart" className="mt-0">
+                <div className="h-64">
+                  <Doughnut
                     data={topDishesData}
                     options={{
-                      responsive: true,
+                      ...chartOptions,
                       maintainAspectRatio: false,
-                      onClick: handleDishClick,
-                      plugins: {
-                        legend: {
-                          position: "bottom",
-                          labels: {
-                            boxWidth: 8,
-                            usePointStyle: true,
-                            pointStyle: "circle",
-                          },
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (context) =>
-                              `${context.label}: ${context.raw}% of sales`,
-                          },
-                        },
-                      },
+                      cutout: "65%",
                     }}
                   />
                 </div>
-              </div>
-            ) : (
-              <EmptyState
-                title="No dish data"
-                description="There are no dishes sold in this period."
-              />
-            )}
+              </TabsContent>
+              <TabsContent value="table" className="mt-0">
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Rank</TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topDishesTable.map((dish) => (
+                        <TableRow key={dish.name}>
+                          <TableCell>{dish.rank}</TableCell>
+                          <TableCell className="font-medium">
+                            {dish.name}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(dish.sales)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
+          <CardFooter className="border-t pt-4 flex justify-center">
+            <Button variant="link" className="text-xs">
+              View detailed sales by item
+            </Button>
+          </CardFooter>
         </Card>
       </div>
-
-      <Dialog open={showDayDetails} onOpenChange={setShowDayDetails}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDateIndex !== null &&
-                (salesData.labels?.[selectedDateIndex] as string)}{" "}
-              Sales
-            </DialogTitle>
-          </DialogHeader>
-          {selectedDateIndex !== null && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-xs text-muted-foreground">Total Sales</p>
-                  <p className="text-lg font-medium">
-                    {formatCurrency(
-                      (salesData.datasets[0].data[selectedDateIndex] ??
-                        0) as number
-                    )}
-                  </p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-md">
-                  <p className="text-xs text-muted-foreground">Orders</p>
-                  <p className="text-lg font-medium">
-                    {Math.round(
-                      ((salesData.datasets[0].data[selectedDateIndex] ??
-                        0) as number) / 25
-                    )}
-                  </p>
-                </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Dish</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Revenue</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(topDishesData.labels ?? []).map((dish, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{dish as string}</TableCell>
-                      <TableCell>{Math.round(Math.random() * 8) + 1}</TableCell>
-                      <TableCell>
-                        {formatCurrency(Math.random() * 150 + 50)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDayDetails(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <DishDetailsModal
-        isOpen={showDishDetails}
-        onClose={() => setShowDishDetails(false)}
-        dishName={dishDetails.dishName}
-        dishId={dishDetails.dishId}
-        quantity={dishDetails.quantity}
-        revenue={dishDetails.revenue}
-        cost={dishDetails.cost}
-        profit={dishDetails.profit}
-        ingredients={dishDetails.ingredients}
-        formatCurrency={formatCurrency}
-        isLoading={isLoading}
-        periodLabel={periodLabel}
-      />
     </div>
   );
-};
+}

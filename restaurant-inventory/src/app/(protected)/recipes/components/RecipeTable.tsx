@@ -52,7 +52,7 @@ export default function RecipeTable({
   );
 
   return (
-    <div className="rounded-lg border border-gray-100 shadow-sm overflow-hidden bg-white">
+    <div className="rounded-lg border border-gray-100 shadow-xs overflow-hidden bg-white">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent border-gray-100">

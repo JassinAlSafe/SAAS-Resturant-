@@ -25,11 +25,11 @@ export default function RecipeHeader({
       className="flex flex-col sm:flex-row sm:items-center gap-4"
     >
       <div className="relative">
-        <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-indigo-900/20">
+        <div className="h-14 w-14 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-100 dark:shadow-indigo-900/20">
           <FiBook className="h-7 w-7 text-white" />
         </div>
         {totalRecipes !== undefined && (
-          <div className="absolute -top-2 -right-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-semibold h-6 min-w-6 px-1.5 rounded-full border border-indigo-100 dark:border-slate-700 shadow-sm flex items-center justify-center">
+          <div className="absolute -top-2 -right-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-semibold h-6 min-w-6 px-1.5 rounded-full border border-indigo-100 dark:border-slate-700 shadow-xs flex items-center justify-center">
             {totalRecipes > 99 ? "99+" : totalRecipes}
           </div>
         )}

@@ -120,7 +120,7 @@ export function TableItem({
         >
           <div className="flex items-center gap-3">
             {!compactMode && (
-              <div className="w-10 h-10 flex-shrink-0 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden relative">
+              <div className="w-10 h-10 shrink-0 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden relative">
                 {(item as ExtendedInventoryItem).image_url ? (
                   <Image
                     src={(item as ExtendedInventoryItem).image_url!}

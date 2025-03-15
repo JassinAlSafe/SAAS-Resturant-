@@ -89,7 +89,7 @@ const CustomToggle = React.forwardRef<HTMLButtonElement, CustomToggleProps>(
           onKeyDown={handleKeyDown}
           className={cn(
             "relative inline-flex items-center justify-start rounded-full transition-colors duration-200 ease-in-out",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
+            "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500",
             checked
               ? cn(colors[color].bg, colors[color].hover)
               : "bg-gray-200 dark:bg-gray-600",

@@ -168,7 +168,7 @@ export function PlanSelector({
                       <ul className="space-y-2 text-sm">
                         {plan.features.map((feature, index) => (
                           <li key={index} className="flex items-start gap-2">
-                            <FiCheck className="text-green-500 mt-0.5 flex-shrink-0" />
+                            <FiCheck className="text-green-500 mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </li>
                         ))}

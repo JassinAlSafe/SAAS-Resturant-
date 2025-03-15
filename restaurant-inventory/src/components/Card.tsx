@@ -13,7 +13,7 @@ export default function Card({ children, className, onClick }: CardProps) {
   return (
     <div
       className={cn(
-        "bg-card rounded-xl border shadow-sm overflow-hidden",
+        "bg-card rounded-xl border shadow-xs overflow-hidden",
         onClick && "cursor-pointer hover:shadow-md transition-shadow",
         className
       )}

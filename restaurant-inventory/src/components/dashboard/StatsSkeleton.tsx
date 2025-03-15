@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function StatsSkeleton() {
   // Create an array of 4 items for the skeleton layout
   const skeletons = Array.from({ length: 4 }).map((_, i) => (
-    <div key={i} className="bg-card rounded-xl border shadow-sm p-4">
+    <div key={i} className="bg-card rounded-xl border shadow-xs p-4">
       <div className="flex items-start justify-between">
         <div>
           <Skeleton className="h-4 w-24 mb-2" />

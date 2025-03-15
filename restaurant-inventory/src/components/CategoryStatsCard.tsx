@@ -66,7 +66,7 @@ export default function CategoryStatsCard({
   });
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-all">
+    <Card className="shadow-xs hover:shadow-md transition-all">
       <div className="p-4 border-b flex items-center justify-between">
         <h3 className="font-semibold">{title}</h3>
         <div className="flex items-center gap-2">

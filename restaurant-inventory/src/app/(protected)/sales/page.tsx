@@ -85,13 +85,13 @@ export default function Page() {
               <TabsList className="bg-slate-100/80 rounded-full p-0.5">
                 <TabsTrigger
                   value="daily"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs"
                 >
                   Daily Sales
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
+                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs"
                 >
                   Sales History
                 </TabsTrigger>

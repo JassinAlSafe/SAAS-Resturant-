@@ -10,7 +10,7 @@ interface EmptySuppliersProps {
 export default function EmptySuppliers({ onAddClick }: EmptySuppliersProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-full mb-8 border border-blue-100 shadow-md">
+      <div className="bg-linear-to-br from-blue-50 to-indigo-50 p-8 rounded-full mb-8 border border-blue-100 shadow-md">
         <FiUsers className="h-14 w-14 text-blue-600" />
       </div>
       <h2 className="text-2xl font-bold mb-3 text-gray-900 tracking-tight">
@@ -23,7 +23,7 @@ export default function EmptySuppliers({ onAddClick }: EmptySuppliersProps) {
       </p>
       <Button
         onClick={onAddClick}
-        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-5 h-auto rounded-xl shadow-md transition-all duration-200 font-medium text-base"
+        className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-5 h-auto rounded-xl shadow-md transition-all duration-200 font-medium text-base"
       >
         <FiPlus className="mr-2 h-5 w-5" />
         Add Your First Supplier

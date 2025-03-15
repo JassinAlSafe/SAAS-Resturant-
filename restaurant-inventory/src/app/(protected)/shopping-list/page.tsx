@@ -157,7 +157,7 @@ function ShoppingListContent() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Main Content Area */}
         <div className="md:col-span-12 space-y-6">
-          <Card className="border shadow-sm bg-white">
+          <Card className="border shadow-xs bg-white">
             <CardContent className="p-4 sm:p-6">
               <ShoppingListHeader
                 onAddItem={() => setIsAddModalOpen(true)}
@@ -182,7 +182,7 @@ function ShoppingListContent() {
             </CardContent>
           </Card>
 
-          <Card className="border shadow-sm bg-white overflow-hidden">
+          <Card className="border shadow-xs bg-white overflow-hidden">
             <CardContent className="p-0">
               <ShoppingListTable
                 items={sortedList}

@@ -4,7 +4,7 @@ export const AuthBackground = () => {
   return (
     <div className="absolute inset-0">
       {/* Left side geometric pattern */}
-      <div className="h-full w-full bg-gradient-to-br from-white via-slate-50 to-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="h-full w-full bg-linear-to-br from-white via-slate-50 to-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="h-full w-full relative">
           {/* Main grid */}
           <div className="grid grid-cols-8 h-full w-full p-8 gap-4">
@@ -39,12 +39,12 @@ export const AuthBackground = () => {
           </div>
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-white/50 dark:from-slate-900/50 dark:to-slate-900/50" />
+          <div className="absolute inset-0 bg-linear-to-t from-white/50 via-transparent to-white/50 dark:from-slate-900/50 dark:to-slate-900/50" />
         </div>
       </div>
 
       {/* Right side subtle gradient */}
-      <div className="absolute right-0 top-0 h-full w-1/2 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm" />
+      <div className="absolute right-0 top-0 h-full w-1/2 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xs" />
     </div>
   );
 };

@@ -140,6 +140,7 @@ export async function GET() {
                         .createBucket('restaurant-icons', {
                             public: false,
                             fileSizeLimit: 2097152, // 2MB
+                            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
                         });
 
                     if (createError) {
@@ -200,14 +201,65 @@ export async function GET() {
                 }
             }
 
+            // Create user folder if it doesn't exist
+            const userId = session.user.id;
+            const folderPath = `${userId}/`;
+
+            // Check if folder exists by listing objects with the prefix
+            const { data: folderCheck, error: folderCheckError } = await supabase
+                .storage
+                .from('restaurant-icons')
+                .list(folderPath, {
+                    limit: 1
+                });
+
+            if (folderCheckError && folderCheckError.message !== 'The resource was not found') {
+                return NextResponse.json(
+                    {
+                        error: 'Folder Check Error',
+                        details: {
+                            message: 'Failed to check if user folder exists',
+                            originalError: folderCheckError
+                        }
+                    },
+                    { status: 500 }
+                );
+            }
+
+            // If folder doesn't exist, create an empty placeholder file to establish the folder
+            if (!folderCheck || folderCheck.length === 0) {
+                const placeholderContent = new Uint8Array([]);
+                const placeholderPath = `${folderPath}.placeholder`;
+
+                const { error: uploadError } = await supabase
+                    .storage
+                    .from('restaurant-icons')
+                    .upload(placeholderPath, placeholderContent, {
+                        contentType: 'application/octet-stream',
+                        upsert: true
+                    });
+
+                if (uploadError) {
+                    return NextResponse.json(
+                        {
+                            error: 'Folder Creation Error',
+                            details: {
+                                message: 'Failed to create user folder in restaurant-icons bucket',
+                                originalError: uploadError
+                            }
+                        },
+                        { status: 500 }
+                    );
+                }
+            }
+
             // Get the RLS policies for the bucket
+            let policies = [];
             try {
                 // Check if the get_policies_for_bucket function exists
                 const { error: functionCheckError } = await supabase
                     .rpc('get_policies_for_bucket', { bucket_name: 'restaurant-icons' })
                     .maybeSingle();
-
-                let policies = [];
 
                 if (functionCheckError && functionCheckError.message.includes('function get_policies_for_bucket')) {
                     console.log('get_policies_for_bucket function does not exist, skipping policy check');
@@ -226,25 +278,19 @@ export async function GET() {
                         policies = policiesData || [];
                     }
                 }
-
-                return NextResponse.json({
-                    bucketExists: bucketExists || true, // If we created it, it now exists
-                    policies: policies
-                }, {
-                    headers: corsHeaders
-                });
             } catch (policiesError) {
                 console.error('Exception getting policies:', policiesError);
-
-                // Return success even if we can't get policies
-                return NextResponse.json({
-                    bucketExists: bucketExists || true,
-                    policies: [],
-                    policyError: policiesError instanceof Error ? policiesError.message : String(policiesError)
-                }, {
-                    headers: corsHeaders
-                });
+                // Continue without policies data
+                policies = [];
             }
+
+            return NextResponse.json({
+                success: true,
+                message: 'Restaurant icons bucket is ready',
+                bucketExists,
+                userId,
+                policies
+            });
         } catch (bucketsError) {
             console.error('Exception listing buckets:', bucketsError);
 

@@ -349,7 +349,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
           )}
         >
           {/* Header */}
-          <header className="sticky top-0 z-10 h-16 px-4 border-b border-border flex items-center justify-between bg-background/80 backdrop-blur-sm">
+          <header className="sticky top-0 z-10 h-16 px-4 border-b border-border flex items-center justify-between bg-background/80 backdrop-blur-xs">
             {isMobile && (
               <div className="text-lg font-semibold truncate">
                 {businessName}
@@ -382,7 +382,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             variant="default"
             size="default"
             onClick={toggleSidebar}
-            className="fixed left-20 top-4 z-[100] shadow-lg bg-primary text-primary-foreground px-4 py-2 flex items-center gap-2"
+            className="fixed left-20 top-4 z-100 shadow-lg bg-primary text-primary-foreground px-4 py-2 flex items-center gap-2"
             aria-label="Expand sidebar"
           >
             <ChevronRightIcon className="h-5 w-5" />

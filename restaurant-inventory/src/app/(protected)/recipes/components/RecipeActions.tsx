@@ -87,7 +87,7 @@ export default function RecipeActions({
           <Button
             variant="outline"
             size="sm"
-            className="text-gray-600 border-gray-200 hover:bg-gray-50 shadow-sm"
+            className="text-gray-600 border-gray-200 hover:bg-gray-50 shadow-xs"
             onClick={handleExportRecipes}
             disabled={recipes.length === 0}
           >
@@ -97,7 +97,7 @@ export default function RecipeActions({
           <Button
             variant="outline"
             size="sm"
-            className="text-gray-600 border-gray-200 hover:bg-gray-50 shadow-sm ml-2"
+            className="text-gray-600 border-gray-200 hover:bg-gray-50 shadow-xs ml-2"
             onClick={handleImportClick}
           >
             <FiUpload className="h-4 w-4 mr-2" />
@@ -110,7 +110,7 @@ export default function RecipeActions({
             <Button
               variant="outline"
               size="sm"
-              className="border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm sm:hidden"
+              className="border-gray-200 text-gray-600 hover:bg-gray-50 shadow-xs sm:hidden"
             >
               <FiSettings className="h-4 w-4" />
             </Button>
@@ -149,7 +149,7 @@ export default function RecipeActions({
         <Button
           size="sm"
           onClick={onAddClick}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
         >
           <FiPlus className="h-4 w-4 mr-2" />
           Add Recipe

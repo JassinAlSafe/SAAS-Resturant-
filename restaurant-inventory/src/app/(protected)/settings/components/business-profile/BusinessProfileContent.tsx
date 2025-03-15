@@ -9,12 +9,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BasicInfoForm } from "@/components/settings/business-profile/BasicInfoForm";
-import { AddressForm } from "@/components/settings/business-profile/AddressForm";
-import { OperatingHoursForm } from "@/components/settings/business-profile/OperatingHoursForm";
-import { LogoUpload } from "@/components/settings/business-profile/LogoUpload";
-import { CurrencySettings } from "@/components/settings/business-profile/CurrencySettings";
-import { TaxSettings } from "@/components/settings/business-profile/TaxSettings";
+import { BasicInfoForm } from "@/app/(protected)/settings/components/business-profile/BasicInfoForm";
+import { AddressForm } from "@/app/(protected)/settings/components/business-profile/AddressForm";
+import { OperatingHoursForm } from "@/app/(protected)/settings/components/business-profile/OperatingHoursForm";
+import { LogoUpload } from "@/app/(protected)/settings/components/business-profile/LogoUpload";
+import { CurrencySettings } from "@/app/(protected)/settings/components/business-profile/CurrencySettings";
+import { TaxSettings } from "@/app/(protected)/settings/components/business-profile/TaxSettings";
 import { CurrencyCode, CurrencyProvider } from "@/lib/currency";
 import { BusinessProfile } from "@/lib/types";
 

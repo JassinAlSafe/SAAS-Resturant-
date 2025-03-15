@@ -24,7 +24,7 @@ export default function ShoppingListLoading() {
       </div>
 
       {/* Summary Skeleton */}
-      <div className="bg-white p-6 rounded-lg border shadow-sm mb-6">
+      <div className="bg-white p-6 rounded-lg border shadow-xs mb-6">
         <Skeleton className="h-6 w-48 mb-4" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Skeleton className="h-24 rounded-lg" />
@@ -34,7 +34,7 @@ export default function ShoppingListLoading() {
       </div>
 
       {/* Filters Skeleton */}
-      <div className="bg-white p-4 rounded-lg border shadow-sm mb-6">
+      <div className="bg-white p-4 rounded-lg border shadow-xs mb-6">
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <Skeleton className="h-10 w-full md:w-2/3 rounded-md" />
           <Skeleton className="h-10 w-full md:w-1/3 rounded-md" />
@@ -49,7 +49,7 @@ export default function ShoppingListLoading() {
       </div>
 
       {/* Table Skeleton */}
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border shadow-xs overflow-hidden">
         <div className="p-4">
           <div className="space-y-6">
             <div className="flex items-center gap-2 pb-2 border-b border-gray-100">

@@ -113,7 +113,7 @@ export default function Dashboard() {
               <input
                 type="text"
                 placeholder="Search inventory..."
-                className="pl-9 pr-4 py-1.5 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 w-[200px]"
+                className="pl-9 pr-4 py-1.5 text-sm rounded-md border border-input bg-background focus:outline-hidden focus:ring-2 focus:ring-primary/30 w-[200px]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

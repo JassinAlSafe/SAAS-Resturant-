@@ -21,7 +21,7 @@ export const SalesMetricCard = ({
 }: SalesMetricCardProps) => (
   <div
     className={cn(
-      "group bg-card p-6 rounded-lg shadow-sm border border-border/40 hover:shadow-md transition-all duration-200",
+      "group bg-card p-6 rounded-lg shadow-xs border border-border/40 hover:shadow-md transition-all duration-200",
       className
     )}
     role="region"

@@ -89,7 +89,7 @@ export default function InventoryTable({
   return (
     <div className="w-full h-full flex flex-col">
       {/* Main content area container with border */}
-      <div className="grid grid-cols-1 gap-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm p-6">
+      <div className="grid grid-cols-1 gap-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xs p-6">
         {/* Section 1: Summary Statistics (Top Area) */}
         <section className="w-full">
           <motion.div

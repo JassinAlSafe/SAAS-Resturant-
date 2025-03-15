@@ -253,7 +253,7 @@ export function CurrentSubscription({
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {subscription.plan.features.map((feature, index) => (
                 <li key={index} className="flex items-center gap-2 text-sm">
-                  <FiCheckCircle className="text-green-500 flex-shrink-0" />
+                  <FiCheckCircle className="text-green-500 shrink-0" />
                   <span>{feature}</span>
                 </li>
               ))}
@@ -264,7 +264,7 @@ export function CurrentSubscription({
           {subscription.status === "active" &&
             !subscription.cancelAtPeriodEnd && (
               <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md text-sm">
-                <FiAlertCircle className="text-blue-500 flex-shrink-0 mt-0.5" />
+                <FiAlertCircle className="text-blue-500 shrink-0 mt-0.5" />
                 <div>
                   Your subscription will automatically renew on{" "}
                   <strong>
@@ -282,7 +282,7 @@ export function CurrentSubscription({
           {/* Cancellation notice */}
           {subscription.cancelAtPeriodEnd && (
             <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md text-sm">
-              <FiAlertCircle className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <FiAlertCircle className="text-amber-500 shrink-0 mt-0.5" />
               <div>
                 Your subscription is set to cancel on{" "}
                 <strong>
@@ -299,7 +299,7 @@ export function CurrentSubscription({
           {/* Paused subscription notice */}
           {subscription.status === "paused" && subscription.resumesAt && (
             <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-md text-sm">
-              <FiAlertCircle className="text-purple-500 flex-shrink-0 mt-0.5" />
+              <FiAlertCircle className="text-purple-500 shrink-0 mt-0.5" />
               <div>
                 Your subscription is paused. It will automatically resume on{" "}
                 <strong>

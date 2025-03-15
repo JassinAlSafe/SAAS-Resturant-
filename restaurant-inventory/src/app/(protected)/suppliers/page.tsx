@@ -179,7 +179,7 @@ function SuppliersContent() {
           <Button
             size="default"
             onClick={openAddModal}
-            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
             disabled={isAddingSupplier}
           >
             <Plus className="h-4 w-4" />

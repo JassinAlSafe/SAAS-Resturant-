@@ -44,7 +44,7 @@ export default function InventoryItemActions({
   };
 
   return (
-    <div className="bg-gradient-to-r from-muted/50 to-card rounded-lg border border-border shadow-sm overflow-hidden">
+    <div className="bg-linear-to-r from-muted/50 to-card rounded-lg border border-border shadow-xs overflow-hidden">
       <div className="border-b border-border bg-muted/50 px-5 py-3">
         <h3 className="font-medium">Item Actions</h3>
       </div>

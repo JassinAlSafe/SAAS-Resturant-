@@ -503,7 +503,7 @@ export default function Notes() {
                           {formatDate(note.createdAt)}
                         </span>
                       </div>
-                      <div className="bg-card p-4 rounded-lg border shadow-sm">
+                      <div className="bg-card p-4 rounded-lg border shadow-xs">
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="secondary">{note.entityType}</Badge>
                           <div className="flex gap-1">

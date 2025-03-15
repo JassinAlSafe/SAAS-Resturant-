@@ -35,7 +35,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "bg-card/50 border border-border/40 rounded-lg p-4 sm:p-6 mb-6 shadow-sm",
+        "bg-card/50 border border-border/40 rounded-lg p-4 sm:p-6 mb-6 shadow-xs",
         className
       )}
     >

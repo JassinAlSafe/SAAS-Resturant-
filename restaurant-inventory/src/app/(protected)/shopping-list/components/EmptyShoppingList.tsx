@@ -13,7 +13,7 @@ export default function EmptyShoppingList({
   onRefreshClick,
 }: EmptyShoppingListProps) {
   return (
-    <div className="bg-white border rounded-lg shadow-sm flex flex-col items-center justify-center py-16 px-4 text-center">
+    <div className="bg-white border rounded-lg shadow-xs flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="bg-blue-50 p-6 rounded-full mb-6 border border-blue-100">
         <FiShoppingCart className="h-12 w-12 text-blue-600" />
       </div>
@@ -28,7 +28,7 @@ export default function EmptyShoppingList({
       <div className="flex flex-wrap gap-4 justify-center">
         <Button
           onClick={onAddClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md shadow-xs"
         >
           <FiPlus className="mr-2 h-4 w-4" />
           Add Item Manually

@@ -1,6 +1,15 @@
 // Report Types
+export interface ReportMetrics {
+    totalSales: number;
+    avgDailySales: number;
+    totalOrders: number;
+    avgOrderValue: number;
+    grossProfit: number;
+    profitMargin: number;
+}
+
 export type DateRangeType = "week" | "month" | "quarter" | "custom";
-export type TabType = "sales" | "inventory" | "executive"; // Make sure all values match what's used in Tabs
+export type TabType = "sales" | "inventory" | "executive";
 
 // Date Range Type - Use react-day-picker's DateRange instead of defining our own
 import { DateRange } from 'react-day-picker';
@@ -36,7 +45,6 @@ export interface TopDishesData extends ChartData {
         label: string;
         data: number[];
         backgroundColor: string[];
-        borderWidth: number;
     }>;
 }
 
@@ -88,17 +96,12 @@ export interface DateRangeSelectorProps {
 }
 
 export interface SalesAnalyticsViewProps {
-    salesData: SalesData;
-    topDishesData: TopDishesData;
-    formatCurrency: (value: number) => string;
-    previousPeriodData?: {
-        totalSales: number;
-        avgDailySales: number;
-        totalOrders: number;
-        avgOrderValue: number;
-    };
+    salesData: ChartData;
+    topDishesData: ChartData;
+    formatCurrency: (amount: number) => string;
+    previousPeriodData?: ReportMetrics;
+    dateRange: string;
     getPercentageChange: (current: number, previous: number) => number;
-    dateRange: DateRange | undefined; // Make it required, not optional
 }
 
 export interface InventoryUsageViewProps {

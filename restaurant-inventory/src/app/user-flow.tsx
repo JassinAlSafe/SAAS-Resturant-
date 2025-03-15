@@ -256,7 +256,7 @@ function FlowStep({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 bg-card rounded-md p-4 border shadow-sm">
+    <div className="flex-1 bg-card rounded-md p-4 border shadow-xs">
       <div className="flex items-center gap-2 mb-2">
         <div className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
           {number}

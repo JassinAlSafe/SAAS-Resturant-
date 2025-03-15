@@ -109,7 +109,7 @@ const SalesGrowthCard = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background/95 backdrop-blur-sm border border-border/50 shadow-md rounded-md p-3">
+        <div className="bg-background/95 backdrop-blur-xs border border-border/50 shadow-md rounded-md p-3">
           <p className="font-medium text-sm">{label}</p>
           <p className="text-primary font-semibold">
             {formatCurrency(payload[0].value)}
@@ -123,7 +123,7 @@ const SalesGrowthCard = ({
   return (
     <Card
       className={cn(
-        "overflow-hidden bg-card shadow-sm hover:shadow-md transition-all duration-300 h-full",
+        "overflow-hidden bg-card shadow-xs hover:shadow-md transition-all duration-300 h-full",
         className
       )}
     >
@@ -210,8 +210,8 @@ const SalesGrowthCard = ({
             <div className="text-sm font-medium text-muted-foreground mb-3">
               Monthly Sales
             </div>
-            <div className="flex-grow flex flex-col">
-              <div className="flex-grow flex items-end">
+            <div className="grow flex flex-col">
+              <div className="grow flex items-end">
                 <div className="w-full h-full flex gap-2">
                   {chartData.map((item, i) => {
                     // Calculate height as a percentage of the maximum value (max height is 90%)

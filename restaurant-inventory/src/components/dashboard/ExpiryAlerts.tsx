@@ -207,7 +207,7 @@ export default function ExpiryAlerts({
               className="flex items-center p-1.5 rounded-md border bg-background/50 hover:bg-background/80"
             >
               <div
-                className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center mr-2 ${getSeverityClass(
+                className={`shrink-0 h-6 w-6 rounded-full flex items-center justify-center mr-2 ${getSeverityClass(
                   item.expiryDate
                 )}`}
               >
@@ -247,7 +247,7 @@ export default function ExpiryAlerts({
             className="flex items-center p-3 rounded-md border"
           >
             <div
-              className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center mr-3 ${getSeverityClass(
+              className={`shrink-0 h-10 w-10 rounded-full flex items-center justify-center mr-3 ${getSeverityClass(
                 item.expiryDate
               )}`}
             >

@@ -18,7 +18,7 @@ export default function EmptyRecipes({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex flex-col items-center justify-center py-16 px-6 text-center border border-gray-100 dark:border-gray-800 shadow-sm rounded-lg bg-white dark:bg-slate-950"
+      className="flex flex-col items-center justify-center py-16 px-6 text-center border border-gray-100 dark:border-gray-800 shadow-xs rounded-lg bg-white dark:bg-slate-950"
     >
       <motion.div
         className="bg-indigo-50 dark:bg-indigo-950/30 p-8 rounded-full mb-8 shadow-inner relative overflow-hidden group"
@@ -26,7 +26,7 @@ export default function EmptyRecipes({
         transition={{ type: "spring", stiffness: 400, damping: 10 }}
       >
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-indigo-100/0 via-indigo-100/50 to-indigo-100/0 dark:from-indigo-900/0 dark:via-indigo-900/20 dark:to-indigo-900/0"
+          className="absolute inset-0 bg-linear-to-r from-indigo-100/0 via-indigo-100/50 to-indigo-100/0 dark:from-indigo-900/0 dark:via-indigo-900/20 dark:to-indigo-900/0"
           initial={{ x: "-100%" }}
           animate={{ x: "100%" }}
           transition={{
@@ -67,7 +67,7 @@ export default function EmptyRecipes({
         <Button
           onClick={onAddClick}
           size="lg"
-          className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-sm transition-colors"
+          className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-xs transition-colors"
         >
           <FiPlus className="mr-2 h-5 w-5" />
           Create Your First Recipe
@@ -78,7 +78,7 @@ export default function EmptyRecipes({
             onClick={onImportClick}
             size="lg"
             variant="outline"
-            className="px-6 py-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 font-medium rounded-md shadow-sm"
+            className="px-6 py-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 font-medium rounded-md shadow-xs"
           >
             <FiUpload className="mr-2 h-5 w-5" />
             Import Recipes

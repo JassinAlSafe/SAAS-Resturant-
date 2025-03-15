@@ -105,7 +105,7 @@ export function InventoryCards({
                 </div>
               </div>
 
-              <div className="p-4 flex-grow flex flex-col">
+              <div className="p-4 grow flex flex-col">
                 <div className="mb-2">
                   <Badge variant="outline" className="mb-2 font-normal">
                     {item.category}

@@ -318,7 +318,7 @@ export default function SupplierForm({
                       <Badge
                         key={category}
                         variant="outline"
-                        className={`flex items-center gap-1 ${categoryColors[category]} transition-all hover:shadow-sm`}
+                        className={`flex items-center gap-1 ${categoryColors[category]} transition-all hover:shadow-xs`}
                       >
                         {category.replace("_", " ")}
                         <button

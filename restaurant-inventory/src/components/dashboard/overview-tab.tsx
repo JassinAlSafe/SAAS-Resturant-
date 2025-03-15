@@ -138,7 +138,7 @@ export function OverviewTab({
         {/* Left column - Stats and Charts */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           {/* Main Charts */}
-          <div className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 sm:p-6 border-b">
               <h2 className="text-xl font-semibold mb-1">Sales Performance</h2>
               <p className="text-sm text-muted-foreground">
@@ -180,7 +180,7 @@ export function OverviewTab({
 
           {/* Quick Actions Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Card className="shadow-sm hover:shadow-md transition-all group">
+            <Card className="shadow-xs hover:shadow-md transition-all group">
               <div className="p-5 flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FiShoppingBag className="h-6 w-6 text-primary" />
@@ -201,7 +201,7 @@ export function OverviewTab({
               </div>
             </Card>
 
-            <Card className="shadow-sm hover:shadow-md transition-all group">
+            <Card className="shadow-xs hover:shadow-md transition-all group">
               <div className="p-5 flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FiBarChart2 className="h-6 w-6 text-blue-600" />
@@ -222,7 +222,7 @@ export function OverviewTab({
               </div>
             </Card>
 
-            <Card className="shadow-sm hover:shadow-md transition-all group">
+            <Card className="shadow-xs hover:shadow-md transition-all group">
               <div className="p-5 flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <FiUsers className="h-6 w-6 text-green-600" />
@@ -245,7 +245,7 @@ export function OverviewTab({
           </div>
 
           {/* Recent Activity Section */}
-          <div className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between">
               <h2 className="font-semibold flex items-center">
                 <FiActivity className="h-4 w-4 mr-2 text-primary" />
@@ -260,7 +260,7 @@ export function OverviewTab({
                       key={index}
                       className="flex items-center p-2 rounded-lg bg-background/50 hover:bg-background transition-colors"
                     >
-                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                      <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
                         <FiActivity className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1">
@@ -295,7 +295,7 @@ export function OverviewTab({
         {/* Right column - Alerts & Categories */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
           {/* Alerts Section */}
-          <div className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 border-b bg-amber-50/50 flex items-center justify-between">
               <h2 className="font-semibold text-amber-800 flex items-center">
                 <FiAlertTriangle className="h-4 w-4 mr-2" />
@@ -317,7 +317,7 @@ export function OverviewTab({
 
           {/* Categories Section */}
           {categoryStats.length > 0 ? (
-            <div className="bg-card rounded-xl border shadow-sm hover:shadow-md transition-all overflow-hidden">
+            <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
               <div className="p-3 border-b flex items-center justify-between">
                 <h2 className="font-medium">Inventory by Category</h2>
                 <Button
@@ -366,7 +366,7 @@ export function OverviewTab({
               </div>
             </div>
           ) : (
-            <div className="bg-card rounded-xl border shadow-sm p-4 flex items-center justify-center h-48">
+            <div className="bg-card rounded-xl border shadow-xs p-4 flex items-center justify-center h-48">
               <div className="text-center">
                 <LoadingSpinner size="lg" className="mx-auto mb-2" />
                 <p className="text-muted-foreground">

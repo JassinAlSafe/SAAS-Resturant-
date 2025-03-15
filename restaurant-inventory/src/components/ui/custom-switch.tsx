@@ -68,9 +68,9 @@ export const CustomSwitch = React.forwardRef<
           className={cn(
             "relative w-full border rounded-xl transition-colors duration-300 bg-white",
             isSmall ? "p-3" : "p-5",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+            "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
             disabled && "cursor-not-allowed opacity-50",
-            !disabled && "hover:border-blue-200 hover:shadow-sm",
+            !disabled && "hover:border-blue-200 hover:shadow-xs",
             checked && !disabled && "border-blue-200 bg-blue-50/30",
             className
           )}
@@ -106,7 +106,7 @@ export const CustomSwitch = React.forwardRef<
                   "rounded-full flex items-center justify-center transition-all duration-300",
                   checked ? "bg-green-500" : "bg-gray-200",
                   isSmall ? "h-7 w-7" : "h-10 w-10",
-                  !disabled && checked && "hover:bg-green-600 shadow-sm",
+                  !disabled && checked && "hover:bg-green-600 shadow-xs",
                   !disabled && !checked && "hover:bg-gray-300"
                 )}
                 aria-hidden="true"

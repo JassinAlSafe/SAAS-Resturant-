@@ -20,7 +20,7 @@ export default function RecipeSearch({
   onFilterClick,
 }: RecipeSearchProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-100 shadow-xs">
       <div className="p-4 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />

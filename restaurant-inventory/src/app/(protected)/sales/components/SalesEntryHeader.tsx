@@ -84,7 +84,7 @@ export function SalesEntryHeader({
             variant={showInventoryImpact ? "secondary" : "outline"}
             size="sm"
             onClick={onToggleInventoryImpact}
-            className="flex-shrink-0"
+            className="shrink-0"
             aria-label={`${
               showInventoryImpact ? "Hide" : "Show"
             } inventory impact`}
@@ -102,7 +102,7 @@ export function SalesEntryHeader({
             variant="outline"
             size="sm"
             onClick={onClearAll}
-            className="flex-shrink-0"
+            className="shrink-0"
             disabled={!hasSalesEntries}
             aria-label="Clear all sales entries"
           >
@@ -116,7 +116,7 @@ export function SalesEntryHeader({
               variant="outline"
               size="sm"
               onClick={onLoadPreviousDay}
-              className="flex-shrink-0"
+              className="shrink-0"
               aria-label="Load previous day's sales template"
             >
               <RefreshCw className="h-4 w-4 mr-2" />

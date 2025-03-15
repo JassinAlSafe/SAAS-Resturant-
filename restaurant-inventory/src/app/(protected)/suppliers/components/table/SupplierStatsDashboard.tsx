@@ -40,7 +40,7 @@ const StatCard = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className={`relative flex flex-col p-6 rounded-xl border bg-white dark:bg-slate-950 shadow-sm ${color}`}
+    className={`relative flex flex-col p-6 rounded-xl border bg-white dark:bg-slate-950 shadow-xs ${color}`}
   >
     {isLoading ? (
       <>

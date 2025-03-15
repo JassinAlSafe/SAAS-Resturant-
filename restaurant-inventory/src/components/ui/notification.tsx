@@ -47,7 +47,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
         notificationColors[notification.type]
       }`}
     >
-      <div className="flex-shrink-0 mr-3">
+      <div className="shrink-0 mr-3">
         {notificationIcons[notification.type]}
       </div>
       <div className="flex-1 min-w-0">
@@ -68,7 +68,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
       </div>
       <button
         onClick={() => removeNotification(notification.id)}
-        className="ml-4 flex-shrink-0 inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+        className="ml-4 shrink-0 inline-flex text-gray-400 hover:text-gray-500 focus:outline-hidden"
       >
         <X className="h-4 w-4" />
       </button>

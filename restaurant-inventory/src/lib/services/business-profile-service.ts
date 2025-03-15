@@ -1,5 +1,4 @@
 import { BusinessProfile } from "@/lib/types";
-import { CurrencyCode } from "@/lib/currency";
 import { supabase } from "@/lib/supabase";
 
 // Define the database schema structure
@@ -27,12 +26,15 @@ interface BusinessProfileDatabase {
         sunday: { open: string; close: string; closed: boolean };
     };
     default_currency: string;
+    tax_rate: number | null;
+    tax_enabled: boolean | null;
+    tax_name: string | null;
     created_at: string;
     updated_at: string;
 }
 
 // Default profile template for new users
-const defaultBusinessProfile: Omit<BusinessProfile, "id" | "created_at" | "updated_at" | "user_id"> = {
+const defaultBusinessProfile: Omit<BusinessProfile, "id" | "createdAt" | "updatedAt"> = {
     name: "My Restaurant",
     type: "casual_dining",
     address: "",
@@ -54,13 +56,20 @@ const defaultBusinessProfile: Omit<BusinessProfile, "id" | "created_at" | "updat
         sunday: { open: "12:00", close: "21:00", closed: false },
     },
     defaultCurrency: "USD",
+    taxRate: 0,
+    taxEnabled: false,
+    taxName: "Sales Tax",
+    taxSettings: {
+        rate: 0,
+        enabled: false,
+        name: "Sales Tax"
+    }
 };
 
 // Helper function to convert snake_case database fields to camelCase
 function transformDatabaseResponse(data: BusinessProfileDatabase): BusinessProfile {
     return {
         id: data.id,
-        user_id: data.user_id,
         name: data.name,
         type: data.type as BusinessProfile["type"],
         address: data.address || "",
@@ -74,8 +83,16 @@ function transformDatabaseResponse(data: BusinessProfileDatabase): BusinessProfi
         logo: data.logo || "",
         operatingHours: data.operating_hours,
         defaultCurrency: data.default_currency,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
+        taxRate: data.tax_rate || 0,
+        taxEnabled: data.tax_enabled || false,
+        taxName: data.tax_name || "",
+        taxSettings: {
+            rate: data.tax_rate || 0,
+            enabled: data.tax_enabled || false,
+            name: data.tax_name || "",
+        },
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
     };
 }
 
@@ -96,6 +113,16 @@ function transformForDatabase(data: Partial<BusinessProfile>): Record<string, un
     if (data.logo !== undefined) result.logo = data.logo;
     if (data.operatingHours !== undefined) result.operating_hours = data.operatingHours;
     if (data.defaultCurrency !== undefined) result.default_currency = data.defaultCurrency;
+    if (data.taxRate !== undefined) result.tax_rate = data.taxRate;
+    if (data.taxEnabled !== undefined) result.tax_enabled = data.taxEnabled;
+    if (data.taxName !== undefined) result.tax_name = data.taxName;
+
+    // Also handle the nested taxSettings object if present
+    if (data.taxSettings) {
+        if (data.taxSettings.rate !== undefined) result.tax_rate = data.taxSettings.rate;
+        if (data.taxSettings.enabled !== undefined) result.tax_enabled = data.taxSettings.enabled;
+        if (data.taxSettings.name !== undefined) result.tax_name = data.taxSettings.name;
+    }
 
     return result;
 }
@@ -200,6 +227,9 @@ const businessProfileService = {
                 type: "casual_dining",
                 operating_hours: defaultBusinessProfile.operatingHours,
                 default_currency: defaultBusinessProfile.defaultCurrency,
+                tax_rate: defaultBusinessProfile.taxRate,
+                tax_enabled: defaultBusinessProfile.taxEnabled,
+                tax_name: defaultBusinessProfile.taxName,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             };
@@ -229,71 +259,34 @@ const businessProfileService = {
 
     // Update business profile - now handles multiple profiles
     updateBusinessProfile: async (
-        userId: string,
-        profileData: Partial<Omit<BusinessProfile, "id" | "created_at" | "updated_at" | "user_id">>
+        profileId: string,
+        profileData: Partial<Omit<BusinessProfile, "id" | "createdAt" | "updatedAt">>
     ): Promise<BusinessProfile> => {
         try {
-            console.log("Updating business profile for user:", userId);
+            console.log("Updating business profile with ID:", profileId);
             console.log("Update data:", profileData);
 
-            // First get the most recent profile
-            const { data: profiles, error: fetchError } = await supabase
-                .from('business_profiles')
-                .select('id')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (fetchError || !profiles || profiles.length === 0) {
-                console.log("No profile found to update, creating a new one");
-                return businessProfileService.createBusinessProfile(userId);
-            }
-
-            const profileId = profiles[0].id;
-            console.log("Updating profile with ID:", profileId);
-
+            // We don't need to fetch the profile first, we can update directly by ID
             // Prepare the update data
             const updates = {
                 ...transformForDatabase(profileData),
                 updated_at: new Date().toISOString(),
             };
 
-            // Update the profile using its ID (more precise than user_id)
+            // Update the profile using its ID
             const { data, error } = await supabase
                 .from('business_profiles')
                 .update(updates)
-                .eq('id', profileId)  // Use ID instead of user_id
+                .eq('id', profileId)
                 .select()
                 .single();
 
             if (error) {
                 console.error('Error updating profile:', error);
-
-                // In case of error, try with minimal data
-                const minimalUpdate = {
-                    name: profileData.name || "Updated Restaurant",
-                    updated_at: new Date().toISOString()
-                };
-
-                console.log("Retrying with minimal update:", minimalUpdate);
-
-                const { data: retryData, error: retryError } = await supabase
-                    .from('business_profiles')
-                    .update(minimalUpdate)
-                    .eq('id', profileId)
-                    .select()
-                    .single();
-
-                if (retryError) {
-                    console.error('Retry update failed:', retryError);
-                    throw new Error(`Failed to update business profile: ${retryError.message}`);
-                }
-
-                console.log("Retry update succeeded:", retryData);
-                return transformDatabaseResponse(retryData as BusinessProfileDatabase);
+                throw new Error(`Failed to update business profile: ${error.message}`);
             }
 
-            console.log("Update succeeded:", data);
+            console.log("Successfully updated profile:", data);
             return transformDatabaseResponse(data as BusinessProfileDatabase);
         } catch (error) {
             console.error('Error in updateBusinessProfile:', error);
@@ -554,31 +547,22 @@ const businessProfileService = {
 
     // Update default currency
     updateDefaultCurrency: async (
-        userId: string,
-        currency: CurrencyCode
+        profileId: string,
+        currency: string
     ): Promise<BusinessProfile> => {
         try {
-            // First get the most recent profile
-            const { data: profiles, error: fetchError } = await supabase
-                .from('business_profiles')
-                .select('id')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(1);
+            console.log("Updating default currency for profile:", profileId);
+            console.log("New currency:", currency);
 
-            if (fetchError || !profiles || profiles.length === 0) {
-                throw new Error(`No profile found for user ${userId}`);
-            }
-
-            const profileId = profiles[0].id;
+            const updates = {
+                default_currency: currency,
+                updated_at: new Date().toISOString(),
+            };
 
             const { data, error } = await supabase
                 .from('business_profiles')
-                .update({
-                    default_currency: currency,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', profileId)  // Use ID instead of user_id
+                .update(updates)
+                .eq('id', profileId)
                 .select()
                 .single();
 
@@ -587,9 +571,10 @@ const businessProfileService = {
                 throw new Error(`Failed to update default currency: ${error.message}`);
             }
 
+            console.log("Successfully updated currency:", data);
             return transformDatabaseResponse(data as BusinessProfileDatabase);
         } catch (error) {
-            console.error('Error updating default currency:', error);
+            console.error('Error in updateDefaultCurrency:', error);
             throw error instanceof Error
                 ? error
                 : new Error('Failed to update default currency');
@@ -758,29 +743,49 @@ const businessProfileService = {
         taxSettings: { rate: number; enabled: boolean; name: string }
     ): Promise<BusinessProfile> => {
         try {
-            // In a real app, this would be an API call
             console.log(`Updating tax settings for user ${userId}:`, taxSettings);
 
             // Get the current profile
-            const profile = await businessProfileService.getBusinessProfile(userId);
+            const { data: profiles, error: fetchError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (fetchError || !profiles || profiles.length === 0) {
+                throw new Error(`No profile found for user ${userId}`);
+            }
+
+            const profileId = profiles[0].id;
 
             // Update the tax settings
-            const updatedProfile = {
-                ...profile,
-                taxSettings: {
-                    rate: taxSettings.rate,
-                    enabled: taxSettings.enabled,
-                    name: taxSettings.name
-                }
+            const updates = {
+                tax_rate: taxSettings.rate,
+                tax_enabled: taxSettings.enabled,
+                tax_name: taxSettings.name,
+                updated_at: new Date().toISOString()
             };
 
-            // Save the updated profile
-            localStorage.setItem(`business_profile_${userId}`, JSON.stringify(updatedProfile));
+            const { data, error } = await supabase
+                .from('business_profiles')
+                .update(updates)
+                .eq('id', profileId)
+                .select()
+                .single();
 
-            return updatedProfile;
+            if (error) {
+                console.error('Error updating tax settings:', error);
+                throw new Error(`Failed to update tax settings: ${error.message}`);
+            }
+
+            console.log('Successfully updated tax settings:', data);
+            return transformDatabaseResponse(data as BusinessProfileDatabase);
         } catch (error) {
-            console.error("Error updating tax settings:", error);
-            throw new Error("Failed to update tax settings");
+            console.error('Error in updateTaxSettings:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('Failed to update tax settings');
         }
     },
 
@@ -848,4 +853,4 @@ const businessProfileService = {
     },
 };
 
-export { businessProfileService }; 
+export { businessProfileService };

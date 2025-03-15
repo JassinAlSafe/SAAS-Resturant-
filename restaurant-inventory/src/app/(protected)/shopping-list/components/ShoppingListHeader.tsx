@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
-import { CustomSwitch } from "@/components/ui/custom-switch";
+import { SwitchWithLabel } from "@/components/ui/switch-with-label";
 
 interface ShoppingListHeaderProps {
   onAddItem: () => void;
@@ -71,7 +71,7 @@ export default function ShoppingListHeader({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Items */}
-        <div className="bg-white rounded-lg border shadow-sm p-4">
+        <div className="bg-white rounded-lg border shadow-xs p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
@@ -107,7 +107,7 @@ export default function ShoppingListHeader({
         </div>
 
         {/* Estimated Cost */}
-        <div className="bg-white rounded-lg border shadow-sm p-4">
+        <div className="bg-white rounded-lg border shadow-xs p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
@@ -151,7 +151,7 @@ export default function ShoppingListHeader({
         </div>
 
         {/* Urgent Items */}
-        <div className="bg-white rounded-lg border shadow-sm p-4">
+        <div className="bg-white rounded-lg border shadow-xs p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
@@ -189,7 +189,7 @@ export default function ShoppingListHeader({
         </div>
 
         {/* Auto-Generated */}
-        <div className="bg-white rounded-lg border shadow-sm p-4">
+        <div className="bg-white rounded-lg border shadow-xs p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">
@@ -232,7 +232,7 @@ export default function ShoppingListHeader({
       </div>
 
       {/* Search, Filters and Actions Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between bg-white rounded-lg border shadow-sm p-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between bg-white rounded-lg border shadow-xs p-4">
         <div className="flex flex-1 space-x-2">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -262,12 +262,12 @@ export default function ShoppingListHeader({
 
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <div className="flex items-center space-x-2 mr-4 p-1">
-            <CustomSwitch
+            <SwitchWithLabel
               id="showPurchased"
-              size="sm"
               checked={showPurchased}
               onCheckedChange={onToggleShowPurchased}
               label="Show Purchased"
+              description="Mark as a preferred supplier"
             />
           </div>
           <div className="flex gap-2">

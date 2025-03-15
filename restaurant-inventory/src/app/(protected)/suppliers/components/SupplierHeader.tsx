@@ -23,11 +23,11 @@ export default function SupplierHeader({
       className="flex flex-col sm:flex-row sm:items-center gap-4"
     >
       <div className="relative">
-        <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-100 dark:shadow-blue-900/20">
+        <div className="h-14 w-14 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-100 dark:shadow-blue-900/20">
           <FiUsers className="h-7 w-7 text-white" />
         </div>
         {totalSuppliers !== undefined && (
-          <div className="absolute -top-2 -right-2 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 text-xs font-semibold h-6 min-w-6 px-1.5 rounded-full border border-blue-100 dark:border-slate-700 shadow-sm flex items-center justify-center">
+          <div className="absolute -top-2 -right-2 bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 text-xs font-semibold h-6 min-w-6 px-1.5 rounded-full border border-blue-100 dark:border-slate-700 shadow-xs flex items-center justify-center">
             {totalSuppliers > 99 ? "99+" : totalSuppliers}
           </div>
         )}

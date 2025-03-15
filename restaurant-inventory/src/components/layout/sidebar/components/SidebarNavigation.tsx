@@ -72,7 +72,7 @@ export function SidebarNavigation({
                       )}
                     >
                       {item.icon && (
-                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <item.icon className="h-5 w-5 shrink-0" />
                       )}
                     </button>
                   </PopoverTrigger>
@@ -105,7 +105,7 @@ export function SidebarNavigation({
                               onClick={() => setHoveredSection(null)}
                             >
                               {child.icon && (
-                                <child.icon className="h-4 w-4 mr-2 flex-shrink-0" />
+                                <child.icon className="h-4 w-4 mr-2 shrink-0" />
                               )}
                               {child.name}
                             </Link>
@@ -135,7 +135,7 @@ export function SidebarNavigation({
                 >
                   {item.icon && (
                     <item.icon
-                      className={cn("h-5 w-5 flex-shrink-0", {
+                      className={cn("h-5 w-5 shrink-0", {
                         "mr-2": open,
                       })}
                     />
@@ -172,7 +172,7 @@ export function SidebarNavigation({
                             )}
                           >
                             {child.icon && (
-                              <child.icon className="h-4 w-4 mr-2 flex-shrink-0" />
+                              <child.icon className="h-4 w-4 mr-2 shrink-0" />
                             )}
                             {child.name}
                           </Link>
@@ -207,7 +207,7 @@ export function SidebarNavigation({
                   >
                     {item.icon && (
                       <item.icon
-                        className={cn("h-5 w-5 flex-shrink-0", {
+                        className={cn("h-5 w-5 shrink-0", {
                           "mr-2": open,
                         })}
                       />

@@ -436,7 +436,7 @@ export default function Inventory() {
             exit={{ opacity: 0 }}
             className="p-8"
           >
-            <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-lg border shadow-sm">
+            <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-lg border shadow-xs">
               <div className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -479,7 +479,7 @@ export default function Inventory() {
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-5 h-5 mr-2 flex-shrink-0"
+                    className="w-5 h-5 mr-2 shrink-0"
                   >
                     <path
                       strokeLinecap="round"
