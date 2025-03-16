@@ -227,6 +227,7 @@ const businessProfileService = {
                 type: "casual_dining",
                 operating_hours: defaultBusinessProfile.operatingHours,
                 default_currency: defaultBusinessProfile.defaultCurrency,
+                // Don't include tax fields that might not exist in the schema
             };
 
             console.log("New profile data:", minimalProfile);

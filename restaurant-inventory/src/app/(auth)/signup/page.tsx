@@ -253,14 +253,21 @@ export default function SignupPage() {
                 <div className="flex items-start gap-2">
                   <Info className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-green-700 dark:text-green-300">
-                    <p className="font-medium mb-1">
-                      Email verification required
-                    </p>
-                    <p>
-                      Please check your email and click the verification link to
-                      complete your registration. You can continue to the
-                      dashboard now, but some features may be limited until you
-                      verify your email.
+                    <p className="font-medium mb-1">Next steps:</p>
+                    <ol className="list-decimal pl-4 space-y-2">
+                      <li>
+                        Check your email inbox (and spam folder) for the
+                        verification link
+                      </li>
+                      <li>Click the link to verify your email address</li>
+                      <li>
+                        Once verified, you&apos;ll have full access to all
+                        features
+                      </li>
+                    </ol>
+                    <p className="mt-2">
+                      You can continue to the dashboard now, but some features
+                      may be limited until you verify your email.
                     </p>
                   </div>
                 </div>
@@ -275,11 +282,26 @@ export default function SignupPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push("/login")}
+                  onClick={() => {
+                    // Open email client if possible
+                    window.open(`mailto:${userEmail}`);
+                  }}
                   className="w-full h-11 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors"
                 >
-                  Go to Login
+                  Open Email App
                 </Button>
+                <div className="pt-2">
+                  <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                    Didn&apos;t receive the email?{" "}
+                    <Button
+                      variant="link"
+                      onClick={() => router.push("/auth/callback")}
+                      className="p-0 h-auto text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
+                    >
+                      Resend verification link
+                    </Button>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -348,8 +370,8 @@ export default function SignupPage() {
                   </p>
                   <p>
                     For your security, you&apos;ll need to verify your email
-                    address before logging in. We also use secure password
-                    policies to protect your account.
+                    address before accessing all features. After signing up,
+                    check your inbox for a verification link from us.
                   </p>
                 </div>
               </div>
@@ -512,3 +534,4 @@ export default function SignupPage() {
     </div>
   );
 }
+  

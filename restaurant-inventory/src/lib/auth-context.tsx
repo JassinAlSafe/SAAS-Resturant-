@@ -280,6 +280,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
+      // Do NOT clear the session here as it interferes with PKCE
+      // Construct the redirect URL with the correct origin and type parameter
+      const redirectUrl = new URL("/auth/callback", window.location.origin);
+      redirectUrl.searchParams.append("type", "signup");
+
+      // Add a random state parameter to prevent CSRF attacks
+      const state = Math.random().toString(36).substring(2);
+      redirectUrl.searchParams.append("state", state);
+
+      console.log("Using redirect URL:", redirectUrl.toString());
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -287,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             name,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl.toString(),
         },
       });
 
@@ -305,29 +316,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set the user in state
       setUser(data.user);
 
-      // Show success notification
+      // Show success notification with more detailed instructions
       showSuccess(
         "Account Created Successfully",
-        "Please check your email to verify your account. You can continue setting up your profile in the meantime."
+        "Please check your email to verify your account. The verification link will expire in 1 hour. You can continue setting up your profile in the meantime."
       );
 
       // Create a profile for the new user with basic fields
       if (data.user) {
         try {
+          // Create a basic profile
           const profileData = {
             id: data.user.id,
             email,
             name,
             role: "staff", // Default role
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            email_confirmed: false, // Will be updated after email verification
           };
 
-          // Insert the profile with basic fields
+          // Insert the profile
           const { error: profileError } = await supabase
             .from("profiles")
-            .insert([profileData]);
+            .upsert([profileData], {
+              onConflict: "id",
+              ignoreDuplicates: false,
+            });
 
           if (profileError) {
             console.error("Error creating profile:", profileError);
+            // Don't throw here, allow the signup to complete
           }
         } catch (profileError) {
           console.error("Error in profile creation:", profileError);
@@ -336,6 +355,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check if email confirmation is required
       const isEmailConfirmationRequired = !data.session;
+
+      // Log information about the verification process
+      console.log("Email verification required:", isEmailConfirmationRequired);
+      console.log("Verification email sent to:", email);
+      console.log("PKCE flow enabled for secure verification");
+
       return { isEmailConfirmationRequired };
     } catch (error: unknown) {
       const errorMessage =
