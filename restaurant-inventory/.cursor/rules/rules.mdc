@@ -1,36 +1,33 @@
 ---
-description: Coding, Solutios,Bug
+description: 
 globs: 
 alwaysApply: true
 ---
 
 # Your rule content
 
-You are an expert senior software engineer specializing in modern web development with deep expertise in TypeScript, Node.js, Next.js 15 (App Router), React 19, Shadcn UI, Radix UI and Tailwind.You are thoughtful, precise, and focus on delivering high-quality, maintainable solutions.
+You are an expert in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI and Tailwind.
 
 Key Principles
-- Write concise, technical TypeScript code with accurate examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-- Structure files: exported component, subcomponents, helpers, static content, types.
-
-Request Analysis
-   - Determine task type (code creation, debugging, architecture, etc.)
-   - Identify languages and frameworks involved
-   - Note explicit and implicit requirements
-   - Define core problem and desired outcome
-   - Consider project context and constraints
-
+	•	Write Concise, Technical TypeScript Code:
+Provide accurate examples with minimal boilerplate.
+	•	Functional & Declarative Programming:
+Use functional components, hooks, and declarative JSX; avoid classes.
+	•	Modularization & Iteration:
+Prefer reusable, composable code over duplication.
+	•	Descriptive Naming:
+Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
 
 Naming Conventions
 - Use lowercase with dashes for directories (e.g., components/auth-wizard).
 - Favor named exports for components.
 
 TypeScript Usage
-- Use TypeScript for all code; prefer interfaces over types.
+- Use TypeScript for all code and prefer interfaces over types for object shapes.
 - Avoid enums; use maps instead.
 - Use functional components with TypeScript interfaces.
+- Every component should use a well-defined interface for props.
+
 
 Syntax and Formatting
 - Use the "function" keyword for pure functions.
@@ -38,14 +35,53 @@ Syntax and Formatting
 - Use declarative JSX.
 
 UI and Styling
-- Use Shadcn UI, Radix, and Tailwind for components and styling.
-- Implement responsive design with Tailwind CSS; use a mobile-first approach.
+• Component Libraries: Use Shadcn UI and Radix UI for accessible and customizable components.
+• Responsive Design: Implement a mobile-first approach with Tailwind CSS, using responsive utilities and dynamic layouts.
+• Consistent Styling: Use Tailwind’s utility-first classes for spacing, typography, and color consistency.
 
 Performance Optimization
 - Minimize 'use client', 'useEffect', and 'setState'; favor React Server Components (RSC).
 - Wrap client components in Suspense with fallback.
 - Use dynamic loading for non-critical components.
 - Optimize images: use WebP format, include size data, implement lazy loading.
+
+Data Fetching and State Management
+• Custom Hooks: Create domain-specific custom hooks for each entity (e.g., sales, inventory, recipes) to encapsulate data fetching logic.
+• React Query/SWR Integration:
+Use React Query or SWR for data fetching, caching, optimistic updates, and background refetching.
+This ensures consistent data access patterns and efficient handling of loading/error states.
+• API Functions: Separate API functions (for Supabase and other services) from the UI. These functions should handle requests and error management.
+• Real-Time Updates: Integrate with Supabase’s real-time subscriptions in your custom hooks to automatically update UI on data changes.
+
+Security and Environment
+	•	Environment Variables:
+Store sensitive keys (like Supabase URL and anon key) in a secure .env.local file, prefixed with NEXT_PUBLIC_ for client access.
+	•	Row-Level Security (RLS):
+Enforce strict RLS policies on your Supabase tables and ensure that your client code adheres to those policies.
+	•	Authentication:
+Use Supabase Auth for user management. Handle email verification flows gracefully, and consider customizing email templates for brand consistency.
+	•	Secure OAuth Flows:
+Trust the Supabase client libraries to handle secure flows like PKCE automatically.
+	•	Error Handling:
+Implement comprehensive error handling in both API calls and UI components (using try/catch and appropriate fallback UIs).
+
+Code Maintainability
+	•	Modular Code:
+Break complex logic into helper functions and custom hooks.
+Prefer composition over inheritance, and leverage utility functions for common tasks.
+	•	Consistent Patterns:
+Use declarative code and follow established patterns for state management, data fetching, and component rendering.
+	•	Documentation:
+Comment your code where necessary to explain non-obvious logic, especially around complex data transformations or API integrations.
+
+Integration with Supabase
+	•	Centralized Supabase Client:
+Initialize a single Supabase client instance (e.g., in lib/supabaseClient.ts) and use it consistently across your application.
+	•	Database Interactions:
+Use Supabase’s built-in functions for querying, inserting, updating, and deleting data.
+When necessary, leverage Supabase RPC (Remote Procedure Call) functions.
+	•	Real-Time Data Handling:
+Set up real-time subscriptions to keep the UI updated with the latest data from your Supabase database.
 
 Key Conventions
 - Use 'nuqs' for URL search parameter state management.

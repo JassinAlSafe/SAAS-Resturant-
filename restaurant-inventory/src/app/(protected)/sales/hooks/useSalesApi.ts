@@ -5,9 +5,30 @@ import { Dish } from '@/lib/types';
 
 export function useSalesApi() {
     const fetchSales = useCallback(async (): Promise<SaleEntry[]> => {
+        // Get the authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.error('No authenticated user found');
+            return [];
+        }
+
+        // Get the user's business profile
+        const { data: businessProfile, error: businessError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (businessError || !businessProfile) {
+            console.error('Error fetching business profile:', businessError);
+            return [];
+        }
+
         const { data, error } = await supabase
             .from('sales')
             .select('*')
+            .eq('business_profile_id', businessProfile.id)
             .order('date', { ascending: false });
 
         if (error) throw error;
@@ -15,27 +36,94 @@ export function useSalesApi() {
     }, []);
 
     const fetchDishes = useCallback(async (): Promise<Dish[]> => {
+        // Get the authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.error('No authenticated user found');
+            return [];
+        }
+
+        // Get the user's business profile
+        const { data: businessProfile, error: businessError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (businessError || !businessProfile) {
+            console.error('Error fetching business profile:', businessError);
+            return [];
+        }
+
         const { data, error } = await supabase
             .from('dishes')
-            .select('*, ingredients(*)');
+            .select('*, ingredients(*)')
+            .eq('business_profile_id', businessProfile.id);
 
         if (error) throw error;
         return data || [];
     }, []);
 
     const fetchRecipes = useCallback(async (): Promise<Recipe[]> => {
+        // Get the authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.error('No authenticated user found');
+            return [];
+        }
+
+        // Get the user's business profile
+        const { data: businessProfile, error: businessError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (businessError || !businessProfile) {
+            console.error('Error fetching business profile:', businessError);
+            return [];
+        }
+
         const { data, error } = await supabase
             .from('recipes')
-            .select('*, ingredients(*)');
+            .select('*, ingredients(*)')
+            .eq('business_profile_id', businessProfile.id);
 
         if (error) throw error;
         return data || [];
     }, []);
 
     const saveSale = useCallback(async (sale: Omit<SaleEntry, 'id' | 'createdAt'>) => {
+        // Get the authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.error('No authenticated user found');
+            throw new Error('User not authenticated');
+        }
+
+        // Get the user's business profile
+        const { data: businessProfile, error: businessError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (businessError || !businessProfile) {
+            console.error('Error fetching business profile:', businessError);
+            throw new Error('Business profile not found');
+        }
+
         const { data, error } = await supabase
             .from('sales')
-            .insert([{ ...sale, createdAt: new Date().toISOString() }])
+            .insert([{
+                ...sale,
+                createdAt: new Date().toISOString(),
+                business_profile_id: businessProfile.id,
+                user_id: user.id
+            }])
             .select()
             .single();
 

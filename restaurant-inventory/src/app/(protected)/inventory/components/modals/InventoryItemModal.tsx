@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { InventoryItem, Supplier } from "@/lib/types";
+import { COMMON_CATEGORIES } from "@/lib/constants";
 import {
   FiImage,
   FiZap,
@@ -36,8 +37,10 @@ import {
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
-  extends Omit<InventoryItem, "id" | "created_at" | "updated_at"> {
-  reorderLevel?: number;
+  extends Omit<
+    InventoryItem,
+    "id" | "created_at" | "updated_at" | "cost_per_unit" | "business_profile_id"
+  > {
   expiryDate?: string;
   image_url?: string;
 }
@@ -78,6 +81,11 @@ export default function InventoryItemModal({
   const [imageUrl, setImageUrl] = useState("");
   const [imageError, setImageError] = useState(false);
 
+  // Combine custom categories with common categories
+  const allCategories = [
+    ...new Set([...COMMON_CATEGORIES, ...customCategories]),
+  ].sort();
+
   // Determine if user can see advanced options
   const canAccessAdvanced = userRole === "admin" || userRole === "manager";
 
@@ -104,7 +112,7 @@ export default function InventoryItemModal({
         setQuantity(item.quantity);
         setUnit(item.unit);
         setCategory(item.category);
-        setCostPerUnit(item.cost_per_unit);
+        setCostPerUnit(item.cost_per_unit || item.cost || 0);
         setReorderPoint(item.reorder_level || 0);
         setSupplierId(item.supplier_id || "none");
         setLocation(item.location || "");
@@ -140,17 +148,18 @@ export default function InventoryItemModal({
     // Convert "none" supplier value to undefined
     const finalSupplierId = supplierId === "none" ? undefined : supplierId;
 
-    // Create item data object
+    // Create item data object with required fields and their default values
     const itemData: InventoryFormData = {
       name,
-      quantity: Number(quantity),
+      quantity: Number(quantity) || 0,
       unit,
       category: finalCategory,
-      cost: quickMode ? 0 : Number(costPerUnit),
-      cost_per_unit: quickMode ? 0 : Number(costPerUnit),
-      reorderLevel: quickMode ? 0 : Number(reorderPoint),
+      cost: quickMode ? 0 : Number(costPerUnit) || 0,
+      reorder_level: quickMode ? 0 : Number(reorderPoint) || 0,
       supplier_id: quickMode ? undefined : finalSupplierId,
       image_url: quickMode ? undefined : imageUrl || undefined,
+      description: description || undefined,
+      location: location || undefined,
     };
 
     // Call appropriate function based on if we're adding or editing
@@ -175,7 +184,8 @@ export default function InventoryItemModal({
               {item ? "Edit Inventory Item" : "Add Inventory Item"}
               {quickMode && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <FiZap className="mr-1 h-3 w-3" /> Quick Mode
+                  <FiZap className="mr-1 h-3 w-3" />
+                  Quick Mode
                 </span>
               )}
             </DialogTitle>
@@ -268,7 +278,7 @@ export default function InventoryItemModal({
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customCategories.map((cat) => (
+                    {allCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>
                         {cat}
                       </SelectItem>
@@ -343,7 +353,7 @@ export default function InventoryItemModal({
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        {customCategories.map((cat) => (
+                        {allCategories.map((cat) => (
                           <SelectItem key={cat} value={cat}>
                             {cat}
                           </SelectItem>

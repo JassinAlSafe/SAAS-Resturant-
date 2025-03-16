@@ -108,22 +108,21 @@ export interface IngredientRow {
 // Inventory item type that matches both database schema and frontend needs
 export type InventoryItem = {
   id: string;
-  name: string;
-  description?: string;
-  category: string;
-  unit: string;
-  quantity: number;
-  cost: number; // Base cost field from DB
-  cost_per_unit: number; // Frontend display alias
-  minimum_stock_level?: number;
-  reorder_level?: number;
-  reorder_point?: number;
-  supplier_id?: string;
-  location?: string;
-  expiry_date?: string;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
+  name: string;                    // Required
+  description?: string;            // Optional
+  category: string;                // Required
+  unit: string;                    // Required
+  quantity: number;                // Required, defaults to 0
+  cost: number;                    // Required, defaults to 0
+  cost_per_unit?: number;          // Frontend display alias (optional)
+  reorder_level: number;           // Required, defaults to 0
+  supplier_id?: string;            // Optional
+  location?: string;               // Optional
+  expiry_date?: string;            // Optional
+  image_url?: string;              // Optional
+  created_at: string;              // Required, auto-generated
+  updated_at: string;              // Required, auto-generated
+  business_profile_id?: string;    // Required for DB, but optional in frontend
 };
 
 // Form data type for inventory items

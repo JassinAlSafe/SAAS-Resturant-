@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS inventory_impact (
   sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
   ingredient_id UUID REFERENCES ingredients(id),
   deducted_quantity DECIMAL(10,2) NOT NULL,
+  business_profile_id UUID REFERENCES business_profiles(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -11,33 +12,33 @@ CREATE TABLE IF NOT EXISTS inventory_impact (
 CREATE INDEX IF NOT EXISTS idx_inventory_impact_sale_id ON inventory_impact(sale_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_impact_ingredient_id ON inventory_impact(ingredient_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_impact_created_at ON inventory_impact(created_at);
+CREATE INDEX IF NOT EXISTS idx_inventory_impact_business_profile_id ON inventory_impact(business_profile_id);
 
 -- Enable Row Level Security
 ALTER TABLE inventory_impact ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for inventory_impact
-CREATE POLICY "Users can view inventory impact for their sales"
+CREATE POLICY "Users can view inventory impact for their business"
 ON inventory_impact FOR SELECT
 TO authenticated
 USING (
-  EXISTS (
-    SELECT 1 FROM sales
-    WHERE sales.id = inventory_impact.sale_id
-    AND sales.user_id = auth.uid()
-  )
+    auth.uid() IN (
+        SELECT user_id 
+        FROM business_profile_users 
+        WHERE business_profile_id = inventory_impact.business_profile_id
+    )
 );
 
 -- Allow staff to insert inventory impact records
-CREATE POLICY "Allow staff to insert inventory impact"
+CREATE POLICY "Allow users to insert inventory impact for their business"
 ON inventory_impact FOR INSERT
 TO authenticated
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM sales
-    JOIN auth.users ON sales.user_id = auth.users.id
-    WHERE sales.id = inventory_impact.sale_id
-    AND auth.users.id = auth.uid()
-  )
+    auth.uid() IN (
+        SELECT user_id 
+        FROM business_profile_users 
+        WHERE business_profile_id = inventory_impact.business_profile_id
+    )
 );
 
 -- Create function to automatically update ingredient stock when sales occur
@@ -46,7 +47,13 @@ RETURNS TRIGGER AS $$
 DECLARE
   dish_ingredients RECORD;
   ingredient_quantity DECIMAL;
+  business_profile_id UUID;
 BEGIN
+  -- Get the business_profile_id from the sale
+  SELECT s.business_profile_id INTO business_profile_id
+  FROM sales s
+  WHERE s.id = NEW.id;
+
   -- Loop through all ingredients used in the dish's recipe
   FOR dish_ingredients IN 
     SELECT ri.ingredient_id, ri.quantity * NEW.quantity as total_quantity
@@ -58,11 +65,13 @@ BEGIN
     INSERT INTO inventory_impact (
       sale_id, 
       ingredient_id, 
-      deducted_quantity
+      deducted_quantity,
+      business_profile_id
     ) VALUES (
       NEW.id,
       dish_ingredients.ingredient_id,
-      dish_ingredients.total_quantity
+      dish_ingredients.total_quantity,
+      business_profile_id
     );
     
     -- Update ingredient stock
@@ -70,7 +79,8 @@ BEGIN
     SET 
       current_stock = current_stock - dish_ingredients.total_quantity,
       updated_at = NOW()
-    WHERE id = dish_ingredients.ingredient_id;
+    WHERE id = dish_ingredients.ingredient_id
+    AND business_profile_id = business_profile_id;
   END LOOP;
   
   RETURN NEW;

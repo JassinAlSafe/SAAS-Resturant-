@@ -213,6 +213,26 @@ export const shoppingListService = {
                 throw new Error('Supabase client is not initialized');
             }
 
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
             // Process each purchased item
             for (const item of purchasedItems) {
                 if (!item.inventoryItemId) {
@@ -225,6 +245,7 @@ export const shoppingListService = {
                     .from('ingredients')
                     .select('*')
                     .eq('id', item.inventoryItemId)
+                    .eq('business_profile_id', businessProfile.id)
                     .single();
 
                 if (fetchError || !inventoryItem) {
@@ -238,7 +259,8 @@ export const shoppingListService = {
                     .update({
                         quantity: inventoryItem.quantity + item.quantity,
                     })
-                    .eq('id', item.inventoryItemId);
+                    .eq('id', item.inventoryItemId)
+                    .eq('business_profile_id', businessProfile.id);
 
                 if (updateError) {
                     console.error('Error updating inventory item:', updateError);

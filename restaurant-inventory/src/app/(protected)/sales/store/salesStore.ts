@@ -176,6 +176,18 @@ export const useSalesStore = create<SalesState>((set, get) => ({
                 throw new Error('You must be logged in to submit sales');
             }
 
+            // Get the user's business profile
+            const { data: businessProfile, error: profileError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (profileError || !businessProfile) {
+                console.error('Business profile error:', profileError);
+                throw new Error('No business profile found');
+            }
+
             // Convert entries to array format
             const entries = Object.entries(state.salesEntries)
                 .filter(([, quantity]) => quantity > 0)
@@ -201,7 +213,8 @@ export const useSalesStore = create<SalesState>((set, get) => ({
                         total_amount: dish.price * quantity,
                         date: state.dateString,
                         shift: state.currentShift,
-                        user_id: user.id
+                        user_id: user.id,
+                        business_profile_id: businessProfile.id
                     };
                 });
 

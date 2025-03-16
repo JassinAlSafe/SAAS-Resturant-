@@ -39,19 +39,39 @@ export function useInventorySubscription({
         setSubscriptionError(null);
 
         try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                throw new Error('No authenticated user found');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                throw new Error('Business profile not found');
+            }
+
             // Subscribe to changes in the ingredients table
             const subscription = supabase
                 .channel('ingredients-changes')
                 .on('postgres_changes', {
                     event: '*',
                     schema: 'public',
-                    table: 'ingredients'
+                    table: 'ingredients',
+                    filter: `business_profile_id=eq.${businessProfile.id}`
                 }, async (payload) => {
                     // When a change occurs, fetch the updated inventory items
                     try {
                         const { data, error } = await supabase
                             .from('ingredients')
                             .select('*, suppliers(*)')
+                            .eq('business_profile_id', businessProfile.id)
                             .order('name');
 
                         if (error) {

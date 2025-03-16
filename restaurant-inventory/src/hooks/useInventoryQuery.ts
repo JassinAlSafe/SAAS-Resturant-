@@ -17,9 +17,29 @@ export function useInventoryQuery() {
     } = useQuery({
         queryKey: ['inventory'],
         queryFn: async () => {
+            // Get the current user's business profile
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                return [];
+            }
+
             const { data, error } = await supabase
                 .from('ingredients')
-                .select('*, suppliers(name)');
+                .select('*, suppliers(*)')
+                .eq('business_profile_id', businessProfile.id)
+                .order('name');
 
             if (error) throw error;
             return data as InventoryItem[];

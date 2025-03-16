@@ -282,9 +282,30 @@ export async function removeIngredientFromRecipe(id: string) {
 
 // ============ SALES ============
 export async function getSales(startDate?: string, endDate?: string) {
+    // Get the authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        console.error('No authenticated user found');
+        return [];
+    }
+
+    // Get the user's business profile
+    const { data: businessProfile, error: businessError } = await supabase
+        .from('business_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+    if (businessError || !businessProfile) {
+        console.error('Error fetching business profile:', businessError);
+        return [];
+    }
+
     let query = supabase
         .from('sales')
         .select('*, dishes(*)')
+        .eq('business_profile_id', businessProfile.id)
         .order('date', { ascending: false });
 
     if (startDate) {
@@ -336,10 +357,29 @@ export async function deleteSale(id: string) {
 
 // ============ INVENTORY IMPACT ============
 export async function getInventoryImpact(ingredientId: string, startDate?: string, endDate?: string) {
+    // Get the current user's business profile
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error('User not authenticated');
+    }
+
+    // Get the user's business profile
+    const { data: businessProfile, error: businessError } = await supabase
+        .from('business_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+    if (businessError || !businessProfile) {
+        console.error('Error fetching business profile:', businessError);
+        return [];
+    }
+
     let query = supabase
         .from('inventory_impact')
         .select('*, sales(*)')
         .eq('ingredient_id', ingredientId)
+        .eq('business_profile_id', businessProfile.id)
         .order('created_at', { ascending: false });
 
     if (startDate) {

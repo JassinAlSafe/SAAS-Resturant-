@@ -177,35 +177,48 @@ const businessProfileService = {
             console.log("Fetching business profile for user:", userId);
 
             // Get all profiles for this user, ordered by most recent first
-            const { data: profiles, error } = await supabase
-                .from('business_profiles')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+            try {
+                const { data: profiles, error } = await supabase
+                    .from('business_profiles')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
 
-            if (error) {
-                console.error('Error fetching profiles:', error);
-                throw new Error(`Failed to fetch business profile: ${error.message}`);
+                if (error) {
+                    console.error('Error fetching profiles:', error);
+                    throw new Error(`Failed to fetch business profile: ${error.message}`);
+                }
+
+                console.log(`Found ${profiles?.length || 0} profiles for user`);
+
+                // If there are multiple profiles, schedule a cleanup
+                if (profiles && profiles.length > 1) {
+                    console.log(`Found ${profiles.length} profiles for user, will clean up duplicates`);
+                    // Schedule cleanup for after this operation completes
+                    setTimeout(() => businessProfileService.cleanupDuplicateProfiles(userId), 1000);
+                }
+
+                // If we have any profiles, return the most recent one
+                if (profiles && profiles.length > 0) {
+                    const mostRecent = profiles[0];
+                    console.log("Using most recent profile:", mostRecent.id);
+                    return transformDatabaseResponse(mostRecent as BusinessProfileDatabase);
+                }
+            } catch (fetchError: unknown) {
+                console.error('Error fetching business profiles directly:', fetchError);
+
+                // Try alternative approach if there's an RLS policy error
+                if (fetchError instanceof Error && fetchError.message.includes('infinite recursion detected in policy')) {
+                    console.log('Detected RLS policy error, trying alternative approach');
+
+                    // Try to get the profile through a different query or approach
+                    // This could be a custom RPC function or a different table access pattern
+                    // For now, we'll just create a new profile as a fallback
+                }
             }
 
-            console.log(`Found ${profiles?.length || 0} profiles for user`);
-
-            // If there are multiple profiles, schedule a cleanup
-            if (profiles && profiles.length > 1) {
-                console.log(`Found ${profiles.length} profiles for user, will clean up duplicates`);
-                // Schedule cleanup for after this operation completes
-                setTimeout(() => businessProfileService.cleanupDuplicateProfiles(userId), 1000);
-            }
-
-            // If we have any profiles, return the most recent one
-            if (profiles && profiles.length > 0) {
-                const mostRecent = profiles[0];
-                console.log("Using most recent profile:", mostRecent.id);
-                return transformDatabaseResponse(mostRecent as BusinessProfileDatabase);
-            }
-
-            // No profile found, create a new one
-            console.log("No profiles found, creating new one");
+            // No profile found or error occurred, create a new one
+            console.log("No profiles found or error occurred, creating new one");
             return businessProfileService.createBusinessProfile(userId);
         } catch (error) {
             console.error('Error in getBusinessProfile:', error);

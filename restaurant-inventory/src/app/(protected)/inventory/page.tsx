@@ -290,7 +290,7 @@ export default function Inventory() {
       // Convert form data to the format expected by the API
       const apiData = {
         ...itemData,
-        // Add any missing properties that might be required
+        // Add timestamps that will be overwritten by the service anyway
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       } as unknown as Omit<InventoryItem, "id" | "createdAt" | "updatedAt">;

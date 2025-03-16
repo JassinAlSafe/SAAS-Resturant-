@@ -63,6 +63,22 @@ export default function AuthCallbackPage() {
             finalErrorCode === "invalid_request" &&
             finalErrorDescription?.includes("code verifier")
           ) {
+            // Try to recover the session first
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session) {
+              console.log("Recovered existing session");
+              setIsSuccess(true);
+              toast({
+                title: "Already Verified",
+                description:
+                  "Your email was already verified. Proceeding to dashboard.",
+              });
+              setTimeout(() => {
+                router.push("/dashboard");
+              }, 2000);
+              return;
+            }
+
             setError(
               "Authentication error: Session expired or invalid. Please try logging in again."
             );
@@ -120,12 +136,25 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // With the new Supabase auth flow, we need to exchange the code for a session
+        // First try to get an existing session
+        const { data: existingSession } = await supabase.auth.getSession();
+        if (existingSession?.session) {
+          console.log("Using existing session");
+          setIsSuccess(true);
+          toast({
+            title: "Already Verified",
+            description:
+              "Your email was already verified. Proceeding to dashboard.",
+          });
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 2000);
+          return;
+        }
+
         console.log("Attempting to exchange code for session");
 
         try {
-          // Do NOT sign out here as it clears the PKCE state
-          // Exchange the code for a session
           const { data, error } = await supabase.auth.exchangeCodeForSession(
             code
           );
@@ -133,29 +162,23 @@ export default function AuthCallbackPage() {
           if (error) {
             console.error("Error exchanging code:", error);
 
-            // Handle specific error cases
+            // If we get a code verifier error, try to recover the session one more time
             if (error.message?.includes("code verifier")) {
-              // Instead of redirecting, try to recover the session
-              const { data: sessionData } = await supabase.auth.getSession();
-              if (sessionData?.session) {
-                console.log("Recovered existing session");
+              const { data: recoveredSession } =
+                await supabase.auth.getSession();
+              if (recoveredSession?.session) {
+                console.log("Recovered session after code verifier error");
                 setIsSuccess(true);
                 toast({
-                  title: "Already Verified",
+                  title: "Verification Successful",
                   description:
-                    "Your email was already verified. Proceeding to dashboard.",
+                    "Your email has been verified. Proceeding to dashboard.",
                 });
                 setTimeout(() => {
                   router.push("/dashboard");
                 }, 2000);
                 return;
               }
-
-              setError(
-                "Your verification link has expired or is invalid. Please try logging in again."
-              );
-              setTimeout(() => router.push("/login"), 2000);
-              return;
             }
 
             // Provide a more descriptive error message for common issues

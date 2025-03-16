@@ -1,6 +1,10 @@
 import { supabase } from '../supabase';
 import type { InventoryItem, InventoryFormData } from '../types';
-import { InventoryServiceError } from '../errors';
+
+// Cache for business profile ID
+let cachedBusinessProfileId: string | null = null;
+let cacheExpiry: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Database response type
 type DbIngredient = {
@@ -21,7 +25,69 @@ type DbIngredient = {
     image_url: string | null;
     created_at: string;
     updated_at: string;
+    business_profile_id: string;
 };
+
+// Helper function to get business profile ID
+async function getBusinessProfileId() {
+    console.time('getBusinessProfileId');
+
+    // Check if we have a valid cached value
+    const now = Date.now();
+    if (cachedBusinessProfileId && now < cacheExpiry) {
+        console.log('Using cached business profile ID');
+        console.timeEnd('getBusinessProfileId');
+        return cachedBusinessProfileId;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        console.timeEnd('getBusinessProfileId');
+        throw new Error("Not authenticated");
+    }
+
+    // First try to get from business_profile_users table
+    try {
+        const { data: businessProfileData, error: profileError } = await supabase
+            .from('business_profile_users')
+            .select('business_profile_id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (!profileError && businessProfileData) {
+            // Cache the result
+            cachedBusinessProfileId = businessProfileData.business_profile_id;
+            cacheExpiry = now + CACHE_DURATION;
+            console.timeEnd('getBusinessProfileId');
+            return cachedBusinessProfileId;
+        }
+    } catch (error) {
+        console.warn('Error fetching from business_profile_users, trying fallback:', error);
+    }
+
+    // If that fails, try direct query to business_profiles
+    try {
+        const { data: businessProfiles, error: profilesError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
+            // Cache the result
+            cachedBusinessProfileId = businessProfiles[0].id;
+            cacheExpiry = now + CACHE_DURATION;
+            console.timeEnd('getBusinessProfileId');
+            return cachedBusinessProfileId;
+        }
+    } catch (error) {
+        console.warn('Error fetching from business_profiles:', error);
+    }
+
+    console.timeEnd('getBusinessProfileId');
+    return null;
+}
 
 // Transform database response to InventoryItem
 const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
@@ -54,151 +120,121 @@ export const inventoryService = {
         try {
             // Check if supabase client is properly initialized
             if (!supabase) {
-                throw new InventoryServiceError('Supabase client is not initialized');
+                console.error('Supabase client is not initialized');
+                return [];
+            }
+
+            // Get the business profile ID
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                console.error('No business profile found');
+                return [];
             }
 
             const { data, error } = await supabase
                 .from('ingredients')
-                .select('*, suppliers(*)')
+                .select('*')
+                .eq('business_profile_id', businessProfileId)
                 .order('name');
 
             if (error) {
                 console.error('Error fetching inventory items:', error);
-                throw new InventoryServiceError('Failed to fetch inventory items', {
-                    code: error.code,
-                    details: error.details || error.message
-                });
-            }
-
-            if (!data) {
-                console.warn('No data returned from inventory query');
-                return [];
-            }
-
-            // Transform the data to match our InventoryItem interface
-            return data.map((item: DbIngredient) => mapDbToInventoryItem(item));
-        } catch (error) {
-            console.error('Error in getItems:', error);
-
-            // If it's already our custom error type, just rethrow it
-            if (error instanceof InventoryServiceError) {
                 throw error;
             }
 
-            // Otherwise wrap in our custom error
-            throw new InventoryServiceError(
-                error instanceof Error ? error.message : 'Unknown error occurred'
-            );
+            return data.map(mapDbToInventoryItem);
+        } catch (error) {
+            console.error('Error in getItems:', error);
+            return [];
         }
     },
 
     /**
-     * Get soon to expire items
+     * Get inventory items that will expire soon
      */
     async getSoonToExpireItems(daysThreshold: number = 7): Promise<InventoryItem[]> {
         try {
             // Check if supabase client is properly initialized
             if (!supabase) {
-                throw new InventoryServiceError('Supabase client is not initialized');
+                console.error('Supabase client is not initialized');
+                return [];
             }
 
+            // Get the business profile ID
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                console.error('No business profile found');
+                return [];
+            }
+
+            // Calculate the date threshold
             const today = new Date();
             const thresholdDate = new Date();
             thresholdDate.setDate(today.getDate() + daysThreshold);
 
             const { data, error } = await supabase
                 .from('ingredients')
-                .select('*, suppliers(*)')
+                .select('*')
+                .eq('business_profile_id', businessProfileId)
                 .not('expiry_date', 'is', null)
-                .lte('expiry_date', thresholdDate.toISOString())
+                .lte('expiry_date', thresholdDate.toISOString().split('T')[0])
                 .order('expiry_date');
 
             if (error) {
                 console.error('Error fetching soon to expire items:', error);
-                throw new InventoryServiceError('Failed to fetch expiring items', {
-                    code: error.code,
-                    details: error.details || error.message
-                });
-            }
-
-            if (!data) {
-                console.warn('No data returned from soon to expire query');
-                return [];
-            }
-
-            // Transform the data to match our InventoryItem interface
-            return data.map((item: DbIngredient) => mapDbToInventoryItem(item));
-        } catch (error) {
-            console.error('Error in getSoonToExpireItems:', error);
-
-            // If it's already our custom error type, just rethrow it
-            if (error instanceof InventoryServiceError) {
                 throw error;
             }
 
-            // Otherwise wrap in our custom error
-            throw new InventoryServiceError(
-                error instanceof Error ? error.message : 'Unknown error occurred'
-            );
+            return data.map(mapDbToInventoryItem);
+        } catch (error) {
+            console.error('Error in getSoonToExpireItems:', error);
+            return [];
         }
     },
 
     /**
      * Add a new inventory item
      */
-    async addItem(item: InventoryFormData): Promise<InventoryItem | null> {
+    async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
         try {
             if (!supabase) {
-                throw new InventoryServiceError('Supabase client is not initialized');
+                console.error('Supabase client is not initialized');
+                return null;
             }
 
-            const dbData = {
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                throw new Error("No business profile found");
+            }
+
+            // Prepare data with required fields and their default values
+            const now = new Date().toISOString();
+            const itemData = {
                 name: item.name,
-                description: item.description || null,
                 category: item.category,
-                quantity: item.quantity,
+                quantity: item.quantity || 0,
                 unit: item.unit,
-                cost: item.cost_per_unit,
-                minimum_stock_level: item.minimum_stock_level || null,
-                reorder_level: item.reorderLevel || null,
-                reorder_point: item.reorder_point || null,
-                supplier_id: item.supplierId || item.supplier_id || null,
-                location: item.location || null,
-                expiry_date: item.expiryDate || item.expiry_date || null,
-                image_url: item.image_url || null
+                cost: item.cost || 0,
+                reorder_level: typeof item.reorder_level === 'number' ? item.reorder_level : 0, // Default to 0 as per schema
+                supplier_id: item.supplier_id || null,
+                image_url: item.image_url || null,
+                expiry_date: item.expiry_date || null,
+                business_profile_id: businessProfileId,
+                created_at: now,
+                updated_at: now
             };
 
             const { data, error } = await supabase
                 .from('ingredients')
-                .insert(dbData)
-                .select()
+                .insert(itemData)
+                .select('*')
                 .single();
 
-            if (error) {
-                const errorMessage = `Failed to add inventory item: ${error.message}`;
-                const errorDetails = {
-                    code: error.code,
-                    details: error.details,
-                    hint: error.hint,
-                    message: error.message
-                };
-                console.error('Error adding inventory item:', errorDetails);
-                throw new InventoryServiceError(errorMessage, errorDetails);
-            }
-
-            if (!data) {
-                throw new InventoryServiceError('No data returned after adding item');
-            }
-
-            return mapDbToInventoryItem(data as DbIngredient);
+            if (error) throw error;
+            return mapDbToInventoryItem(data);
         } catch (error) {
-            console.error('Error in addItem:', error);
-            if (error instanceof InventoryServiceError) {
-                throw error;
-            }
-            throw new InventoryServiceError(
-                `Failed to add inventory item: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
-            );
+            console.error('Error creating inventory item:', error);
+            throw error;
         }
     },
 
@@ -207,52 +243,31 @@ export const inventoryService = {
      */
     async updateItem(id: string, updates: Partial<InventoryFormData>): Promise<InventoryItem | null> {
         try {
-            const dbUpdates: Record<string, unknown> = {};
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                console.error('Supabase client is not initialized');
+                return null;
+            }
 
-            if (updates.name !== undefined) dbUpdates.name = updates.name;
-            if (updates.description !== undefined) dbUpdates.description = updates.description;
-            if (updates.category !== undefined) dbUpdates.category = updates.category;
-            if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
-            if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
-            if (updates.cost_per_unit !== undefined) dbUpdates.cost = updates.cost_per_unit;
-            if (updates.minimum_stock_level !== undefined) dbUpdates.minimum_stock_level = updates.minimum_stock_level;
-            if (updates.reorderLevel !== undefined) dbUpdates.reorder_level = updates.reorderLevel;
-            if (updates.reorder_point !== undefined) dbUpdates.reorder_point = updates.reorder_point;
-            if (updates.supplierId !== undefined) dbUpdates.supplier_id = updates.supplierId;
-            if (updates.supplier_id !== undefined) dbUpdates.supplier_id = updates.supplier_id;
-            if (updates.location !== undefined) dbUpdates.location = updates.location;
-            if (updates.expiryDate !== undefined) dbUpdates.expiry_date = updates.expiryDate;
-            if (updates.expiry_date !== undefined) dbUpdates.expiry_date = updates.expiry_date;
-            if (updates.image_url !== undefined) dbUpdates.image_url = updates.image_url;
+            // Get the business profile ID
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                throw new Error("No business profile found");
+            }
 
             const { data, error } = await supabase
                 .from('ingredients')
-                .update(dbUpdates)
+                .update(updates)
                 .eq('id', id)
+                .eq('business_profile_id', businessProfileId)
                 .select()
                 .single();
 
-            if (error) {
-                console.error('Error updating inventory item:', error);
-                throw new InventoryServiceError('Failed to update inventory item', {
-                    code: error.code,
-                    details: error.details || error.message
-                });
-            }
-
-            if (!data) {
-                throw new InventoryServiceError('No data returned after updating item');
-            }
-
-            return mapDbToInventoryItem(data as DbIngredient);
+            if (error) throw error;
+            return mapDbToInventoryItem(data);
         } catch (error) {
-            console.error('Error in updateItem:', error);
-            if (error instanceof InventoryServiceError) {
-                throw error;
-            }
-            throw new InventoryServiceError(
-                error instanceof Error ? error.message : 'Unknown error occurred'
-            );
+            console.error('Error updating inventory item:', error);
+            throw error;
         }
     },
 
@@ -261,19 +276,28 @@ export const inventoryService = {
      */
     async deleteItem(id: string): Promise<boolean> {
         try {
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                console.error('Supabase client is not initialized');
+                return false;
+            }
+
+            // Get the business profile ID
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                throw new Error("No business profile found");
+            }
+
             const { error } = await supabase
                 .from('ingredients')
                 .delete()
-                .eq('id', id);
+                .eq('id', id)
+                .eq('business_profile_id', businessProfileId);
 
-            if (error) {
-                console.error('Error deleting inventory item:', error);
-                throw error;
-            }
-
+            if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Error in deleteItem:', error);
+            console.error('Error deleting inventory item:', error);
             return false;
         }
     },
@@ -283,9 +307,23 @@ export const inventoryService = {
      */
     async getCategories(): Promise<string[]> {
         try {
+            // Check if supabase client is properly initialized
+            if (!supabase) {
+                console.error('Supabase client is not initialized');
+                return [];
+            }
+
+            // Get the business profile ID
+            const businessProfileId = await getBusinessProfileId();
+            if (!businessProfileId) {
+                console.error('No business profile found');
+                return [];
+            }
+
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('category')
+                .eq('business_profile_id', businessProfileId)
                 .order('category');
 
             if (error) {

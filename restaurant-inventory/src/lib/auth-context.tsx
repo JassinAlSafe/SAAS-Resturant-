@@ -280,7 +280,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Do NOT clear the session here as it interferes with PKCE
       // Construct the redirect URL with the correct origin and type parameter
       const redirectUrl = new URL("/auth/callback", window.location.origin);
       redirectUrl.searchParams.append("type", "signup");
@@ -313,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Set the user in state
+      // Set the user in state but DO NOT clear the session
       setUser(data.user);
 
       // Show success notification with more detailed instructions

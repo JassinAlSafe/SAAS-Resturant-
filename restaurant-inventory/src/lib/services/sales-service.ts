@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Dish, Sale } from '@/lib/types';
+import { Dish, Sale, SalesItem } from '@/lib/types';
 import { format } from 'date-fns';
 
 interface SaleRecord {
@@ -18,72 +18,61 @@ export const salesService = {
     /**
      * Get all sales for the authenticated user
      */
-    async getSales(): Promise<Sale[]> {
+    async getSales(startDate?: string, endDate?: string): Promise<Sale[]> {
         try {
-            console.log('Fetching sales...');
-
-            // Get the authenticated user
             const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
 
-            if (!user) {
-                console.error('No authenticated user found');
-                return [];
-            }
-
-            const { data, error } = await supabase
-                .from('sales')
-                .select('*')
+            // First get the business profile through the join table
+            const { data: businessProfileData, error: profileError } = await supabase
+                .from('business_profile_users')
+                .select('business_profile_id')
                 .eq('user_id', user.id)
-                .order('date', { ascending: false });
+                .single();
 
-            if (error) {
-                console.error('Error fetching sales:', error);
-                throw error;
+            if (profileError) throw profileError;
+            if (!businessProfileData) throw new Error("No business profile found");
+
+            const businessProfileId = businessProfileData.business_profile_id;
+
+            // Build the query
+            let query = supabase
+                .from('sales')
+                .select(`
+                    *,
+                    sale_items (
+                        id,
+                        sale_id,
+                        dish_id,
+                        quantity,
+                        unit_price,
+                        total_price,
+                        dishes (
+                            name,
+                            description,
+                            category
+                        )
+                    )
+                `)
+                .eq('business_profile_id', businessProfileId)
+                .order('created_at', { ascending: false });
+
+            // Add date filters if provided
+            if (startDate) {
+                query = query.gte('created_at', startDate);
+            }
+            if (endDate) {
+                query = query.lte('created_at', endDate);
             }
 
-            if (!data || data.length === 0) {
-                console.log('No sales found');
-                return [];
-            }
+            const { data, error } = await query;
 
-            // Get all unique dish IDs from the sales data
-            const dishIds = [...new Set(data.map((sale: SaleRecord) => sale.dish_id))];
-            console.log('Dish IDs to fetch:', dishIds);
+            if (error) throw error;
 
-            // Fetch dish names from recipes table
-            const { data: recipesData, error: recipesError } = await supabase
-                .from('recipes')
-                .select('id, name')
-                .in('id', dishIds);
-
-            if (recipesError) {
-                console.error('Error fetching dish names:', recipesError);
-            }
-
-            // Create a map of dish IDs to dish names
-            const dishNameMap = new Map();
-            if (recipesData && recipesData.length > 0) {
-                recipesData.forEach((recipe: { id: string, name: string }) => {
-                    dishNameMap.set(recipe.id, recipe.name);
-                });
-            }
-
-            console.log('Recipe name map:', Object.fromEntries(dishNameMap));
-
-            // Transform DB data to our application model
-            return data.map((sale: SaleRecord) => ({
-                id: sale.id,
-                dishId: sale.dish_id,
-                dishName: dishNameMap.get(sale.dish_id) || 'Unknown Recipe',
-                quantity: sale.quantity,
-                totalAmount: sale.total_amount,
-                date: sale.date,
-                createdAt: sale.created_at,
-                userId: sale.user_id
-            }));
+            return data as Sale[];
         } catch (error) {
-            console.error('Exception in getSales:', error);
-            return [];
+            console.error('Error fetching sales:', error);
+            throw error;
         }
     },
 
@@ -103,10 +92,22 @@ export const salesService = {
                 return [];
             }
 
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                return [];
+            }
+
             const { data, error } = await supabase
                 .from('sales')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('business_profile_id', businessProfile.id)
                 .eq('date', formattedDate);
 
             if (error) {
@@ -127,6 +128,7 @@ export const salesService = {
             const { data: recipesData, error: recipesError } = await supabase
                 .from('recipes')
                 .select('id, name')
+                .eq('business_profile_id', businessProfile.id)
                 .in('id', dishIds);
 
             if (recipesError) {
@@ -183,7 +185,19 @@ export const salesService = {
                 throw new Error('User not authenticated');
             }
 
-            console.log(`Adding ${entries.length} sales entries for user ${user.id}`);
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
+            console.log(`Adding ${entries.length} sales entries for business ${businessProfile.id}`);
 
             // Transform entries to DB format
             const dbEntries = entries.map(entry => ({
@@ -191,7 +205,8 @@ export const salesService = {
                 quantity: entry.quantity,
                 total_amount: entry.totalAmount,
                 date: entry.date,
-                user_id: user.id
+                user_id: user.id,
+                business_profile_id: businessProfile.id
             }));
 
             // Create a map of dish IDs to dish names from the input entries
@@ -256,29 +271,16 @@ export const salesService = {
                 }));
             }
 
-            // Instead of looking up dishes table, look up recipes table
+            // Fetch dish names from recipes table
             const { data: recipesData, error: recipesError } = await supabase
                 .from('recipes')
                 .select('id, name')
+                .eq('business_profile_id', businessProfile.id)
                 .in('id', validDishIds);
 
             if (recipesError) {
-                console.error('Error fetching recipe names:', recipesError);
-                console.error('Query details:', { table: 'recipes', ids: validDishIds });
-                // Continue without dish names from the recipes table, but use input dish names if available
-                return data.map((sale: SaleRecord) => ({
-                    id: sale.id,
-                    dishId: sale.dish_id,
-                    dishName: inputDishNameMap.get(sale.dish_id) || 'Unknown Dish (Error)',
-                    quantity: sale.quantity,
-                    totalAmount: sale.total_amount,
-                    date: sale.date,
-                    createdAt: sale.created_at,
-                    userId: sale.user_id
-                }));
+                console.error('Error fetching dish names:', recipesError);
             }
-
-            console.log('Recipes data returned:', recipesData);
 
             // Create a map of dish IDs to dish names
             const dishNameMap = new Map();
@@ -286,13 +288,9 @@ export const salesService = {
                 recipesData.forEach((recipe: { id: string, name: string }) => {
                     dishNameMap.set(recipe.id, recipe.name);
                 });
-            } else {
-                console.warn('No recipe data returned from query');
             }
 
-            console.log('Dish name map:', Object.fromEntries(dishNameMap));
-
-            // Transform DB data back to our application model
+            // Transform DB data to our application model
             return data.map((sale: SaleRecord) => ({
                 id: sale.id,
                 dishId: sale.dish_id,
@@ -411,9 +409,30 @@ export const salesService = {
                 return [];
             }
 
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                return [];
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                return [];
+            }
+
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('id, name, unit')
+                .eq('business_profile_id', businessProfile.id)
                 .in('id', ids);
 
             if (error) {
@@ -455,53 +474,35 @@ export const salesService = {
     /**
      * Update a sale record
      */
-    async updateSale(sale: Sale): Promise<boolean> {
+    async updateSale(saleId: string, updates: Partial<Sale>): Promise<boolean> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
 
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Ensure the user owns this sale record
-            const { data: saleCheck, error: checkError } = await supabase
-                .from('sales')
-                .select('id')
-                .eq('id', sale.id)
+            // Get the business profile ID
+            const { data: businessProfileData, error: profileError } = await supabase
+                .from('business_profile_users')
+                .select('business_profile_id')
                 .eq('user_id', user.id)
                 .single();
 
-            if (checkError || !saleCheck) {
-                console.error('Sale not found or not owned by user:', checkError);
-                return false;
-            }
+            if (profileError) throw profileError;
+            if (!businessProfileData) throw new Error("No business profile found");
 
-            // Update the sale record
-            const { error } = await supabase
+            const businessProfileId = businessProfileData.business_profile_id;
+
+            const { data, error } = await supabase
                 .from('sales')
-                .update({
-                    quantity: sale.quantity,
-                    total_amount: sale.totalAmount,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', sale.id)
-                .eq('user_id', user.id);
+                .update(updates)
+                .eq('id', saleId)
+                .eq('business_profile_id', businessProfileId)
+                .select()
+                .single();
 
-            if (error) {
-                console.error('Error updating sale:', error);
-                return false;
-            }
-
+            if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Exception in updateSale:', error);
+            console.error('Error updating sale:', error);
             return false;
         }
     },
@@ -511,47 +512,31 @@ export const salesService = {
      */
     async deleteSale(saleId: string): Promise<boolean> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
 
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Ensure the user owns this sale record
-            const { data: saleCheck, error: checkError } = await supabase
-                .from('sales')
-                .select('id')
-                .eq('id', saleId)
+            // Get the business profile ID
+            const { data: businessProfileData, error: profileError } = await supabase
+                .from('business_profile_users')
+                .select('business_profile_id')
                 .eq('user_id', user.id)
                 .single();
 
-            if (checkError || !saleCheck) {
-                console.error('Sale not found or not owned by user:', checkError);
-                return false;
-            }
+            if (profileError) throw profileError;
+            if (!businessProfileData) throw new Error("No business profile found");
 
-            // Delete the sale record
+            const businessProfileId = businessProfileData.business_profile_id;
+
             const { error } = await supabase
                 .from('sales')
                 .delete()
                 .eq('id', saleId)
-                .eq('user_id', user.id);
+                .eq('business_profile_id', businessProfileId);
 
-            if (error) {
-                console.error('Error deleting sale:', error);
-                return false;
-            }
-
+            if (error) throw error;
             return true;
         } catch (error) {
-            console.error('Exception in deleteSale:', error);
+            console.error('Error deleting sale:', error);
             return false;
         }
     },

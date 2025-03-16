@@ -112,10 +112,31 @@ export const reportsService = {
         const toDate = format(dateRange.to, "yyyy-MM-dd");
 
         try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
             // Fetch sales data from the database
             const { data: salesData, error } = await supabase
                 .from('sales')
                 .select('*, recipes:dish_id(name, price, food_cost)')
+                .eq('business_profile_id', businessProfile.id)
                 .gte('date', fromDate)
                 .lte('date', toDate)
                 .order('date', { ascending: true });
@@ -206,11 +227,32 @@ export const reportsService = {
         const toDate = format(dateRange.to, "yyyy-MM-dd");
 
         try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
             // Modified query to work with actual database schema
             // Fetch sales data from the database grouped by dish
             const { data: salesData, error } = await supabase
                 .from('sales')
                 .select('dish_id, quantity, total_amount, recipes:dish_id(name)')
+                .eq('business_profile_id', businessProfile.id)
                 .gte('date', fromDate)
                 .lte('date', toDate);
 
@@ -287,11 +329,32 @@ export const reportsService = {
         const toDate = format(dateRange.to, "yyyy-MM-dd");
 
         try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
             // Fetch the dish details
             const { data: dishData, error: dishError } = await supabase
                 .from('recipes')
                 .select('id, name, price, food_cost')
                 .eq('id', dishId)
+                .eq('business_profile_id', businessProfile.id)
                 .single();
 
             if (dishError || !dishData) throw dishError || new Error('Dish not found');
@@ -301,6 +364,7 @@ export const reportsService = {
                 .from('sales')
                 .select('quantity, total_amount, date')
                 .eq('dish_id', dishId)
+                .eq('business_profile_id', businessProfile.id)
                 .gte('date', fromDate)
                 .lte('date', toDate);
 
@@ -355,6 +419,26 @@ export const reportsService = {
         const toDate = format(dateRange.to, "yyyy-MM-dd");
 
         try {
+            // Get the authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                console.error('No authenticated user found');
+                throw new Error('User not authenticated');
+            }
+
+            // Get the user's business profile
+            const { data: businessProfile, error: businessError } = await supabase
+                .from('business_profiles')
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (businessError || !businessProfile) {
+                console.error('Error fetching business profile:', businessError);
+                throw new Error('Business profile not found');
+            }
+
             // Fetch current inventory items
             const inventoryItems = await inventoryService.getItems();
 
@@ -362,6 +446,7 @@ export const reportsService = {
             const { data: sales, error: salesError } = await supabase
                 .from('sales')
                 .select('id, dish_id, quantity, date')
+                .eq('business_profile_id', businessProfile.id)
                 .gte('date', fromDate)
                 .lte('date', toDate);
 
@@ -370,7 +455,8 @@ export const reportsService = {
             // Get recipe ingredients
             const { data: dishIngredients, error: ingredientsError } = await supabase
                 .from('dish_ingredients')
-                .select('dish_id, ingredient_id, quantity');
+                .select('dish_id, ingredient_id, quantity')
+                .eq('business_profile_id', businessProfile.id);
 
             if (ingredientsError) throw ingredientsError;
 
