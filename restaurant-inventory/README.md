@@ -1,153 +1,349 @@
-# Restaurant Inventory Management System
+# Restaurant Inventory Management System - Technical Manual
 
-A modern inventory management system for restaurants built with Next.js, Supabase, and Clerk Authentication.
+## System Architecture
 
-## Features
+### Tech Stack Overview
 
-- **Inventory Management**: Track ingredients, stock levels, and usage
-- **Sales Tracking**: Record daily sales and analyze trends
-- **Reports & Analytics**: Generate insights from your restaurant data
-- **User Authentication**: Secure login with role-based access control
+- **Frontend**:
 
-## Tech Stack
+  - Next.js 14 (App Router)
+  - React 18
+  - TypeScript 5
+  - TailwindCSS 3
+  - Shadcn UI (Radix UI based components)
+  - Zustand (State Management)
+  - React Query (Server State Management)
 
-- **Frontend**: Next.js 14 (App Router), React, TypeScript, TailwindCSS, Shadcn UI
-- **Backend**: Supabase (PostgreSQL)
-- **Authentication**: Clerk
-- **Deployment**: Vercel
+- **Backend & Database**:
 
-## Getting Started
+  - Supabase (PostgreSQL)
+  - Row Level Security (RLS)
+  - Real-time subscriptions
+  - Storage for images
 
-### Prerequisites
+- **Authentication**:
 
-- Node.js 18+ and npm
-- Supabase account
-- Clerk account
+  - Supabase Auth
+  - PKCE Flow
+  - Email verification
+  - Session management
 
-### Installation
+- **Deployment**:
+  - Vercel (Frontend)
+  - Supabase (Backend)
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/restaurant-inventory.git
-   cd restaurant-inventory
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-
-   - Copy `.env.example` to `.env.local`
-   - Fill in your Supabase and Clerk credentials
-
-4. Run the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Database Setup
-
-This project uses Supabase as the database. The SQL migrations are located in the `supabase/migrations` directory.
-
-To set up the database:
-
-1. Create a new Supabase project
-2. Run the migrations in the Supabase SQL editor
-3. Update your environment variables with the Supabase URL and anon key
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgements
-
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Supabase](https://supabase.io/)
-- [Chart.js](https://www.chartjs.org/)
-- [React Icons](https://react-icons.github.io/react-icons/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
-
-# Sales Table Schema Fix
-
-## Issue
-
-The application was trying to insert a `dish_name` column into the `sales` table, but this column doesn't exist in the database schema, resulting in the error:
+## Project Structure
 
 ```
-Could not find the 'dish_name' column of 'sales' in the schema cache (Code: PGRST204)
+restaurant-inventory/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── (auth)/            # Authentication routes
+│   │   ├── (protected)/       # Protected routes
+│   │   └── api/               # API routes
+│   ├── components/            # React components
+│   │   ├── ui/               # Shadcn UI components
+│   │   └── shared/           # Shared components
+│   ├── lib/                  # Utility functions and services
+│   │   ├── services/         # Business logic services
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── types/           # TypeScript types
+│   │   └── utils/           # Helper functions
+│   └── styles/              # Global styles
+├── public/                  # Static files
+└── supabase/               # Supabase configurations
+    └── migrations/         # Database migrations
 ```
 
-## Changes Made
+## Authentication System
 
-1. Updated the `addSales` function in `src/lib/services/sales-service.ts` to:
+### 1. Authentication Flow
 
-   - Remove the `dish_name` field from the database entries
-   - Fetch dish names from the dishes table after inserting sales records
-   - Update the `SaleRecord` interface to match the actual database schema
+The system uses Supabase's PKCE (Proof Key for Code Exchange) authentication flow:
 
-2. Created a migration file `supabase/migrations/20240601_update_sales_table.sql` to:
+1. **Sign Up Process**:
 
-   - Add the `user_id` column to the sales table
-   - Add the `updated_at` column for consistency
-   - Create a trigger to update the `updated_at` column automatically
+   ```typescript
+   // src/lib/auth-context.tsx
+   const signUp = async (email, password, name) => {
+     const redirectUrl = new URL("/auth/callback", window.location.origin);
+     redirectUrl.searchParams.append("type", "signup");
 
-3. Updated the `getDishes` function to handle both the `dishes` and `recipes` tables
-
-4. Created a migration file `supabase/migrations/20240602_ensure_dishes_data.sql` to:
-   - Ensure the dishes table exists
-   - Copy data from the recipes table to the dishes table if it exists
-   - Create sample dishes if the table is empty
-   - Set up proper indexes and RLS policies
-
-## How to Apply the Fix
-
-1. Apply the migrations to your Supabase database:
-
-   ```bash
-   npx supabase migration up
+     await supabase.auth.signUp({
+       email,
+       password,
+       options: {
+         data: { name },
+         emailRedirectTo: redirectUrl.toString(),
+       },
+     });
+   };
    ```
 
-   If you're using the Supabase cloud, you can run the SQL in the migration files directly in the SQL editor.
+2. **Email Verification**:
 
-2. Restart your application to use the updated code.
+   - Verification link sent to user's email
+   - Link contains PKCE code
+   - Callback page handles verification
+   - Profile created upon successful verification
 
-## Database Schema
+3. **Session Management**:
+   - Sessions stored in localStorage
+   - Automatic token refresh
+   - Real-time session updates
 
-The updated `sales` table schema should look like this:
+### 2. Database Schema
+
+#### Users and Profiles
 
 ```sql
-create table if not exists public.sales (
-  id uuid default uuid_generate_v4() primary key,
-  dish_id uuid references public.dishes on delete restrict not null,
+-- auth.users table (managed by Supabase)
+-- profiles table (custom)
+create table profiles (
+  id uuid primary key references auth.users on delete cascade,
+  email text,
+  name text,
+  role text default 'staff',
+  email_confirmed boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- business_profiles table
+create table business_profiles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users on delete cascade,
+  business_name text,
+  business_type text,
+  contact_email text,
+  contact_phone text,
+  address text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  constraint unique_user_business unique (user_id)
+);
+```
+
+#### Inventory Management
+
+```sql
+-- dishes table
+create table dishes (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  price numeric not null default 0,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- sales table
+create table sales (
+  id uuid primary key default uuid_generate_v4(),
+  dish_id uuid references dishes on delete restrict,
   quantity integer not null default 0,
   total_amount numeric not null default 0,
   date date not null default current_date,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   user_id uuid references auth.users on delete set null,
-  updated_at timestamp with time zone default timezone('utc'::text, now())
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 ```
 
-The `dishes` table schema should look like this:
+### 3. Row Level Security (RLS)
 
 ```sql
-create table if not exists public.dishes (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  price numeric not null default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Enable RLS on all tables
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE business_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+
+-- Example policies
+CREATE POLICY "Users can view their own profile"
+ON profiles FOR SELECT
+TO authenticated
+USING (auth.uid() = id);
+
+CREATE POLICY "Staff can view all sales"
+ON sales FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+    AND profiles.role = 'staff'
+  )
 );
 ```
+
+## Setup Instructions
+
+### 1. Prerequisites
+
+- Node.js 18.17 or later
+- npm 9+ or yarn 1.22+
+- PostgreSQL 14+ (handled by Supabase)
+- Git
+
+### 2. Environment Variables
+
+Create a `.env.local` file:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+
+# Additional Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_ENABLE_STORAGE=true
+```
+
+### 3. Database Setup
+
+1. Create Supabase project
+2. Run migrations:
+   ```bash
+   cd supabase
+   supabase db push
+   ```
+3. Set up RLS policies:
+   ```bash
+   supabase db remote commit
+   ```
+
+### 4. Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## Key Features Implementation
+
+### 1. State Management
+
+Using Zustand for client-side state:
+
+```typescript
+// src/lib/stores/useStore.ts
+import create from "zustand";
+
+interface AppState {
+  // State definition
+}
+
+export const useStore = create<AppState>((set) => ({
+  // State implementation
+}));
+```
+
+### 2. API Integration
+
+Using React Query for server state:
+
+```typescript
+// src/lib/hooks/useQuery.ts
+import { useQuery } from "@tanstack/react-query";
+
+export const useSales = () => {
+  return useQuery({
+    queryKey: ["sales"],
+    queryFn: fetchSales,
+  });
+};
+```
+
+### 3. Real-time Updates
+
+Using Supabase subscriptions:
+
+```typescript
+// src/lib/supabase-realtime.ts
+supabase
+  .channel("sales")
+  .on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "sales",
+    },
+    (payload) => {
+      // Handle real-time updates
+    }
+  )
+  .subscribe();
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Errors**
+
+   - Clear browser cache and cookies
+   - Check PKCE flow implementation
+   - Verify environment variables
+
+2. **Database Access Issues**
+
+   - Verify RLS policies
+   - Check user roles and permissions
+   - Validate SQL queries
+
+3. **Performance Issues**
+   - Implement proper indexing
+   - Use query optimization
+   - Enable edge caching
+
+## Security Considerations
+
+1. **Authentication**
+
+   - PKCE flow for secure authentication
+   - Session management
+   - Password policies
+
+2. **Database**
+
+   - Row Level Security (RLS)
+   - Prepared statements
+   - Input validation
+
+3. **API**
+   - Rate limiting
+   - Request validation
+   - Error handling
+
+## Maintenance
+
+### Regular Tasks
+
+1. Update dependencies
+2. Monitor error logs
+3. Backup database
+4. Check security updates
+
+### Monitoring
+
+1. Implement error tracking
+2. Monitor performance metrics
+3. Track user analytics
+
+## Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [TailwindCSS Documentation](https://tailwindcss.com/docs)
+- [Shadcn UI Documentation](https://ui.shadcn.com)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs)
