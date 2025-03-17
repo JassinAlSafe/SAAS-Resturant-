@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import { Dish, DishIngredient } from '@/lib/types';
 
+// Database representation of dish ingredients
+interface DbDishIngredient {
+    dish_id: string;
+    ingredient_id: string;
+    quantity: number;
+}
+
 interface RecipeWithIngredients {
     id: string;
     name: string;
@@ -14,10 +21,8 @@ interface RecipeWithIngredients {
     created_at?: string;
     updated_at?: string;
     is_archived?: boolean;
-    recipe_ingredients?: {
-        ingredient_id: string;
-        quantity: number;
-    }[];
+    dish_id?: string;
+    dish_ingredients?: DbDishIngredient[];
     ingredients?: {
         ingredient_id: string;
         quantity: number;
@@ -61,10 +66,7 @@ export const recipeService = {
                     created_at,
                     updated_at,
                     is_archived,
-                    recipe_ingredients (
-                        ingredient_id,
-                        quantity
-                    )
+                    dish_id
                 `)
                 .eq('user_id', user.id);
 
@@ -90,25 +92,59 @@ export const recipeService = {
                 return [];
             }
 
+            // Fetch ingredients for all recipes that have a dish_id
+            const dishIds = data
+                .filter(recipe => recipe.dish_id)
+                .map(recipe => recipe.dish_id);
+
+            let dishIngredientsMap: Record<string, DbDishIngredient[]> = {};
+
+            if (dishIds.length > 0) {
+                const { data: dishIngredients, error: ingredientsError } = await supabase
+                    .from('dish_ingredients')
+                    .select('dish_id, ingredient_id, quantity')
+                    .in('dish_id', dishIds);
+
+                if (ingredientsError) {
+                    console.error('Error fetching dish ingredients:', ingredientsError);
+                } else if (dishIngredients) {
+                    // Group ingredients by dish_id
+                    dishIngredientsMap = (dishIngredients as DbDishIngredient[]).reduce<Record<string, DbDishIngredient[]>>((acc, item) => {
+                        if (!acc[item.dish_id]) {
+                            acc[item.dish_id] = [];
+                        }
+                        acc[item.dish_id].push(item);
+                        return acc;
+                    }, {});
+                }
+            }
+
             // Map the data to our Dish interface
-            return data.map((recipe: RecipeWithIngredients) => ({
-                id: recipe.id,
-                name: recipe.name,
-                description: recipe.description || '',
-                price: recipe.price,
-                foodCost: recipe.food_cost || 0,
-                category: recipe.category || '',
-                allergies: recipe.allergies || [],
-                popularity: recipe.popularity || 0,
-                imageUrl: recipe.image_url || '',
-                ingredients: recipe.recipe_ingredients?.map(ingredient => ({
-                    ingredientId: ingredient.ingredient_id,
-                    quantity: ingredient.quantity
-                })) || [],
-                createdAt: recipe.created_at || '',
-                updatedAt: recipe.updated_at || '',
-                isArchived: recipe.is_archived || false
-            }));
+            return data.map((recipe: RecipeWithIngredients) => {
+                // Get ingredients for this recipe if it has a dish_id
+                const ingredients = recipe.dish_id
+                    ? (dishIngredientsMap[recipe.dish_id] || []).map(ingredient => ({
+                        ingredientId: ingredient.ingredient_id,
+                        quantity: ingredient.quantity
+                    }))
+                    : [];
+
+                return {
+                    id: recipe.id,
+                    name: recipe.name,
+                    description: recipe.description || '',
+                    price: recipe.price,
+                    foodCost: recipe.food_cost || 0,
+                    category: recipe.category || '',
+                    allergies: recipe.allergies || [],
+                    popularity: recipe.popularity || 0,
+                    imageUrl: recipe.image_url || '',
+                    ingredients: ingredients,
+                    createdAt: recipe.created_at || '',
+                    updatedAt: recipe.updated_at || '',
+                    isArchived: recipe.is_archived || false
+                };
+            });
         } catch (error) {
             console.error('Exception in getRecipes:', error);
             throw error;
@@ -131,22 +167,19 @@ export const recipeService = {
             const { data: recipe, error } = await supabase
                 .from('recipes')
                 .select(`
-          id,
-          name,
-          description,
-          price,
-          food_cost,
-          category,
-          allergies,
-          popularity,
-          image_url,
-          created_at,
-          updated_at,
-          recipe_ingredients (
-            ingredient_id,
-            quantity
-          )
-        `)
+                    id,
+                    name,
+                    description,
+                    price,
+                    food_cost,
+                    category,
+                    allergies,
+                    popularity,
+                    image_url,
+                    created_at,
+                    updated_at,
+                    dish_id
+                `)
                 .eq('id', id)
                 .eq('user_id', user.id)
                 .single();
@@ -157,6 +190,21 @@ export const recipeService = {
             }
 
             if (!recipe) return null;
+
+            // Fetch ingredients if the recipe has a dish_id
+            let dbIngredients: DbDishIngredient[] = [];
+            if (recipe.dish_id) {
+                const { data: dishIngredients, error: ingredientsError } = await supabase
+                    .from('dish_ingredients')
+                    .select('dish_id, ingredient_id, quantity')
+                    .eq('dish_id', recipe.dish_id);
+
+                if (ingredientsError) {
+                    console.error('Error fetching dish ingredients:', ingredientsError);
+                } else if (dishIngredients) {
+                    dbIngredients = dishIngredients as DbDishIngredient[];
+                }
+            }
 
             // Transform DB data to our application model
             return {
@@ -169,10 +217,10 @@ export const recipeService = {
                 allergies: recipe.allergies,
                 popularity: recipe.popularity,
                 imageUrl: recipe.image_url,
-                ingredients: recipe.recipe_ingredients?.map(item => ({
+                ingredients: dbIngredients.map(item => ({
                     ingredientId: item.ingredient_id,
                     quantity: item.quantity
-                })) || [],
+                })),
                 createdAt: recipe.created_at || new Date().toISOString(),
                 updatedAt: recipe.updated_at || new Date().toISOString()
             };
@@ -197,7 +245,30 @@ export const recipeService = {
 
             console.log('Adding recipe:', dish.name, 'for user:', user.id);
 
-            // First, insert the recipe
+            // First, check if we need to create a dish record
+            let dishId: string | null = null;
+
+            if (dish.ingredients && dish.ingredients.length > 0) {
+                // Create a dish record first
+                const { data: dishData, error: dishError } = await supabase
+                    .from('dishes')
+                    .insert({
+                        name: dish.name,
+                        business_profile_id: await this.getBusinessProfileId(user.id)
+                    })
+                    .select('id')
+                    .single();
+
+                if (dishError) {
+                    console.error('Error creating dish:', dishError);
+                    throw dishError;
+                }
+
+                dishId = dishData.id;
+                console.log('Created dish with ID:', dishId);
+            }
+
+            // Then, insert the recipe
             const { data: recipe, error: recipeError } = await supabase
                 .from('recipes')
                 .insert({
@@ -209,25 +280,34 @@ export const recipeService = {
                     allergies: dish.allergies,
                     popularity: dish.popularity,
                     image_url: dish.imageUrl,
-                    user_id: user.id // Include the user_id
+                    user_id: user.id, // Include the user_id
+                    dish_id: dishId // Link to the dish if created
                 })
                 .select()
                 .single();
 
             if (recipeError) {
                 console.error('Error adding recipe:', recipeError);
+                // Clean up the dish if it was created
+                if (dishId) {
+                    await supabase.from('dishes').delete().eq('id', dishId);
+                }
                 throw recipeError;
             }
 
             if (!recipe) {
                 console.error('Recipe was not created');
+                // Clean up the dish if it was created
+                if (dishId) {
+                    await supabase.from('dishes').delete().eq('id', dishId);
+                }
                 throw new Error('Recipe creation failed');
             }
 
             console.log('Recipe created with ID:', recipe.id);
 
-            // Then, insert recipe ingredients
-            if (dish.ingredients && dish.ingredients.length > 0) {
+            // Then, insert dish ingredients
+            if (dish.ingredients && dish.ingredients.length > 0 && dishId) {
                 // Get all ingredient IDs
                 const ingredientIds = dish.ingredients.map(ing => ing.ingredientId);
 
@@ -239,7 +319,9 @@ export const recipeService = {
 
                 if (ingredientsFetchError) {
                     console.error('Error fetching ingredients data:', ingredientsFetchError);
+                    // Clean up the recipe and dish
                     await supabase.from('recipes').delete().eq('id', recipe.id);
+                    await supabase.from('dishes').delete().eq('id', dishId);
                     throw ingredientsFetchError;
                 }
 
@@ -248,23 +330,24 @@ export const recipeService = {
                     const ingredientData = ingredientsData.find(ing => ing.id === ingredient.ingredientId);
 
                     return {
-                        recipe_id: recipe.id,
+                        dish_id: dishId,
                         ingredient_id: ingredient.ingredientId,
                         quantity: ingredient.quantity,
                         unit: ingredientData?.unit || 'piece' // Provide a default unit as fallback
                     };
                 });
 
-                console.log('Inserting ingredients:', ingredientsToInsert);
+                console.log('Inserting dish ingredients:', ingredientsToInsert);
 
                 const { error: ingredientsError } = await supabase
-                    .from('recipe_ingredients')
+                    .from('dish_ingredients')
                     .insert(ingredientsToInsert);
 
                 if (ingredientsError) {
-                    console.error('Error adding recipe ingredients:', ingredientsError);
-                    // Attempt to delete the recipe since ingredients failed
+                    console.error('Error adding dish ingredients:', ingredientsError);
+                    // Attempt to delete the recipe and dish since ingredients failed
                     await supabase.from('recipes').delete().eq('id', recipe.id);
+                    await supabase.from('dishes').delete().eq('id', dishId);
                     throw ingredientsError;
                 }
             }
@@ -296,6 +379,36 @@ export const recipeService = {
             }
             throw error; // Re-throw the error so it's caught by the hook
         }
+    },
+
+    /**
+     * Helper method to get business profile ID
+     */
+    async getBusinessProfileId(userId: string): Promise<string> {
+        // First try to get from business_profile_users table
+        const { data: businessProfileData, error: profileError } = await supabase
+            .from('business_profile_users')
+            .select('business_profile_id')
+            .eq('user_id', userId)
+            .single();
+
+        if (!profileError && businessProfileData) {
+            return businessProfileData.business_profile_id;
+        }
+
+        // If that fails, try direct query to business_profiles
+        const { data: businessProfiles, error: profilesError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
+            return businessProfiles[0].id;
+        }
+
+        throw new Error('No business profile found for user');
     },
 
     /**

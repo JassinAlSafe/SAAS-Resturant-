@@ -40,14 +40,14 @@ async function getBusinessProfileId() {
         return cachedBusinessProfileId;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        console.timeEnd('getBusinessProfileId');
-        throw new Error("Not authenticated");
-    }
-
-    // First try to get from business_profile_users table
     try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.timeEnd('getBusinessProfileId');
+            throw new Error("Not authenticated");
+        }
+
+        // First try to get from business_profile_users table
         const { data: businessProfileData, error: profileError } = await supabase
             .from('business_profile_users')
             .select('business_profile_id')
@@ -61,12 +61,8 @@ async function getBusinessProfileId() {
             console.timeEnd('getBusinessProfileId');
             return cachedBusinessProfileId;
         }
-    } catch (error) {
-        console.warn('Error fetching from business_profile_users, trying fallback:', error);
-    }
 
-    // If that fails, try direct query to business_profiles
-    try {
+        // If that fails, try direct query to business_profiles
         const { data: businessProfiles, error: profilesError } = await supabase
             .from('business_profiles')
             .select('id')
@@ -81,12 +77,15 @@ async function getBusinessProfileId() {
             console.timeEnd('getBusinessProfileId');
             return cachedBusinessProfileId;
         }
-    } catch (error) {
-        console.warn('Error fetching from business_profiles:', error);
-    }
 
-    console.timeEnd('getBusinessProfileId');
-    return null;
+        console.warn('No business profile found for user');
+        console.timeEnd('getBusinessProfileId');
+        return null;
+    } catch (error) {
+        console.error('Error in getBusinessProfileId:', error);
+        console.timeEnd('getBusinessProfileId');
+        return null;
+    }
 }
 
 // Transform database response to InventoryItem
@@ -196,26 +195,42 @@ export const inventoryService = {
      * Add a new inventory item
      */
     async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
+        console.time('addItem');
         try {
             if (!supabase) {
                 console.error('Supabase client is not initialized');
+                console.timeEnd('addItem');
                 return null;
             }
 
+            console.time('getBusinessProfileId_in_addItem');
             const businessProfileId = await getBusinessProfileId();
+            console.timeEnd('getBusinessProfileId_in_addItem');
+
             if (!businessProfileId) {
+                console.error("No business profile found");
+                console.timeEnd('addItem');
                 throw new Error("No business profile found");
             }
 
             // Prepare data with required fields and their default values
             const now = new Date().toISOString();
+
+            // Handle reorder_level explicitly to avoid type issues
+            let reorderLevel = 0;
+            if (typeof item.reorder_level === 'number') {
+                reorderLevel = item.reorder_level;
+            } else if (item.reorder_level !== undefined) {
+                reorderLevel = Number(item.reorder_level) || 0;
+            }
+
             const itemData = {
                 name: item.name,
                 category: item.category,
                 quantity: item.quantity || 0,
                 unit: item.unit,
                 cost: item.cost || 0,
-                reorder_level: typeof item.reorder_level === 'number' ? item.reorder_level : 0, // Default to 0 as per schema
+                reorder_level: reorderLevel,
                 supplier_id: item.supplier_id || null,
                 image_url: item.image_url || null,
                 expiry_date: item.expiry_date || null,
@@ -224,16 +239,33 @@ export const inventoryService = {
                 updated_at: now
             };
 
+            console.time('supabase_insert');
             const { data, error } = await supabase
                 .from('ingredients')
                 .insert(itemData)
                 .select('*')
                 .single();
+            console.timeEnd('supabase_insert');
 
-            if (error) throw error;
-            return mapDbToInventoryItem(data);
+            if (error) {
+                console.error('Error adding inventory item:', error);
+                console.timeEnd('addItem');
+                throw error;
+            }
+
+            if (!data) {
+                console.error('No data returned from insert operation');
+                console.timeEnd('addItem');
+                return null;
+            }
+
+            // Map the database item to our InventoryItem interface
+            const newItem = mapDbToInventoryItem(data);
+            console.timeEnd('addItem');
+            return newItem;
         } catch (error) {
-            console.error('Error creating inventory item:', error);
+            console.error('Error in addItem:', error);
+            console.timeEnd('addItem');
             throw error;
         }
     },

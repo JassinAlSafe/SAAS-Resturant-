@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -66,25 +66,128 @@ export default function InventoryItemModal({
   suppliers = [],
   userRole = "staff",
 }: InventoryItemModalProps) {
-  // State for the form
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [quantity, setQuantity] = useState(0);
-  const [unit, setUnit] = useState("units");
-  const [category, setCategory] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [costPerUnit, setCostPerUnit] = useState(0);
-  const [reorderPoint, setReorderPoint] = useState(0);
-  const [supplierId, setSupplierId] = useState("none");
-  const [location, setLocation] = useState("");
-  const [quickMode, setQuickMode] = useState(userRole === "staff");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageError, setImageError] = useState(false);
+  // Memoize the initial form data to avoid recalculation on every render
+  const initialFormData = useMemo(() => {
+    return {
+      name: item?.name || "",
+      description: item?.description || "",
+      category: item?.category || "",
+      quantity: item?.quantity || 0,
+      unit: item?.unit || "units",
+      cost: item?.cost || 0,
+      reorder_level: item?.reorder_level || 0,
+      supplier_id: item?.supplier_id || "",
+      location: item?.location || "",
+      expiry_date: item?.expiry_date || "",
+      image_url: item?.image_url || "",
+    };
+  }, [item]);
 
-  // Combine custom categories with common categories
-  const allCategories = [
-    ...new Set([...COMMON_CATEGORIES, ...customCategories]),
-  ].sort();
+  const [formData, setFormData] = useState<InventoryFormData>(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quickMode, setQuickMode] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Reset form when modal opens/closes or item changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialFormData);
+      setErrors({});
+      setIsSubmitting(false);
+    }
+  }, [isOpen, initialFormData]);
+
+  // Memoize categories to avoid recalculation
+  const allCategories = useMemo(() => {
+    const uniqueCategories = new Set([
+      ...COMMON_CATEGORIES,
+      ...customCategories,
+    ]);
+    return Array.from(uniqueCategories).sort();
+  }, [customCategories]);
+
+  // Use callbacks for event handlers to prevent unnecessary re-renders
+  const handleChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    ) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      // Clear error when field is updated
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
+
+  const handleNumberChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      const numValue = value === "" ? 0 : parseFloat(value);
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numValue,
+      }));
+
+      // Clear error when field is updated
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+
+      // Validate form
+      const newErrors: Record<string, string> = {};
+      if (!formData.name.trim()) newErrors.name = "Name is required";
+      if (!formData.category) newErrors.category = "Category is required";
+      if (!formData.unit) newErrors.unit = "Unit is required";
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        // Call the appropriate handler based on whether we're adding or editing
+        if (item) {
+          onUpdate?.(formData);
+        } else {
+          onSave(formData);
+        }
+      } catch (error) {
+        console.error("Error submitting form:", error);
+        setIsSubmitting(false);
+      }
+    },
+    [formData, item, onSave, onUpdate]
+  );
+
+  const toggleQuickMode = useCallback(() => {
+    setQuickMode((prev) => !prev);
+  }, []);
 
   // Determine if user can see advanced options
   const canAccessAdvanced = userRole === "admin" || userRole === "manager";
@@ -101,79 +204,6 @@ export default function InventoryItemModal({
     "cans",
     "bottles",
   ];
-
-  // Reset form when modal opens or item changes
-  useEffect(() => {
-    if (isOpen) {
-      if (item) {
-        // Edit mode - populate form with item data
-        setName(item.name);
-        setDescription(item.description || "");
-        setQuantity(item.quantity);
-        setUnit(item.unit);
-        setCategory(item.category);
-        setCostPerUnit(item.cost_per_unit || item.cost || 0);
-        setReorderPoint(item.reorder_level || 0);
-        setSupplierId(item.supplier_id || "none");
-        setLocation(item.location || "");
-        setImageUrl(item.image_url || "");
-        setImageError(false);
-        // If editing, default to full mode for managers/admins
-        setQuickMode(userRole === "staff");
-      } else {
-        // Add mode - reset form
-        setName("");
-        setDescription("");
-        setQuantity(0);
-        setUnit("units");
-        setCategory(customCategories.length > 0 ? customCategories[0] : "");
-        setCostPerUnit(0);
-        setReorderPoint(0);
-        setSupplierId("none");
-        setLocation("");
-        setImageUrl("");
-        setImageError(false);
-        // Default to quick mode for staff
-        setQuickMode(userRole === "staff");
-      }
-    }
-  }, [isOpen, item, customCategories, userRole]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Determine the final category (use new category if provided)
-    const finalCategory = newCategory.trim() ? newCategory : category;
-
-    // Convert "none" supplier value to undefined
-    const finalSupplierId = supplierId === "none" ? undefined : supplierId;
-
-    // Create item data object with required fields and their default values
-    const itemData: InventoryFormData = {
-      name,
-      quantity: Number(quantity) || 0,
-      unit,
-      category: finalCategory,
-      cost: quickMode ? 0 : Number(costPerUnit) || 0,
-      reorder_level: quickMode ? 0 : Number(reorderPoint) || 0,
-      supplier_id: quickMode ? undefined : finalSupplierId,
-      image_url: quickMode ? undefined : imageUrl || undefined,
-      description: description || undefined,
-      location: location || undefined,
-    };
-
-    // Call appropriate function based on if we're adding or editing
-    if (item && onUpdate) {
-      onUpdate(itemData);
-    } else {
-      onSave(itemData);
-    }
-  };
-
-  // Toggle quick mode handler
-  const toggleQuickMode = () => {
-    setQuickMode(!quickMode);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -227,8 +257,8 @@ export default function InventoryItemModal({
                 </Label>
                 <Input
                   id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder="Enter item name"
                   required
                   className="mt-1.5"
@@ -245,8 +275,8 @@ export default function InventoryItemModal({
                     type="number"
                     min="0"
                     step="0.01"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    value={formData.quantity}
+                    onChange={handleNumberChange}
                     required
                     className="mt-1.5"
                   />
@@ -256,7 +286,12 @@ export default function InventoryItemModal({
                   <Label htmlFor="unit" className="text-sm font-medium">
                     Unit*
                   </Label>
-                  <Select value={unit} onValueChange={setUnit}>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={(value) =>
+                      handleChange({ target: { name: "unit", value } })
+                    }
+                  >
                     <SelectTrigger id="unit" className="mt-1.5">
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
@@ -273,7 +308,13 @@ export default function InventoryItemModal({
 
               <div>
                 <Label className="text-sm font-medium">Category*</Label>
-                <Select value={category} onValueChange={setCategory} required>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    handleChange({ target: { name: "category", value } })
+                  }
+                  required
+                >
                   <SelectTrigger className="mt-1.5">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -285,22 +326,6 @@ export default function InventoryItemModal({
                     ))}
                   </SelectContent>
                 </Select>
-
-                <div className="mt-2">
-                  <Label
-                    htmlFor="newCategory"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Or add a new category:
-                  </Label>
-                  <Input
-                    id="newCategory"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    placeholder="Enter new category name"
-                    className="mt-1"
-                  />
-                </div>
               </div>
 
               <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -332,8 +357,8 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      value={formData.name}
+                      onChange={handleChange}
                       placeholder="Enter item name"
                       required
                       className="mt-1.5"
@@ -345,8 +370,10 @@ export default function InventoryItemModal({
                       Category <span className="text-red-500">*</span>
                     </Label>
                     <Select
-                      value={category}
-                      onValueChange={setCategory}
+                      value={formData.category}
+                      onValueChange={(value) =>
+                        handleChange({ target: { name: "category", value } })
+                      }
                       required
                     >
                       <SelectTrigger className="mt-1.5">
@@ -360,22 +387,6 @@ export default function InventoryItemModal({
                         ))}
                       </SelectContent>
                     </Select>
-
-                    <div className="mt-2">
-                      <Label
-                        htmlFor="newCategory"
-                        className="text-xs text-muted-foreground"
-                      >
-                        Or add a new category:
-                      </Label>
-                      <Input
-                        id="newCategory"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="Enter new category name"
-                        className="mt-1"
-                      />
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -388,8 +399,8 @@ export default function InventoryItemModal({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Number(e.target.value))}
+                        value={formData.quantity}
+                        onChange={handleNumberChange}
                         required
                         className="mt-1.5"
                       />
@@ -399,7 +410,12 @@ export default function InventoryItemModal({
                       <Label htmlFor="unit" className="text-sm font-medium">
                         Unit <span className="text-red-500">*</span>
                       </Label>
-                      <Select value={unit} onValueChange={setUnit}>
+                      <Select
+                        value={formData.unit}
+                        onValueChange={(value) =>
+                          handleChange({ target: { name: "unit", value } })
+                        }
+                      >
                         <SelectTrigger id="unit" className="mt-1.5">
                           <SelectValue placeholder="Select unit" />
                         </SelectTrigger>
@@ -423,8 +439,8 @@ export default function InventoryItemModal({
                     </Label>
                     <Textarea
                       id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={formData.description}
+                      onChange={handleChange}
                       placeholder="Enter item description"
                       className="min-h-[100px] mt-1.5"
                     />
@@ -451,8 +467,8 @@ export default function InventoryItemModal({
                       type="number"
                       min="0"
                       step="0.01"
-                      value={costPerUnit}
-                      onChange={(e) => setCostPerUnit(Number(e.target.value))}
+                      value={formData.cost}
+                      onChange={handleNumberChange}
                       required
                       className="mt-1.5"
                     />
@@ -470,8 +486,8 @@ export default function InventoryItemModal({
                       type="number"
                       min="0"
                       step="1"
-                      value={reorderPoint}
-                      onChange={(e) => setReorderPoint(Number(e.target.value))}
+                      value={formData.reorder_level}
+                      onChange={handleNumberChange}
                       className="mt-1.5"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -499,8 +515,8 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="location"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
+                      value={formData.location}
+                      onChange={handleChange}
                       placeholder="Storage location"
                       className="mt-1.5"
                     />
@@ -515,7 +531,14 @@ export default function InventoryItemModal({
                         <FiTruck className="h-4 w-4" />
                         Supplier
                       </Label>
-                      <Select value={supplierId} onValueChange={setSupplierId}>
+                      <Select
+                        value={formData.supplier_id}
+                        onValueChange={(value) =>
+                          handleChange({
+                            target: { name: "supplier_id", value },
+                          })
+                        }
+                      >
                         <SelectTrigger className="mt-1.5">
                           <SelectValue placeholder="Select supplier" />
                         </SelectTrigger>
@@ -541,38 +564,11 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="imageUrl"
-                      value={imageUrl}
-                      onChange={(e) => {
-                        setImageUrl(e.target.value);
-                        setImageError(false);
-                      }}
+                      value={formData.image_url}
+                      onChange={handleChange}
                       placeholder="Enter image URL"
                       className="mt-1.5"
                     />
-                    {imageUrl && (
-                      <div className="mt-3 relative h-28 w-28 rounded overflow-hidden border border-gray-200 dark:border-gray-800">
-                        {!imageError ? (
-                          // Using a regular img tag instead of Next.js Image component
-                          <div className="relative h-full w-full bg-gray-100 dark:bg-gray-800">
-                            <img
-                              src={imageUrl}
-                              alt="Product preview"
-                              className="object-cover h-full w-full"
-                              onError={() => setImageError(true)}
-                            />
-                          </div>
-                        ) : (
-                          <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <div className="flex flex-col items-center justify-center">
-                              <FiAlertCircle className="h-6 w-6 text-amber-500" />
-                              <span className="text-xs text-muted-foreground mt-1">
-                                Image error
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -588,7 +584,7 @@ export default function InventoryItemModal({
             >
               Cancel
             </Button>
-            <Button type="submit" className="px-6">
+            <Button type="submit" className="px-6" disabled={isSubmitting}>
               {item ? "Save Changes" : "Add Item"}
             </Button>
           </DialogFooter>

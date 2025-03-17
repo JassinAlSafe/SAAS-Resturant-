@@ -1,27 +1,69 @@
 import { supabase } from '@/lib/supabase';
 import { Supplier, SupplierCategory } from '@/lib/types';
 
+// Cache for business profile ID
+let cachedBusinessProfileId: string | null = null;
+let cacheExpiry = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
 // Import the getBusinessProfileId helper function
 async function getBusinessProfileId() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
+    console.time('supplier_getBusinessProfileId');
 
-    const { data: businessProfileData, error: profileError } = await supabase
-        .from('business_profile_users')
-        .select('business_profile_id')
-        .eq('user_id', user.id)
-        .single();
-
-    if (profileError) {
-        console.error('Error fetching business profile:', profileError);
-        return null;
-    }
-    if (!businessProfileData) {
-        console.error('No business profile found');
-        return null;
+    // Check if we have a valid cached value
+    const now = Date.now();
+    if (cachedBusinessProfileId && now < cacheExpiry) {
+        console.log('Using cached business profile ID in supplier service');
+        console.timeEnd('supplier_getBusinessProfileId');
+        return cachedBusinessProfileId;
     }
 
-    return businessProfileData.business_profile_id;
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.timeEnd('supplier_getBusinessProfileId');
+            throw new Error("Not authenticated");
+        }
+
+        // First try to get from business_profile_users table
+        const { data: businessProfileData, error: profileError } = await supabase
+            .from('business_profile_users')
+            .select('business_profile_id')
+            .eq('user_id', user.id)
+            .single();
+
+        if (!profileError && businessProfileData) {
+            // Cache the result
+            cachedBusinessProfileId = businessProfileData.business_profile_id;
+            cacheExpiry = now + CACHE_DURATION;
+            console.timeEnd('supplier_getBusinessProfileId');
+            return cachedBusinessProfileId;
+        }
+
+        // If that fails, try direct query to business_profiles
+        const { data: businessProfiles, error: profilesError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
+            // Cache the result
+            cachedBusinessProfileId = businessProfiles[0].id;
+            cacheExpiry = now + CACHE_DURATION;
+            console.timeEnd('supplier_getBusinessProfileId');
+            return cachedBusinessProfileId;
+        }
+
+        console.warn('No business profile found for user in supplier service');
+        console.timeEnd('supplier_getBusinessProfileId');
+        return null;
+    } catch (error) {
+        console.error('Error in supplier getBusinessProfileId:', error);
+        console.timeEnd('supplier_getBusinessProfileId');
+        return null;
+    }
 }
 
 export const supplierService = {
@@ -29,27 +71,35 @@ export const supplierService = {
      * Get all suppliers
      */
     async getSuppliers(): Promise<Supplier[]> {
+        console.time('getSuppliers');
         try {
             console.log('Attempting to fetch suppliers...');
 
             // Check if supabase client is properly initialized
             if (!supabase) {
                 console.error('Supabase client is not initialized');
+                console.timeEnd('getSuppliers');
                 return [];
             }
 
             // Get the business profile ID
+            console.time('getBusinessProfileId_in_getSuppliers');
             const businessProfileId = await getBusinessProfileId();
+            console.timeEnd('getBusinessProfileId_in_getSuppliers');
+
             if (!businessProfileId) {
                 console.error('No business profile ID found');
+                console.timeEnd('getSuppliers');
                 return [];
             }
 
+            console.time('supabase_select_suppliers');
             const { data, error } = await supabase
                 .from('suppliers')
                 .select('*')
                 .eq('business_profile_id', businessProfileId)
                 .order('name');
+            console.timeEnd('supabase_select_suppliers');
 
             if (error) {
                 console.error('Error fetching suppliers:', error);
@@ -59,15 +109,18 @@ export const supplierService = {
                     details: error.details,
                     hint: error.hint
                 });
+                console.timeEnd('getSuppliers');
                 throw error;
             }
 
             if (!data) {
                 console.log('No data returned from suppliers query');
+                console.timeEnd('getSuppliers');
                 return [];
             }
 
             console.log(`Successfully fetched ${data.length} suppliers`);
+            console.timeEnd('getSuppliers');
 
             // Transform the data to match our Supplier interface
             return data.map((item: any) => ({
