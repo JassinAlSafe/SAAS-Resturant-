@@ -254,6 +254,7 @@ export const recipeService = {
                     .from('dishes')
                     .insert({
                         name: dish.name,
+                        price: dish.price,
                         business_profile_id: await this.getBusinessProfileId(user.id)
                     })
                     .select('id')
@@ -281,7 +282,8 @@ export const recipeService = {
                     popularity: dish.popularity,
                     image_url: dish.imageUrl,
                     user_id: user.id, // Include the user_id
-                    dish_id: dishId // Link to the dish if created
+                    dish_id: dishId, // Link to the dish if created
+                    business_profile_id: await this.getBusinessProfileId(user.id) // Add business profile ID
                 })
                 .select()
                 .single();
@@ -495,15 +497,40 @@ export const recipeService = {
                 throw new Error('Cannot delete this recipe because it is referenced in sales records. Remove the sales records first or archive the recipe instead.');
             }
 
-            // First delete recipe ingredients
-            const { error: ingredientsError } = await supabase
-                .from('recipe_ingredients')
-                .delete()
-                .eq('recipe_id', id);
+            // Get the recipe to find its dish_id
+            const { data: recipe, error: recipeError } = await supabase
+                .from('recipes')
+                .select('dish_id')
+                .eq('id', id)
+                .single();
 
-            if (ingredientsError) {
-                console.error('Error deleting recipe ingredients:', ingredientsError);
-                throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
+            if (recipeError) {
+                console.error('Error getting recipe:', recipeError);
+                throw new Error(`Error getting recipe: ${recipeError.message}`);
+            }
+
+            // If the recipe has a dish_id, delete its ingredients first
+            if (recipe && recipe.dish_id) {
+                const { error: ingredientsError } = await supabase
+                    .from('dish_ingredients')
+                    .delete()
+                    .eq('dish_id', recipe.dish_id);
+
+                if (ingredientsError) {
+                    console.error('Error deleting recipe ingredients:', ingredientsError);
+                    throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
+                }
+
+                // Delete the dish
+                const { error: dishError } = await supabase
+                    .from('dishes')
+                    .delete()
+                    .eq('id', recipe.dish_id);
+
+                if (dishError) {
+                    console.error('Error deleting dish:', dishError);
+                    throw new Error(`Error deleting dish: ${dishError.message}`);
+                }
             }
 
             // Then delete the recipe

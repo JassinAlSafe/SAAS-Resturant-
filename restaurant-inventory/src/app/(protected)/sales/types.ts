@@ -11,30 +11,23 @@ export enum TabType {
 
 export interface SaleEntry {
     id: string;
-    date: string;
-    shift?: ShiftType;
-    dishId: string;
-    dishName: string;
+    dish_id: string;
     quantity: number;
-    totalAmount: number;
-    createdAt: string;
-    updatedAt?: string;
-    notes?: string;
-    userId?: string;
+    total_amount: number;
+    date: string;
+    created_at: string;
+    updated_at?: string;
+    user_id: string;
+    business_profile_id: string;
 }
 
 export interface Recipe {
     id: string;
     name: string;
-    price: number;
-    category?: string;
-    description?: string;
-    image?: string;
-    ingredients: {
+    ingredients: Array<{
         ingredientId: string;
         quantity: number;
-        name: string;
-    }[];
+    }>;
 }
 
 export interface InventoryImpactItem {
@@ -65,24 +58,23 @@ export interface SalesEntryFormProps {
     onTabChange?: (tab: TabType) => void;
 }
 
-export interface SalesFilterProps {
+export interface SalesFilter {
     startDate?: Date;
     endDate?: Date;
-    shift?: ShiftType;
+    shift?: 'All' | 'Breakfast' | 'Lunch' | 'Dinner';
     searchTerm?: string;
-    onFilterChange: (filters: Partial<SalesFilterProps>) => void;
 }
 
 export interface SalesSummary {
     totalSales: number;
-    totalOrders: number;
+    totalItems: number;
     averageOrderValue: number;
-    topSellingDishes: {
+    topSellingDishes: Array<{
         dishId: string;
-        dishName: string;
+        name: string;
         quantity: number;
         revenue: number;
-    }[];
+    }>;
 }
 
 export function loadDishesFromRecipes(recipes: Recipe[]): Dish[] {

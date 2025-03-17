@@ -44,8 +44,6 @@ export default function Dashboard() {
   const [isDataStale, setIsDataStale] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-
-
   // Check if user is authenticated
   useEffect(() => {
     if (!authLoading && !user) {
@@ -78,6 +76,19 @@ export default function Dashboard() {
       setRecentActivity(data.recentActivity);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      // Set default values to prevent UI crashes
+      setStats({
+        totalInventoryValue: 0,
+        lowStockItems: 0,
+        monthlySales: 0,
+        salesGrowth: 0,
+      });
+      setSalesData([]);
+      setCategoryStats([]);
+      setRecentActivity([]);
+
+      // Optional: Add toast notification here if you have a toast component
+      // toast.error("Failed to load dashboard data. Please try again later.");
     } finally {
       setIsLoading(false);
     }

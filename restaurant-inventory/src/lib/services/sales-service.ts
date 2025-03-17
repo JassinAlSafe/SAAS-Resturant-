@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase';
-import { Dish, Sale, SalesItem } from '@/lib/types';
+import { Dish, Sale } from '@/lib/types';
 import { format } from 'date-fns';
 
 interface SaleRecord {
     id: string;
     dish_id: string;
+    dish_name?: string;
     quantity: number;
     total_amount: number;
     date: string;
@@ -12,6 +13,7 @@ interface SaleRecord {
     updated_at?: string;
     notes?: string;
     user_id?: string;
+    business_profile_id: string;
 }
 
 export const salesService = {
@@ -23,35 +25,28 @@ export const salesService = {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // First get the business profile through the join table
+            // Get the user's business profile
             const { data: businessProfileData, error: profileError } = await supabase
-                .from('business_profile_users')
-                .select('business_profile_id')
+                .from('business_profiles')
+                .select('id')
                 .eq('user_id', user.id)
                 .single();
 
             if (profileError) throw profileError;
             if (!businessProfileData) throw new Error("No business profile found");
 
-            const businessProfileId = businessProfileData.business_profile_id;
+            const businessProfileId = businessProfileData.id;
 
-            // Build the query
+            // Build the query to get sales with dish information
             let query = supabase
                 .from('sales')
                 .select(`
                     *,
-                    sale_items (
+                    recipes (
                         id,
-                        sale_id,
-                        dish_id,
-                        quantity,
-                        unit_price,
-                        total_price,
-                        dishes (
-                            name,
-                            description,
-                            category
-                        )
+                        name,
+                        price,
+                        category
                     )
                 `)
                 .eq('business_profile_id', businessProfileId)
@@ -69,7 +64,18 @@ export const salesService = {
 
             if (error) throw error;
 
-            return data as Sale[];
+            // Transform the data to match our Sale type
+            return data.map(sale => ({
+                id: sale.id,
+                dishId: sale.dish_id,
+                dishName: sale.recipes?.name || 'Unknown Dish',
+                quantity: sale.quantity,
+                totalAmount: sale.total_amount,
+                date: sale.date,
+                createdAt: sale.created_at,
+                updatedAt: sale.updated_at,
+                userId: sale.user_id
+            }));
         } catch (error) {
             console.error('Error fetching sales:', error);
             throw error;
@@ -209,16 +215,6 @@ export const salesService = {
                 business_profile_id: businessProfile.id
             }));
 
-            // Create a map of dish IDs to dish names from the input entries
-            const inputDishNameMap = new Map();
-            entries.forEach(entry => {
-                if (entry.dishName) {
-                    inputDishNameMap.set(entry.dishId, entry.dishName);
-                }
-            });
-
-            console.log('Input dish name map:', Object.fromEntries(inputDishNameMap));
-
             // Log the entries being added for debugging
             console.log('Entries to add:', JSON.stringify(dbEntries, null, 2));
 
@@ -240,61 +236,115 @@ export const salesService = {
 
             console.log(`Successfully added ${data.length} sales entries`);
 
-            // Fetch dish names for the sales entries
-            const dishIds = data.map((sale: SaleRecord) => sale.dish_id);
-            console.log('Dish IDs to fetch:', dishIds);
-
-            // Ensure we have valid UUIDs before querying
-            const validDishIds = dishIds.filter(id => {
-                const isValid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-                if (!isValid) {
-                    console.warn(`Invalid dish ID: ${id}`);
+            // Update inventory using dish_ingredients
+            for (const sale of data) {
+                // First get the recipe with its dish_id
+                interface RecipeWithDish {
+                    id: string;
+                    dish_id?: string;
+                    dishes?: {
+                        dish_ingredients?: Array<{
+                            ingredient_id: string;
+                            quantity: number;
+                            ingredients?: {
+                                id: string;
+                                name: string;
+                                unit: string;
+                                quantity: number;
+                            };
+                        }>;
+                    };
                 }
-                return isValid;
-            });
 
-            console.log('Valid dish IDs:', validDishIds);
-            console.log('Invalid dish IDs:', dishIds.filter(id => !validDishIds.includes(id)));
+                interface DishIngredient {
+                    ingredient_id: string;
+                    quantity: number;
+                    ingredients?: {
+                        id: string;
+                        name: string;
+                        unit: string;
+                        quantity: number;
+                    };
+                }
 
-            if (validDishIds.length === 0) {
-                console.warn('No valid dish IDs to fetch');
-                // Return the data with dish names from the input if available
-                return data.map((sale: SaleRecord) => ({
-                    id: sale.id,
-                    dishId: sale.dish_id,
-                    dishName: inputDishNameMap.get(sale.dish_id) || 'Unknown Dish',
-                    quantity: sale.quantity,
-                    totalAmount: sale.total_amount,
-                    date: sale.date,
-                    createdAt: sale.created_at,
-                    userId: sale.user_id
-                }));
-            }
+                interface PostgrestError {
+                    message: string;
+                    details: string;
+                    hint?: string;
+                    code: string;
+                }
 
-            // Fetch dish names from recipes table
-            const { data: recipesData, error: recipesError } = await supabase
-                .from('recipes')
-                .select('id, name')
-                .eq('business_profile_id', businessProfile.id)
-                .in('id', validDishIds);
+                const { data: recipe, error: recipeError } = await supabase
+                    .from('recipes')
+                    .select(`
+                        id,
+                        dish_id,
+                        dishes (
+                            dish_ingredients (
+                                ingredient_id,
+                                quantity,
+                                ingredients (
+                                    id,
+                                    name,
+                                    unit,
+                                    quantity
+                                )
+                            )
+                        )
+                    `)
+                    .eq('id', sale.dish_id)
+                    .single() as { data: RecipeWithDish | null, error: PostgrestError | null };
 
-            if (recipesError) {
-                console.error('Error fetching dish names:', recipesError);
-            }
+                if (recipeError) {
+                    console.error('Error fetching recipe:', recipeError);
+                    continue;
+                }
 
-            // Create a map of dish IDs to dish names
-            const dishNameMap = new Map();
-            if (recipesData && recipesData.length > 0) {
-                recipesData.forEach((recipe: { id: string, name: string }) => {
-                    dishNameMap.set(recipe.id, recipe.name);
-                });
+                if (!recipe) {
+                    console.error('Recipe not found:', sale.dish_id);
+                    continue;
+                }
+
+                // Get ingredients either from dish_ingredients or recipe_ingredients
+                let ingredients: DishIngredient[] = [];
+
+                if (recipe.dish_id && recipe.dishes?.dish_ingredients) {
+                    // If we have dish_ingredients, use those
+                    ingredients = recipe.dishes.dish_ingredients;
+                }
+
+                if (ingredients.length === 0) {
+                    console.warn(`No ingredients found for recipe ${recipe.id}. Skipping inventory update.`);
+                    continue;
+                }
+
+                // Update inventory for each ingredient
+                for (const ingredient of ingredients) {
+                    if (!ingredient.ingredients) {
+                        console.warn(`No ingredient details found for ingredient ${ingredient.ingredient_id}`);
+                        continue;
+                    }
+
+                    const newQuantity = ingredient.ingredients.quantity - (ingredient.quantity * sale.quantity);
+
+                    const { error: updateError } = await supabase
+                        .from('ingredients')
+                        .update({ quantity: newQuantity })
+                        .eq('id', ingredient.ingredients.id);
+
+                    if (updateError) {
+                        console.error('Error updating ingredient quantity:', updateError);
+                    } else {
+                        console.log(`Updated quantity for ingredient ${ingredient.ingredients.name} to ${newQuantity}`);
+                    }
+                }
             }
 
             // Transform DB data to our application model
             return data.map((sale: SaleRecord) => ({
                 id: sale.id,
                 dishId: sale.dish_id,
-                dishName: dishNameMap.get(sale.dish_id) || inputDishNameMap.get(sale.dish_id) || 'Unknown Dish',
+                dishName: sale.dish_name || 'Unknown Dish',
                 quantity: sale.quantity,
                 totalAmount: sale.total_amount,
                 date: sale.date,
@@ -313,9 +363,9 @@ export const salesService = {
     },
 
     /**
-     * Get all dishes (recipes)
+     * Get all recipes
      */
-    async getDishes(): Promise<Dish[]> {
+    async getRecipes(): Promise<Dish[]> {
         try {
             // Get the authenticated user
             const { data: { user } } = await supabase.auth.getUser();
@@ -327,7 +377,7 @@ export const salesService = {
 
             console.log('Fetching active recipes for user:', user.id);
 
-            // Fetch from recipes table
+            // First get recipes
             const { data: recipesData, error: recipesError } = await supabase
                 .from('recipes')
                 .select(`
@@ -342,13 +392,10 @@ export const salesService = {
                     image_url,
                     created_at,
                     updated_at,
-                    recipe_ingredients (
-                        ingredient_id,
-                        quantity
-                    )
+                    dish_id
                 `)
                 .eq('user_id', user.id)
-                .eq('is_archived', false); // Only fetch non-archived recipes
+                .eq('is_archived', false);
 
             if (recipesError) {
                 console.error('Error fetching recipes:', recipesError);
@@ -359,6 +406,34 @@ export const salesService = {
                 console.log('No active recipes found');
                 return [];
             }
+
+            // Get dish ingredients for each recipe's dish
+            const dishIds = recipesData.map(recipe => recipe.dish_id).filter(Boolean);
+            const { data: dishIngredientsData, error: dishIngredientsError } = await supabase
+                .from('dish_ingredients')
+                .select(`
+                    dish_id,
+                    ingredient_id,
+                    quantity
+                `)
+                .in('dish_id', dishIds);
+
+            if (dishIngredientsError) {
+                console.error('Error fetching dish ingredients:', dishIngredientsError);
+                return [];
+            }
+
+            // Group dish ingredients by dish_id
+            const dishIngredientsMap = (dishIngredientsData || []).reduce((acc, curr) => {
+                if (!acc[curr.dish_id]) {
+                    acc[curr.dish_id] = [];
+                }
+                acc[curr.dish_id].push({
+                    ingredientId: curr.ingredient_id,
+                    quantity: curr.quantity
+                });
+                return acc;
+            }, {} as Record<string, Array<{ ingredientId: string; quantity: number }>>);
 
             // Transform recipes data to Dish interface
             return recipesData.map((recipe: {
@@ -373,10 +448,7 @@ export const salesService = {
                 image_url?: string;
                 created_at?: string;
                 updated_at?: string;
-                recipe_ingredients?: Array<{
-                    ingredient_id: string;
-                    quantity: number;
-                }>;
+                dish_id?: string;
             }) => ({
                 id: recipe.id,
                 name: recipe.name,
@@ -387,15 +459,12 @@ export const salesService = {
                 allergies: recipe.allergies || [],
                 popularity: recipe.popularity || 0,
                 imageUrl: recipe.image_url || '',
-                ingredients: recipe.recipe_ingredients?.map((item) => ({
-                    ingredientId: item.ingredient_id,
-                    quantity: item.quantity
-                })) || [],
+                ingredients: recipe.dish_id ? dishIngredientsMap[recipe.dish_id] || [] : [],
                 createdAt: recipe.created_at || new Date().toISOString(),
                 updatedAt: recipe.updated_at || new Date().toISOString()
             }));
         } catch (error) {
-            console.error('Exception in getDishes:', error);
+            console.error('Exception in getRecipes:', error);
             return [];
         }
     },
@@ -491,7 +560,7 @@ export const salesService = {
 
             const businessProfileId = businessProfileData.business_profile_id;
 
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('sales')
                 .update(updates)
                 .eq('id', saleId)

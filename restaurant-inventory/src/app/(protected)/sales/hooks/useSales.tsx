@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Sale, Dish } from "@/lib/types";
 import { salesService } from "@/lib/services/sales-service";
+import { recipeService } from "@/lib/services/recipe-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { format } from "date-fns";
 import { Recipe } from "../types"; // Import the Recipe type from the correct location
@@ -35,7 +36,7 @@ export function useSales() {
       setSales(fetchedSales);
 
       // Fetch dishes
-      const fetchedDishes = await salesService.getDishes();
+      const fetchedDishes = await recipeService.getRecipes();
       setDishes(fetchedDishes);
 
       // Get all unique ingredient IDs from dishes

@@ -9,6 +9,7 @@ import SalesEntryForm from "./SalesEntryForm";
 import SaleNotesModal from "./SaleNotesModal";
 import { useSalesPage } from "../hooks/useSalesHooks";
 import { Dish } from "@/lib/types";
+import { SaleEntry } from "../types";
 
 // Create a custom hook for the circuit breaker to isolate it
 function useRenderGuard() {
@@ -79,14 +80,17 @@ function useAuth(): AuthHook {
 
 interface SalesPageProps {
   onDataUpdate?: (data: {
-    sales: Array<{ id: string; date: string; total: number }>;
+    sales: Array<{
+      id: string;
+      date: string;
+      total_amount: number;
+    }>;
   }) => void;
   onViewHistory?: () => void;
 }
 
 export default function SalesPage({
   onDataUpdate,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onViewHistory,
 }: SalesPageProps) {
   // onViewHistory is used in the parent component for tab navigation
@@ -153,16 +157,12 @@ export default function SalesPage({
   // Update parent component when sales data changes
   useEffect(() => {
     if (onDataUpdate && salesPage.sales && salesPage.sales.length > 0) {
-      // Debounce the update to prevent rapid re-renders
       const timeoutId = setTimeout(() => {
-        // Map sales data to match the expected type
-        const formattedSales = salesPage.sales.map(
-          (sale: { id: string; date: string; totalAmount?: number }) => ({
-            id: sale.id,
-            date: sale.date,
-            total: sale.totalAmount || 0,
-          })
-        );
+        const formattedSales = salesPage.sales.map((sale: SaleEntry) => ({
+          id: sale.id,
+          date: sale.date,
+          total_amount: sale.total_amount,
+        }));
         onDataUpdate({ sales: formattedSales });
       }, 300);
 
@@ -240,12 +240,13 @@ export default function SalesPage({
           dishes={salesPage.dishes.map((dish: Dish) => ({
             ...dish,
             recipeId: dish.id,
-            ingredients: dish.ingredients.map(
-              (ing: { ingredientId: string; quantity: number }) => ({
-                ingredientId: ing.ingredientId,
-                quantity: ing.quantity,
-              })
-            ),
+            ingredients:
+              dish.ingredients?.map(
+                (ing: { ingredientId: string; quantity: number }) => ({
+                  ingredientId: ing.ingredientId,
+                  quantity: ing.quantity,
+                })
+              ) || [],
           }))}
           recipes={salesPage.recipes}
           total={salesPage.calculateTotal()}
@@ -269,7 +270,13 @@ export default function SalesPage({
         <SaleNotesModal
           isOpen={salesPage.isNotesModalOpen}
           onClose={salesPage.closeNotesModal}
-          sale={salesPage.selectedSale}
+          sale={{
+            ...salesPage.selectedSale,
+            dishName:
+              salesPage.dishes.find(
+                (d: Dish) => d.id === salesPage.selectedSale?.dish_id
+              )?.name || "",
+          }}
         />
       )}
     </motion.div>

@@ -1,368 +1,74 @@
-import { create } from "zustand";
-import { SaleEntry, Recipe, InventoryImpactItem } from "../types";
-import { Dish } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { create } from 'zustand';
+import { Sale, Dish } from '@/lib/types';
+import { salesService } from '@/lib/services/sales-service';
 
-interface SalesState {
-    // Data
-    sales: SaleEntry[];
+type SalesState = {
+    sales: Sale[];
     dishes: Dish[];
-    recipes: Recipe[];
-    salesEntries: { [key: string]: number };
-    dateString: string;
+    isLoading: boolean;
+    error: Error | null;
     filterDate: Date | null;
     filterStartDate: Date | null;
     filterEndDate: Date | null;
-    filterShift: 'All' | 'Breakfast' | 'Lunch' | 'Dinner' | null;
+    filterShift: string | null;
     currentShift: 'All' | 'Breakfast' | 'Lunch' | 'Dinner';
     searchTerm: string;
-    showInventoryImpact: boolean;
-    isSubmitting: boolean;
-    isLoading: boolean;
-    error: Error | null;
-    selectedSale: SaleEntry | null;
-    isNotesModalOpen: boolean;
-    lowStockAlerts: InventoryImpactItem[];
-    lastUpdated: number;
-
-    // Actions
-    setInitialData: (data: { sales: SaleEntry[]; dishes: Dish[]; recipes: Recipe[] }) => void;
-    setSales: (sales: SaleEntry[]) => void;
-    setError: (error: Error | null) => void;
-    setLowStockAlerts: (alerts: InventoryImpactItem[]) => void;
-    setSalesEntries: (entries: { [key: string]: number }) => void;
-    setDateString: (date: string) => void;
-    setFilterDate: (date: Date | null) => void;
+    fetchSalesAndDishes: () => Promise<void>;
     setFilterDateRange: (startDate: Date | null, endDate: Date | null) => void;
-    setFilterShift: (shift: 'All' | 'Breakfast' | 'Lunch' | 'Dinner' | null) => void;
+    setFilterShift: (shift: string | null) => void;
     setCurrentShift: (shift: 'All' | 'Breakfast' | 'Lunch' | 'Dinner') => void;
     setSearchTerm: (term: string) => void;
-    handleQuantityChange: (dishId: string, quantity: number) => void;
-    toggleInventoryImpact: () => void;
-    calculateInventoryImpact: (dishId: string, quantity: number) => InventoryImpactItem[];
-    handleSubmitSales: () => Promise<boolean>;
-    fetchSalesAndDishes: () => Promise<void>;
-    clearAllQuantities: () => void;
-    loadPreviousDayTemplate: () => Promise<void>;
-    openNotesModal: (sale: SaleEntry) => void;
-    closeNotesModal: () => void;
-    resetFilters: () => void;
-    calculateTotal: () => number;
-    updateSaleEntry: (dishId: string, quantity: number) => void;
-}
+};
 
-export const useSalesStore = create<SalesState>((set, get) => ({
-    // Initial state
-    sales: [],
-    dishes: [],
-    recipes: [],
-    salesEntries: {},
-    dateString: new Date().toISOString().split('T')[0],
+const initialState = {
+    sales: [] as Sale[],
+    dishes: [] as Dish[],
+    isLoading: false,
+    error: null,
     filterDate: null,
     filterStartDate: null,
     filterEndDate: null,
     filterShift: null,
-    currentShift: 'All',
-    searchTerm: '',
-    showInventoryImpact: false,
-    isSubmitting: false,
-    isLoading: true,
-    error: null,
-    selectedSale: null,
-    isNotesModalOpen: false,
-    lowStockAlerts: [],
-    lastUpdated: 0,
+    currentShift: 'All' as const,
+    searchTerm: ''
+};
 
-    // Actions
-    setInitialData: (data) => set({
-        sales: data.sales,
-        dishes: data.dishes,
-        recipes: data.recipes,
-        isLoading: false
-    }),
-
-    setSales: (sales) => set({ sales }),
-
-    setError: (error) => set({ error }),
-
-    setLowStockAlerts: (alerts) => set({ lowStockAlerts: alerts }),
-
-    setSalesEntries: (entries) => set({ salesEntries: entries }),
-
-    setDateString: (date) => set({ dateString: date }),
-
-    setFilterDate: (date) => set({ filterDate: date }),
-
-    setFilterDateRange: (filterStartDate, filterEndDate) => set({
-        filterStartDate,
-        filterEndDate
-    }),
-
-    setFilterShift: (filterShift) => set({ filterShift }),
-
-    setCurrentShift: (currentShift) => set({ currentShift }),
-
-    setSearchTerm: (term) => set({ searchTerm: term }),
-
-    handleQuantityChange: (dishId, quantity) => {
-        const state = get();
-        const dish = state.dishes.find(d => d.id === dishId);
-        if (!dish) {
-            console.warn(`Dish not found for ID: ${dishId}`);
-            return;
-        }
-
-        const newEntries = {
-            ...state.salesEntries,
-            [dishId]: quantity
-        };
-
-        // Calculate new total
-        const newTotal = Object.entries(newEntries).reduce((total, [id, qty]) => {
-            const d = state.dishes.find(d => d.id === id);
-            if (!d) return total;
-            const dishTotal = d.price * qty;
-            console.log(`Adding to total: ${d.name} - ${qty} × ${d.price} = ${dishTotal}`);
-            return total + dishTotal;
-        }, 0);
-
-        console.log('Updated quantity and total:', {
-            dishId,
-            dishName: dish.name,
-            quantity,
-            price: dish.price,
-            newTotal
-        });
-
-        set({
-            salesEntries: newEntries,
-            // Force a state update to trigger re-render
-            lastUpdated: new Date().getTime()
-        });
-    },
-
-    toggleInventoryImpact: () => set((state) => ({
-        showInventoryImpact: !state.showInventoryImpact
-    })),
-
-    calculateInventoryImpact: (dishId, quantity) => {
-        const state = get();
-        const dish = state.dishes.find(d => d.id === dishId);
-        if (!dish || !quantity) return [];
-
-        return dish.ingredients.map(ing => ({
-            ingredientId: ing.ingredientId,
-            name: 'Ingredient',
-            quantityUsed: ing.quantity * quantity,
-            unit: 'units'
-        }));
-    },
-
-    handleSubmitSales: async () => {
-        const state = get();
-        console.log('Starting sales submission with state:', {
-            entries: state.salesEntries,
-            dateString: state.dateString,
-            shift: state.currentShift,
-            dishes: state.dishes.length
-        });
-
-        set({ isSubmitting: true });
-        try {
-            // Get the authenticated user first
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-            if (authError || !user) {
-                console.error('Authentication error:', authError);
-                throw new Error('You must be logged in to submit sales');
-            }
-
-            // Get the user's business profile
-            const { data: businessProfile, error: profileError } = await supabase
-                .from('business_profiles')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (profileError || !businessProfile) {
-                console.error('Business profile error:', profileError);
-                throw new Error('No business profile found');
-            }
-
-            // Convert entries to array format
-            const entries = Object.entries(state.salesEntries)
-                .filter(([, quantity]) => quantity > 0)
-                .map(([dishId, quantity]) => {
-                    const dish = state.dishes.find(d => d.id === dishId);
-                    if (!dish) {
-                        console.error(`Dish not found: ${dishId}`);
-                        throw new Error(`Dish not found: ${dishId}`);
-                    }
-
-                    console.log('Processing dish entry:', {
-                        dishId,
-                        dishName: dish.name,
-                        quantity,
-                        price: dish.price,
-                        total: dish.price * quantity
-                    });
-
-                    return {
-                        dish_id: dishId,
-                        dish_name: dish.name,
-                        quantity,
-                        total_amount: dish.price * quantity,
-                        date: state.dateString,
-                        shift: state.currentShift,
-                        user_id: user.id,
-                        business_profile_id: businessProfile.id
-                    };
-                });
-
-            if (entries.length === 0) {
-                console.log('No entries to submit');
-                set({ isSubmitting: false });
-                return false;
-            }
-
-            console.log('Submitting entries to Supabase:', entries);
-
-            // Save all entries in a single transaction
-            const { data: salesData, error: insertError } = await supabase
-                .from('sales')
-                .insert(entries)
-                .select();
-
-            if (insertError) {
-                console.error('Supabase insert error:', insertError);
-                throw insertError;
-            }
-
-            console.log('Successfully saved sales:', salesData);
-
-            if (salesData) {
-                // Transform the returned data to match our SaleEntry type
-                const newSales = salesData.map(sale => ({
-                    id: sale.id,
-                    date: sale.date,
-                    shift: sale.shift,
-                    dishId: sale.dish_id,
-                    dishName: sale.dish_name,
-                    quantity: sale.quantity,
-                    totalAmount: sale.total_amount,
-                    createdAt: sale.created_at,
-                    updatedAt: sale.updated_at,
-                    userId: sale.user_id
-                }));
-
-                // Update local state with new sales
-                set(state => ({
-                    sales: [...state.sales, ...newSales],
-                    salesEntries: {}, // Clear entries
-                    isSubmitting: false
-                }));
-
-                // Update inventory if enabled
-                if (state.showInventoryImpact) {
-                    console.log('Updating inventory...');
-                    for (const entry of entries) {
-                        const impacts = state.calculateInventoryImpact(entry.dish_id, entry.quantity);
-                        console.log('Inventory impacts:', impacts);
-
-                        for (const impact of impacts) {
-                            const { error: stockError } = await supabase.rpc('update_ingredient_stock', {
-                                p_ingredient_id: impact.ingredientId,
-                                p_quantity_used: impact.quantityUsed
-                            });
-
-                            if (stockError) {
-                                console.error('Error updating stock:', stockError);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Error submitting sales:', error);
-            set({
-                error: error as Error,
-                isSubmitting: false
-            });
-            return false;
-        }
-    },
+export const useSalesStore = create<SalesState>()((set) => ({
+    ...initialState,
 
     fetchSalesAndDishes: async () => {
-        set({ isLoading: true });
+        set({ isLoading: true, error: null });
         try {
-            // This is now handled in the hook
-            set({ isLoading: false });
-        } catch (error) {
-            set({
-                error: error as Error,
+            const [salesData, recipesData] = await Promise.all([
+                salesService.getSales(),
+                salesService.getRecipes()
+            ]);
+
+            set((state) => ({
+                ...state,
+                sales: salesData,
+                dishes: recipesData,
                 isLoading: false
-            });
+            }));
+        } catch (error) {
+            console.error('Error fetching sales and recipes:', error);
+            set((state) => ({
+                ...state,
+                error: error instanceof Error ? error : new Error('Failed to fetch sales and recipes data'),
+                isLoading: false
+            }));
         }
     },
 
-    clearAllQuantities: () => set({ salesEntries: {} }),
+    setFilterDateRange: (startDate: Date | null, endDate: Date | null) =>
+        set((state) => ({ ...state, filterStartDate: startDate, filterEndDate: endDate })),
 
-    loadPreviousDayTemplate: async () => {
-        // This is now handled in the hook
-    },
+    setFilterShift: (shift: string | null) =>
+        set((state) => ({ ...state, filterShift: shift })),
 
-    openNotesModal: (sale) => set({
-        selectedSale: sale,
-        isNotesModalOpen: true
-    }),
+    setCurrentShift: (shift: 'All' | 'Breakfast' | 'Lunch' | 'Dinner') =>
+        set((state) => ({ ...state, currentShift: shift })),
 
-    closeNotesModal: () => set({
-        selectedSale: null,
-        isNotesModalOpen: false
-    }),
-
-    resetFilters: () => set({
-        filterDate: null,
-        searchTerm: ''
-    }),
-
-    calculateTotal: () => {
-        const state = get();
-
-        // For debugging - log available dishes
-        console.log('Available dishes for total calculation:',
-            state.dishes.map(d => ({ id: d.id, name: d.name, price: d.price }))
-        );
-
-        // For debugging - log current entries
-        console.log('Current salesEntries:', state.salesEntries);
-
-        let totalAmount = 0;
-
-        // Use more explicit loop for better debugging
-        for (const [dishId, quantity] of Object.entries(state.salesEntries)) {
-            const dish = state.dishes.find(d => d.id === dishId);
-
-            if (!dish) {
-                console.warn(`Dish not found for id: ${dishId} during total calculation`);
-                continue;
-            }
-
-            const dishTotal = dish.price * quantity;
-            totalAmount += dishTotal;
-
-            console.log(`Adding to total: ${dish.name} - ${quantity} × ${dish.price} = ${dishTotal}`);
-        }
-
-        console.log(`Final total calculated: ${totalAmount}`);
-        return totalAmount;
-    },
-
-    updateSaleEntry: (dishId, quantity) => set((state) => ({
-        salesEntries: {
-            ...state.salesEntries,
-            [dishId]: quantity
-        }
-    })),
-})); 
+    setSearchTerm: (term: string) =>
+        set((state) => ({ ...state, searchTerm: term }))
+}));
