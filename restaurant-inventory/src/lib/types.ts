@@ -243,7 +243,7 @@ export interface CategoryStat {
   name: string;
   count: number;
   change: number;
-  icon: React.ReactNode;
+  iconName: string;
   color: string;
 }
 

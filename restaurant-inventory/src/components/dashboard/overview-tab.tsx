@@ -13,65 +13,89 @@ import {
   FiUsers,
   FiArrowRight,
   FiActivity,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import { DashboardStats, CategoryStat } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/StatCard";
 import SalesGrowthCard from "@/components/SalesGrowthCard";
 import ExpiryAlerts from "@/components/dashboard/ExpiryAlerts";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useCurrency } from "@/lib/currency";
+import { useDashboard } from "@/lib/hooks/useDashboard";
+import { CategoryIcon } from "./CategoryIcon";
+import { Alert } from "@/components/ui/alert";
+import { RefreshCw } from "lucide-react";
 
-interface OverviewTabProps {
-  stats: DashboardStats;
-  salesData: { month: string; sales: number }[];
-  categoryStats: CategoryStat[];
-  recentActivity: {
-    action: string;
-    item: string;
-    timestamp: string;
-    user: string;
-  }[];
-  isLoading?: boolean;
-}
-
-export function OverviewTab({
-  stats,
-  salesData,
-  categoryStats,
-  recentActivity,
-  isLoading = false,
-}: OverviewTabProps) {
+export function OverviewTab() {
   const router = useRouter();
+  const {
+    stats: formattedStats,
+    salesData,
+    categoryStats,
+    recentActivity,
+    isLoading,
+    error,
+    refresh,
+    hasData,
+  } = useDashboard();
 
-  // Safely use the currency provider, with a fallback if it fails
-  const currencyContext = useCurrency();
+  // Handle the initial loading state
+  if (isLoading && !hasData) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
-  // Create a format function that works regardless of context availability
-  const formatCurrencyFn = (amount: number) => {
-    try {
-      return currencyContext.formatCurrency(amount);
-    } catch (error) {
-      // Fallback formatting if the context method fails
-      console.error("Currency formatting error:", error);
-      if (!amount && amount !== 0) return "0.00 kr";
-      return (
-        new Intl.NumberFormat("sv-SE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(amount) + " kr"
-      );
-    }
-  };
+  // Handle error state
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <p>{error}</p>
+        </Alert>
+        <Button onClick={refresh} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <p>No dashboard data available.</p>
+        </Alert>
+        <Button onClick={refresh} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+    );
+  }
+
+  // Parse numeric values
+  const salesGrowth = parseFloat(formattedStats.salesGrowth);
 
   return (
-    <div>
+    <div className="space-y-8">
+      {/* Small loading indicator for refreshes when data is already present */}
+      {isLoading && hasData && (
+        <div className="mb-4 flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md text-sm">
+          <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          Refreshing dashboard data...
+        </div>
+      )}
+
+      {/* Keep only one set of stat cards - the more detailed ones with footers */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
         <StatCard
           title="Total Inventory Value"
-          value={formatCurrencyFn(stats.totalInventoryValue)}
+          value={formattedStats.totalInventoryValue}
           icon={<FiPackage className="h-5 w-5" />}
           variant="primary"
           footer={
@@ -86,7 +110,7 @@ export function OverviewTab({
         />
         <StatCard
           title="Low Stock Items"
-          value={stats.lowStockItems.toString()}
+          value={formattedStats.lowStockItems.toString()}
           icon={<FiAlertTriangle className="h-5 w-5" />}
           variant="warning"
           footer={
@@ -97,7 +121,7 @@ export function OverviewTab({
         />
         <StatCard
           title="Monthly Sales"
-          value={formatCurrencyFn(stats.monthlySales)}
+          value={formattedStats.monthlySales}
           icon={<FiDollarSign className="h-5 w-5" />}
           variant="success"
           footer={
@@ -111,11 +135,11 @@ export function OverviewTab({
         />
         <StatCard
           title="Sales Growth"
-          value={`${stats.salesGrowth}%`}
+          value={formattedStats.salesGrowth}
           icon={<FiTrendingUp className="h-5 w-5" />}
           trend={{
-            value: Math.abs(stats.salesGrowth),
-            isPositive: stats.salesGrowth >= 0,
+            value: Math.abs(salesGrowth),
+            isPositive: salesGrowth >= 0,
           }}
           variant="info"
           footer={
@@ -123,11 +147,11 @@ export function OverviewTab({
               <span className="text-xs">vs. Last Month:</span>
               <span
                 className={`text-xs font-medium ${
-                  stats.salesGrowth >= 0 ? "text-green-600" : "text-red-600"
+                  salesGrowth >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {stats.salesGrowth >= 0 ? "+" : ""}
-                {stats.salesGrowth}%
+                {salesGrowth >= 0 ? "+" : ""}
+                {salesGrowth}%
               </span>
             </div>
           }
@@ -135,9 +159,7 @@ export function OverviewTab({
       </div>
 
       <div className="grid grid-cols-12 gap-4 sm:gap-6">
-        {/* Left column - Stats and Charts */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
-          {/* Main Charts */}
           <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 sm:p-6 border-b">
               <h2 className="text-xl font-semibold mb-1">Sales Performance</h2>
@@ -165,8 +187,8 @@ export function OverviewTab({
                     ...salesData.map((item) => item.sales),
                     0
                   )}
-                  percentComplete={75} // This would come from a goal tracking system
-                  growthPercent={stats.salesGrowth}
+                  percentComplete={75}
+                  growthPercent={salesGrowth}
                   salesData={salesData}
                 />
               ) : (
@@ -178,7 +200,6 @@ export function OverviewTab({
             </div>
           </div>
 
-          {/* Quick Actions Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <Card className="shadow-xs hover:shadow-md transition-all group">
               <div className="p-5 flex flex-col items-center text-center">
@@ -244,7 +265,6 @@ export function OverviewTab({
             </Card>
           </div>
 
-          {/* Recent Activity Section */}
           <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between">
               <h2 className="font-semibold flex items-center">
@@ -292,9 +312,7 @@ export function OverviewTab({
           </div>
         </div>
 
-        {/* Right column - Alerts & Categories */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          {/* Alerts Section */}
           <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 border-b bg-amber-50/50 flex items-center justify-between">
               <h2 className="font-semibold text-amber-800 flex items-center">
@@ -315,7 +333,6 @@ export function OverviewTab({
             </div>
           </div>
 
-          {/* Categories Section */}
           {categoryStats.length > 0 ? (
             <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
               <div className="p-3 border-b flex items-center justify-between">
@@ -337,7 +354,7 @@ export function OverviewTab({
                     >
                       <div className="flex items-center gap-2">
                         <div className={`p-1.5 rounded-md ${category.color}`}>
-                          {category.icon}
+                          <CategoryIcon categoryName={category.iconName} />
                         </div>
                         <span className="font-medium text-sm">
                           {category.name}

@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { FiAlertTriangle, FiSearch, FiSettings } from "react-icons/fi";
-import { DashboardStats, CategoryStat } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-header";
-import { dashboardService } from "@/lib/services/dashboard-service";
+import { Button } from "@/components/ui/button";
 
 // Import the extracted components
 import { DashboardLoadingState } from "@/components/dashboard/dashboard-loading-state";
@@ -18,30 +16,13 @@ import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { InventoryTab } from "@/components/dashboard/inventory-tab";
 import { SalesTab } from "@/components/dashboard/sales-tab";
 
+// Import our new DashboardDataProvider and hook
+import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
+import { useDashboard } from "@/lib/hooks/useDashboard";
+
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalInventoryValue: 0,
-    lowStockItems: 0,
-    monthlySales: 0,
-    salesGrowth: 0,
-  });
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [salesData, setSalesData] = useState<
-    { month: string; sales: number }[]
-  >([]);
-  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
-  const [recentActivity, setRecentActivity] = useState<
-    {
-      action: string;
-      item: string;
-      timestamp: string;
-      user: string;
-    }[]
-  >([]);
-  const [isDataStale, setIsDataStale] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Check if user is authenticated
@@ -51,56 +32,71 @@ export default function Dashboard() {
     }
   }, [user, authLoading, router]);
 
-  // Fetch dashboard data
-  useEffect(() => {
-    if (!user) return; // Don't fetch data if user is not authenticated
-    fetchDashboardData();
-
-    // Set up auto-refresh indicator - after 5 minutes, data is considered stale
-    const staleDataTimeout = setTimeout(() => {
-      setIsDataStale(true);
-    }, 5 * 60 * 1000);
-
-    return () => clearTimeout(staleDataTimeout);
-  }, [user]);
-
-  // Function to fetch all dashboard data using the dashboard service
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    setIsDataStale(false);
-    try {
-      const data = await dashboardService.fetchDashboardData();
-      setStats(data.stats);
-      setSalesData(data.salesData);
-      setCategoryStats(data.categoryStats);
-      setRecentActivity(data.recentActivity);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      // Set default values to prevent UI crashes
-      setStats({
-        totalInventoryValue: 0,
-        lowStockItems: 0,
-        monthlySales: 0,
-        salesGrowth: 0,
-      });
-      setSalesData([]);
-      setCategoryStats([]);
-      setRecentActivity([]);
-
-      // Optional: Add toast notification here if you have a toast component
-      // toast.error("Failed to load dashboard data. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    if (!user) return; // Don't refresh if user is not authenticated
-    fetchDashboardData();
-  };
-
   // If still loading auth or not authenticated, show loading state
   if (authLoading || !user) {
+    return <DashboardLoadingState />;
+  }
+
+  return (
+    <DashboardDataProvider>
+      <DashboardContent
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
+    </DashboardDataProvider>
+  );
+}
+
+// Separated component that uses the dashboard store
+function DashboardContent({
+  searchQuery,
+  setSearchQuery,
+}: {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+}) {
+  const { isLoading, isInitialLoad, error, refreshData, isDataStale } =
+    useDashboard();
+
+  // Track how long we've been in the loading state
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  useEffect(() => {
+    if (isLoading && loadingStartTime === null) {
+      setLoadingStartTime(Date.now());
+    } else if (!isLoading && loadingStartTime !== null) {
+      setLoadingStartTime(null);
+    }
+
+    // Force exit loading state if it's been loading for too long (30 seconds)
+    if (loadingStartTime && Date.now() - loadingStartTime > 30000) {
+      console.warn("Loading has taken too long, forcing refresh");
+      refreshData();
+      setLoadingStartTime(null);
+    }
+  }, [isLoading, loadingStartTime, refreshData]);
+
+  // Show error message if there was an error fetching data
+  if (error) {
+    return (
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 text-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-red-700 mb-2">
+            Error Loading Dashboard Data
+          </h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button
+            onClick={refreshData}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show a loading skeleton during initial load
+  if (isInitialLoad) {
     return <DashboardLoadingState />;
   }
 
@@ -109,11 +105,11 @@ export default function Dashboard() {
       {/* Header - Using the improved PageHeader component */}
       <PageHeader
         title="Welcome to ShelfWise"
-        onRefresh={handleRefresh}
+        onRefresh={refreshData}
         isLoading={isLoading}
         actions={
           <div className="flex items-center gap-2">
-            {isDataStale && (
+            {isDataStale() && !isLoading && (
               <div className="bg-amber-100 text-amber-800 px-3 py-1 text-xs rounded-md flex items-center mr-2">
                 <FiAlertTriangle className="mr-1 h-3 w-3" /> Data may be
                 outdated
@@ -129,13 +125,12 @@ export default function Dashboard() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            {/* Currency selector removed */}
           </div>
         }
       />
 
       {/* Quick Access Toolbar */}
-      <QuickAccessToolbar onRefresh={handleRefresh} isLoading={isLoading} />
+      <QuickAccessToolbar onRefresh={refreshData} isLoading={isLoading} />
 
       {/* Dashboard Tabs */}
       <Tabs defaultValue="overview" className="mb-6">
@@ -170,13 +165,7 @@ export default function Dashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="m-0">
-          <OverviewTab
-            stats={stats}
-            salesData={salesData}
-            categoryStats={categoryStats}
-            recentActivity={recentActivity}
-            isLoading={isLoading}
-          />
+          <OverviewTab />
         </TabsContent>
 
         <TabsContent value="inventory" className="m-0">
@@ -184,7 +173,7 @@ export default function Dashboard() {
         </TabsContent>
 
         <TabsContent value="sales" className="m-0">
-          <SalesTab isLoading={isLoading} />
+          <SalesTab />
         </TabsContent>
       </Tabs>
 
