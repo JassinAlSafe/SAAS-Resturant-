@@ -8,6 +8,9 @@ const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-pass
 // Define API routes that require authentication
 const protectedApiRoutes = ['/api/setup-restaurant-icons'];
 
+// Define routes that should bypass onboarding check
+const bypassOnboardingCheck = ['/onboarding', '/api', '/_next', '/static'];
+
 // This middleware protects routes that require authentication
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
@@ -63,6 +66,30 @@ export async function middleware(req: NextRequest) {
                 const redirectUrl = new URL('/login', req.url);
                 return NextResponse.redirect(redirectUrl);
             }
+        }
+
+        // Skip onboarding check for specific routes
+        if (bypassOnboardingCheck.some(route => pathname.startsWith(route))) {
+            return res;
+        }
+
+        // Check if user has completed onboarding
+        const { data: profiles, error } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .limit(1);
+
+        // If no profile exists and not on onboarding page, redirect to onboarding
+        if ((!profiles || profiles.length === 0) && !pathname.startsWith('/onboarding')) {
+            const redirectUrl = new URL('/onboarding', req.url);
+            return NextResponse.redirect(redirectUrl);
+        }
+
+        // If profile exists and trying to access onboarding, redirect to dashboard
+        if (profiles && profiles.length > 0 && pathname.startsWith('/onboarding')) {
+            const redirectUrl = new URL('/dashboard', req.url);
+            return NextResponse.redirect(redirectUrl);
         }
 
         // If the user is authenticated, allow access to protected routes

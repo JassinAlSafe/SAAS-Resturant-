@@ -1,7 +1,8 @@
 import { GeistSans } from "geist/font/sans";
+import { ThemeProvider } from "@/components/theme-provider";
 import { NotificationContainer } from "@/components/ui/notification";
-import { AuthProvider } from "@/lib/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <NotificationProvider>
         <div
           className={cn(
@@ -24,10 +25,12 @@ export default function AuthLayout({
             GeistSans.className
           )}
         >
-          {children}
+          <AuthGuard requireAuth={false} publicOnly={true}>
+            {children}
+          </AuthGuard>
           <NotificationContainer />
         </div>
       </NotificationProvider>
-    </AuthProvider>
+    </ThemeProvider>
   );
 }

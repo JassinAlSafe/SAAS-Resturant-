@@ -13,7 +13,7 @@ import {
   FiUsers,
   FiArrowRight,
   FiActivity,
-  FiRefreshCw,
+  FiShoppingCart,
 } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -82,17 +82,9 @@ export function OverviewTab() {
   const salesGrowth = parseFloat(formattedStats.salesGrowth);
 
   return (
-    <div className="space-y-8">
-      {/* Small loading indicator for refreshes when data is already present */}
-      {isLoading && hasData && (
-        <div className="mb-4 flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md text-sm">
-          <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
-          Refreshing dashboard data...
-        </div>
-      )}
-
-      {/* Keep only one set of stat cards - the more detailed ones with footers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
+    <div className="space-y-6">
+      {/* Stat cards row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           title="Total Inventory Value"
           value={formattedStats.totalInventoryValue}
@@ -158,8 +150,11 @@ export function OverviewTab() {
         />
       </div>
 
-      <div className="grid grid-cols-12 gap-4 sm:gap-6">
-        <div className="col-span-12 lg:col-span-8 space-y-6">
+      {/* Main content grid */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* Left column - 8/12 width on large screens */}
+        <div className="col-span-12 lg:col-span-8 space-y-4">
+          {/* Sales Performance card */}
           <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
             <div className="p-4 sm:p-6 border-b">
               <h2 className="text-xl font-semibold mb-1">Sales Performance</h2>
@@ -200,7 +195,8 @@ export function OverviewTab() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {/* Quick access cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="shadow-xs hover:shadow-md transition-all group">
               <div className="p-5 flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -265,43 +261,103 @@ export function OverviewTab() {
             </Card>
           </div>
 
-          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between">
+          {/* Recent Activity section */}
+          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden h-[410px] flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between shrink-0">
               <h2 className="font-semibold flex items-center">
                 <FiActivity className="h-4 w-4 mr-2 text-primary" />
                 Recent Activity
               </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs"
+                onClick={() => refresh()}
+              >
+                Refresh
+              </Button>
             </div>
-            <div className="p-4">
+            <div className="overflow-y-auto flex-grow">
               {recentActivity.length > 0 ? (
-                <div className="space-y-3">
-                  {recentActivity.map((activity, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center p-2 rounded-lg bg-background/50 hover:bg-background transition-colors"
-                    >
-                      <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                        <FiActivity className="h-4 w-4 text-primary" />
+                <div className="divide-y divide-border">
+                  {recentActivity.map((activity, index) => {
+                    // Safely parse the date
+                    const date = new Date(activity.timestamp);
+                    const isValidDate = !isNaN(date.getTime());
+
+                    // Determine icon based on action text
+                    const actionLower = activity.action.toLowerCase();
+                    let Icon = FiActivity;
+                    let iconColor = "text-primary";
+                    let bgColor = "bg-primary/10";
+
+                    if (
+                      actionLower.includes("inventory") ||
+                      actionLower.includes("updated")
+                    ) {
+                      Icon = FiPackage;
+                      iconColor = "text-blue-600";
+                      bgColor = "bg-blue-100";
+                    } else if (
+                      actionLower.includes("sale") ||
+                      actionLower.includes("order")
+                    ) {
+                      Icon = FiShoppingCart;
+                      iconColor = "text-green-600";
+                      bgColor = "bg-green-100";
+                    }
+
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-start px-4 py-3 hover:bg-background/70 transition-colors"
+                      >
+                        <div
+                          className={`shrink-0 h-8 w-8 rounded-full ${bgColor} flex items-center justify-center mr-3`}
+                        >
+                          <Icon className={`h-4 w-4 ${iconColor}`} />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium truncate">
+                              {activity.action}
+                              {activity.item && (
+                                <span className="font-semibold ml-1">
+                                  {activity.item}
+                                </span>
+                              )}
+                            </p>
+                            {isValidDate && (
+                              <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                {date.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            )}
+                          </div>
+                          {isValidDate && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {date.toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                year:
+                                  date.getFullYear() !==
+                                  new Date().getFullYear()
+                                    ? "numeric"
+                                    : undefined,
+                              })}
+                            </p>
+                          )}
+                          {activity.user && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              by {activity.user}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          <span className="text-muted-foreground">
-                            {activity.user}
-                          </span>{" "}
-                          {activity.action}{" "}
-                          <span className="font-semibold">{activity.item}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(activity.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {" - "}
-                          {new Date(activity.timestamp).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-8 text-center">
@@ -312,9 +368,11 @@ export function OverviewTab() {
           </div>
         </div>
 
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-            <div className="p-4 border-b bg-amber-50/50 flex items-center justify-between">
+        {/* Right column - 4/12 width on large screens */}
+        <div className="col-span-12 lg:col-span-4 space-y-4">
+          {/* Inventory Alerts */}
+          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden h-[200px] flex flex-col">
+            <div className="p-4 border-b bg-amber-50/50 flex items-center justify-between shrink-0">
               <h2 className="font-semibold text-amber-800 flex items-center">
                 <FiAlertTriangle className="h-4 w-4 mr-2" />
                 Inventory Alerts
@@ -328,14 +386,15 @@ export function OverviewTab() {
                 View All
               </Button>
             </div>
-            <div className="max-h-[180px] overflow-y-auto">
+            <div className="overflow-y-auto flex-grow p-2">
               <ExpiryAlerts compact={true} />
             </div>
           </div>
 
+          {/* Inventory by Category */}
           {categoryStats.length > 0 ? (
-            <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-              <div className="p-3 border-b flex items-center justify-between">
+            <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden h-[200px] flex flex-col">
+              <div className="p-3 border-b flex items-center justify-between shrink-0">
                 <h2 className="font-medium">Inventory by Category</h2>
                 <Button
                   variant="ghost"
@@ -345,7 +404,7 @@ export function OverviewTab() {
                   View All
                 </Button>
               </div>
-              <div className="p-3 max-h-[240px] overflow-y-auto">
+              <div className="overflow-y-auto flex-grow p-3">
                 <div className="space-y-2">
                   {categoryStats.map((category) => (
                     <div
@@ -383,7 +442,7 @@ export function OverviewTab() {
               </div>
             </div>
           ) : (
-            <div className="bg-card rounded-xl border shadow-xs p-4 flex items-center justify-center h-48">
+            <div className="bg-card rounded-xl border shadow-xs p-4 flex items-center justify-center h-[200px]">
               <div className="text-center">
                 <LoadingSpinner size="lg" className="mx-auto mb-2" />
                 <p className="text-muted-foreground">

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { businessProfileService } from "@/lib/services/business-profile-service";
 
 /**
  * Get the current user's business profile ID
@@ -19,20 +20,30 @@ export async function getBusinessProfileId(): Promise<string | null> {
         }
 
         console.log('Fetching business profile for user ID:', user.id);
-        const { data: profile, error: profileError } = await supabase
+        const { data: profiles, error: profileError } = await supabase
             .from('business_profiles')
             .select('id')
             .eq('user_id', user.id)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
         if (profileError) {
             console.error('Error fetching business profile:', profileError);
             return null;
         }
 
-        if (!profile) {
+        if (!profiles || profiles.length === 0) {
             console.log('No business profile found for user');
             return null;
+        }
+
+        // Get the most recent profile
+        const profile = profiles[0];
+
+        // If we found profiles, schedule a cleanup of duplicates
+        if (profiles.length > 0) {
+            // Schedule cleanup to run after this operation
+            setTimeout(() => businessProfileService.cleanupDuplicateProfiles(user.id), 1000);
         }
 
         console.log('Using business profile ID:', profile.id);

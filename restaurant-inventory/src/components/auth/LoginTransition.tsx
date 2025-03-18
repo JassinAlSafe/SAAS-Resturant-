@@ -36,8 +36,13 @@ export const LoginTransition = ({
       },
     });
 
+    // Capture ref values inside the effect
+    const circleElement = circleRef.current;
+    const textElement = textRef.current;
+    const dotsElement = dotsRef.current;
+
     // Initial state
-    gsap.set([circleRef.current, textRef.current, dotsRef.current], {
+    gsap.set([circleElement, textElement, dotsElement], {
       opacity: 0,
       immediateRender: true,
     });
@@ -57,7 +62,7 @@ export const LoginTransition = ({
 
     // Loading circle and dots entrance
     tl.to(
-      circleRef.current,
+      circleElement,
       {
         opacity: 1,
         duration: 0.3,
@@ -68,7 +73,7 @@ export const LoginTransition = ({
 
     // Rotate circle
     tl.to(
-      circleRef.current,
+      circleElement,
       {
         rotation: 360,
         duration: 1,
@@ -79,7 +84,7 @@ export const LoginTransition = ({
     );
 
     // Animate dots
-    const dots = dotsRef.current?.querySelectorAll("div");
+    const dots = dotsElement?.querySelectorAll("div");
     if (dots) {
       tl.to(
         dots,
@@ -109,7 +114,7 @@ export const LoginTransition = ({
 
     // Text fade in
     tl.to(
-      textRef.current,
+      textElement,
       {
         opacity: 1,
         duration: 0.3,
@@ -123,7 +128,7 @@ export const LoginTransition = ({
     return () => {
       tl.kill();
       if (dots) gsap.killTweensOf(dots);
-      gsap.killTweensOf([circleRef.current, textRef.current]);
+      gsap.killTweensOf([circleElement, textElement]);
     };
   }, [onAnimationComplete, isReady]);
 

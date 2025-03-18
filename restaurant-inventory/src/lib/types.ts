@@ -82,6 +82,7 @@ export type User = {
   status?: "active" | "pending" | "suspended";
   department?: string;
   mfa_enabled?: boolean;
+  email_confirmed?: boolean;
 };
 
 // Database row type for ingredients table

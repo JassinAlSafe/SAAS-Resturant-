@@ -218,7 +218,7 @@ export async function fetchRecentSales(): Promise<RecentSale[]> {
 
         const { data, error } = await supabase
             .from('sales')
-            .select('id, created_at, total_amount, customer_name')
+            .select('id, created_at, total_amount')
             .eq('business_profile_id', businessProfileId)
             .order('created_at', { ascending: false })
             .limit(5);
@@ -232,7 +232,7 @@ export async function fetchRecentSales(): Promise<RecentSale[]> {
             id: sale.id,
             date: sale.created_at,
             amount: sale.total_amount,
-            customer: sale.customer_name || 'Anonymous',
+            customer: 'Anonymous', // Default value since customer_name doesn't exist
         }));
     } catch (error) {
         console.error('Error in fetchRecentSales:', error);

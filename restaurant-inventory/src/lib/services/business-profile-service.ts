@@ -233,80 +233,69 @@ const businessProfileService = {
         try {
             console.log("Creating new business profile for user:", userId);
 
-            // Use a minimal profile with only essential fields to avoid column errors
+            // Use a minimal profile with only essential fields
             const minimalProfile = {
-                user_id: userId,
-                name: "My Restaurant",
-                type: "casual_dining",
-                operating_hours: defaultBusinessProfile.operatingHours,
-                default_currency: defaultBusinessProfile.defaultCurrency,
-                // Don't include tax fields that might not exist in the schema
+                p_user_id: userId,
+                p_name: "My Restaurant",
+                p_type: "casual_dining",
+                p_operating_hours: defaultBusinessProfile.operatingHours,
+                p_default_currency: defaultBusinessProfile.defaultCurrency,
+                p_tax_enabled: false,
+                p_tax_rate: 0,
+                p_tax_name: "Sales Tax",
+                p_subscription_plan: "free",
+                p_subscription_status: "active",
+                p_max_users: 5
             };
 
             console.log("New profile data:", minimalProfile);
 
-            // Try to insert with minimal fields first
+            // Wait for session to be fully established before attempting to create profile
+            const waitForSession = async (maxWaitTime = 45000, checkInterval = 1500): Promise<boolean> => {
+                const startTime = Date.now();
+                let attempt = 1;
+
+                while (Date.now() - startTime < maxWaitTime) {
+                    console.log(`Session check attempt ${attempt}`);
+
+                    // Check if we can access the profiles table
+                    const { error: testError } = await supabase
+                        .from('business_profiles')
+                        .select('id')
+                        .limit(1);
+
+                    if (!testError) {
+                        console.log("Authentication fully established - verified by successful profile access");
+                        return true;
+                    }
+
+                    console.log(`Waiting ${checkInterval}ms before next attempt...`);
+                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                    attempt++;
+                }
+
+                console.warn("Timed out waiting for session establishment");
+                return false;
+            };
+
+            // Wait for session to be established
+            const isAuthenticated = await waitForSession();
+            if (!isAuthenticated) {
+                throw new Error("Unable to create business profile: Authentication session not established");
+            }
+
+            // Create the profile using the RPC function
             const { data, error } = await supabase
-                .from('business_profiles')
-                .insert(minimalProfile)
-                .select()
+                .rpc('create_business_profile_with_user', minimalProfile)
                 .single();
 
             if (error) {
                 console.error('Error creating profile:', error);
+                throw error;
+            }
 
-                // If the error is related to operating_hours (which might be a JSON column)
-                // Try an even more minimal approach
-                if (error.message.includes('operating_hours') || error.message.includes('column')) {
-                    console.log("Trying with ultra-minimal profile due to schema issues");
-
-                    const ultraMinimalProfile = {
-                        user_id: userId,
-                        name: "My Restaurant",
-                        type: "casual_dining",
-                    };
-
-                    const { data: minData, error: minError } = await supabase
-                        .from('business_profiles')
-                        .insert(ultraMinimalProfile)
-                        .select()
-                        .single();
-
-                    if (minError) {
-                        console.error('Error creating minimal profile:', minError);
-                        throw new Error(`Failed to create business profile: ${minError.message}`);
-                    }
-
-                    // Return a profile with default values for missing fields
-                    return {
-                        id: minData.id,
-                        name: minData.name || "My Restaurant",
-                        type: minData.type || "casual_dining",
-                        address: "",
-                        city: "",
-                        state: "",
-                        zipCode: "",
-                        country: "",
-                        phone: "",
-                        email: "",
-                        website: "",
-                        logo: "",
-                        operatingHours: defaultBusinessProfile.operatingHours,
-                        defaultCurrency: minData.default_currency || "USD",
-                        taxRate: 0,
-                        taxEnabled: false,
-                        taxName: "Sales Tax",
-                        taxSettings: {
-                            rate: 0,
-                            enabled: false,
-                            name: "Sales Tax"
-                        },
-                        createdAt: minData.created_at || new Date().toISOString(),
-                        updatedAt: minData.updated_at || new Date().toISOString(),
-                    };
-                }
-
-                throw new Error(`Failed to create business profile: ${error.message}`);
+            if (!data) {
+                throw new Error("Failed to create business profile: No data returned");
             }
 
             console.log("Successfully created profile:", data);

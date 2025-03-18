@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { BusinessProfile } from "@/lib/types";
+import { PostgrestError } from "@supabase/supabase-js";
 
 // Define a type for the database profile
 interface DbBusinessProfile {
@@ -36,6 +37,10 @@ async function fetchBusinessProfile(): Promise<BusinessProfile> {
 
         // First try to get the business profile through the join table
         try {
+            type JoinResponse = {
+                business_profiles: DbBusinessProfile;
+            };
+
             const { data, error } = await supabase
                 .from("business_profile_users")
                 .select(`
@@ -64,18 +69,13 @@ async function fetchBusinessProfile(): Promise<BusinessProfile> {
                 `)
                 .eq("user_id", user.id)
                 .order("created_at", { ascending: false })
-                .limit(1)
-                .single();
+                .limit(1) as { data: JoinResponse[] | null, error: PostgrestError | null };
 
-            if (!error && data?.business_profiles) {
-                // Extract the first business profile from the array
-                const [profile] = Array.isArray(data.business_profiles)
-                    ? data.business_profiles
-                    : [data.business_profiles];
-
+            if (!error && data && data.length > 0) {
+                const profile = data[0].business_profiles;
                 if (profile) {
                     console.log("Found business profile through join table:", profile.id);
-                    return mapProfileToBusinessProfile(profile as DbBusinessProfile);
+                    return mapProfileToBusinessProfile(profile);
                 }
             }
         } catch (joinError) {

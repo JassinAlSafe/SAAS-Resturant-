@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 
 // Currency types and constants
 export type CurrencyCode =
@@ -28,6 +34,9 @@ export const CURRENCIES: Record<CurrencyCode, Currency> = {
   SEK: { name: "Swedish Krona", symbol: "kr", code: "SEK" },
 };
 
+// Storage key for localStorage
+const CURRENCY_STORAGE_KEY = "userCurrency";
+
 // Currency context
 interface CurrencyContextType {
   currency: Currency;
@@ -50,9 +59,40 @@ export function CurrencyProvider({
   children,
   defaultCurrency = "SEK", // Changed default to SEK
 }: CurrencyProviderProps) {
-  const [currency, setCurrency] = useState<Currency>(
+  const [currency, setCurrencyState] = useState<Currency>(
     CURRENCIES[defaultCurrency]
   );
+
+  // Load the saved currency from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCurrency =
+        typeof window !== "undefined"
+          ? localStorage.getItem(CURRENCY_STORAGE_KEY)
+          : null;
+
+      if (savedCurrency && Object.keys(CURRENCIES).includes(savedCurrency)) {
+        setCurrencyState(CURRENCIES[savedCurrency as CurrencyCode]);
+      } else if (defaultCurrency && defaultCurrency !== currency.code) {
+        // If no saved preference but there's a default that's different from current
+        setCurrencyState(CURRENCIES[defaultCurrency]);
+      }
+    } catch (error) {
+      console.error("Error loading currency preference:", error);
+    }
+  }, [defaultCurrency]);
+
+  // Save currency changes to localStorage
+  const setCurrency = (newCurrency: Currency) => {
+    setCurrencyState(newCurrency);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(CURRENCY_STORAGE_KEY, newCurrency.code);
+      }
+    } catch (error) {
+      console.error("Error saving currency preference:", error);
+    }
+  };
 
   // Format a number to a currency string with the current currency
   const formatCurrency = (amount: number): string => {

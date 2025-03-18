@@ -199,6 +199,15 @@ export function useBusinessProfileForm(userId: string) {
                 code: currency
             });
 
+            // Save to localStorage for persistence
+            try {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('userCurrency', currency);
+                }
+            } catch (error) {
+                console.error('Error saving currency to localStorage:', error);
+            }
+
             showSuccess(
                 "Currency Updated",
                 `Your default currency has been set to ${CURRENCIES[currency].name}.`

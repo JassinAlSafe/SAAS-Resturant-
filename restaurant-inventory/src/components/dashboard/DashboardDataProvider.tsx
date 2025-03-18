@@ -26,12 +26,18 @@ export function DashboardDataProvider({
 
   // Track loading duration to prevent endless loading states
   const loadingStartTimeRef = useRef<number | null>(null);
-  const MAX_LOADING_DURATION = 20000; // 20 seconds max loading time
+  const MAX_LOADING_DURATION = 10000; // 10 seconds max loading time
   const lastRefreshAttemptRef = useRef<number>(0);
   const MIN_REFRESH_INTERVAL = 3000; // Minimum 3 seconds between refresh attempts
 
-  const { isLoading, isInitialLoad, error, refreshData, hasData } =
-    useDashboard(autoRefresh, refreshInterval);
+  const {
+    isLoading,
+    isInitialLoad,
+    error,
+    refreshData,
+    hasData,
+    resetLoadingState,
+  } = useDashboard(autoRefresh, refreshInterval);
 
   // If we get an error, we can try to refresh after a delay
   useEffect(() => {
@@ -60,17 +66,27 @@ export function DashboardDataProvider({
     if (isLoading) {
       if (loadingStartTimeRef.current === null) {
         loadingStartTimeRef.current = Date.now();
-      } else if (
-        Date.now() - loadingStartTimeRef.current >
-        MAX_LOADING_DURATION
-      ) {
-        console.warn("Loading taking too long, forcing refresh");
-        triggerRefresh();
+
+        // Set a timeout to force-clear the loading state if it takes too long
+        const loadingTimeout = setTimeout(() => {
+          if (isLoading && loadingStartTimeRef.current) {
+            console.warn(
+              "Loading taking too long, force resetting loading state"
+            );
+            resetLoadingState();
+            // Wait briefly and then trigger a new refresh
+            setTimeout(() => {
+              triggerRefresh();
+            }, 1000);
+          }
+        }, MAX_LOADING_DURATION);
+
+        return () => clearTimeout(loadingTimeout);
       }
     } else {
       loadingStartTimeRef.current = null;
     }
-  }, [isLoading]);
+  }, [isLoading, resetLoadingState]);
 
   // Helper function to prevent too frequent refreshes
   const triggerRefresh = () => {
@@ -87,6 +103,11 @@ export function DashboardDataProvider({
 
     isRefreshingRef.current = true;
     lastRefreshAttemptRef.current = now;
+
+    // Reset loading state if it's active
+    if (isLoading) {
+      resetLoadingState();
+    }
 
     // Add small delay to allow state to settle
     setTimeout(() => {
@@ -139,19 +160,21 @@ export function DashboardDataProvider({
     );
   }
 
-  // Only show a loading overlay for subsequent refreshes if there's no data yet
-  if (isLoading && !isInitialLoad && showLoading && !hasData) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <LoadingSpinner className="h-8 w-8" />
-        <span className="ml-2 text-sm text-muted-foreground">
-          Loading dashboard data...
-        </span>
-      </div>
-    );
-  }
-
-  // For normal refreshes with existing data, we'll use a less intrusive indicator in the UI
-  // rather than a full overlay that blocks interaction
-  return <>{children}</>;
+  // For normal refreshes with existing data, use a subtle indicator instead of the previous approach
+  return (
+    <div className="relative">
+      {/* Only show loading indicator for initial load or no data */}
+      {(isInitialLoad || (!hasData && isLoading)) && showLoading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <LoadingSpinner className="h-8 w-8" />
+          <span className="ml-2 text-sm text-muted-foreground">
+            Loading dashboard data...
+          </span>
+        </div>
+      ) : (
+        // For normal content with data, just render children without loading overlay
+        children
+      )}
+    </div>
+  );
 }

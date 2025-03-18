@@ -59,11 +59,15 @@ interface DashboardState {
     lastUpdated: number | null;
     shouldRefresh: boolean;
     fetchInProgress: boolean;
+    refreshLock: boolean;
+    loadingSince: number | null;
 
     // Actions
     fetchDashboardData: () => Promise<void>;
     resetData: () => void;
     setShouldRefresh: (value: boolean) => void;
+    setRefreshLock: (value: boolean) => void;
+    resetLoadingState: () => void;
 
     // Selective update methods
     updateSalesData: (salesData: { month: string; sales: number }[]) => void;
@@ -82,11 +86,13 @@ const initialState = {
     recentActivity: [],
     inventoryAlerts: [],
     topSellingItems: [],
-    isLoading: true,
+    isLoading: false, // Start with false to avoid initial loading state issues
     error: null,
     lastUpdated: null,
     shouldRefresh: true,
-    fetchInProgress: false
+    fetchInProgress: false,
+    refreshLock: false,
+    loadingSince: null
 };
 
 export const useDashboardStore = create<DashboardState>()(
@@ -95,8 +101,28 @@ export const useDashboardStore = create<DashboardState>()(
             ...initialState,
 
             setShouldRefresh: (value: boolean) => {
-                console.log('Setting shouldRefresh:', value);
-                set({ shouldRefresh: value });
+                // Only update if the value is different from current state
+                // and we're not in a refresh lock (unless explicitly setting to false)
+                const currentState = get();
+                if (currentState.shouldRefresh !== value &&
+                    (!currentState.refreshLock || value === false)) {
+                    console.log('Setting shouldRefresh:', value);
+                    set({ shouldRefresh: value });
+                }
+            },
+
+            setRefreshLock: (value: boolean) => {
+                console.log('Setting refreshLock:', value);
+                set({ refreshLock: value });
+            },
+
+            resetLoadingState: () => {
+                console.log('Resetting loading state');
+                set({
+                    isLoading: false,
+                    fetchInProgress: false,
+                    loadingSince: null
+                });
             },
 
             fetchDashboardData: async () => {
@@ -106,23 +132,33 @@ export const useDashboardStore = create<DashboardState>()(
                     return;
                 }
 
+                // Apply a refresh lock to prevent cascading refreshes
+                get().setRefreshLock(true);
+
+                // Set up loading state protection - auto-clear after 15 seconds
+                const loadingTimestamp = Date.now();
+
                 // Set initial loading and fetch states
-                set({ isLoading: true, error: null, fetchInProgress: true });
+                set({
+                    isLoading: true,
+                    error: null,
+                    fetchInProgress: true,
+                    loadingSince: loadingTimestamp
+                });
                 console.log('Fetching dashboard data from store...');
 
-                // Create a timeout to prevent hanging
-                const MAX_FETCH_TIME = 15000; // 15 seconds
-                const fetchTimeoutId = setTimeout(() => {
-                    // Check if still in progress and force complete
-                    if (get().fetchInProgress) {
-                        console.error('Dashboard data fetch timed out after 15 seconds');
-                        set({
-                            isLoading: false,
-                            fetchInProgress: false,
-                            error: 'Request timed out. Please try again.'
-                        });
+                // Emergency loading state reset in case something goes wrong
+                const loadingResetTimeout = setTimeout(() => {
+                    const currentState = get();
+                    if (currentState.isLoading &&
+                        currentState.loadingSince === loadingTimestamp) {
+                        console.error('Dashboard loading state stuck for 15 seconds, forcing reset');
+                        get().resetLoadingState();
+
+                        // Release the refresh lock
+                        setTimeout(() => get().setRefreshLock(false), 1000);
                     }
-                }, MAX_FETCH_TIME);
+                }, 15000);
 
                 try {
                     // Add retry logic
@@ -143,18 +179,11 @@ export const useDashboardStore = create<DashboardState>()(
                                 recentActivity: (data.recentActivity || []).map((activity: ActivityItem) => ({
                                     action: activity.title || '',
                                     item: activity.description || '',
-                                    timestamp: activity.formattedDate || '',
+                                    timestamp: activity.date || '',
                                     user: ''
                                 })),
                                 inventoryAlerts: data.inventoryAlerts || [],
                                 topSellingItems: data.topSellingItems || [],
-
-                                // Add these missing required fields to match the DashboardState interface
-                                isLoading: false,
-                                fetchInProgress: false,
-                                error: null,
-                                lastUpdated: Date.now(),
-                                shouldRefresh: false
                             };
                         } catch (error) {
                             if (retries > 0) {
@@ -169,11 +198,14 @@ export const useDashboardStore = create<DashboardState>()(
                     const dashboardData = await fetchWithRetry();
 
                     // Clear the timeout since fetch succeeded
-                    clearTimeout(fetchTimeoutId);
+                    clearTimeout(loadingResetTimeout);
 
                     // Only update if still loading (no cancel has happened)
                     if (get().fetchInProgress) {
-                        // Update the store with fetched data
+                        // First clear loading state
+                        get().resetLoadingState();
+
+                        // Then update the store with fetched data
                         set((state) => ({
                             ...state,
                             stats: dashboardData.stats,
@@ -182,18 +214,21 @@ export const useDashboardStore = create<DashboardState>()(
                             recentActivity: dashboardData.recentActivity,
                             inventoryAlerts: dashboardData.inventoryAlerts,
                             topSellingItems: dashboardData.topSellingItems,
-                            isLoading: false,
-                            fetchInProgress: false,
                             lastUpdated: Date.now(),
-                            error: null
+                            shouldRefresh: false
                         }));
                         console.log('Dashboard data updated in store successfully');
+
+                        // Release the refresh lock after a short delay
+                        setTimeout(() => get().setRefreshLock(false), 1000);
                     } else {
                         console.log('Fetch completed but update was cancelled');
+                        // Still release the lock even if cancelled
+                        setTimeout(() => get().setRefreshLock(false), 1000);
                     }
                 } catch (error) {
                     // Clear the timeout since fetch failed
-                    clearTimeout(fetchTimeoutId);
+                    clearTimeout(loadingResetTimeout);
 
                     console.error('Error fetching dashboard data:', error);
 
@@ -208,6 +243,7 @@ export const useDashboardStore = create<DashboardState>()(
                     set({
                         isLoading: false,
                         fetchInProgress: false,
+                        loadingSince: null,
                         error: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
                         ...(hasExistingData ? {} : initialState),
                         lastUpdated: hasExistingData ? currentState.lastUpdated : null
@@ -219,6 +255,9 @@ export const useDashboardStore = create<DashboardState>()(
                         salesDataAvailable: currentState.salesData.length > 0,
                         categoryDataAvailable: currentState.categoryStats.length > 0
                     });
+
+                    // Release the refresh lock even on error, but with a delay
+                    setTimeout(() => get().setRefreshLock(false), 1000);
                 }
             },
 
@@ -248,14 +287,6 @@ export const useDashboardStore = create<DashboardState>()(
         {
             name: 'dashboard-storage',
             storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({
-                // Only store these values in localStorage
-                stats: state.stats,
-                salesData: state.salesData,
-                categoryStats: state.categoryStats,
-                topSellingItems: state.topSellingItems,
-                lastUpdated: state.lastUpdated
-            }),
         }
     )
 ); 

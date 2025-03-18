@@ -138,16 +138,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: userData, error: userError } =
         await supabase.auth.getUser();
 
-      if (userError || !userData?.user) {
-        console.error(
-          "Error getting user in fetchProfile:",
-          userError || "No user data"
-        );
+      if (userError || !userData.user) {
+        console.error("Error getting user:", userError);
         setIsLoading(false);
         return;
       }
 
-      // Try to get the profile
+      // Check if user's email is confirmed
+      const isEmailConfirmed = userData.user.email_confirmed_at !== null;
+      console.log("Email confirmed from auth:", isEmailConfirmed);
+
+      // Then fetch the user's profile
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -157,82 +158,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error("Error fetching profile:", error);
 
-        // If the profile doesn't exist, create one
+        // If the profile doesn't exist yet, create it
         if (error.code === "PGRST116") {
-          try {
-            const name = userData.user.user_metadata?.name || "User";
-            const email = userData.user.email || "";
-
-            // Create a new profile
-            const { error: insertError } = await supabase
-              .from("profiles")
-              .insert([
-                {
-                  id: userId,
-                  email,
-                  name,
-                  role: "staff", // Default role
-                },
-              ]);
-
-            if (insertError) {
-              console.error("Error creating profile:", insertError);
-            } else {
-              // Set the profile after creation
-              setProfile({
-                id: userId,
-                email,
-                name,
-                role: "staff",
-              });
-            }
-          } catch (createError) {
-            console.error("Error in profile creation process:", createError);
-          }
-        }
-      } else if (data) {
-        setProfile({
-          id: data.id,
-          email: data.email,
-          name: data.name,
-          role: data.role,
-        });
-      } else {
-        // If no data and no error, create a profile as a fallback
-        try {
-          const name = userData.user.user_metadata?.name || "User";
-          const email = userData.user.email || "";
+          console.log("Profile not found, creating...");
 
           // Create a new profile
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert([
-              {
-                id: userId,
-                email,
-                name,
-                role: "staff", // Default role
-              },
-            ]);
+          const newProfile: Partial<User> = {
+            id: userId,
+            email: userData.user.email || "",
+            name:
+              userData.user.user_metadata?.name ||
+              userData.user.email?.split("@")[0] ||
+              "",
+            role: "staff",
+            email_confirmed: isEmailConfirmed,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
 
-          if (insertError) {
-            console.error("Error creating fallback profile:", insertError);
+          const { error: createError } = await supabase
+            .from("profiles")
+            .insert([newProfile]);
+
+          if (createError) {
+            console.error("Error creating profile:", createError);
           } else {
-            // Set the profile after creation
-            setProfile({
-              id: userId,
-              email,
-              name,
-              role: "staff",
-            });
+            console.log("Created new profile successfully");
+            setProfile(newProfile as User);
           }
-        } catch (createError) {
-          console.error("Error in fallback profile creation:", createError);
         }
+      } else {
+        // If the profile exists but email_confirmed doesn't match auth status, update it
+        if (data.email_confirmed !== isEmailConfirmed) {
+          console.log(
+            "Updating profile email_confirmed to match auth status:",
+            isEmailConfirmed
+          );
+
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({
+              email_confirmed: isEmailConfirmed,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+
+          if (updateError) {
+            console.error(
+              "Error updating email_confirmed status:",
+              updateError
+            );
+          } else {
+            // Update the local profile data
+            data.email_confirmed = isEmailConfirmed;
+          }
+        }
+
+        setProfile(data);
       }
+
+      setIsLoading(false);
     } catch (error) {
       console.error("Error in fetchProfile:", error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -335,17 +322,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email_confirmed: false, // Will be updated after email verification
           };
 
-          // Insert the profile
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert([profileData], {
-              onConflict: "id",
-              ignoreDuplicates: false,
-            });
+          // First try to use the create_user_profile RPC function which bypasses RLS
+          try {
+            console.log("Attempting to create user profile using RPC function");
 
-          if (profileError) {
-            console.error("Error creating profile:", profileError);
-            // Don't throw here, allow the signup to complete
+            const { error: rpcError } = await supabase.rpc(
+              "create_user_profile",
+              {
+                p_id: data.user.id,
+                p_email: email,
+                p_name: name,
+                p_role: "staff",
+                p_email_confirmed: false,
+              }
+            );
+
+            if (rpcError) {
+              console.error(
+                "Error calling create_user_profile function:",
+                rpcError
+              );
+              console.log("Falling back to direct insertion with upsert");
+
+              // Fall back to direct insertion if RPC fails
+              const { error: profileError } = await supabase
+                .from("profiles")
+                .upsert([profileData], {
+                  onConflict: "id",
+                  ignoreDuplicates: false,
+                });
+
+              if (profileError) {
+                console.error("Error creating profile:", profileError);
+                // Don't throw here, allow the signup to complete
+              }
+            } else {
+              console.log(
+                "Successfully created user profile using RPC function"
+              );
+            }
+          } catch (rpcError) {
+            console.error("Error attempting RPC profile creation:", rpcError);
+
+            // Fall back to direct insertion if RPC approach fails completely
+            const { error: profileError } = await supabase
+              .from("profiles")
+              .upsert([profileData], {
+                onConflict: "id",
+                ignoreDuplicates: false,
+              });
+
+            if (profileError) {
+              console.error("Error creating profile:", profileError);
+              // Don't throw here, allow the signup to complete
+            }
           }
         } catch (profileError) {
           console.error("Error in profile creation:", profileError);

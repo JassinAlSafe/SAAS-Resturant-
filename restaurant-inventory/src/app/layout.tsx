@@ -1,47 +1,36 @@
-import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { Providers } from "@/components/providers";
+import "@/app/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { lufga } from "@/lib/fonts";
+import type { Metadata } from "next";
+import { NotificationProvider } from "@/lib/notification-context";
+import { NotificationContainer } from "@/components/ui/notification";
+import { StoreInitializer } from "@/components/StoreInitializer";
+import { GeistSans } from "geist/font/sans";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "ShelfWise | Smart Inventory Management",
-  description: "Smart inventory management for restaurants and food businesses",
+  title: "Restaurant Inventory Manager",
+  description: "Manage your restaurant inventory efficiently",
   authors: [{ name: "ShelfWise" }],
   keywords: ["inventory management", "restaurant", "food business"],
-  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
   },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5, // Allow zooming for accessibility
-  minimumScale: 1,
-  userScalable: true, // Enable zooming for accessibility
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "#020817" },
-  ],
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          lufga.variable
+          GeistSans.className
         )}
       >
         <Providers>
@@ -52,8 +41,12 @@ export default function RootLayout({
             disableTransitionOnChange
             storageKey="shelfwise-theme"
           >
-            {children}
-            <Sonner />
+            <NotificationProvider>
+              <StoreInitializer />
+              {children}
+              <Toaster />
+              <NotificationContainer />
+            </NotificationProvider>
           </ThemeProvider>
         </Providers>
       </body>

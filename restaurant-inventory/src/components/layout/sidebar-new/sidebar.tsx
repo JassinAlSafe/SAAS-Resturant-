@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarThemeToggle } from "../sidebar/components/SidebarThemeToggle";
-import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -22,9 +21,10 @@ import {
 } from "@/components/ui/tooltip";
 import { useBusinessProfile } from "@/lib/business-profile-context";
 import Image from "next/image";
-import { BookOpenIcon, LogOutIcon } from "lucide-react";
+import { BookOpenIcon } from "lucide-react";
 import { navItems } from "../sidebar/nav-items";
 import { NavItem, hasChildren } from "../sidebar/types";
+import { LogoutButton } from "@/components/ui/logout-button";
 
 // Helpers
 const MOBILE_BREAKPOINT = 768;
@@ -123,18 +123,8 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
   } = useSidebarState();
 
   const { profile } = useBusinessProfile();
-  const { signOut } = useAuth();
   const businessName = profile?.name || "Restaurant Manager";
   const logoUrl = profile?.logo || "";
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-  };
 
   return (
     <TooltipProvider>
@@ -240,14 +230,12 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="flex items-center justify-between">
                     <SidebarThemeToggle />
-                    <Button
+                    <LogoutButton
                       variant="ghost"
                       size="icon"
-                      onClick={handleLogout}
+                      text=""
                       className="text-muted-foreground"
-                    >
-                      <LogOutIcon className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 </div>
               )}
@@ -328,14 +316,12 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center justify-between">
                 <SidebarThemeToggle />
-                <Button
+                <LogoutButton
                   variant="ghost"
                   size="icon"
-                  onClick={handleLogout}
+                  text=""
                   className="text-muted-foreground"
-                >
-                  <LogOutIcon className="h-4 w-4" />
-                </Button>
+                />
               </div>
             </div>
           </aside>

@@ -155,7 +155,7 @@ export default function SignupPage() {
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form]);
 
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
@@ -534,4 +534,3 @@ export default function SignupPage() {
     </div>
   );
 }
-  

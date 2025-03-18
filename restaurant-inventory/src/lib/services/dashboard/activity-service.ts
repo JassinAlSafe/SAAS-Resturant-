@@ -27,69 +27,65 @@ export async function fetchRecentActivity(): Promise<ActivityItem[]> {
  * Helper function to fetch activity data with proper error handling
  */
 async function fetchActivityData(businessProfileId: string): Promise<ActivityItem[]> {
-    // Fetch inventory changes (most recent first)
-    const { data: inventoryChanges, error: inventoryError } = await supabase
-        .from('ingredients_log')
-        .select('id, ingredient_id, action, quantity_change, created_at, ingredients (name)')
-        .eq('business_profile_id', businessProfileId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+    try {
+        // Since ingredients_log table doesn't exist, we'll fetch recent ingredient updates based on updated_at
+        const { data: recentIngredients, error: ingredientsError } = await supabase
+            .from('ingredients')
+            .select('id, name, quantity, unit, updated_at')
+            .eq('business_profile_id', businessProfileId)
+            .order('updated_at', { ascending: false })
+            .limit(10);
 
-    if (inventoryError) {
-        console.error('Error fetching inventory changes:', inventoryError);
+        if (ingredientsError) {
+            console.error('Error fetching recent ingredients:', ingredientsError);
+            // Continue with empty ingredients list
+        }
+
+        // Fetch recent orders
+        const { data: recentOrders, error: ordersError } = await supabase
+            .from('sales')
+            .select('id, created_at, total_amount')
+            .eq('business_profile_id', businessProfileId)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (ordersError) {
+            console.error('Error fetching recent orders:', ordersError);
+            // Continue with empty orders list
+        }
+
+        // Format ingredients as activity items
+        const inventoryActivity = (recentIngredients || []).map((ingredient): ActivityItem => {
+            return {
+                id: ingredient.id,
+                type: 'inventory',
+                title: `Inventory updated`,
+                description: `${ingredient.name}: ${ingredient.quantity} ${ingredient.unit}`,
+                date: ingredient.updated_at,
+                formattedDate: formatActivityDate(ingredient.updated_at),
+            };
+        });
+
+        // Format orders as activity items
+        const orderActivity = (recentOrders || []).map((order): ActivityItem => {
+            return {
+                id: order.id,
+                type: 'sale',
+                title: 'New sale recorded',
+                description: `Sale #${order.id.substring(0, 8)} - $${order.total_amount.toFixed(2)}`,
+                date: order.created_at,
+                formattedDate: formatActivityDate(order.created_at),
+            };
+        });
+
+        // Combine and sort all activity items by date (most recent first)
+        return [...inventoryActivity, ...orderActivity]
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 10); // Take the 10 most recent
+    } catch (error) {
+        console.error('Error fetching activity data:', error);
         return [];
     }
-
-    // Fetch recent orders
-    const { data: recentOrders, error: ordersError } = await supabase
-        .from('sales')
-        .select('id, created_at, total_amount, customer_name')
-        .eq('business_profile_id', businessProfileId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-    if (ordersError) {
-        console.error('Error fetching recent orders:', ordersError);
-        // Continue with inventory changes only
-    }
-
-    // Format inventory changes as activity items
-    const inventoryActivity = (inventoryChanges || []).map((change): ActivityItem => {
-        // Handle ingredients as an array
-        const ingredientName = Array.isArray(change.ingredients) && change.ingredients.length > 0
-            ? change.ingredients[0].name || 'Unknown ingredient'
-            : 'Unknown ingredient';
-        const action = change.action === 'add' ? 'added' :
-            change.action === 'remove' ? 'removed' :
-                change.action === 'update' ? 'updated' :
-                    change.action;
-
-        return {
-            id: change.id,
-            type: 'inventory',
-            title: `${ingredientName} ${action}`,
-            description: `${Math.abs(change.quantity_change || 0)} units ${action === 'added' ? 'to' : 'from'} inventory`,
-            date: change.created_at,
-            formattedDate: formatActivityDate(change.created_at),
-        };
-    });
-
-    // Format orders as activity items
-    const orderActivity = (recentOrders || []).map((order): ActivityItem => {
-        return {
-            id: order.id,
-            type: 'sale',
-            title: 'New sale recorded',
-            description: `${order.customer_name || 'Anonymous'} - $${order.total_amount.toFixed(2)}`,
-            date: order.created_at,
-            formattedDate: formatActivityDate(order.created_at),
-        };
-    });
-
-    // Combine and sort all activity items by date (most recent first)
-    return [...inventoryActivity, ...orderActivity]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 10); // Take the 10 most recent
 }
 
 /**
