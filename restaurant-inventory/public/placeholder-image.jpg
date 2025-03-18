@@ -1,0 +1,3 @@
+Please add a placeholder image file (placeholder-image.jpg) to this directory.
+You can use any image you prefer, but it should be a generic placeholder that works well for product images.
+This file is used as a fallback when the ProxyImage component can't load an image. 

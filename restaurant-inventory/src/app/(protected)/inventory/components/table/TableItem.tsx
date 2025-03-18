@@ -11,7 +11,7 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
-import Image from "next/image";
+import { ProxyImage } from "@/components/ui/proxy-image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatUnit, isLowStock, isOutOfStock } from "./inventoryUtils";
@@ -51,7 +51,7 @@ export function TableItem({
   isSelected,
   compactMode,
   onEditClick,
-  onDeleteClick,
+  // onDeleteClick,
   onUpdateQuantity,
   toggleItemSelection,
   toggleExpanded,
@@ -122,12 +122,12 @@ export function TableItem({
             {!compactMode && (
               <div className="w-10 h-10 shrink-0 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden relative">
                 {(item as ExtendedInventoryItem).image_url ? (
-                  <Image
+                  <ProxyImage
                     src={(item as ExtendedInventoryItem).image_url!}
                     alt={item.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 200px"
-                    className="object-contain p-1"
+                    width={40}
+                    height={40}
+                    className="object-contain w-full h-full"
                   />
                 ) : (
                   <ImageIcon className="h-5 w-5 text-muted-foreground/50" />
@@ -178,7 +178,7 @@ export function TableItem({
           <span
             className={cn("font-medium", compactMode ? "text-xs" : "text-sm")}
           >
-            {formatCurrency(item.cost_per_unit)}
+            {formatCurrency(item.cost_per_unit || 0)}
           </span>
         </td>
 
@@ -330,14 +330,7 @@ export function TableItem({
       {isExpanded && (
         <tr className="bg-muted/10 dark:bg-gray-900/10">
           <td colSpan={9} className="p-0">
-            <ExpandedItemContent
-              item={item}
-              onEditClick={onEditClick}
-              onDeleteClick={onDeleteClick}
-              onUpdateQuantity={onUpdateQuantity}
-              toggleExpanded={toggleExpanded}
-              formatCurrency={formatCurrency}
-            />
+            <ExpandedItemContent item={item} formatCurrency={formatCurrency} />
           </td>
         </tr>
       )}

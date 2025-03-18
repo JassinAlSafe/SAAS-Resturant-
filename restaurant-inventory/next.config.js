@@ -45,7 +45,13 @@ const nextConfig = {
         protocol: "https",
         hostname: "outofhome.se",
       },
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
     ],
+    // Allow unoptimized images since we're proxying them
+    unoptimized: true,
   },
 
   // Configure webpack to handle minification
