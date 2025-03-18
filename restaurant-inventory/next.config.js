@@ -41,6 +41,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "gottebiten.se",
       },
+      {
+        protocol: "https",
+        hostname: "outofhome.se",
+      },
     ],
   },
 

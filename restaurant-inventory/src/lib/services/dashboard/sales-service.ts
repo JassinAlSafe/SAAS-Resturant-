@@ -124,8 +124,8 @@ function processSalesData(
     // Then add actual sales data
     data.forEach((sale) => {
         const saleDate = 'date' in sale && sale.date
-            ? new Date(sale.date)
-            : new Date(sale.created_at);
+            ? new Date(sale.date || new Date())
+            : new Date(sale.created_at || new Date());
 
         const monthKey = format(saleDate, 'MMM');
         salesByMonth.set(monthKey, (salesByMonth.get(monthKey) || 0) + sale.total_amount);

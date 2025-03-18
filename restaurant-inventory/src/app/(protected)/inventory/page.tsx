@@ -12,7 +12,7 @@ import InventoryLoading from "./components/InventoryLoading";
 import { InventoryModals } from "./components/modals";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
-import { useInventory } from "./hooks/useInventory";
+import { useInventoryManager } from "./hooks/useInventoryStore";
 import { motion } from "framer-motion";
 import { usePermission } from "@/lib/permission-context";
 import { useCurrency } from "@/lib/currency";
@@ -39,6 +39,13 @@ export default function Inventory() {
   const { toast } = useToast();
   const { userRole } = usePermission();
   const { formatCurrency } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before using client-side only values
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     items,
     categories,
@@ -46,7 +53,15 @@ export default function Inventory() {
     addItem: addInventoryItem,
     updateItem: updateInventoryItem,
     deleteItem: deleteInventoryItem,
-  } = useInventory();
+    setCategoryFilter,
+    setSearchQuery,
+    setSortField: setSortFieldTyped,
+    setSortDirection,
+    categoryFilter,
+    searchQuery,
+    sortField,
+    sortDirection,
+  } = useInventoryManager();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
@@ -59,16 +74,12 @@ export default function Inventory() {
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Use grouped items for filtering
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
-  const [sortField, setSortField] = useState("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // State for InventoryDataTable
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -131,8 +142,8 @@ export default function Inventory() {
     }
 
     // Filter by category
-    if (selectedCategory !== "all") {
-      result = result.filter((item) => item.category === selectedCategory);
+    if (categoryFilter !== "all") {
+      result = result.filter((item) => item.category === categoryFilter);
     }
 
     // Filter by low stock
@@ -147,7 +158,7 @@ export default function Inventory() {
     }
 
     return result;
-  }, [groupedItems, searchQuery, selectedCategory, showLowStockOnly]);
+  }, [groupedItems, searchQuery, categoryFilter, showLowStockOnly]);
 
   // Memoize the filtered and sorted items
   const sortedFilteredItems = useMemo(() => {
@@ -203,17 +214,14 @@ export default function Inventory() {
     return item.totalQuantity === 0;
   };
 
-  // Calculate inventory statistics
-  const lowStockCount = groupedItems.filter((item) =>
-    isGroupLowStock(item)
-  ).length;
-  const outOfStockCount = groupedItems.filter((item) =>
-    isGroupOutOfStock(item)
-  ).length;
-  const totalValue = groupedItems.reduce(
-    (sum, item) => sum + (item.cost_per_unit || 0) * item.totalQuantity,
-    0
-  );
+  // Calculate inventory statistics - client side only
+  const lowStockCount = mounted
+    ? groupedItems.filter((item) => isGroupLowStock(item)).length
+    : 0;
+
+  const outOfStockCount = mounted
+    ? groupedItems.filter((item) => isGroupOutOfStock(item)).length
+    : 0;
 
   // Use useCallback for event handlers
   const toggleItemSelection = useCallback((itemId: string) => {
@@ -244,11 +252,11 @@ export default function Inventory() {
       if (field === sortField) {
         setSortDirection(sortDirection === "asc" ? "desc" : "asc");
       } else {
-        setSortField(field);
+        setSortFieldTyped(field as keyof InventoryItem);
         setSortDirection("asc");
       }
     },
-    [sortField, sortDirection]
+    [sortField, sortDirection, setSortFieldTyped]
   );
 
   // Fetch suppliers
@@ -340,20 +348,35 @@ export default function Inventory() {
   const handleAddItem = useCallback(
     async (itemData: InventoryFormData) => {
       try {
+        console.log("Adding inventory item:", itemData);
+
         // Convert form data to the format expected by the API
         const apiData = {
-          ...itemData,
-          // Add timestamps that will be overwritten by the service anyway
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as unknown as Omit<InventoryItem, "id" | "createdAt" | "updatedAt">;
+          name: itemData.name,
+          description: itemData.description,
+          category: itemData.category,
+          quantity: itemData.quantity || 0,
+          unit: itemData.unit,
+          cost: itemData.cost || 0,
+          reorder_level: itemData.reorder_level || 0,
+          supplier_id: itemData.supplier_id || undefined,
+          location: itemData.location || undefined,
+          expiry_date: itemData.expiry_date || undefined,
+          image_url: itemData.image_url || undefined,
+        };
 
-        await addInventoryItem(apiData);
-        toast({
-          title: "Item Added",
-          description: `${itemData.name} has been added to inventory.`,
-        });
-        closeAddModal();
+        // Call the addItem method from our store
+        const result = await addInventoryItem(apiData);
+
+        if (result) {
+          toast({
+            title: "Item Added",
+            description: `${itemData.name} has been added to inventory.`,
+          });
+          closeAddModal();
+        } else {
+          throw new Error("Failed to add item");
+        }
       } catch (error) {
         console.error("Error adding item:", error);
         toast({
@@ -370,19 +393,35 @@ export default function Inventory() {
     async (itemData: InventoryFormData) => {
       if (!currentItem) return;
       try {
+        console.log("Updating inventory item:", currentItem.id, itemData);
+
         // Convert form data to the format expected by the API
         const apiData = {
-          ...itemData,
-          // Add any missing properties that might be required
-          updated_at: new Date().toISOString(),
-        } as unknown as Omit<InventoryItem, "id" | "createdAt" | "updatedAt">;
+          name: itemData.name,
+          description: itemData.description,
+          category: itemData.category,
+          quantity: itemData.quantity || 0,
+          unit: itemData.unit,
+          cost: itemData.cost || 0,
+          reorder_level: itemData.reorder_level || 0,
+          supplier_id: itemData.supplier_id || undefined,
+          location: itemData.location || undefined,
+          expiry_date: itemData.expiry_date || undefined,
+          image_url: itemData.image_url || undefined,
+        };
 
-        await updateInventoryItem(currentItem.id, apiData);
-        toast({
-          title: "Item Updated",
-          description: `${itemData.name} has been updated.`,
-        });
-        closeEditModal();
+        // Call the updateItem method from our store
+        const result = await updateInventoryItem(currentItem.id, apiData);
+
+        if (result) {
+          toast({
+            title: "Item Updated",
+            description: `${itemData.name} has been updated.`,
+          });
+          closeEditModal();
+        } else {
+          throw new Error("Failed to update item");
+        }
       } catch (error) {
         console.error("Error updating item:", error);
         toast({
@@ -395,40 +434,27 @@ export default function Inventory() {
     [currentItem, updateInventoryItem, toast, closeEditModal]
   );
 
-  const handleDeleteItem = useCallback(async () => {
-    if (!currentItem) return;
-    try {
-      await deleteInventoryItem(currentItem.id);
-      toast({
-        title: "Item Deleted",
-        description: `${currentItem.name} has been removed from inventory.`,
-      });
-      closeDeleteModal();
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete item. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [currentItem, deleteInventoryItem, toast, closeDeleteModal]);
-
   const handleQuickQuantityUpdate = useCallback(
     async (itemId: string, newQuantity: number) => {
       const itemToUpdate = items.find((item) => item.id === itemId);
       if (!itemToUpdate) return;
 
       try {
-        // For simple quantity updates, we only need to pass the quantity
-        await updateInventoryItem(itemId, {
-          quantity: newQuantity,
-        } as unknown as Omit<InventoryItem, "id" | "createdAt" | "updatedAt">);
+        console.log("Quick updating quantity:", itemId, newQuantity);
 
-        toast({
-          title: "Quantity Updated",
-          description: `${itemToUpdate.name} quantity updated to ${newQuantity} ${itemToUpdate.unit}.`,
+        // Call the updateItem method from our store
+        const result = await updateInventoryItem(itemId, {
+          quantity: newQuantity,
         });
+
+        if (result) {
+          toast({
+            title: "Quantity Updated",
+            description: `${itemToUpdate.name} quantity updated to ${newQuantity} ${itemToUpdate.unit}.`,
+          });
+        } else {
+          throw new Error("Failed to update quantity");
+        }
       } catch (error) {
         console.error("Error updating quantity:", error);
         toast({
@@ -440,6 +466,26 @@ export default function Inventory() {
     },
     [items, updateInventoryItem, toast]
   );
+
+  // Add type conversion wrapper for setSortField
+  const setSortField = (field: string) => {
+    setSortFieldTyped(field as keyof InventoryItem);
+  };
+
+  // Create wrapped delete handler to match expected function signature in components
+  const handleDeleteItem = () => {
+    if (!currentItem) return;
+    deleteInventoryItem(currentItem.id, currentItem.name);
+    closeDeleteModal();
+  };
+
+  // Calculate inventory value on client side only to avoid hydration mismatch
+  const totalInventoryValue = useMemo(() => {
+    if (!mounted) return 0;
+    return items.reduce((total, item) => {
+      return total + item.quantity * item.cost;
+    }, 0);
+  }, [items, mounted]);
 
   if (isLoading || isLoadingSuppliers) {
     return <InventoryLoading />;
@@ -461,15 +507,15 @@ export default function Inventory() {
         totalItems={groupedItems.length}
         lowStockItems={lowStockCount}
         outOfStockItems={outOfStockCount}
-        totalValue={totalValue}
+        totalValue={totalInventoryValue}
       />
 
       {/* Filters */}
       <InventoryFilters
         searchTerm={searchQuery}
         onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        selectedCategory={categoryFilter}
+        onCategoryChange={setCategoryFilter}
         categories={categories}
         showLowStock={showLowStockOnly}
         onLowStockChange={setShowLowStockOnly}
@@ -521,12 +567,12 @@ export default function Inventory() {
               </div>
               <h3 className="text-xl font-medium mb-2">No items found</h3>
               <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                {searchQuery || selectedCategory !== "all" || showLowStockOnly
+                {searchQuery || categoryFilter !== "all" || showLowStockOnly
                   ? "No items match your current filters. Try adjusting your search criteria."
                   : "Your inventory is empty. Add your first item to get started."}
               </p>
               {!searchQuery &&
-                selectedCategory === "all" &&
+                categoryFilter === "all" &&
                 !showLowStockOnly && (
                   <Button onClick={openAddModal} className="gap-1.5">
                     <Plus className="h-4 w-4" />

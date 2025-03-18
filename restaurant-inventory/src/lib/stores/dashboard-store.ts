@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CategoryStat, DashboardStats } from '@/lib/types';
 import { dashboardService } from '@/lib/services/dashboard-service';
+import { ActivityItem } from '@/lib/services/dashboard/types';
 
 interface RecentActivity {
     action: string;
@@ -128,19 +129,32 @@ export const useDashboardStore = create<DashboardState>()(
                     const fetchWithRetry = async (retries = 2) => {
                         try {
                             const data = await dashboardService.fetchDashboardData();
-                            // Ensure all data has default values
+
+                            // Create properly structured return object
                             return {
                                 stats: {
                                     totalInventoryValue: data.stats?.totalInventoryValue ?? 0,
                                     lowStockItems: data.stats?.lowStockItems ?? 0,
-                                    monthlySales: data.stats?.monthlySales ?? 0,
-                                    salesGrowth: data.stats?.salesGrowth ?? 0
+                                    monthlySales: data.salesData?.currentMonthSales ?? 0,
+                                    salesGrowth: data.salesData?.salesGrowth ?? 0
                                 },
-                                salesData: data.salesData || [],
-                                categoryStats: data.categoryStats || [],
-                                recentActivity: data.recentActivity || [],
+                                salesData: data.salesData?.monthlySalesData || [],
+                                categoryStats: data.stats?.categoryStats || [],
+                                recentActivity: (data.recentActivity || []).map((activity: ActivityItem) => ({
+                                    action: activity.title || '',
+                                    item: activity.description || '',
+                                    timestamp: activity.formattedDate || '',
+                                    user: ''
+                                })),
                                 inventoryAlerts: data.inventoryAlerts || [],
-                                topSellingItems: data.topSellingItems || []
+                                topSellingItems: data.topSellingItems || [],
+
+                                // Add these missing required fields to match the DashboardState interface
+                                isLoading: false,
+                                fetchInProgress: false,
+                                error: null,
+                                lastUpdated: Date.now(),
+                                shouldRefresh: false
                             };
                         } catch (error) {
                             if (retries > 0) {
@@ -160,13 +174,19 @@ export const useDashboardStore = create<DashboardState>()(
                     // Only update if still loading (no cancel has happened)
                     if (get().fetchInProgress) {
                         // Update the store with fetched data
-                        set({
-                            ...dashboardData,
+                        set((state) => ({
+                            ...state,
+                            stats: dashboardData.stats,
+                            salesData: dashboardData.salesData,
+                            categoryStats: dashboardData.categoryStats,
+                            recentActivity: dashboardData.recentActivity,
+                            inventoryAlerts: dashboardData.inventoryAlerts,
+                            topSellingItems: dashboardData.topSellingItems,
                             isLoading: false,
                             fetchInProgress: false,
                             lastUpdated: Date.now(),
                             error: null
-                        });
+                        }));
                         console.log('Dashboard data updated in store successfully');
                     } else {
                         console.log('Fetch completed but update was cancelled');

@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 interface InventoryStatsProps {
   totalItems: number;
@@ -25,6 +26,12 @@ export function InventoryStats({
   totalValue,
 }: InventoryStatsProps) {
   const { formatCurrency } = useCurrency();
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration issues by using client-side rendering
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Calculate percentages safely to avoid NaN
   const lowStockPercentage =
@@ -32,6 +39,9 @@ export function InventoryStats({
 
   const outOfStockPercentage =
     totalItems > 0 ? Math.round((outOfStockItems / totalItems) * 100) : 0;
+
+  // Format the total value on the client side only
+  const formattedTotalValue = mounted ? formatCurrency(totalValue) : "...";
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -86,7 +96,7 @@ export function InventoryStats({
       >
         <StatCard
           title="Total Value"
-          value={formatCurrency(totalValue)}
+          value={formattedTotalValue}
           icon={<FiDollarSign className="h-5 w-5" />}
           description="Inventory value"
           color="green"

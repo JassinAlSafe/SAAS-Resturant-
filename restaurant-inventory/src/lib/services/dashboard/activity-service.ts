@@ -55,7 +55,10 @@ async function fetchActivityData(businessProfileId: string): Promise<ActivityIte
 
     // Format inventory changes as activity items
     const inventoryActivity = (inventoryChanges || []).map((change): ActivityItem => {
-        const ingredientName = change.ingredients?.name || 'Unknown ingredient';
+        // Handle ingredients as an array
+        const ingredientName = Array.isArray(change.ingredients) && change.ingredients.length > 0
+            ? change.ingredients[0].name || 'Unknown ingredient'
+            : 'Unknown ingredient';
         const action = change.action === 'add' ? 'added' :
             change.action === 'remove' ? 'removed' :
                 change.action === 'update' ? 'updated' :

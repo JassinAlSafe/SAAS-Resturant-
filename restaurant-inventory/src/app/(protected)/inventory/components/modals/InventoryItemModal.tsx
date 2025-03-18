@@ -32,7 +32,6 @@ import {
   FiInfo,
   FiMapPin,
   FiTruck,
-  FiAlertCircle,
 } from "react-icons/fi";
 
 // Interface for form data that includes both snake_case and camelCase properties
@@ -109,11 +108,15 @@ export default function InventoryItemModal({
   // Use callbacks for event handlers to prevent unnecessary re-renders
   const handleChange = useCallback(
     (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      e:
+        | React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+          >
+        | { name: string; value: string | number }
     ) => {
-      const { name, value } = e.target;
+      // Handle both event objects and direct value objects from Shadcn Select
+      const { name, value } = "target" in e ? e.target : e;
+
       setFormData((prev) => ({
         ...prev,
         [name]: value,
@@ -170,11 +173,20 @@ export default function InventoryItemModal({
 
       setIsSubmitting(true);
 
+      // Log form data for debugging
+      console.log("Submitting form data:", formData);
+
       try {
         // Call the appropriate handler based on whether we're adding or editing
         if (item) {
-          onUpdate?.(formData);
+          console.log("Updating item:", item.id);
+          if (onUpdate) {
+            onUpdate(formData);
+          } else {
+            console.error("onUpdate handler is not defined");
+          }
         } else {
+          console.log("Creating new item");
           onSave(formData);
         }
       } catch (error) {
@@ -257,6 +269,7 @@ export default function InventoryItemModal({
                 </Label>
                 <Input
                   id="name"
+                  name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter item name"
@@ -272,6 +285,7 @@ export default function InventoryItemModal({
                   </Label>
                   <Input
                     id="quantity"
+                    name="quantity"
                     type="number"
                     min="0"
                     step="0.01"
@@ -289,7 +303,7 @@ export default function InventoryItemModal({
                   <Select
                     value={formData.unit}
                     onValueChange={(value) =>
-                      handleChange({ target: { name: "unit", value } })
+                      handleChange({ name: "unit", value })
                     }
                   >
                     <SelectTrigger id="unit" className="mt-1.5">
@@ -311,7 +325,7 @@ export default function InventoryItemModal({
                 <Select
                   value={formData.category}
                   onValueChange={(value) =>
-                    handleChange({ target: { name: "category", value } })
+                    handleChange({ name: "category", value })
                   }
                   required
                 >
@@ -357,6 +371,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="name"
+                      name="name"
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="Enter item name"
@@ -372,7 +387,7 @@ export default function InventoryItemModal({
                     <Select
                       value={formData.category}
                       onValueChange={(value) =>
-                        handleChange({ target: { name: "category", value } })
+                        handleChange({ name: "category", value })
                       }
                       required
                     >
@@ -396,6 +411,7 @@ export default function InventoryItemModal({
                       </Label>
                       <Input
                         id="quantity"
+                        name="quantity"
                         type="number"
                         min="0"
                         step="0.01"
@@ -413,7 +429,7 @@ export default function InventoryItemModal({
                       <Select
                         value={formData.unit}
                         onValueChange={(value) =>
-                          handleChange({ target: { name: "unit", value } })
+                          handleChange({ name: "unit", value })
                         }
                       >
                         <SelectTrigger id="unit" className="mt-1.5">
@@ -439,6 +455,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Textarea
                       id="description"
+                      name="description"
                       value={formData.description}
                       onChange={handleChange}
                       placeholder="Enter item description"
@@ -464,6 +481,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="costPerUnit"
+                      name="cost"
                       type="number"
                       min="0"
                       step="0.01"
@@ -483,6 +501,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="reorderPoint"
+                      name="reorder_level"
                       type="number"
                       min="0"
                       step="1"
@@ -515,6 +534,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="location"
+                      name="location"
                       value={formData.location}
                       onChange={handleChange}
                       placeholder="Storage location"
@@ -534,9 +554,7 @@ export default function InventoryItemModal({
                       <Select
                         value={formData.supplier_id}
                         onValueChange={(value) =>
-                          handleChange({
-                            target: { name: "supplier_id", value },
-                          })
+                          handleChange({ name: "supplier_id", value })
                         }
                       >
                         <SelectTrigger className="mt-1.5">
@@ -564,6 +582,7 @@ export default function InventoryItemModal({
                     </Label>
                     <Input
                       id="imageUrl"
+                      name="image_url"
                       value={formData.image_url}
                       onChange={handleChange}
                       placeholder="Enter image URL"
