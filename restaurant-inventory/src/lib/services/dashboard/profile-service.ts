@@ -1,12 +1,21 @@
 import { supabase } from "@/lib/supabase";
 import { businessProfileService } from "@/lib/services/business-profile-service";
 
+// Add caching to reduce duplicate fetches
+const CACHE_DURATION = 30000; // 30 seconds
+const profileCache = {
+    id: null as string | null,
+    timestamp: 0,
+    userId: null as string | null
+};
+
 /**
  * Get the current user's business profile ID
  * This is a core function used by many dashboard services
  */
 export async function getBusinessProfileId(): Promise<string | null> {
     try {
+        // Always use getUser() instead of getSession() for security
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
         if (userError) {
@@ -17,6 +26,17 @@ export async function getBusinessProfileId(): Promise<string | null> {
         if (!user) {
             console.log('No authenticated user found');
             return null;
+        }
+
+        // Check if we have a valid cached value for this user
+        const now = Date.now();
+        if (
+            profileCache.id &&
+            profileCache.userId === user.id &&
+            now - profileCache.timestamp < CACHE_DURATION
+        ) {
+            console.log('Using cached business profile ID:', profileCache.id);
+            return profileCache.id;
         }
 
         console.log('Fetching business profile for user ID:', user.id);
@@ -40,9 +60,13 @@ export async function getBusinessProfileId(): Promise<string | null> {
         // Get the most recent profile
         const profile = profiles[0];
 
-        // If we found profiles, schedule a cleanup of duplicates
-        if (profiles.length > 0) {
-            // Schedule cleanup to run after this operation
+        // Update cache
+        profileCache.id = profile.id;
+        profileCache.timestamp = now;
+        profileCache.userId = user.id;
+
+        // If we found multiple profiles, schedule a cleanup
+        if (profiles.length > 1) {
             setTimeout(() => businessProfileService.cleanupDuplicateProfiles(user.id), 1000);
         }
 

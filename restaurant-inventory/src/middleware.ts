@@ -80,6 +80,12 @@ export async function middleware(req: NextRequest) {
             .eq('user_id', session.user.id)
             .limit(1);
 
+        // If there's a database error, allow the request to proceed to avoid infinite redirects
+        if (error) {
+            console.error('Error checking business profile:', error);
+            return res;
+        }
+
         // If no profile exists and not on onboarding page, redirect to onboarding
         if ((!profiles || profiles.length === 0) && !pathname.startsWith('/onboarding')) {
             const redirectUrl = new URL('/onboarding', req.url);

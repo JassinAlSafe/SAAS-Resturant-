@@ -18,7 +18,7 @@ interface AuthState {
     signUp: (email: string, password: string, name?: string) => Promise<{ isEmailConfirmationRequired: boolean }>;
     signOut: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
-    updatePassword: (token: string, newPassword: string) => Promise<void>;
+    updatePassword: (newPassword: string) => Promise<void>;
     refreshSession: () => Promise<void>;
     setIsEmailVerified: (value: boolean) => void;
 }
@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
         (set) => ({
             user: null,
             session: null,
-            isLoading: true,
+            isLoading: false,
             isAuthenticated: false,
             isInitialized: false,
             isEmailVerified: false,
@@ -36,10 +36,11 @@ export const useAuthStore = create<AuthState>()(
             initialize: async () => {
                 set({ isLoading: true });
                 try {
-                    const { data, error } = await supabase.auth.getSession();
+                    // Get current authenticated user (more secure than getSession)
+                    const { data: userData, error: userError } = await supabase.auth.getUser();
 
-                    if (error) {
-                        console.error("Error initializing auth:", error);
+                    if (userError) {
+                        console.error("Error initializing auth:", userError);
                         set({
                             user: null,
                             session: null,
@@ -50,31 +51,67 @@ export const useAuthStore = create<AuthState>()(
                         return;
                     }
 
-                    // Check if we have a valid session
-                    if (data?.session) {
-                        // Check if email is verified (you might want to customize this logic)
-                        const isEmailVerified = data.session.user.email_confirmed_at !== null;
+                    // Check if we have a valid user
+                    if (userData?.user) {
+                        // Check if email is verified
+                        const isEmailVerified = userData.user.email_confirmed_at !== null;
+
+                        // After confirming authenticated user, we can safely get the session data
+                        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                        if (sessionError) {
+                            console.error("Error getting session:", sessionError);
+                        }
 
                         set({
-                            user: data.session.user,
-                            session: data.session,
+                            user: userData.user,
+                            session: sessionData?.session || null,
                             isAuthenticated: true,
                             isEmailVerified,
                             isLoading: false,
                             isInitialized: true
                         });
 
-                        // Set up auth state change listener
-                        supabase.auth.onAuthStateChange((event, session) => {
-                            console.log("Auth state change:", event);
+                        // Set up secure auth state change listener
+                        supabase.auth.onAuthStateChange(async (event, session) => {
+                            // Skip redundant INITIAL_SESSION event if we just initialized with the same user
+                            if (event === 'INITIAL_SESSION' && session?.user?.id === userData.user.id) {
+                                return;
+                            }
 
+                            // For login and token refresh events, validate the user with getUser
                             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                                set({
-                                    user: session?.user || null,
-                                    session,
-                                    isAuthenticated: !!session,
-                                    isEmailVerified: session?.user.email_confirmed_at !== null
-                                });
+                                try {
+                                    // Always verify with getUser for security
+                                    const { data: verifiedUser, error: verifyError } = await supabase.auth.getUser();
+                                    if (verifyError || !verifiedUser.user) {
+                                        console.error("Failed to verify user on auth state change:", verifyError);
+                                        // Handle invalid auth state
+                                        set({
+                                            user: null,
+                                            session: null,
+                                            isAuthenticated: false,
+                                            isEmailVerified: false
+                                        });
+                                        return;
+                                    }
+
+                                    // Use the verified user data
+                                    set({
+                                        user: verifiedUser.user,
+                                        session,
+                                        isAuthenticated: true,
+                                        isEmailVerified: verifiedUser.user.email_confirmed_at !== null
+                                    });
+                                } catch (err) {
+                                    console.error("Error verifying auth state:", err);
+                                    // Reset auth state on error
+                                    set({
+                                        user: null,
+                                        session: null,
+                                        isAuthenticated: false,
+                                        isEmailVerified: false
+                                    });
+                                }
                             } else if (event === 'SIGNED_OUT') {
                                 set({
                                     user: null,
@@ -108,40 +145,18 @@ export const useAuthStore = create<AuthState>()(
             signIn: async (email, password) => {
                 try {
                     set({ isLoading: true });
+
+                    // Sign in with email/password
                     const { data, error } = await supabase.auth.signInWithPassword({
                         email,
                         password,
                     });
 
                     if (error) {
-                        // Special case for "Email not confirmed" error
-                        // Allow login but keep isEmailVerified as false
-                        if (error.message === "Email not confirmed") {
-                            // Try to get the user without password
-                            const { data: userData, error: userError } = await supabase.auth.signInWithOtp({
-                                email,
-                                options: {
-                                    shouldCreateUser: false,
-                                }
-                            });
-
-                            if (userError) {
-                                throw error; // If this also fails, throw the original error
-                            }
-
-                            // Set authenticated but not verified
-                            set({
-                                user: userData.user,
-                                session: userData.session,
-                                isAuthenticated: true,
-                                isEmailVerified: false,
-                                isLoading: false
-                            });
-                            return;
-                        }
                         throw error;
                     }
 
+                    // Update auth state
                     set({
                         user: data.user,
                         session: data.session,
@@ -160,18 +175,11 @@ export const useAuthStore = create<AuthState>()(
                     set({ isLoading: true });
                     console.log("Starting signup process for:", email);
 
-                    // Create redirect URL with absolute path and all necessary parameters
+                    // Create redirect URL with absolute path
                     const redirectUrl = new URL('/auth/callback', window.location.origin);
-                    // Ensure email is properly encoded
                     redirectUrl.searchParams.set("email", email);
 
                     console.log("Signup redirect URL:", redirectUrl.toString());
-                    console.log("Signup parameters:", {
-                        email,
-                        name: name || email.split('@')[0],
-                        redirectUrl: redirectUrl.toString(),
-                        encodedEmail: encodeURIComponent(email)
-                    });
 
                     // Sign up with Supabase
                     const { data, error } = await supabase.auth.signUp({
@@ -180,7 +188,7 @@ export const useAuthStore = create<AuthState>()(
                         options: {
                             data: {
                                 name: name || email.split('@')[0],
-                                email: email // Store email in user metadata
+                                email
                             },
                             emailRedirectTo: redirectUrl.toString(),
                         },
@@ -188,40 +196,21 @@ export const useAuthStore = create<AuthState>()(
 
                     if (error) {
                         console.error("Signup error:", error);
-                        console.log("Error details:", {
-                            message: error.message,
-                            status: error.status,
-                            name: error.name
-                        });
                         throw error;
                     }
 
                     console.log("Signup response details:", {
                         userId: data.user?.id,
-                        identities: data.user?.identities,
                         emailConfirmed: data.user?.email_confirmed_at,
-                        hasSession: !!data.session,
-                        email: data.user?.email,
-                        userMetadata: data.user?.user_metadata
+                        hasSession: !!data.session
                     });
 
                     // Check if email confirmation is required
                     const isEmailConfirmationRequired = !data.session ||
                         (data.user?.email_confirmed_at === null);
 
-                    if (isEmailConfirmationRequired) {
-                        console.log("Email confirmation required. Verification email should be sent to:", email);
-                        console.log("User should receive an email with the verification link containing:", {
-                            redirectUrl: redirectUrl.toString(),
-                            email: email
-                        });
-                    } else {
-                        console.log("Email confirmation not required - unusual for new signups");
-                    }
-
-                    // If email confirmation is not required, set the user as authenticated
                     if (!isEmailConfirmationRequired && data.session && data.user) {
-                        console.log("Setting authenticated state for user:", data.user.id);
+                        // If email confirmation is not required, set the user as authenticated
                         set({
                             user: data.user,
                             session: data.session,
@@ -230,25 +219,13 @@ export const useAuthStore = create<AuthState>()(
                             isLoading: false
                         });
                     } else {
-                        // Otherwise, the user needs to confirm their email
-                        console.log("Waiting for email verification. Current state:", {
-                            userId: data.user?.id,
-                            isAuthenticated: false,
-                            isEmailVerified: false
-                        });
+                        // User needs to confirm their email
                         set({ isLoading: false });
                     }
 
                     return { isEmailConfirmationRequired };
                 } catch (error) {
                     console.error("Signup process failed:", error);
-                    if (error instanceof Error) {
-                        console.log("Error details:", {
-                            name: error.name,
-                            message: error.message,
-                            stack: error.stack
-                        });
-                    }
                     set({ isLoading: false });
                     throw error;
                 }
@@ -283,10 +260,7 @@ export const useAuthStore = create<AuthState>()(
                         redirectTo: redirectUrl.toString(),
                     });
 
-                    if (error) {
-                        throw error;
-                    }
-
+                    if (error) throw error;
                     set({ isLoading: false });
                 } catch (error) {
                     set({ isLoading: false });
@@ -294,19 +268,15 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            updatePassword: async (token, newPassword) => {
+            updatePassword: async (newPassword) => {
                 try {
                     set({ isLoading: true });
 
-                    // Use the token to update the password
                     const { error } = await supabase.auth.updateUser({
                         password: newPassword,
                     });
 
-                    if (error) {
-                        throw error;
-                    }
-
+                    if (error) throw error;
                     set({ isLoading: false });
                 } catch (error) {
                     set({ isLoading: false });
@@ -319,9 +289,7 @@ export const useAuthStore = create<AuthState>()(
                     set({ isLoading: true });
                     const { data, error } = await supabase.auth.refreshSession();
 
-                    if (error) {
-                        throw error;
-                    }
+                    if (error) throw error;
 
                     set({
                         user: data.user,
@@ -341,9 +309,8 @@ export const useAuthStore = create<AuthState>()(
             }
         }),
         {
-            name: "auth-storage", // Name for localStorage
+            name: "auth-storage",
             partialize: (state) => ({
-                // Only persist these fields to localStorage
                 isAuthenticated: state.isAuthenticated,
                 isEmailVerified: state.isEmailVerified
             }),

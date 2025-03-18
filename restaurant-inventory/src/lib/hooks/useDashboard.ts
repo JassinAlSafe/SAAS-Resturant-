@@ -49,7 +49,6 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
             }
 
             loadingTimerRef.current = setTimeout(() => {
-                console.warn('Loading state stuck for 10 seconds, force resetting');
                 resetLoadingState();
             }, 10000);
         } else {
@@ -70,7 +69,7 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
 
     // Set up auto refresh if enabled
     useEffect(() => {
-        // Only set up auto refresh when we're not already loading, not in an error state, and not locked
+        // Only set up auto refresh when we're not already loading
         if (autoRefresh && !isLoading && !error && !refreshLock) {
             // Clear any existing timeout to prevent multiple timers
             if (fetchTimeoutRef.current) {
@@ -78,13 +77,9 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
             }
 
             fetchTimeoutRef.current = setTimeout(() => {
-                console.log('Auto refresh timer triggered');
                 // Only set shouldRefresh if it's not already true and we're not in a refresh lock
                 if (!shouldRefresh && !refreshLock && !isLoading) {
-                    console.log('Auto refresh initiated');
                     setShouldRefresh(true);
-                } else {
-                    console.log('Auto refresh skipped - refresh already pending or locked');
                 }
             }, refreshInterval);
         }
@@ -99,21 +94,50 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
 
     // Handle initial load and refresh requests
     useEffect(() => {
+        // Clear any previous loading timer when effect reruns
+        if (loadingTimerRef.current) {
+            clearTimeout(loadingTimerRef.current);
+            loadingTimerRef.current = null;
+        }
+
         // Initial fetch on mount or explicit refresh
         if ((isInitialMount.current || shouldRefresh) && !isRefreshingRef.current && !isLoading) {
-            console.log('Fetch triggered, shouldRefresh:', shouldRefresh, 'refreshLock:', refreshLock);
             isRefreshingRef.current = true;
+
+            // Set a timeout to force reset loading state if it gets stuck
+            loadingTimerRef.current = setTimeout(() => {
+                if (isRefreshingRef.current) {
+                    resetLoadingState();
+                    isRefreshingRef.current = false;
+                }
+            }, 15000);
 
             // Only fetch if conditions are right
             fetchDashboardData()
-                .catch(err => console.error('Error fetching dashboard data:', err))
+                .catch(() => {
+                    // Silently handle errors as they'll be reported in the store
+                })
                 .finally(() => {
                     isRefreshingRef.current = false;
+
+                    // Clear the safety timeout
+                    if (loadingTimerRef.current) {
+                        clearTimeout(loadingTimerRef.current);
+                        loadingTimerRef.current = null;
+                    }
                 });
 
             isInitialMount.current = false;
         }
-    }, [shouldRefresh, fetchDashboardData, isLoading, refreshLock]);
+
+        // Cleanup
+        return () => {
+            if (loadingTimerRef.current) {
+                clearTimeout(loadingTimerRef.current);
+                loadingTimerRef.current = null;
+            }
+        };
+    }, [shouldRefresh, fetchDashboardData, isLoading, refreshLock, resetLoadingState]);
 
     // Format values for display - now using the currency context
     const formattedStats = {
@@ -131,11 +155,8 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
 
     // Manual refresh function with safety checks
     const refresh = () => {
-        console.log('Manual refresh triggered, refreshLock:', refreshLock, 'isLoading:', isLoading);
-
         // If already loading and it's been more than 10 seconds, force reset the loading state
         if (isLoading) {
-            console.log('Already loading, resetting loading state before continuing');
             resetLoadingState();
         }
 
@@ -145,10 +166,7 @@ export const useDashboard = (autoRefresh = true, refreshInterval = DEFAULT_REFRE
                 clearTimeout(fetchTimeoutRef.current);
                 fetchTimeoutRef.current = null;
             }
-            console.log('Setting shouldRefresh to true');
             setShouldRefresh(true);
-        } else {
-            console.log('Manual refresh blocked - already in progress or locked');
         }
     };
 

@@ -66,13 +66,11 @@ export function TabRefreshIndicator({
 
     // Skip if currently refreshing, button disabled, or in a refresh lock
     if (isRefreshing || isButtonDisabled || refreshLock) {
-      console.log("Refresh skipped - already in progress or locked");
       return;
     }
 
     // Check if enough time has passed since last refresh
     if (now - lastRefreshTimeRef.current < MIN_REFRESH_INTERVAL) {
-      console.log("Refresh attempted too soon, skipping");
       return;
     }
 
@@ -94,7 +92,6 @@ export function TabRefreshIndicator({
 
   // Handler for force resetting loading state
   const handleForceReset = useCallback(() => {
-    console.log("Force resetting loading state");
     resetLoadingState();
     setShowForceReset(false);
 

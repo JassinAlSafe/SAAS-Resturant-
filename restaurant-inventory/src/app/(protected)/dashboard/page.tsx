@@ -1,43 +1,25 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { FiSearch, FiSettings } from "react-icons/fi";
-import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 
-// Import the extracted components
+// Import dashboard components
 import { DashboardLoadingState } from "@/components/dashboard/dashboard-loading-state";
 import { QuickAccessToolbar } from "@/components/dashboard/quick-access-toolbar";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { InventoryTab } from "@/components/dashboard/inventory-tab";
 import { SalesTab } from "@/components/dashboard/sales-tab";
-
-// Import our new DashboardDataProvider and hook
 import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { TabRefreshIndicator } from "./components/TabRefreshIndicator";
 import { LoadingStatusBanner } from "./components/LoadingStatusBanner";
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Check if user is authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [user, authLoading, router]);
-
-  // If still loading auth or not authenticated, show loading state
-  if (authLoading || !user) {
-    return <DashboardLoadingState />;
-  }
 
   return (
     <DashboardDataProvider>
@@ -49,7 +31,8 @@ export default function Dashboard() {
   );
 }
 
-// Separated component that uses the dashboard store
+// Using a separate component for the dashboard content enables us to access the dashboard data
+// without unnecessarily re-rendering the parent component
 function DashboardContent({
   searchQuery,
   setSearchQuery,
@@ -57,45 +40,7 @@ function DashboardContent({
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }) {
-  const { isLoading, isInitialLoad, error, refreshData, resetLoadingState } =
-    useDashboard();
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Track how long we've been in the loading state
-  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-  useEffect(() => {
-    if (isLoading && loadingStartTime === null) {
-      setLoadingStartTime(Date.now());
-
-      // Set a safety timer to force exit loading if it takes too long
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-
-      loadingTimerRef.current = setTimeout(() => {
-        console.warn(
-          "Dashboard loading has taken too long (30s), force resetting"
-        );
-        resetLoadingState();
-        // Try to refresh after a brief pause
-        setTimeout(() => refreshData(), 1000);
-        setLoadingStartTime(null);
-      }, 30000);
-    } else if (!isLoading && loadingStartTime !== null) {
-      setLoadingStartTime(null);
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-    };
-  }, [isLoading, loadingStartTime, refreshData, resetLoadingState]);
+  const { isLoading, isInitialLoad, error, refreshData } = useDashboard();
 
   // Show error message if there was an error fetching data
   if (error) {
@@ -124,7 +69,7 @@ function DashboardContent({
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
-      {/* Header - Using the improved PageHeader component */}
+      {/* Header */}
       <PageHeader
         title="Welcome to ShelfWise"
         actions={
@@ -143,7 +88,7 @@ function DashboardContent({
         }
       />
 
-      {/* Quick Access Toolbar - Now without refresh functionality */}
+      {/* Quick Access Toolbar */}
       <QuickAccessToolbar isLoading={isLoading} />
 
       {/* Error banner */}

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CategoryStat, DashboardStats } from '@/lib/types';
 import { dashboardService } from '@/lib/services/dashboard-service';
-import { ActivityItem } from '@/lib/services/dashboard/types';
 
 interface RecentActivity {
     action: string;
@@ -106,18 +105,15 @@ export const useDashboardStore = create<DashboardState>()(
                 const currentState = get();
                 if (currentState.shouldRefresh !== value &&
                     (!currentState.refreshLock || value === false)) {
-                    console.log('Setting shouldRefresh:', value);
                     set({ shouldRefresh: value });
                 }
             },
 
             setRefreshLock: (value: boolean) => {
-                console.log('Setting refreshLock:', value);
                 set({ refreshLock: value });
             },
 
             resetLoadingState: () => {
-                console.log('Resetting loading state');
                 set({
                     isLoading: false,
                     fetchInProgress: false,
@@ -128,7 +124,6 @@ export const useDashboardStore = create<DashboardState>()(
             fetchDashboardData: async () => {
                 // Track the fetch attempt to avoid multiple simultaneous fetches
                 if (get().fetchInProgress) {
-                    console.log('Already fetching dashboard data, skipping duplicate request...');
                     return;
                 }
 
@@ -145,14 +140,12 @@ export const useDashboardStore = create<DashboardState>()(
                     fetchInProgress: true,
                     loadingSince: loadingTimestamp
                 });
-                console.log('Fetching dashboard data from store...');
 
                 // Emergency loading state reset in case something goes wrong
                 const loadingResetTimeout = setTimeout(() => {
                     const currentState = get();
                     if (currentState.isLoading &&
                         currentState.loadingSince === loadingTimestamp) {
-                        console.error('Dashboard loading state stuck for 15 seconds, forcing reset');
                         get().resetLoadingState();
 
                         // Release the refresh lock
@@ -166,7 +159,7 @@ export const useDashboardStore = create<DashboardState>()(
                         try {
                             const data = await dashboardService.fetchDashboardData();
 
-                            // Create properly structured return object
+                            // Create properly structured return object with consistent types
                             return {
                                 stats: {
                                     totalInventoryValue: data.stats?.totalInventoryValue ?? 0,
@@ -175,19 +168,24 @@ export const useDashboardStore = create<DashboardState>()(
                                     salesGrowth: data.salesData?.salesGrowth ?? 0
                                 },
                                 salesData: data.salesData?.monthlySalesData || [],
-                                categoryStats: data.stats?.categoryStats || [],
-                                recentActivity: (data.recentActivity || []).map((activity: ActivityItem) => ({
-                                    action: activity.title || '',
-                                    item: activity.description || '',
-                                    timestamp: activity.date || '',
-                                    user: ''
-                                })),
+                                categoryStats: data.categoryStats || [],
+                                recentActivity: data.recentActivity || [],
                                 inventoryAlerts: data.inventoryAlerts || [],
                                 topSellingItems: data.topSellingItems || [],
                             };
                         } catch (error) {
+                            // Check if it's an auth error
+                            if (
+                                error instanceof Error &&
+                                (error.message.includes('Auth session missing') ||
+                                    error.message.includes('JWT expired') ||
+                                    error.message.includes('not authenticated') ||
+                                    error.message.includes('Authentication required'))
+                            ) {
+                                throw new Error('Authentication required');
+                            }
+
                             if (retries > 0) {
-                                console.log(`Retrying dashboard data fetch. Attempts remaining: ${retries}`);
                                 await new Promise(resolve => setTimeout(resolve, 1000));
                                 return fetchWithRetry(retries - 1);
                             }
@@ -217,12 +215,10 @@ export const useDashboardStore = create<DashboardState>()(
                             lastUpdated: Date.now(),
                             shouldRefresh: false
                         }));
-                        console.log('Dashboard data updated in store successfully');
 
                         // Release the refresh lock after a short delay
                         setTimeout(() => get().setRefreshLock(false), 1000);
                     } else {
-                        console.log('Fetch completed but update was cancelled');
                         // Still release the lock even if cancelled
                         setTimeout(() => get().setRefreshLock(false), 1000);
                     }
@@ -230,7 +226,14 @@ export const useDashboardStore = create<DashboardState>()(
                     // Clear the timeout since fetch failed
                     clearTimeout(loadingResetTimeout);
 
-                    console.error('Error fetching dashboard data:', error);
+                    // Special handling for auth errors
+                    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dashboard data';
+                    const isAuthError =
+                        error instanceof Error &&
+                        (errorMessage.includes('Authentication required') ||
+                            errorMessage.includes('Auth session missing') ||
+                            errorMessage.includes('JWT expired') ||
+                            errorMessage.includes('not authenticated'));
 
                     // Get current state to check for existing data
                     const currentState = get();
@@ -244,16 +247,9 @@ export const useDashboardStore = create<DashboardState>()(
                         isLoading: false,
                         fetchInProgress: false,
                         loadingSince: null,
-                        error: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
+                        error: isAuthError ? 'Authentication required' : errorMessage,
                         ...(hasExistingData ? {} : initialState),
                         lastUpdated: hasExistingData ? currentState.lastUpdated : null
-                    });
-
-                    console.log('Store state after error:', {
-                        hasExistingData,
-                        statsAvailable: currentState.stats.totalInventoryValue > 0,
-                        salesDataAvailable: currentState.salesData.length > 0,
-                        categoryDataAvailable: currentState.categoryStats.length > 0
                     });
 
                     // Release the refresh lock even on error, but with a delay

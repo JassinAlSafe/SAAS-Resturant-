@@ -26,41 +26,30 @@ export default function AuthCallbackPage() {
       try {
         setIsLoading(true);
 
-        // Get all URL parameters for debugging
-        const allParams = Object.fromEntries(searchParams.entries());
-        console.log("All URL parameters:", allParams);
-
-        // Get the code from URL
+        // Get verification parameters from URL
         const code = searchParams.get("code");
         let emailToUse = searchParams.get("email");
 
-        console.log("Initial verification parameters:", {
+        console.log("Verification parameters:", {
           code: code ? "present" : "missing",
           email: emailToUse || "missing",
         });
 
         // If no email in URL, try to get it from session
         if (!emailToUse) {
-          console.log("No email in URL, checking session...");
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session?.user?.email) {
-            emailToUse = session.user.email;
-            console.log("Found email from session:", emailToUse);
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.user?.email) {
+            emailToUse = data.session.user.email;
           }
         }
 
         // Set email for potential resend
         if (emailToUse) {
           setEmail(emailToUse);
-          console.log("Email set for verification:", emailToUse);
-        } else {
-          console.log("No email found in URL or session");
         }
 
+        // Validate we have both code and email
         if (!code) {
-          console.log("No verification code found in URL");
           setError(
             "No verification code found. Please check your email for a valid verification link."
           );
@@ -69,65 +58,39 @@ export default function AuthCallbackPage() {
         }
 
         if (!emailToUse) {
-          console.log("No email available for verification");
           setError(
-            "Email address is required for verification. Please try logging in again."
+            "Email address is required for verification. Please enter your email below."
           );
           setIsLoading(false);
           return;
         }
 
-        console.log("Proceeding with verification using:", {
+        // Verify the OTP
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
           type: "signup",
           token: code,
           email: emailToUse,
         });
 
-        // Exchange the code for a session
-        const { data, error: exchangeError } = await supabase.auth.verifyOtp({
-          type: "signup",
-          token: code,
-          email: emailToUse,
-        });
-
-        if (exchangeError) {
-          console.error("Error exchanging code:", exchangeError);
-          console.log("Error details:", {
-            message: exchangeError.message,
-            status: exchangeError.status,
-            name: exchangeError.name,
-          });
-
-          if (exchangeError.message?.includes("expired")) {
+        if (verifyError) {
+          if (verifyError.message?.includes("expired")) {
             setError(
               "Your verification link has expired (valid for 1 hour). Please request a new one below."
             );
-          } else if (exchangeError.message?.includes("invalid")) {
+          } else if (verifyError.message?.includes("invalid")) {
             setError(
               "Invalid verification link. Please request a new one below."
             );
           } else {
             setError(
-              exchangeError.message ||
-                "Failed to verify email. Please try again."
+              verifyError.message || "Failed to verify email. Please try again."
             );
           }
-
           setIsLoading(false);
           return;
         }
 
-        console.log("Verification successful, session data:", {
-          hasSession: !!data.session,
-          hasUser: !!data.user,
-          userId: data.user?.id,
-          emailConfirmed: data.user?.email_confirmed_at,
-        });
-
         if (!data.session || !data.user) {
-          console.error(
-            "Missing session or user data after successful verification"
-          );
           setError("Failed to create session. Please try logging in again.");
           setIsLoading(false);
           return;
@@ -144,21 +107,12 @@ export default function AuthCallbackPage() {
             "Your email has been verified. Let's set up your restaurant profile.",
         });
 
-        console.log("Redirecting to onboarding in 2 seconds...");
-
         // Redirect to onboarding after a short delay
         setTimeout(() => {
           router.push("/onboarding");
         }, 2000);
       } catch (err) {
         console.error("Unexpected error during verification:", err);
-        if (err instanceof Error) {
-          console.log("Error details:", {
-            name: err.name,
-            message: err.message,
-            stack: err.stack,
-          });
-        }
         setError(
           "An unexpected error occurred. Please try again or contact support."
         );

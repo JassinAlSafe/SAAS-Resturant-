@@ -16,30 +16,62 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Get authenticated user
+        const { data, error } = await supabase.auth.getUser();
 
-        if (!session) {
+        // Handle auth errors more gracefully
+        if (error) {
+          console.log(
+            "Auth check failed, redirecting to login:",
+            error.message
+          );
           router.push("/login");
           return;
         }
 
-        // Check if user has completed onboarding
-        const { data: profiles } = await supabase
-          .from("business_profiles")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .limit(1);
-
-        if (!profiles || profiles.length === 0) {
-          router.push("/onboarding");
+        if (!data.user) {
+          console.log("No authenticated user, redirecting to login");
+          router.push("/login");
           return;
         }
 
-        setIsLoading(false);
+        // Try to get the business profile
+        try {
+          const { data: profiles, error: profileError } = await supabase
+            .from("business_profiles")
+            .select("id")
+            .eq("user_id", data.user.id)
+            .limit(1);
+
+          if (profileError) {
+            console.error("Error fetching business profile:", profileError);
+            // Only redirect on permission errors, not connection issues
+            if (
+              profileError.code === "PGRST301" ||
+              profileError.code === "42P01" ||
+              profileError.code === "42P17"
+            ) {
+              console.log(
+                "Permission or table error, redirecting to onboarding"
+              );
+              router.push("/onboarding");
+              return;
+            }
+          }
+
+          if (!profiles || profiles.length === 0) {
+            console.log("No business profile found, redirecting to onboarding");
+            router.push("/onboarding");
+            return;
+          }
+
+          setIsLoading(false);
+        } catch (profileError) {
+          console.error("Exception fetching business profile:", profileError);
+          router.push("/onboarding");
+        }
       } catch (error) {
-        console.error("Error checking onboarding status:", error);
+        console.error("Error in checkOnboarding:", error);
         router.push("/login");
       }
     };

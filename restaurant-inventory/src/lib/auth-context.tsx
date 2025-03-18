@@ -79,18 +79,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
+    // Get initial auth state securely
     const initAuth = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        const sessionData = data.session as Session | null;
+        // Always use getUser() for secure authentication validation
+        const { data: userData, error: userError } =
+          await supabase.auth.getUser();
 
-        setSession(sessionData);
-        setUser(sessionData?.user ?? null);
+        if (userError) {
+          console.error("Error getting authenticated user:", userError);
+          setIsLoading(false);
+          return;
+        }
 
-        if (sessionData?.user) {
-          await fetchProfile(sessionData.user.id);
+        if (userData.user) {
+          // Set the authenticated user
+          setUser(userData.user);
+
+          // After confirming authenticated user, we can safely use the tokens
+          // This doesn't create security issues since we've verified the user first
+          const { data: sessionData } = await supabase.auth.getSession();
+          setSession(sessionData.session as Session | null);
+
+          await fetchProfile(userData.user.id);
         } else {
+          setUser(null);
+          setSession(null);
           setIsLoading(false);
         }
       } catch (error) {
@@ -101,19 +115,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
+    // Track current user ID to avoid redundant operations
+    let currentUserId: string | undefined = user?.id;
+
     // Listen for auth changes
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session as Session | null);
-        setUser(session?.user ?? null);
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          // Skip redundant events for the same user
+          if (
+            event === "INITIAL_SESSION" &&
+            session?.user?.id === currentUserId
+          ) {
+            console.log("Skipping redundant INITIAL_SESSION event - same user");
+            return;
+          }
 
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
+          // Update current user reference
+          currentUserId = session?.user?.id;
+
+          // Important: For security in auth state changes, always verify with getUser()
+          // when handling sensitive operations
+          if (session?.user) {
+            const { data: verifiedUser, error } = await supabase.auth.getUser();
+            if (error || !verifiedUser.user) {
+              console.error(
+                "Failed to verify user on auth state change:",
+                error
+              );
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              setIsLoading(false);
+              return;
+            }
+
+            // Only proceed with verified user
+            setUser(verifiedUser.user);
+            setSession(session as Session | null);
+
+            // Add a debouncing mechanism to prevent multiple rapid profile fetches
+            const userId = verifiedUser.user.id;
+            const now = Date.now();
+            const lastFetchTime = window.sessionStorage.getItem(
+              `last_profile_fetch_${userId}`
+            );
+            const fetchThreshold = 3000; // 3 seconds
+
+            if (
+              !lastFetchTime ||
+              now - parseInt(lastFetchTime) > fetchThreshold
+            ) {
+              window.sessionStorage.setItem(
+                `last_profile_fetch_${userId}`,
+                now.toString()
+              );
+              fetchProfile(userId);
+            } else {
+              console.log(
+                "Skipping duplicate profile fetch, too soon after previous fetch"
+              );
+              setIsLoading(false);
+            }
+          } else {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setIsLoading(false);
+          }
         }
-      });
+      );
 
       return () => {
         data.subscription.unsubscribe();
@@ -123,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return () => {};
     }
-  }, []);
+  }, [user?.id]);
 
   // Fetch user profile from the database
   const fetchProfile = async (userId: string) => {
