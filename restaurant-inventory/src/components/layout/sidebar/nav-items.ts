@@ -13,7 +13,7 @@ import {
     FileTextIcon,
     UserIcon,
     CreditCardIcon as BillingIcon,
-
+    ActivityIcon,
 } from "lucide-react";
 
 import { NavItem } from "./types";
@@ -60,6 +60,7 @@ export const navItems: NavItem[] = [
         items: [
             { name: "Users", href: "/users", icon: UserIcon },
             { name: "Billing", href: "/billing", icon: BillingIcon },
+            { name: "Test Connection", href: "/test-connection", icon: ActivityIcon },
         ],
     },
 ]; 

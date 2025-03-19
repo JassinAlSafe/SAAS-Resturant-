@@ -1,10 +1,6 @@
 import { supabase } from '../supabase';
 import type { InventoryItem, InventoryFormData } from '../types';
-
-// Cache for business profile ID
-let cachedBusinessProfileId: string | null = null;
-let cacheExpiry: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+import { getBusinessProfileId } from './business-profile-id';
 
 // Database response type
 type DbIngredient = {
@@ -28,68 +24,8 @@ type DbIngredient = {
     business_profile_id: string;
 };
 
-// Helper function to get business profile ID
-async function getBusinessProfileId() {
-    console.time('getBusinessProfileId');
-
-    // Check if we have a valid cached value
-    const now = Date.now();
-    if (cachedBusinessProfileId && now < cacheExpiry) {
-        console.log('Using cached business profile ID');
-        console.timeEnd('getBusinessProfileId');
-        return cachedBusinessProfileId;
-    }
-
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.timeEnd('getBusinessProfileId');
-            throw new Error("Not authenticated");
-        }
-
-        // First try to get from business_profile_users table
-        const { data: businessProfileData, error: profileError } = await supabase
-            .from('business_profile_users')
-            .select('business_profile_id')
-            .eq('user_id', user.id)
-            .single();
-
-        if (!profileError && businessProfileData) {
-            // Cache the result
-            cachedBusinessProfileId = businessProfileData.business_profile_id;
-            cacheExpiry = now + CACHE_DURATION;
-            console.timeEnd('getBusinessProfileId');
-            return cachedBusinessProfileId;
-        }
-
-        // If that fails, try direct query to business_profiles
-        const { data: businessProfiles, error: profilesError } = await supabase
-            .from('business_profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
-            // Cache the result
-            cachedBusinessProfileId = businessProfiles[0].id;
-            cacheExpiry = now + CACHE_DURATION;
-            console.timeEnd('getBusinessProfileId');
-            return cachedBusinessProfileId;
-        }
-
-        console.warn('No business profile found for user');
-        console.timeEnd('getBusinessProfileId');
-        return null;
-    } catch (error) {
-        console.error('Error in getBusinessProfileId:', error);
-        console.timeEnd('getBusinessProfileId');
-        return null;
-    }
-}
-
-// Transform database response to InventoryItem
-const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
+// Helper function to map database response to InventoryItem type
+function mapDbToInventoryItem(data: DbIngredient): InventoryItem {
     return {
         id: data.id,
         name: data.name,
@@ -98,16 +34,16 @@ const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
         quantity: data.quantity,
         unit: data.unit,
         cost: data.cost,
-        cost_per_unit: data.cost,
         reorder_level: data.reorder_level || 0,
         supplier_id: data.supplier_id || undefined,
         location: data.location || undefined,
         expiry_date: data.expiry_date || undefined,
         image_url: data.image_url || undefined,
         created_at: data.created_at,
-        updated_at: data.updated_at
+        updated_at: data.updated_at,
+        business_profile_id: data.business_profile_id
     };
-};
+}
 
 export const inventoryService = {
     /**
@@ -192,22 +128,16 @@ export const inventoryService = {
     /**
      * Add a new inventory item
      */
-    async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
-        console.time('addItem');
+    async addItem(item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<InventoryItem | null> {
         try {
             if (!supabase) {
                 console.error('Supabase client is not initialized');
-                console.timeEnd('addItem');
                 return null;
             }
 
-            console.time('getBusinessProfileId_in_addItem');
             const businessProfileId = await getBusinessProfileId();
-            console.timeEnd('getBusinessProfileId_in_addItem');
-
             if (!businessProfileId) {
                 console.error("No business profile found");
-                console.timeEnd('addItem');
                 throw new Error("No business profile found");
             }
 
@@ -237,33 +167,16 @@ export const inventoryService = {
                 updated_at: now
             };
 
-            console.time('supabase_insert');
             const { data, error } = await supabase
                 .from('ingredients')
                 .insert(itemData)
-                .select('*')
+                .select()
                 .single();
-            console.timeEnd('supabase_insert');
 
-            if (error) {
-                console.error('Error adding inventory item:', error);
-                console.timeEnd('addItem');
-                throw error;
-            }
-
-            if (!data) {
-                console.error('No data returned from insert operation');
-                console.timeEnd('addItem');
-                return null;
-            }
-
-            // Map the database item to our InventoryItem interface
-            const newItem = mapDbToInventoryItem(data);
-            console.timeEnd('addItem');
-            return newItem;
+            if (error) throw error;
+            return mapDbToInventoryItem(data);
         } catch (error) {
-            console.error('Error in addItem:', error);
-            console.timeEnd('addItem');
+            console.error('Error adding inventory item:', error);
             throw error;
         }
     },

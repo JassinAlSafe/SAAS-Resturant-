@@ -95,63 +95,80 @@ export function setCachedProfile(userId: string, profile: BusinessProfile): void
  * Helper function to convert snake_case database fields to camelCase
  */
 export function transformDatabaseResponse(data: BusinessProfileDatabase): BusinessProfile {
+    // Create the taxSettings object from individual fields
+    const taxSettings = {
+        enabled: data.tax_enabled,
+        rate: data.tax_rate,
+        name: data.tax_name
+    };
+
     return {
         id: data.id,
         name: data.name,
-        type: data.type as BusinessProfile["type"],
-        address: data.address || "",
-        city: data.city || "",
-        state: data.state || "",
-        zipCode: data.zip_code || "",
-        country: data.country || "",
-        phone: data.phone || "",
-        email: data.email || "",
-        website: data.website || "",
-        logo: data.logo || "",
+        type: data.type,
+        email: data.email || '',
+        phone: data.phone || '',
+        website: data.website || '',
+        address: data.address || '',
+        city: data.city || '',
+        state: data.state || '',
+        zipCode: data.zip_code || '',
+        country: data.country || '',
+        logo: data.logo || null,
         operatingHours: data.operating_hours,
-        defaultCurrency: data.default_currency as CurrencyCode,
-        taxRate: data.tax_rate || 0,
-        taxEnabled: data.tax_enabled || false,
-        taxName: data.tax_name || "",
-        taxSettings: {
-            rate: data.tax_rate || 0,
-            enabled: data.tax_enabled || false,
-            name: data.tax_name || "",
-        },
+        defaultCurrency: data.default_currency,
+        taxRate: data.tax_rate,
+        taxEnabled: data.tax_enabled,
+        taxName: data.tax_name,
+        // Add the computed taxSettings based on individual fields
+        taxSettings: taxSettings,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
+        userId: data.user_id,
+        subscriptionPlan: data.subscription_plan,
+        subscriptionStatus: data.subscription_status,
+        maxUsers: data.max_users
     };
 }
 
 /**
  * Helper function to convert camelCase object to snake_case for database
  */
-export function transformForDatabase(data: Partial<BusinessProfile>): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
+export function transformForDatabase(profile: Partial<BusinessProfile>): Partial<BusinessProfileDatabase> {
+    const result: Partial<BusinessProfileDatabase> = {};
 
-    if (data.name !== undefined) result.name = data.name;
-    if (data.type !== undefined) result.type = data.type;
-    if (data.address !== undefined) result.address = data.address;
-    if (data.city !== undefined) result.city = data.city;
-    if (data.state !== undefined) result.state = data.state;
-    if (data.zipCode !== undefined) result.zip_code = data.zipCode;
-    if (data.country !== undefined) result.country = data.country;
-    if (data.phone !== undefined) result.phone = data.phone;
-    if (data.email !== undefined) result.email = data.email;
-    if (data.website !== undefined) result.website = data.website;
-    if (data.logo !== undefined) result.logo = data.logo;
-    if (data.operatingHours !== undefined) result.operating_hours = data.operatingHours;
-    if (data.defaultCurrency !== undefined) result.default_currency = data.defaultCurrency;
-    if (data.taxRate !== undefined) result.tax_rate = data.taxRate;
-    if (data.taxEnabled !== undefined) result.tax_enabled = data.taxEnabled;
-    if (data.taxName !== undefined) result.tax_name = data.taxName;
+    // Handle the mapping of fields
+    if (profile.name !== undefined) result.name = profile.name;
+    if (profile.type !== undefined) result.type = profile.type;
+    if (profile.email !== undefined) result.email = profile.email || null;
+    if (profile.phone !== undefined) result.phone = profile.phone || null;
+    if (profile.website !== undefined) result.website = profile.website || null;
+    if (profile.address !== undefined) result.address = profile.address || null;
+    if (profile.city !== undefined) result.city = profile.city || null;
+    if (profile.state !== undefined) result.state = profile.state || null;
+    if (profile.zipCode !== undefined) result.zip_code = profile.zipCode || null;
+    if (profile.country !== undefined) result.country = profile.country || null;
+    if (profile.logo !== undefined) result.logo = profile.logo;
+    if (profile.operatingHours !== undefined) result.operating_hours = profile.operatingHours;
+    if (profile.defaultCurrency !== undefined) result.default_currency = profile.defaultCurrency;
 
-    // Also handle the nested taxSettings object if present
-    if (data.taxSettings) {
-        if (data.taxSettings.rate !== undefined) result.tax_rate = data.taxSettings.rate;
-        if (data.taxSettings.enabled !== undefined) result.tax_enabled = data.taxSettings.enabled;
-        if (data.taxSettings.name !== undefined) result.tax_name = data.taxSettings.name;
+    // Handle tax fields directly
+    if (profile.taxEnabled !== undefined) result.tax_enabled = profile.taxEnabled;
+    if (profile.taxRate !== undefined) result.tax_rate = profile.taxRate;
+    if (profile.taxName !== undefined) result.tax_name = profile.taxName;
+
+    // If taxSettings is provided, extract its properties
+    if (profile.taxSettings) {
+        if (profile.taxSettings.enabled !== undefined && profile.taxEnabled === undefined) {
+            result.tax_enabled = profile.taxSettings.enabled;
+        }
+        if (profile.taxSettings.rate !== undefined && profile.taxRate === undefined) {
+            result.tax_rate = profile.taxSettings.rate;
+        }
+        if (profile.taxSettings.name !== undefined && profile.taxName === undefined) {
+            result.tax_name = profile.taxSettings.name;
+        }
     }
 
     return result;
-} 
+}

@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Set proper file tracing config
+  outputFileTracingRoot: __dirname,
+  // Set directories configuration
+  distDir: ".next",
   // Remove the redirects configuration since we're using route groups
   // We'll handle the routing through the middleware instead
 

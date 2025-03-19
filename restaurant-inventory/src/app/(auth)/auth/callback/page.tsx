@@ -5,9 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
+import {
+  supabase,
+  checkAuthStatus,
+  handleAuthError,
+  waitForAuthInit,
+} from "@/lib/supabase";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { resetVerificationBanner } from "@/components/auth/EmailVerificationBanner";
+import { checkBusinessProfileAccess } from "@/lib/services/business-profile-user-service";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -21,106 +28,272 @@ export default function AuthCallbackPage() {
   const { toast } = useToast();
   const { setIsEmailVerified } = useAuthStore();
 
+  // Debug helper function
+  const logDebug = (message: string, data?: unknown) => {
+    console.log(`[AUTH CALLBACK] ${message}`, data || "");
+  };
+
   useEffect(() => {
+    logDebug(
+      "Component mounted with search params:",
+      Object.fromEntries(searchParams.entries())
+    );
+
     const handleEmailConfirmation = async () => {
       try {
         setIsLoading(true);
+        logDebug("Started email confirmation process");
+
+        // First ensure auth is initialized to avoid race conditions
+        const authInitialized = await waitForAuthInit();
+        if (!authInitialized) {
+          logDebug(
+            "Warning: Auth system did not initialize within timeout window"
+          );
+        }
 
         // Get verification parameters from URL
         const code = searchParams.get("code");
         let emailToUse = searchParams.get("email");
+        const type = searchParams.get("type") || "signup"; // Default to signup
 
-        console.log("Verification parameters:", {
+        logDebug("URL parameters:", {
           code: code ? "present" : "missing",
-          email: emailToUse || "missing",
+          email: emailToUse,
+          type,
         });
 
-        // If no email in URL, try to get it from session
+        // If no email in URL, try to get it from user data
         if (!emailToUse) {
-          const { data } = await supabase.auth.getSession();
-          if (data.session?.user?.email) {
-            emailToUse = data.session.user.email;
+          try {
+            logDebug("No email in URL, trying to get from user data");
+
+            // Use our improved auth check function
+            const { authenticated, user } = await checkAuthStatus();
+
+            if (!authenticated) {
+              logDebug("User not authenticated");
+            }
+
+            if (user?.email) {
+              emailToUse = user.email;
+              logDebug("Retrieved email from user data:", emailToUse);
+            } else {
+              logDebug("No email found in user data");
+            }
+          } catch (userErr) {
+            logDebug("Failed to get user data:", userErr);
           }
         }
 
         // Set email for potential resend
         if (emailToUse) {
           setEmail(emailToUse);
+          logDebug("Set email for form:", emailToUse);
         }
 
         // Validate we have both code and email
         if (!code) {
-          setError(
-            "No verification code found. Please check your email for a valid verification link."
-          );
+          const errorMsg =
+            "No verification code found. Please check your email for a valid verification link.";
+          logDebug("Error: " + errorMsg);
+          setError(errorMsg);
           setIsLoading(false);
           return;
         }
 
         if (!emailToUse) {
-          setError(
-            "Email address is required for verification. Please enter your email below."
-          );
+          const errorMsg =
+            "Email address is required for verification. Please enter your email below.";
+          logDebug("Error: " + errorMsg);
+          setError(errorMsg);
           setIsLoading(false);
           return;
         }
 
-        // Verify the OTP
+        logDebug("Verifying OTP with:", { email: emailToUse, code, type });
+
+        // Verify the OTP - note the parameter order matters for Supabase API
+        // The token must be in the correct position in the parameter list
         const { data, error: verifyError } = await supabase.auth.verifyOtp({
-          type: "signup",
+          type: type === "signup" ? "signup" : "recovery",
           token: code,
           email: emailToUse,
         });
 
-        if (verifyError) {
-          if (verifyError.message?.includes("expired")) {
-            setError(
-              "Your verification link has expired (valid for 1 hour). Please request a new one below."
-            );
-          } else if (verifyError.message?.includes("invalid")) {
-            setError(
-              "Invalid verification link. Please request a new one below."
-            );
-          } else {
-            setError(
-              verifyError.message || "Failed to verify email. Please try again."
-            );
-          }
-          setIsLoading(false);
-          return;
-        }
-
-        if (!data.session || !data.user) {
-          setError("Failed to create session. Please try logging in again.");
-          setIsLoading(false);
-          return;
-        }
-
-        // Update email verification status
-        setIsEmailVerified(true);
-        setIsSuccess(true);
-
-        // Show success message
-        toast({
-          title: "Email Verified Successfully",
-          description:
-            "Your email has been verified. Let's set up your restaurant profile.",
+        logDebug("OTP verification response:", {
+          success: !verifyError,
+          error: verifyError ? verifyError.message : null,
+          session: data?.session ? "present" : "missing",
+          user: data?.user ? "present" : "missing",
         });
 
-        // Redirect to onboarding after a short delay
-        setTimeout(() => {
-          router.push("/onboarding");
-        }, 2000);
+        if (verifyError) {
+          let errorMsg = "";
+          // Check for 403 status which indicates expired token
+          if (
+            verifyError.status === 403 ||
+            verifyError.message?.includes("expired") ||
+            verifyError.message?.includes("invalid")
+          ) {
+            errorMsg =
+              "Your verification link has expired (valid for 1 hour). Please request a new one below.";
+            // Reset banner visibility to ensure it's shown on the next page
+            resetVerificationBanner();
+          } else if (
+            verifyError.message?.includes("rate limit") ||
+            verifyError.message?.toLowerCase().includes("too many requests")
+          ) {
+            errorMsg =
+              "You've made too many verification attempts. Please wait a few minutes and try again.";
+          } else {
+            errorMsg =
+              verifyError.message ||
+              "Failed to verify email. Please try again.";
+          }
+
+          logDebug("Verification error:", errorMsg);
+          setError(errorMsg);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!data?.session || !data?.user) {
+          const errorMsg =
+            "Failed to create session. Please try logging in again.";
+          logDebug("Error: " + errorMsg);
+          setError(errorMsg);
+          setIsLoading(false);
+          return;
+        }
+
+        // Update email verification status in auth store
+        setIsEmailVerified(true);
+        setIsSuccess(true);
+        logDebug("Email verified successfully in store");
+
+        // Update the user's profile to mark email as confirmed
+        try {
+          logDebug("Updating profile in database");
+
+          // First check if profiles table exists and has the field we need
+          const { data: tableInfo, error: tableError } = await supabase
+            .from("profiles")
+            .select("id")
+            .limit(1);
+
+          if (tableError) {
+            logDebug("Error checking profiles table:", tableError);
+            // Try to recover from session error if present
+            if (
+              tableError.message?.includes("session") ||
+              tableError.message?.includes("JWT")
+            ) {
+              await handleAuthError(tableError);
+            }
+          }
+
+          if (tableInfo) {
+            // Try to update profile's email_confirmed flag
+            const { error: profileUpdateError } = await supabase
+              .from("profiles")
+              .update({ email_confirmed: true })
+              .eq("id", data.user.id);
+
+            if (profileUpdateError) {
+              logDebug(
+                "Could not update profile email_confirmed status:",
+                profileUpdateError
+              );
+              // Try to recover from session error if present
+              if (
+                profileUpdateError.message?.includes("session") ||
+                profileUpdateError.message?.includes("JWT")
+              ) {
+                await handleAuthError(profileUpdateError);
+
+                // Try again after recovery
+                const { error: retryError } = await supabase
+                  .from("profiles")
+                  .update({ email_confirmed: true })
+                  .eq("id", data.user.id);
+
+                if (retryError) {
+                  logDebug("Retry also failed:", retryError);
+                } else {
+                  logDebug("Profile updated successfully after recovery");
+                }
+              }
+            } else {
+              logDebug("Profile updated successfully");
+            }
+          }
+
+          // After email verification is complete, check if the user has a business profile
+          logDebug("Checking for business profile access");
+          const { hasAccess, profiles } = await checkBusinessProfileAccess(
+            data.user.id
+          );
+
+          logDebug(
+            `Business profile check result: hasAccess=${hasAccess}, profiles=${profiles.length}`
+          );
+
+          // Show success message
+          toast({
+            title: "Email Verified Successfully",
+            description: hasAccess
+              ? "Your email has been verified. Redirecting to your dashboard."
+              : "Your email has been verified. Let's set up your restaurant profile now.",
+          });
+          logDebug("Success toast shown");
+
+          // Make sure we clear any "verification needed" banner state
+          resetVerificationBanner();
+
+          // Refresh auth state to ensure it reflects email verification
+          useAuthStore.getState().checkEmailVerification();
+
+          // Redirect to appropriate page based on whether user has a business profile
+          logDebug(
+            `Setting timeout for redirect to ${
+              hasAccess ? "dashboard" : "onboarding"
+            }`
+          );
+          setTimeout(() => {
+            logDebug(
+              `Redirecting to ${hasAccess ? "dashboard" : "onboarding"}`
+            );
+            router.push(hasAccess ? "/dashboard" : "/onboarding");
+          }, 2000);
+        } catch (err) {
+          logDebug("Error updating profile or checking business profile:", err);
+          // Try to recover if it's an auth error
+          if (
+            err instanceof Error &&
+            (err.message.includes("session") || err.message.includes("JWT"))
+          ) {
+            await handleAuthError(err);
+          }
+
+          // Default to onboarding path in case of error
+          setTimeout(() => {
+            logDebug("Redirecting to onboarding (default path after error)");
+            router.push("/onboarding");
+          }, 2000);
+        }
       } catch (err) {
-        console.error("Unexpected error during verification:", err);
+        logDebug("Unexpected error during verification:", err);
         setError(
           "An unexpected error occurred. Please try again or contact support."
         );
       } finally {
         setIsLoading(false);
+        logDebug("Verification process completed");
       }
     };
 
+    // Immediately run the verification when component mounts
     handleEmailConfirmation();
   }, [searchParams, router, toast, setIsEmailVerified]);
 
@@ -137,22 +310,63 @@ export default function AuthCallbackPage() {
 
     try {
       setIsResending(true);
+      logDebug("Starting resend process for email:", email);
 
-      // Create redirect URL with all necessary parameters
+      // Create redirect URL with all necessary parameters for PKCE flow
       const redirectUrl = new URL("/auth/callback", window.location.origin);
       redirectUrl.searchParams.append("type", "signup");
+
+      // Add a random state parameter to prevent CSRF attacks
+      const state = Math.random().toString(36).substring(2);
+      redirectUrl.searchParams.append("state", state);
+
+      // Add email to URL to ensure consistent parameter pass-through
       redirectUrl.searchParams.append("email", email.trim());
 
+      logDebug("Resend redirect URL:", redirectUrl.toString());
+
+      // Attempt to resend verification with proper PKCE flow
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim(),
         options: {
           emailRedirectTo: redirectUrl.toString(),
+          captchaToken: undefined, // Only provide if you're using hCaptcha or reCAPTCHA
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        logDebug("Error resending verification:", error);
 
+        // Specific error handling for common issues
+        if (
+          error.message.toLowerCase().includes("rate limit") ||
+          error.message.toLowerCase().includes("too many requests")
+        ) {
+          toast({
+            title: "Rate Limit Reached",
+            description:
+              "You've requested too many emails recently. Please wait a few minutes before trying again.",
+            variant: "destructive",
+          });
+        } else if (error.message.toLowerCase().includes("already confirmed")) {
+          toast({
+            title: "Email Already Verified",
+            description:
+              "Your email has already been verified. Please sign in to continue.",
+            variant: "default",
+          });
+          // Redirect to sign in after a short delay
+          setTimeout(() => {
+            router.push("/signin");
+          }, 2000);
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      logDebug("Verification email sent successfully");
       setResendSuccess(true);
       toast({
         title: "Verification Email Sent",
@@ -160,7 +374,7 @@ export default function AuthCallbackPage() {
           "Please check your inbox for the new verification link. The link will expire in 1 hour.",
       });
     } catch (error) {
-      console.error("Error resending verification:", error);
+      logDebug("Error resending verification:", error);
       toast({
         title: "Failed to Send",
         description:

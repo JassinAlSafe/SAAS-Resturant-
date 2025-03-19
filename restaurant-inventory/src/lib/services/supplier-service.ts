@@ -1,69 +1,24 @@
 import { supabase } from '@/lib/supabase';
 import { Supplier, SupplierCategory } from '@/lib/types';
+import { getBusinessProfileId } from '@/lib/services/business-profile-id';
 
-// Cache for business profile ID
-let cachedBusinessProfileId: string | null = null;
-let cacheExpiry = 0;
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-
-// Import the getBusinessProfileId helper function
-async function getBusinessProfileId() {
-    console.time('supplier_getBusinessProfileId');
-
-    // Check if we have a valid cached value
-    const now = Date.now();
-    if (cachedBusinessProfileId && now < cacheExpiry) {
-        console.log('Using cached business profile ID in supplier service');
-        console.timeEnd('supplier_getBusinessProfileId');
-        return cachedBusinessProfileId;
-    }
-
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.timeEnd('supplier_getBusinessProfileId');
-            throw new Error("Not authenticated");
-        }
-
-        // First try to get from business_profile_users table
-        const { data: businessProfileData, error: profileError } = await supabase
-            .from('business_profile_users')
-            .select('business_profile_id')
-            .eq('user_id', user.id)
-            .single();
-
-        if (!profileError && businessProfileData) {
-            // Cache the result
-            cachedBusinessProfileId = businessProfileData.business_profile_id;
-            cacheExpiry = now + CACHE_DURATION;
-            console.timeEnd('supplier_getBusinessProfileId');
-            return cachedBusinessProfileId;
-        }
-
-        // If that fails, try direct query to business_profiles
-        const { data: businessProfiles, error: profilesError } = await supabase
-            .from('business_profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
-            // Cache the result
-            cachedBusinessProfileId = businessProfiles[0].id;
-            cacheExpiry = now + CACHE_DURATION;
-            console.timeEnd('supplier_getBusinessProfileId');
-            return cachedBusinessProfileId;
-        }
-
-        console.warn('No business profile found for user in supplier service');
-        console.timeEnd('supplier_getBusinessProfileId');
-        return null;
-    } catch (error) {
-        console.error('Error in supplier getBusinessProfileId:', error);
-        console.timeEnd('supplier_getBusinessProfileId');
-        return null;
-    }
+// Define a type for database supplier records
+interface SupplierRecord {
+    id: string;
+    name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+    address: string;
+    categories: SupplierCategory[];
+    is_preferred: boolean;
+    status: "ACTIVE" | "INACTIVE";
+    rating: number;
+    last_order_date: string | undefined;
+    logo: string | undefined;
+    created_at: string;
+    updated_at: string;
+    business_profile_id: string;
 }
 
 export const supplierService = {
@@ -123,7 +78,7 @@ export const supplierService = {
             console.timeEnd('getSuppliers');
 
             // Transform the data to match our Supplier interface
-            return data.map((item: any) => ({
+            return data.map((item: SupplierRecord) => ({
                 id: item.id,
                 name: item.name,
                 contactName: item.contact_name,
@@ -268,7 +223,7 @@ export const supplierService = {
                 return null;
             }
 
-            const dbUpdates: any = {};
+            const dbUpdates: Record<string, unknown> = {};
             if (updates.name !== undefined) dbUpdates.name = updates.name;
             if (updates.contactName !== undefined) dbUpdates.contact_name = updates.contactName;
             if (updates.email !== undefined) dbUpdates.email = updates.email;

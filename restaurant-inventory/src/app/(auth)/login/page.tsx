@@ -114,18 +114,26 @@ export default function LoginPage() {
         ease: "power2.inOut",
       });
 
+      // Set login timestamp to detect recent logins
+      sessionStorage.setItem("loginTimestamp", Date.now().toString());
+
+      // Attempt to sign in
       await signIn(values.email, values.password);
 
-      // Get redirect URL from session storage or default to dashboard
-      const redirectUrl =
-        sessionStorage.getItem("redirectAfterLogin") || "/dashboard";
-      sessionStorage.removeItem("redirectAfterLogin");
+      // Wait for a brief moment to ensure auth state is updated
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      router.push(redirectUrl);
+      // Check if we're actually authenticated before redirecting
+      if (useAuthStore.getState().isAuthenticated) {
+        console.log("Login successful, redirecting to dashboard");
+        router.push("/dashboard");
+      } else {
+        throw new Error("Authentication failed");
+      }
     } catch (error) {
       console.error("Login error:", error);
 
-      // Reset the form animation if there's an error
+      // Reset the form animation
       gsap.to(formRef.current, {
         opacity: 1,
         scale: 1,
@@ -133,10 +141,21 @@ export default function LoginPage() {
         ease: "power2.out",
       });
 
+      // Handle specific error messages
+      let errorMessage = "An error occurred during login";
+      if (error instanceof Error) {
+        if (error.message === "Invalid login credentials") {
+          errorMessage = "Invalid email or password";
+        } else if (error.message === "Authentication failed") {
+          errorMessage = "Failed to authenticate. Please try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast({
         title: "Login Failed",
-        description:
-          error instanceof Error ? error.message : "Invalid credentials",
+        description: errorMessage,
         variant: "destructive",
       });
     }

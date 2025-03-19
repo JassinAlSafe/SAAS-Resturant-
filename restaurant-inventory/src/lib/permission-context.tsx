@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { useAuth } from "./auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { Permission, ROLE_PERMISSIONS } from "./services/user-service";
 
 type PermissionContextType = {

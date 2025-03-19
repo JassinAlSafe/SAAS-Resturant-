@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
+import { testSupabaseConnection } from "@/lib/utils/supabase-utils";
 import {
   Card,
   CardContent,
@@ -24,13 +25,11 @@ import {
 } from "@/components/ui/select";
 import { Stepper } from "@/components/ui/stepper";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, InfoIcon } from "lucide-react";
+import { Loader2, InfoIcon, MoreVertical } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import {
-  businessProfileService,
-  BusinessType,
-  CurrencyCode,
-} from "@/lib/services/business-profile-service";
+import { useBusinessProfileUserStore } from "@/lib/stores/business-profile-user-store";
+import { BusinessType, CurrencyCode } from "@/lib/types/business-profile";
+import { defaultBusinessProfile } from "@/lib/utils/business-profile-utils";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +38,23 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AlertTriangle } from "lucide-react";
+import { withConnectionCheck } from "@/lib/utils/api-utils";
 
 const STEPS = [
   "Basic Information",
@@ -48,14 +64,20 @@ const STEPS = [
 ];
 
 // Helper function to save form state to localStorage
-const saveToLocalStorage = (key: string, data: any) => {
+const saveToLocalStorage = <T extends Record<string, unknown>>(
+  key: string,
+  data: T
+): void => {
   if (typeof window !== "undefined") {
     localStorage.setItem(key, JSON.stringify(data));
   }
 };
 
 // Helper function to get form state from localStorage
-const getFromLocalStorage = (key: string, defaultValue: any) => {
+const getFromLocalStorage = <T extends Record<string, unknown>>(
+  key: string,
+  defaultValue: T
+): T => {
   if (typeof window !== "undefined") {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : defaultValue;
@@ -73,12 +95,26 @@ const clearOnboardingData = () => {
   }
 };
 
-export default function OnboardingPage() {
+// Updated function to clear and reset onboarding data
+const resetOnboardingData = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("onboarding_basic");
+    localStorage.removeItem("onboarding_contact");
+    localStorage.removeItem("onboarding_business");
+    localStorage.removeItem("onboarding_tax");
+  }
+};
+
+function OnboardingContent() {
   const { toast } = useToast();
   const router = useRouter();
-  const { isAuthenticated, isInitialized } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { createProfileWithUser, checkAccess, hasBusinessProfileAccess } =
+    useBusinessProfileUserStore();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   // Form state with localStorage persistence
   const [basicInfo, setBasicInfo] = useState(() =>
@@ -127,58 +163,63 @@ export default function OnboardingPage() {
   }, [taxSettings]);
 
   useEffect(() => {
-    if (!isInitialized) return;
-
-    const checkAuthAndProfile = async () => {
+    const checkProfile = async () => {
       try {
-        // If not authenticated, redirect to login
-        if (!isAuthenticated) {
+        // If not authenticated, redirect to login (should be handled by AuthGuard already, but just in case)
+        if (!isAuthenticated || !user?.id) {
           router.push("/login");
           return;
         }
 
-        // Always use getUser() rather than getSession() for security
-        const { data, error } = await supabase.auth.getUser();
-        if (error || !data.user) {
-          console.error("Error validating user:", error);
-          router.push("/login");
-          return;
-        }
-
-        // Check if user already has a profile
-        const { data: profiles, error: profileError } = await supabase
-          .from("business_profiles")
-          .select("id")
-          .eq("user_id", data.user.id)
-          .limit(1);
-
-        if (profileError) {
-          console.error("Error checking business profile:", profileError);
+        // Test Supabase connection before proceeding
+        const connectionResult = await testSupabaseConnection();
+        if (!connectionResult) {
+          console.error("Supabase connection test failed before profile check");
           toast({
-            title: "Error",
-            description: "Failed to check business profile. Please try again.",
+            title: "Connection Error",
+            description: "Unable to connect to the database. Please try again.",
             variant: "destructive",
           });
           return;
         }
 
-        if (profiles && profiles.length > 0) {
+        // Check if user already has a business profile
+        await checkAccess(user.id);
+
+        if (hasBusinessProfileAccess) {
           // User already has a profile, skip onboarding
           clearOnboardingData();
           router.push("/dashboard");
         }
       } catch (error) {
-        console.error("Error in auth/profile check:", error);
+        // More detailed error logging
+        console.error("Error in profile check:", {
+          error,
+          message: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          type: error?.constructor?.name,
+        });
+
         toast({
           title: "Error",
-          description: "An unexpected error occurred. Please try again.",
+          description:
+            error instanceof Error
+              ? `Unexpected error: ${error.message}`
+              : "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
       }
     };
 
-    checkAuthAndProfile();
-  }, [isInitialized, isAuthenticated, router, toast]);
+    checkProfile();
+  }, [
+    isAuthenticated,
+    user,
+    router,
+    toast,
+    checkAccess,
+    hasBusinessProfileAccess,
+  ]);
 
   const validateCurrentStep = () => {
     if (currentStep === 0) {
@@ -258,7 +299,8 @@ export default function OnboardingPage() {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      handleSubmit();
+      // Show confirmation dialog instead of immediate submission
+      setShowConfirmation(true);
     }
   };
 
@@ -270,73 +312,117 @@ export default function OnboardingPage() {
 
   const handleSubmit = async () => {
     setIsLoading(true);
+    setShowConfirmation(false);
 
     try {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data.user) {
-        throw new Error("Authentication validation failed");
-      }
+      // Use the withConnectionCheck wrapper to ensure database connectivity
+      await withConnectionCheck(async () => {
+        if (!user?.id) {
+          throw new Error("Authentication error, please try again");
+        }
 
-      // Prepare operating hours with better defaults
-      const operatingHours = {
-        monday: { open: "09:00", close: "22:00", closed: false },
-        tuesday: { open: "09:00", close: "22:00", closed: false },
-        wednesday: { open: "09:00", close: "22:00", closed: false },
-        thursday: { open: "09:00", close: "22:00", closed: false },
-        friday: { open: "09:00", close: "23:00", closed: false },
-        saturday: { open: "10:00", close: "23:00", closed: false },
-        sunday: {
-          open: "10:00",
-          close: "21:00",
-          closed: taxSettings.taxEnabled ? false : true,
-        },
-      };
+        // Prepare the business profile data
+        const profileData = {
+          name: basicInfo.name,
+          type: basicInfo.type,
+          operating_hours: defaultBusinessProfile.operatingHours,
+          default_currency: businessSettings.defaultCurrency,
+          tax_enabled: taxSettings.taxEnabled,
+          tax_rate: taxSettings.taxRate,
+          tax_name: taxSettings.taxName,
+        };
 
-      // Use businessProfileService to create profile
-      const newProfile = await businessProfileService.createBusinessProfile(
-        data.user.id
-      );
+        console.log("Creating business profile for user:", user.id);
 
-      // Update the newly created profile with user's selections
-      await businessProfileService.updateBusinessProfile(newProfile.id, {
-        name: basicInfo.name.trim(),
-        type: basicInfo.type,
-        phone: contactInfo.phone.trim(),
-        website: contactInfo.website.trim(),
-        operatingHours,
-        defaultCurrency: businessSettings.defaultCurrency,
-        taxEnabled: taxSettings.taxEnabled,
-        taxRate: taxSettings.taxEnabled ? taxSettings.taxRate : 0,
-        taxName: taxSettings.taxEnabled
-          ? taxSettings.taxName.trim()
-          : "Sales Tax",
+        // Use our business profile user store to create the profile
+        const profileId = await createProfileWithUser(user.id, profileData);
+
+        if (!profileId) {
+          throw new Error("Failed to create business profile");
+        }
+
+        console.log("Business profile created successfully:", profileId);
+
+        // Update the profile with additional information if needed
+        const additionalUpdates = {
+          phone: contactInfo.phone,
+          website: contactInfo.website,
+        };
+
+        const { error: updateError } = await supabase
+          .from("business_profiles")
+          .update(additionalUpdates)
+          .eq("id", profileId);
+
+        if (updateError) {
+          console.warn("Error updating additional profile details:", {
+            message: updateError?.message || "No message",
+            code: updateError?.code,
+            details: updateError?.details,
+            profileId,
+          });
+          // Non-fatal, continue with the flow
+        }
+
+        // Show success message
+        toast({
+          title: "Onboarding Complete",
+          description:
+            "Welcome to your restaurant dashboard! You're all set to start managing your business.",
+        });
+
+        // Clear onboarding data from localStorage
+        clearOnboardingData();
+
+        // Redirect to dashboard
+        router.push("/dashboard");
       });
-
-      // Show success message
-      toast({
-        title: "Profile Created Successfully",
-        description:
-          "Welcome to your restaurant dashboard! You're all set to start managing your business.",
-      });
-
-      // Clear onboarding data from localStorage
-      clearOnboardingData();
-
-      // Redirect to dashboard
-      router.push("/dashboard");
     } catch (error) {
-      console.error("Error in profile creation:", error);
+      console.error("Error in profile update:", {
+        error,
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+        type: error?.constructor?.name,
+      });
+
       toast({
         title: "Error",
         description:
           error instanceof Error
             ? error.message
-            : "Failed to create your business profile. Please try again.",
+            : "Failed to update your business profile. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    resetOnboardingData();
+    setBasicInfo({
+      name: "",
+      type: BusinessType.CASUAL_DINING,
+    });
+    setContactInfo({
+      phone: "",
+      website: "",
+    });
+    setBusinessSettings({
+      defaultCurrency: CurrencyCode.USD,
+    });
+    setTaxSettings({
+      taxEnabled: false,
+      taxRate: 0,
+      taxName: "Sales Tax",
+    });
+    setCurrentStep(0);
+    setShowResetConfirmation(false);
+
+    toast({
+      title: "Information Reset",
+      description: "Your onboarding information has been reset.",
+    });
   };
 
   const renderStepContent = () => {
@@ -452,11 +538,11 @@ export default function OnboardingPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <InfoIcon className="h-4 w-4 ml-2 text-muted-foreground" />
+                      <InfoIcon className="h-4 w-4 ml-1 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="w-[200px]">
-                        Enter your restaurant's website URL if you have one
+                      <p className="max-w-xs">
+                        Enter your restaurant&apos;s website URL if you have one
                       </p>
                     </TooltipContent>
                   </Tooltip>
@@ -619,9 +705,26 @@ export default function OnboardingPage() {
     <div className="container max-w-2xl py-10">
       <Card className="shadow-lg border-primary/10">
         <CardHeader className="space-y-1 pb-6">
-          <CardTitle className="text-2xl font-bold">
-            Set Up Your Restaurant
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl font-bold">
+              Set Up Your Restaurant
+            </CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                  <span className="sr-only">More options</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setShowResetConfirmation(true)}
+                >
+                  Reset Information
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <CardDescription className="text-base">
             Let&apos;s create your restaurant&apos;s business profile. This will
             be your main workspace for managing your restaurant.
@@ -669,6 +772,83 @@ export default function OnboardingPage() {
           </Button>
         </CardFooter>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Restaurant Setup</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to complete the setup with the current
+              information? You can modify most settings later, but your
+              restaurant type and currency may be harder to change.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowConfirmation(false)}
+            >
+              Review Information
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="sm:min-w-[140px]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Confirm Setup"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog
+        open={showResetConfirmation}
+        onOpenChange={setShowResetConfirmation}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Reset Your Information
+            </DialogTitle>
+            <DialogDescription>
+              This will clear all the information you&apos;ve entered. This
+              action cannot be undone. Are you sure you want to start over?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowResetConfirmation(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleReset}>
+              Reset Everything
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <AuthGuard requireAuth={true}>
+      <OnboardingContent />
+    </AuthGuard>
   );
 }

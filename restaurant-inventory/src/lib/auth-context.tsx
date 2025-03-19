@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { User } from "./types";
 import { useNotificationHelpers } from "./notification-context";
+import { resetVerificationBanner } from "@/components/auth/EmailVerificationBanner";
 
 // Define minimal types to avoid dependencies
 type Session = {
@@ -45,6 +46,7 @@ type AuthContextType = {
     currentPassword: string,
     newPassword: string
   ) => Promise<{ success: boolean; error?: string }>;
+  ensureEmailVerified: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
 
     try {
+      // If email is not verified, force the verification banner to show
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user && !userData.user.email_confirmed_at) {
+        // Reset the banner dismissal when a privileged action is attempted
+        resetVerificationBanner();
+      }
+
       const { data, error } = await supabase
         .from("profiles")
         .select("role")
@@ -82,7 +91,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial auth state securely
     const initAuth = async () => {
       try {
-        // Always use getUser() for secure authentication validation
+        // First check if there's an active session
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!sessionData.session) {
+          // No active session, user is not logged in
+          setUser(null);
+          setSession(null);
+          setIsLoading(false);
+          return;
+        }
+
+        // We have a session, now safely get the user
         const { data: userData, error: userError } =
           await supabase.auth.getUser();
 
@@ -95,12 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (userData.user) {
           // Set the authenticated user
           setUser(userData.user);
-
-          // After confirming authenticated user, we can safely use the tokens
-          // This doesn't create security issues since we've verified the user first
-          const { data: sessionData } = await supabase.auth.getSession();
           setSession(sessionData.session as Session | null);
-
           await fetchProfile(userData.user.id);
         } else {
           setUser(null);
@@ -137,44 +159,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Important: For security in auth state changes, always verify with getUser()
           // when handling sensitive operations
           if (session?.user) {
-            const { data: verifiedUser, error } = await supabase.auth.getUser();
-            if (error || !verifiedUser.user) {
-              console.error(
-                "Failed to verify user on auth state change:",
-                error
+            try {
+              const { data: verifiedUser, error } =
+                await supabase.auth.getUser();
+              if (error || !verifiedUser.user) {
+                console.error(
+                  "Failed to verify user on auth state change:",
+                  error
+                );
+                setUser(null);
+                setSession(null);
+                setProfile(null);
+                setIsLoading(false);
+                return;
+              }
+
+              // Only proceed with verified user
+              setUser(verifiedUser.user);
+              setSession(session as Session | null);
+
+              // Add a debouncing mechanism to prevent multiple rapid profile fetches
+              const userId = verifiedUser.user.id;
+              const now = Date.now();
+              const lastFetchTime = window.sessionStorage.getItem(
+                `last_profile_fetch_${userId}`
               );
+              const fetchThreshold = 3000; // 3 seconds
+
+              if (
+                !lastFetchTime ||
+                now - parseInt(lastFetchTime) > fetchThreshold
+              ) {
+                window.sessionStorage.setItem(
+                  `last_profile_fetch_${userId}`,
+                  now.toString()
+                );
+                fetchProfile(userId);
+              } else {
+                console.log(
+                  "Skipping duplicate profile fetch, too soon after previous fetch"
+                );
+                setIsLoading(false);
+              }
+            } catch (error) {
+              console.error("Error verifying user:", error);
               setUser(null);
               setSession(null);
               setProfile(null);
-              setIsLoading(false);
-              return;
-            }
-
-            // Only proceed with verified user
-            setUser(verifiedUser.user);
-            setSession(session as Session | null);
-
-            // Add a debouncing mechanism to prevent multiple rapid profile fetches
-            const userId = verifiedUser.user.id;
-            const now = Date.now();
-            const lastFetchTime = window.sessionStorage.getItem(
-              `last_profile_fetch_${userId}`
-            );
-            const fetchThreshold = 3000; // 3 seconds
-
-            if (
-              !lastFetchTime ||
-              now - parseInt(lastFetchTime) > fetchThreshold
-            ) {
-              window.sessionStorage.setItem(
-                `last_profile_fetch_${userId}`,
-                now.toString()
-              );
-              fetchProfile(userId);
-            } else {
-              console.log(
-                "Skipping duplicate profile fetch, too soon after previous fetch"
-              );
               setIsLoading(false);
             }
           } else {
@@ -205,7 +236,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // First check if the user exists
+      // First check if we have a valid session
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error("No valid session when fetching profile:", sessionError);
+        setIsLoading(false);
+        return;
+      }
+
+      // Then check if the user exists
       const { data: userData, error: userError } =
         await supabase.auth.getUser();
 
@@ -334,7 +374,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Sign up with email and password
+  /**
+   * Sign up a new user
+   * This function handles:
+   * 1. Creating a new user with Supabase Auth
+   * 2. Setting up email verification
+   * 3. Creating a basic profile
+   *
+   * After sign-up, user will:
+   * - Receive a verification email
+   * - Need to verify their email (callback page handles this)
+   * - Be directed to onboarding to create their business profile
+   */
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
@@ -346,8 +397,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const state = Math.random().toString(36).substring(2);
       redirectUrl.searchParams.append("state", state);
 
+      // Add email as a parameter for easier verification
+      redirectUrl.searchParams.append("email", email);
+
       console.log("Using redirect URL:", redirectUrl.toString());
 
+      // Sign up with PKCE flow for better security
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -356,6 +411,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name,
           },
           emailRedirectTo: redirectUrl.toString(),
+          captchaToken: undefined, // Only provide if using hCaptcha/reCAPTCHA
         },
       });
 
@@ -376,7 +432,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Show success notification with more detailed instructions
       showSuccess(
         "Account Created Successfully",
-        "Please check your email to verify your account. The verification link will expire in 1 hour. You can continue setting up your profile in the meantime."
+        "Please check your email to verify your account. The verification link will expire in 1 hour."
       );
 
       // Create a profile for the new user with basic fields
@@ -569,6 +625,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Add a helper function to check and show verification banner when needed
+  const ensureEmailVerified = async () => {
+    try {
+      // Get latest user data
+      const { data: userData } = await supabase.auth.getUser();
+
+      // If email is not verified, reset banner and return false
+      if (userData?.user && !userData.user.email_confirmed_at) {
+        resetVerificationBanner();
+        showError(
+          "Email Verification Required",
+          "Please verify your email address to access this feature. We've sent a verification link to your email."
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error checking email verification:", error);
+      return false;
+    }
+  };
+
   const value = {
     user,
     profile,
@@ -580,6 +659,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resetPassword,
     updateUserPassword,
+    ensureEmailVerified,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,14 +3,17 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { NotificationProvider } from "@/lib/notification-context";
 import { NotificationContainer } from "@/components/ui/notification";
+import { NotificationProvider } from "@/lib/notification-context";
 import { StoreInitializer } from "@/components/StoreInitializer";
 import { GeistSans } from "geist/font/sans";
 import { Providers } from "@/components/providers";
+import { type ReactNode } from "react";
+import { AuthProvider } from "@/lib/contexts/auth-context";
+import TokenErrorBoundary from "@/components/auth/TokenErrorBoundary";
 
 export const metadata: Metadata = {
-  title: "Restaurant Inventory Manager",
+  title: "Restaurant Inventory Management",
   description: "Manage your restaurant inventory efficiently",
   authors: [{ name: "ShelfWise" }],
   keywords: ["inventory management", "restaurant", "food business"],
@@ -19,11 +22,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -34,20 +37,24 @@ export default function RootLayout({
         )}
       >
         <Providers>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            storageKey="shelfwise-theme"
-          >
-            <NotificationProvider>
-              <StoreInitializer />
-              {children}
-              <Toaster />
-              <NotificationContainer />
-            </NotificationProvider>
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+              storageKey="shelfwise-theme"
+            >
+              <NotificationProvider>
+                <TokenErrorBoundary>
+                  <StoreInitializer />
+                  {children}
+                  <Toaster />
+                  <NotificationContainer />
+                </TokenErrorBoundary>
+              </NotificationProvider>
+            </ThemeProvider>
+          </AuthProvider>
         </Providers>
       </body>
     </html>

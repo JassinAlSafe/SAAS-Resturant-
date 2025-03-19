@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/contexts/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { CurrencyProvider } from "@/lib/currency";
 import { PermissionProvider } from "@/lib/permission-context";
@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { BusinessProfileProvider } from "@/lib/business-profile-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { ApiHealthCheck } from "./ApiHealthCheck";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <PermissionProvider>
             <BusinessProfileProvider>
               <CurrencyProvider>
+                <ApiHealthCheck />
                 {children}
                 <Toaster />
               </CurrencyProvider>
