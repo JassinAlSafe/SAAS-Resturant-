@@ -1,10 +1,7 @@
 import "@/app/globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { NotificationProvider } from "@/lib/notification-context";
-import { NotificationContainer } from "@/components/ui/notification";
 import { StoreInitializer } from "@/components/StoreInitializer";
 import { GeistSans } from "geist/font/sans";
 import { Providers } from "@/components/providers";
@@ -41,12 +38,8 @@ export default function RootLayout({
             disableTransitionOnChange
             storageKey="shelfwise-theme"
           >
-            <NotificationProvider>
-              <StoreInitializer />
-              {children}
-              <Toaster />
-              <NotificationContainer />
-            </NotificationProvider>
+            <StoreInitializer />
+            {children}
           </ThemeProvider>
         </Providers>
       </body>

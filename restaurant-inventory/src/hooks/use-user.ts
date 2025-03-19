@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 

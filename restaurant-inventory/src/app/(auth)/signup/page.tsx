@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -172,11 +172,8 @@ export default function SignupPage() {
         ease: "power2.inOut",
       });
 
-      const result = await signUp(email, password, name);
-
-      if (result.isEmailConfirmationRequired) {
-        setSignupComplete(true);
-      }
+      await signUp(email, password);
+      setSignupComplete(true);
     } catch (error) {
       console.error("Signup error:", error);
 

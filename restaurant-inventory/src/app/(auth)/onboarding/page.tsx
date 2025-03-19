@@ -25,12 +25,8 @@ import {
 import { Stepper } from "@/components/ui/stepper";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, InfoIcon } from "lucide-react";
-import { useAuthStore } from "@/lib/stores/auth-store";
-import {
-  businessProfileService,
-  BusinessType,
-  CurrencyCode,
-} from "@/lib/services/business-profile-service";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { businessProfileService } from "@/lib/services/business-profile-service";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { BusinessType, CurrencyCode } from "@/lib/types/business-profile";
 
 const STEPS = [
   "Basic Information",
@@ -76,7 +73,7 @@ const clearOnboardingData = () => {
 export default function OnboardingPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { isAuthenticated, isInitialized } = useAuthStore();
+  const { isAuthenticated, status } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -127,6 +124,7 @@ export default function OnboardingPage() {
   }, [taxSettings]);
 
   useEffect(() => {
+    const isInitialized = status !== "initializing";
     if (!isInitialized) return;
 
     const checkAuthAndProfile = async () => {
@@ -178,7 +176,7 @@ export default function OnboardingPage() {
     };
 
     checkAuthAndProfile();
-  }, [isInitialized, isAuthenticated, router, toast]);
+  }, [isAuthenticated, router, toast, status]);
 
   const validateCurrentStep = () => {
     if (currentStep === 0) {

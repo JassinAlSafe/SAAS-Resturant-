@@ -1,22 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAuthStore } from "@/lib/stores/auth-store";
 
 /**
  * StoreInitializer component
  *
  * This component initializes all Zustand stores when the app loads.
  * It ensures stores are initialized on the client side only.
+ * Note: Auth is now handled by AuthProvider context instead of the Zustand store.
  */
 export function StoreInitializer() {
-  // Initialize auth store
+  // Initialize stores
   useEffect(() => {
-    // Initialize auth store if not already initialized
-    if (!useAuthStore.getState().isInitialized) {
-      useAuthStore.getState().initialize();
-    }
-
     // Add initialization for other stores here when needed
   }, []);
 

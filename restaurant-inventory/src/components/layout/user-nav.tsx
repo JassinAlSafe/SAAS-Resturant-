@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/ui/logout-button";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/contexts/auth-context";
 import Link from "next/link";
 import { Settings, User } from "lucide-react";
 
 export function UserNav() {
-  const { user } = useAuthStore();
+  const { user } = useAuth();
 
   // Extract user data or use defaults
   const userName =
@@ -69,11 +69,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <LogoutButton
-          className="w-full justify-start"
-          variant="ghost"
-          size="sm"
-        />
+        <LogoutButton />
       </DropdownMenuContent>
     </DropdownMenu>
   );

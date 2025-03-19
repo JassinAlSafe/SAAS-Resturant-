@@ -1,100 +1,293 @@
+// "use client";
+
+// import { useEffect, useState, type ReactNode } from "react";
+// import { useRouter, usePathname } from "next/navigation";
+// import { useAuth } from "@/lib/contexts/auth-context";
+
+// interface AuthGuardProps {
+//   children: ReactNode;
+//   requireAuth?: boolean;
+//   redirectTo?: string;
+// }
+
+// export function AuthGuard({
+//   children,
+//   requireAuth = true,
+//   redirectTo = "/login",
+// }: AuthGuardProps) {
+//   const { isAuthenticated, isLoading, status } = useAuth();
+//   const router = useRouter();
+//   const pathname = usePathname();
+//   const [hasAttemptedRedirect, setHasAttemptedRedirect] = useState(false);
+//   const [renderContent, setRenderContent] = useState(false);
+
+//   // Debug logging function
+//   const logAuthState = () => {
+//     console.log("Auth Guard State:", {
+//       pathname,
+//       requireAuth,
+//       isAuthenticated,
+//       status,
+//       isLoading,
+//       hasAttemptedRedirect,
+//       shouldRender:
+//         (requireAuth && isAuthenticated) || (!requireAuth && !isAuthenticated),
+//     });
+//   };
+
+//   useEffect(() => {
+//     // Reset the redirect flag when pathname changes
+//     if (pathname) {
+//       setHasAttemptedRedirect(false);
+//       logAuthState();
+//     }
+//   }, [pathname]);
+
+//   useEffect(() => {
+//     // Don't make auth decisions while still loading or initializing
+//     if (isLoading || status === "initializing") {
+//       logAuthState();
+//       return;
+//     }
+
+//     // Avoid redirect loops
+//     if (hasAttemptedRedirect) {
+//       logAuthState();
+//       return;
+//     }
+
+//     // Check if we're already on the target redirection page
+//     const isOnRedirectPage = pathname === redirectTo;
+//     const isOnDashboard = pathname === "/dashboard";
+
+//     // Case 1: Page requires auth but user is not authenticated
+//     if (requireAuth && !isAuthenticated) {
+//       logAuthState();
+//       console.log(`User not authenticated, redirecting to ${redirectTo}`);
+
+//       // Don't redirect if already on the redirect page
+//       if (!isOnRedirectPage) {
+//         // Save current path for redirecting back after login
+//         if (typeof window !== "undefined") {
+//           sessionStorage.setItem("redirectAfterLogin", pathname || "");
+//         }
+//         setHasAttemptedRedirect(true);
+//         router.push(redirectTo);
+//       }
+
+//       setRenderContent(false);
+//       return;
+//     }
+
+//     // Case 2: Page doesn't require auth (like login page) but user is already authenticated
+//     if (!requireAuth && isAuthenticated) {
+//       logAuthState();
+//       console.log("User already authenticated, redirecting to dashboard");
+
+//       // Don't redirect if already on the dashboard
+//       if (!isOnDashboard) {
+//         setHasAttemptedRedirect(true);
+//         router.push("/dashboard");
+//       }
+
+//       setRenderContent(false);
+//       return;
+//     }
+
+//     // Case 3: Auth state matches requirements - render the children
+//     setRenderContent(true);
+//     logAuthState();
+//   }, [
+//     isAuthenticated,
+//     isLoading,
+//     status,
+//     pathname,
+//     redirectTo,
+//     requireAuth,
+//     router,
+//     hasAttemptedRedirect,
+//   ]);
+
+//   // Show loading state while auth is initializing or loading
+//   if (isLoading || status === "initializing") {
+//     return (
+//       <div className="flex h-screen w-full items-center justify-center">
+//         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+//       </div>
+//     );
+//   }
+
+//   // Render children only if conditions are met
+//   if (renderContent) {
+//     return <>{children}</>;
+//   }
+
+//   // Show a loading indicator during redirects instead of a blank screen
+//   return (
+//     <div className="flex h-screen w-full items-center justify-center flex-col gap-2">
+//       <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+//       <p className="text-sm text-gray-500">Redirecting...</p>
+//     </div>
+//   );
+// }
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuthStore } from "@/lib/stores/auth-store";
-import { LoginTransition } from "./LoginTransition";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 interface AuthGuardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requireAuth?: boolean;
-  requireVerified?: boolean;
-  publicOnly?: boolean;
+  redirectTo?: string;
 }
 
 export function AuthGuard({
   children,
   requireAuth = true,
-  requireVerified = false,
-  publicOnly = false,
+  redirectTo = "/login",
 }: AuthGuardProps) {
+  const { isAuthenticated, isLoading, status } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [hasAttemptedRedirect, setHasAttemptedRedirect] = useState(false);
+  const [renderContent, setRenderContent] = useState(false);
 
-  // Get auth state from store
-  const { isAuthenticated, isEmailVerified, isInitialized, isLoading } =
-    useAuthStore();
+  // Debug logging function
+  const logAuthState = () => {
+    console.log("AuthGuard State:", {
+      pathname,
+      requireAuth,
+      isAuthenticated,
+      status,
+      isLoading,
+      hasAttemptedRedirect,
+      shouldRender:
+        (requireAuth && isAuthenticated) || (!requireAuth && !isAuthenticated),
+    });
+  };
 
+  // Function to check if current page is an auth page
+  const isAuthPage = () => {
+    if (!pathname) return false;
+    return (
+      pathname.includes("/login") ||
+      pathname.includes("/signup") ||
+      pathname.includes("/register") ||
+      pathname.includes("/forgot-password") ||
+      pathname.includes("/reset-password") ||
+      pathname.includes("/auth/") ||
+      pathname === "/"
+    );
+  };
+
+  // Reset redirect flag when pathname changes
   useEffect(() => {
-    // Don't do anything until auth is initialized
-    if (!isInitialized) return;
+    if (pathname) {
+      setHasAttemptedRedirect(false);
+      setRenderContent(false); // Reset render state on path change
+      logAuthState();
+    }
+  }, [pathname]);
 
-    // Handle redirect logic
-    const handleAuthRedirect = () => {
-      // If this is a public-only route (like login) and user is authenticated
-      if (publicOnly && isAuthenticated) {
-        router.replace("/dashboard");
-        return;
-      }
+  // Main auth logic
+  useEffect(() => {
+    // Wait for auth to initialize before making any decisions
+    if (isLoading || status === "initializing") {
+      logAuthState();
+      return;
+    }
 
-      // If route requires authentication and user is not authenticated
-      if (requireAuth && !isAuthenticated) {
-        // Store the current path to redirect back after login
-        if (pathname !== "/login") {
-          sessionStorage.setItem("redirectAfterLogin", pathname);
+    // Skip redirect logic if we've already attempted a redirect for this path
+    if (hasAttemptedRedirect) {
+      logAuthState();
+      // Once a redirect has been attempted, we can render the content if we're still here
+      setRenderContent(true);
+      return;
+    }
+
+    // Get the current page type
+    const currentIsAuthPage = isAuthPage();
+
+    // Check if we're already on target pages to prevent loops
+    const isOnLoginPage = pathname?.includes("/login");
+    const isOnDashboardPage = pathname?.includes("/dashboard");
+
+    // Case 1: Page requires auth but user is not authenticated
+    if (requireAuth && !isAuthenticated) {
+      logAuthState();
+      console.log(
+        `[AuthGuard] User not authenticated, should redirect to ${redirectTo}`
+      );
+
+      // Only redirect if not already on the login page
+      if (!isOnLoginPage) {
+        // Save current path for redirecting back after login
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("redirectAfterLogin", pathname || "");
         }
-        router.replace("/login");
-        return;
+        setHasAttemptedRedirect(true);
+        router.push(redirectTo);
+      } else {
+        // Already on login page, just render content
+        setRenderContent(true);
       }
+      return;
+    }
 
-      // If route requires email verification and user's email is not verified
-      if (requireAuth && requireVerified && !isEmailVerified) {
-        // Only redirect if not already on a verification-related page
-        if (
-          !pathname.includes("/auth/callback") &&
-          !pathname.includes("/verify-email")
-        ) {
-          router.replace("/verify-email");
-          return;
-        }
+    // Case 2: Page doesn't require auth (like login page) but user is already authenticated
+    if (!requireAuth && isAuthenticated) {
+      logAuthState();
+      console.log(
+        "[AuthGuard] User already authenticated, should redirect to dashboard"
+      );
+
+      // Only redirect if not already on dashboard
+      if (!isOnDashboardPage) {
+        setHasAttemptedRedirect(true);
+        router.push("/dashboard");
+      } else {
+        // Already on dashboard, just render content
+        setRenderContent(true);
       }
+      return;
+    }
 
-      // If we reach here and it's a protected route, show a transition animation
-      if (requireAuth && isAuthenticated && !isTransitioning) {
-        setIsTransitioning(true);
-      }
-    };
-
-    handleAuthRedirect();
+    // Case 3: Auth requirements match current state - render the children
+    logAuthState();
+    console.log("[AuthGuard] Auth requirements met, rendering content");
+    setRenderContent(true);
   }, [
-    isInitialized,
     isAuthenticated,
-    isEmailVerified,
-    requireAuth,
-    requireVerified,
-    publicOnly,
-    router,
+    isLoading,
+    status,
     pathname,
-    isTransitioning,
+    redirectTo,
+    requireAuth,
+    router,
+    hasAttemptedRedirect,
   ]);
 
-  // Show loading state when initializing auth
-  if (!isInitialized || isLoading) {
+  // Show loading state while auth is initializing or loading
+  if (isLoading || status === "initializing") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
-  // Show transition animation when authenticated user is navigating to a protected route
-  if (isTransitioning) {
-    return (
-      <LoginTransition onAnimationComplete={() => setIsTransitioning(false)} />
-    );
+  // Render children only if conditions are met
+  if (renderContent) {
+    return <>{children}</>;
   }
 
-  // Render content when all conditions are met
-  return <>{children}</>;
+  // Show a loading indicator during redirects instead of a blank screen
+  return (
+    <div className="flex h-screen w-full items-center justify-center flex-col gap-2">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <p className="text-sm text-gray-500">Redirecting...</p>
+    </div>
+  );
 }

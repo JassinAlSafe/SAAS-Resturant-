@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermission } from "@/lib/permission-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { User } from "@/lib/types";
@@ -56,7 +56,7 @@ import { AccessDenied } from "@/components/ui/access-denied";
 import { format } from "date-fns";
 
 export default function UsersPage() {
-  const { profile } = useAuth();
+  const { user, hasProfile } = useAuth();
   const { hasPermission } = usePermission();
   const { success, error } = useNotificationHelpers();
 
@@ -387,7 +387,7 @@ export default function UsersPage() {
                             className="h-8 w-8 text-blue-600"
                             onClick={() => openEditDialog(user)}
                             title="Edit role"
-                            disabled={user.id === profile?.id}
+                            disabled={user.id === user?.id}
                           >
                             <FiEdit2 className="h-4 w-4" />
                           </Button>
@@ -397,7 +397,7 @@ export default function UsersPage() {
                             className="h-8 w-8 text-red-600"
                             onClick={() => openDeleteDialog(user)}
                             title="Remove user"
-                            disabled={user.id === profile?.id}
+                            disabled={user.id === user?.id}
                           >
                             <FiTrash2 className="h-4 w-4" />
                           </Button>

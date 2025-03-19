@@ -1,4 +1,7 @@
-@import 'tailwindcss';
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@import "tailwindcss";
 
 @plugin 'tailwindcss-animate';
 
@@ -217,8 +220,19 @@
 
 @layer base {
   :root {
-    /* Font configuration */
-    --font-sans: var(--font-lufga);
+    --font-sans: var(--font-lufga), system-ui, sans-serif;
+
+    --color-border: hsl(var(--border));
+    --color-input: hsl(var(--input));
+    --color-ring: hsl(var(--ring));
+    --color-background: hsl(var(--background));
+    --color-foreground: hsl(var(--foreground));
+
+    --color-primary: hsl(var(--primary));
+    --color-primary-foreground: hsl(var(--primary-foreground));
+
+    --color-secondary: hsl(var(--secondary));
+    --color-secondary-foreground: hsl(var(--secondary-foreground));
 
     /* Core theme colors */
     --background: 0 0% 100%;

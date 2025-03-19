@@ -13,7 +13,7 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Loader2, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 
 export function RestaurantIconsSetup() {

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AlertTriangle, X, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
  * Provides options to resend verification email or dismiss the banner temporarily.
  */
 export function EmailVerificationBanner() {
-  const { user, isEmailVerified } = useAuthStore();
+  const { user, isEmailVerified } = useAuth();
   const [isVisible, setIsVisible] = useState(true);
   const [isResending, setIsResending] = useState(false);
   const { toast } = useToast();

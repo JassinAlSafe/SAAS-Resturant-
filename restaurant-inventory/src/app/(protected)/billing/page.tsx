@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import {
   PaymentMethod,
   Invoice,
@@ -47,7 +47,7 @@ interface ApiError {
 }
 
 export default function BillingPage() {
-  const { user, profile } = useAuth();
+  const { user, hasProfile } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -223,7 +223,8 @@ export default function BillingPage() {
   );
 
   // Check if user has permission to access billing
-  const hasPermission = profile?.role === "owner" || profile?.role === "admin";
+  const hasPermission =
+    hasProfile && (user?.role === "owner" || user?.role === "admin");
 
   // If user doesn't have permission, show access denied
   if (!hasPermission) {

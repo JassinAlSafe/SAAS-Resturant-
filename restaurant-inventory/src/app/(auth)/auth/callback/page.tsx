@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { Loader2, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function AuthCallbackPage() {
@@ -19,7 +19,7 @@ export default function AuthCallbackPage() {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const { toast } = useToast();
-  const { setIsEmailVerified } = useAuthStore();
+  const { setIsEmailVerified } = useAuth();
 
   useEffect(() => {
     const handleEmailConfirmation = async () => {

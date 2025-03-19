@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,11 @@ export default function ForgotPasswordPage() {
         "Reset Link Sent",
         "Password reset link has been sent to your email. Please check your inbox."
       );
-    } catch (error: any) {
-      showError("Reset Failed", error.message || "Failed to send reset email");
+    } catch (error: unknown) {
+      showError(
+        "Reset Failed",
+        error instanceof Error ? error.message : "Failed to send reset email"
+      );
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/contexts/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { CurrencyProvider } from "@/lib/currency";
 import { PermissionProvider } from "@/lib/permission-context";

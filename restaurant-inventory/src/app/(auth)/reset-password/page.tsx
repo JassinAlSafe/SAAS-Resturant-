@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +68,7 @@ function ResetPasswordForm() {
     setIsLoading(true);
 
     try {
-      await updatePassword(token, password);
+      await updatePassword(password);
       setSuccess(true);
       showSuccess(
         "Password Reset",
