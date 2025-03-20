@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { DateRange } from "react-day-picker";
-import { format, eachDayOfInterval } from "date-fns";
+import { format, eachDayOfInterval, parseISO } from "date-fns";
 import { ChartData } from "chart.js";
 
 interface RecipeIngredient {
@@ -77,7 +77,7 @@ export interface ReportMetrics {
 
 import { inventoryService } from './inventory-service';
 import { salesService } from './sales-service';
-import { subDays, parseISO } from 'date-fns';
+import { subDays } from 'date-fns';
 
 interface SalesDataResponse {
     chartData: ChartData<'bar'>;
@@ -98,6 +98,48 @@ interface TopDishInfo {
         unit: string;
     }[];
 }
+
+type DishIngredient = {
+    dish_id: string;
+    ingredient_id: string;
+    quantity: number;
+};
+
+type InventoryUsageReport = {
+    labels: string[];
+    datasets: InventoryUsageDataset[];
+    inventory: InventoryStatus[];
+};
+
+type InventoryUsageDataset = {
+    name: string;
+    data: number[];
+};
+
+type InventoryStatus = {
+    name: string;
+    stock: string;
+    usage: string;
+    depletion: string;
+    depleted: boolean;
+    warning: boolean;
+};
+
+type DishDetails = {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    cost: number;
+    revenue: number;
+    profit: number;
+    ingredients: {
+        id: string;
+        name: string;
+        quantity: number;
+        unit: string;
+    }[];
+};
 
 export const reportsService = {
     /**
@@ -320,97 +362,82 @@ export const reportsService = {
     /**
      * Get detailed information about a specific dish
      */
-    async getDishDetails(dishId: string, dateRange: DateRange): Promise<TopDishInfo | null> {
-        if (!dateRange.from || !dateRange.to) {
-            throw new Error("Invalid date range");
-        }
-
-        const fromDate = format(dateRange.from, "yyyy-MM-dd");
-        const toDate = format(dateRange.to, "yyyy-MM-dd");
-
+    async getDishDetails(dishId: string): Promise<DishDetails> {
         try {
-            // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Get the user's business profile
-            const { data: businessProfile, error: businessError } = await supabase
-                .from('business_profiles')
-                .select('id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (businessError || !businessProfile) {
-                console.error('Error fetching business profile:', businessError);
-                throw new Error('Business profile not found');
-            }
-
-            // Fetch the dish details
-            const { data: dishData, error: dishError } = await supabase
-                .from('recipes')
-                .select('id, name, price, food_cost')
+            // Get the dish details
+            const { data: dish, error: dishError } = await supabase
+                .from('dishes')
+                .select('id, name, description, price, cost')
                 .eq('id', dishId)
-                .eq('business_profile_id', businessProfile.id)
                 .single();
 
-            if (dishError || !dishData) throw dishError || new Error('Dish not found');
+            if (dishError || !dish) {
+                console.error('Error fetching dish:', dishError);
+                throw new Error('Dish not found');
+            }
 
-            // Fetch sales for this dish in the date range
-            const { data: salesData, error: salesError } = await supabase
+            // Get sales for this dish
+            const { data: sales, error: salesError } = await supabase
                 .from('sales')
-                .select('quantity, total_amount, date')
-                .eq('dish_id', dishId)
-                .eq('business_profile_id', businessProfile.id)
-                .gte('date', fromDate)
-                .lte('date', toDate);
+                .select('quantity')
+                .eq('dish_id', dishId);
 
             if (salesError) throw salesError;
 
-            // Fetch the ingredients for this dish
-            const { data: ingredientsData, error: ingredientsError } = await supabase
+            // Get recipe ingredients
+            const { data: dishIngredients, error: ingredientsError } = await supabase
                 .from('dish_ingredients')
-                .select('quantity, ingredients:ingredient_id(id, name, unit)')
+                .select('dish_id, ingredient_id, quantity')
                 .eq('dish_id', dishId);
 
             if (ingredientsError) throw ingredientsError;
 
-            // Calculate total quantity and revenue
-            const totalQuantity = salesData?.reduce((sum, sale) => sum + (sale.quantity || 0), 0) || 0;
-            const totalRevenue = salesData?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
-
-            // Calculate the cost and profit
-            const unitCost = dishData.food_cost || 0;
-            const totalCost = unitCost * totalQuantity;
+            // Calculate total revenue and cost
+            const totalQuantity = sales?.reduce((sum, sale) => sum + (sale.quantity || 0), 0) || 0;
+            const totalRevenue = totalQuantity * dish.price;
+            const totalCost = totalQuantity * (dish.cost || 0);
             const profit = totalRevenue - totalCost;
 
-            return {
-                dishId: dishData.id,
-                dishName: dishData.name,
-                quantity: totalQuantity,
-                revenue: totalRevenue,
-                cost: totalCost,
-                profit: profit,
-                ingredients: ingredientsData?.map(item => ({
-                    id: item.ingredients?.id || '',
-                    name: item.ingredients?.name || 'Unknown',
+            // Create a function to get ingredient details
+            const getIngredientDetails = async (ingredientId: string) => {
+                const item = await inventoryService.getItem(ingredientId);
+                return {
+                    name: item?.name || 'Unknown',
+                    unit: item?.unit || ''
+                };
+            };
+
+            // Map ingredients with details
+            const ingredientsWithDetails = await Promise.all((dishIngredients || []).map(async (item) => {
+                const details = await getIngredientDetails(item.ingredient_id);
+                return {
+                    id: item.ingredient_id || '',
+                    name: details.name,
                     quantity: item.quantity || 0,
-                    unit: item.ingredients?.unit || ''
-                })) || []
+                    unit: details.unit
+                };
+            }));
+
+            return {
+                id: dish.id,
+                name: dish.name,
+                description: dish.description || '',
+                price: dish.price,
+                cost: dish.cost || 0,
+                revenue: totalRevenue,
+                profit: profit,
+                ingredients: ingredientsWithDetails
             };
         } catch (error) {
-            console.error(`Error fetching details for dish ${dishId}:`, error);
-            return null;
+            console.error('Error getting dish details:', error);
+            throw error;
         }
     },
 
     /**
      * Get inventory usage data based on sales and recipes
      */
-    async getInventoryUsageData(dateRange: DateRange) {
+    async getInventoryUsageData(dateRange: DateRange): Promise<InventoryUsageReport> {
         if (!dateRange.from || !dateRange.to) {
             throw new Error("Invalid date range");
         }
@@ -452,11 +479,10 @@ export const reportsService = {
 
             if (salesError) throw salesError;
 
-            // Get recipe ingredients
+            // Get recipe ingredients - without business_profile_id filter
             const { data: dishIngredients, error: ingredientsError } = await supabase
                 .from('dish_ingredients')
-                .select('dish_id, ingredient_id, quantity')
-                .eq('business_profile_id', businessProfile.id);
+                .select('dish_id, ingredient_id, quantity');
 
             if (ingredientsError) throw ingredientsError;
 
@@ -469,11 +495,11 @@ export const reportsService = {
 
             // Create a mapping of ingredients to track usage
             const ingredientUsage: Record<string, {
-                name: string,
-                usage: number[],
-                totalUsage: number,
-                currentStock: number,
-                unit: string,
+                name: string;
+                usage: number[];
+                totalUsage: number;
+                currentStock: number;
+                unit: string;
                 minimumLevel?: number
             }> = {};
 
@@ -485,7 +511,7 @@ export const reportsService = {
                     totalUsage: 0,
                     currentStock: item.quantity,
                     unit: item.unit,
-                    minimumLevel: item.minimum_stock_level
+                    minimumLevel: item.reorder_level // Use reorder_level instead of minimum_stock_level
                 };
             });
 
@@ -498,46 +524,28 @@ export const reportsService = {
                 if (dateIndex === -1) return;
 
                 const relevantIngredients = dishIngredients?.filter(di => di.dish_id === sale.dish_id) || [];
-
+                
                 relevantIngredients.forEach(ingredient => {
-                    if (!ingredient.ingredient_id) return;
-
-                    const ingredientData = ingredientUsage[ingredient.ingredient_id];
-                    if (!ingredientData) return;
-
-                    const usageAmount = (ingredient.quantity || 0) * (sale.quantity || 0);
-                    ingredientData.usage[dateIndex] += usageAmount;
-                    ingredientData.totalUsage += usageAmount;
+                    const ingredientId = ingredient.ingredient_id;
+                    if (ingredientId && ingredientUsage[ingredientId]) {
+                        const usage = (ingredient.quantity || 0) * (sale.quantity || 0);
+                        ingredientUsage[ingredientId].usage[dateIndex] += usage;
+                        ingredientUsage[ingredientId].totalUsage += usage;
+                    }
                 });
             });
 
-            // Filter to top 5 ingredients by usage
-            const topIngredients = Object.entries(ingredientUsage)
-                .filter(([_, data]) => data.totalUsage > 0)
-                .sort((a, b) => b[1].totalUsage - a[1].totalUsage)
-                .slice(0, 5);
-
             // Prepare datasets for chart
-            const datasets = topIngredients.map(([id, data], index) => {
-                const colors = [
-                    { bg: 'rgba(255, 99, 132, 0.2)', border: 'rgba(255, 99, 132, 1)' },
-                    { bg: 'rgba(54, 162, 235, 0.2)', border: 'rgba(54, 162, 235, 1)' },
-                    { bg: 'rgba(255, 206, 86, 0.2)', border: 'rgba(255, 206, 86, 1)' },
-                    { bg: 'rgba(75, 192, 192, 0.2)', border: 'rgba(75, 192, 192, 1)' },
-                    { bg: 'rgba(153, 102, 255, 0.2)', border: 'rgba(153, 102, 255, 1)' },
-                ];
+            const datasets: InventoryUsageDataset[] = Object.values(ingredientUsage)
+                .filter(data => data.totalUsage > 0)
+                .slice(0, 5) // Top 5 ingredients by usage
+                .map(data => ({
+                    name: data.name,
+                    data: data.usage
+                }));
 
-                return {
-                    label: data.name,
-                    data: data.usage,
-                    borderColor: colors[index % colors.length].border,
-                    backgroundColor: colors[index % colors.length].bg,
-                    tension: 0.1
-                };
-            });
-
-            // Calculate depletion rates and prepare inventory summary
-            const inventory = Object.values(ingredientUsage)
+            // Prepare inventory status data
+            const inventory: InventoryStatus[] = Object.values(ingredientUsage)
                 .filter(data => data.totalUsage > 0)
                 .sort((a, b) => b.totalUsage - a.totalUsage)
                 .map(data => {

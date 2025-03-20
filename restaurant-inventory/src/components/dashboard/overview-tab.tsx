@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import {
   FiPackage,
   FiAlertTriangle,
-  FiDollarSign,
   FiTrendingUp,
   FiClock,
   FiShoppingBag,
@@ -15,6 +14,7 @@ import {
   FiActivity,
   FiRefreshCw,
 } from "react-icons/fi";
+import { CiMoneyBill } from "react-icons/ci";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -122,7 +122,7 @@ export function OverviewTab() {
         <StatCard
           title="Monthly Sales"
           value={formattedStats.monthlySales}
-          icon={<FiDollarSign className="h-5 w-5" />}
+          icon={<CiMoneyBill className="h-5 w-5" />}
           variant="success"
           footer={
             <div className="flex items-center justify-between w-full">

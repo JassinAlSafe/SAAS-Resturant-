@@ -147,6 +147,32 @@ export const inventoryService = {
     },
 
     /**
+     * Get a single inventory item by ID
+     */
+    async getItem(id: string): Promise<InventoryItem | null> {
+        try {
+            const businessProfileId = await getBusinessProfileId();
+            
+            const { data, error } = await supabase
+                .from('ingredients')
+                .select('*')
+                .eq('id', id)
+                .eq('business_profile_id', businessProfileId)
+                .single();
+                
+            if (error) {
+                console.error('Error fetching inventory item:', error);
+                return null;
+            }
+            
+            return data ? mapDbToInventoryItem(data as DbIngredient) : null;
+        } catch (error) {
+            console.error('Error in getItem:', error);
+            return null;
+        }
+    },
+
+    /**
      * Get inventory items that will expire soon
      */
     async getSoonToExpireItems(daysThreshold: number = 7): Promise<InventoryItem[]> {

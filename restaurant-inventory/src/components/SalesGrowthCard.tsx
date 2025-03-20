@@ -29,7 +29,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useCurrency } from "@/lib/currency";
+import { useCurrency } from "@/lib/hooks/useCurrency";
 
 // Define bar chart styling variants
 const barVariants = cva(

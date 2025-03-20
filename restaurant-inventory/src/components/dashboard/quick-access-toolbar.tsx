@@ -9,7 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 
 interface QuickAccessToolbarProps {
-  onRefresh: () => void;
+  onRefresh?: () => void;
   isLoading: boolean;
 }
 
@@ -55,19 +55,21 @@ export function QuickAccessToolbar({
           <FiBarChart2 className="mr-1 h-4 w-4" /> Reports
         </Button>
       </div>
-      <div className="ml-auto">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex items-center text-muted-foreground"
-          onClick={onRefresh}
-        >
-          <FiRefreshCw
-            className={`mr-1 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-          />{" "}
-          Refresh
-        </Button>
-      </div>
+      {onRefresh && (
+        <div className="ml-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center text-muted-foreground"
+            onClick={onRefresh}
+          >
+            <FiRefreshCw
+              className={`mr-1 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />{" "}
+            Refresh
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

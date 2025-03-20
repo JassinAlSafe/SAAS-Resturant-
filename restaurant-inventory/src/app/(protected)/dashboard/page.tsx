@@ -55,25 +55,7 @@ function DashboardContent({
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }) {
-  const { isLoading, isInitialLoad, error, refreshData, isDataStale } =
-    useDashboard();
-
-  // Track how long we've been in the loading state
-  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-  useEffect(() => {
-    if (isLoading && loadingStartTime === null) {
-      setLoadingStartTime(Date.now());
-    } else if (!isLoading && loadingStartTime !== null) {
-      setLoadingStartTime(null);
-    }
-
-    // Force exit loading state if it's been loading for too long (30 seconds)
-    if (loadingStartTime && Date.now() - loadingStartTime > 30000) {
-      console.warn("Loading has taken too long, forcing refresh");
-      refreshData();
-      setLoadingStartTime(null);
-    }
-  }, [isLoading, loadingStartTime, refreshData]);
+  const { isLoading, isInitialLoad, error, isDataStale } = useDashboard();
 
   // Show error message if there was an error fetching data
   if (error) {
@@ -84,28 +66,18 @@ function DashboardContent({
             Error Loading Dashboard Data
           </h2>
           <p className="text-red-600 mb-4">{error}</p>
-          <Button
-            onClick={refreshData}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            Try Again
-          </Button>
         </div>
       </div>
     );
   }
 
-  // Show a loading skeleton during initial load
-  if (isInitialLoad) {
-    return <DashboardLoadingState />;
-  }
+  
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
       {/* Header - Using the improved PageHeader component */}
       <PageHeader
         title="Welcome to ShelfWise"
-        onRefresh={refreshData}
         isLoading={isLoading}
         actions={
           <div className="flex items-center gap-2">
@@ -130,7 +102,7 @@ function DashboardContent({
       />
 
       {/* Quick Access Toolbar */}
-      <QuickAccessToolbar onRefresh={refreshData} isLoading={isLoading} />
+      <QuickAccessToolbar isLoading={isLoading} />
 
       {/* Dashboard Tabs */}
       <Tabs defaultValue="overview" className="mb-6">
