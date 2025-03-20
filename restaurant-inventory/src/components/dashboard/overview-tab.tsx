@@ -83,14 +83,6 @@ export function OverviewTab() {
 
   return (
     <div className="space-y-8">
-      {/* Small loading indicator for refreshes when data is already present */}
-      {isLoading && hasData && (
-        <div className="mb-4 flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md text-sm">
-          <FiRefreshCw className="w-4 h-4 mr-2 animate-spin" />
-          Refreshing dashboard data...
-        </div>
-      )}
-
       {/* Keep only one set of stat cards - the more detailed ones with footers */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
         <StatCard

@@ -95,11 +95,42 @@ export async function getBusinessProfileCurrency(): Promise<string> {
     try {
         // First ensure the profile cache is populated
         await getBusinessProfileId();
-        
+
         // Return the cached currency or default to USD
         return businessProfileCache?.currency || 'USD';
     } catch (error) {
         console.error('Error getting business profile currency:', error);
         return 'USD'; // Default to USD if there's an error
+    }
+}
+
+/**
+ * Get the current user's business profile name
+ */
+export async function getBusinessProfileName(): Promise<string> {
+    try {
+        // First, check if we have a valid business profile ID
+        const businessProfileId = await getBusinessProfileId();
+
+        if (!businessProfileId) {
+            return 'My Business'; // Default name if no profile ID
+        }
+
+        // Query to get the business profile name
+        const { data, error } = await supabase
+            .from('business_profiles')
+            .select('name')
+            .eq('id', businessProfileId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching business profile name:', error);
+            return 'My Business';
+        }
+
+        return data?.name || 'My Business';
+    } catch (error) {
+        console.error('Error getting business profile name:', error);
+        return 'My Business'; // Default to generic name if there's an error
     }
 }

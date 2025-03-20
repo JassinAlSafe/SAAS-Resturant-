@@ -19,6 +19,7 @@ import { SalesTab } from "@/components/dashboard/sales-tab";
 // Import our new DashboardDataProvider and hook
 import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
 import { useDashboard } from "@/lib/hooks/useDashboard";
+import { getBusinessProfileName } from "@/lib/services/dashboard/profile-service";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
@@ -56,6 +57,21 @@ function DashboardContent({
   setSearchQuery: (query: string) => void;
 }) {
   const { isLoading, isInitialLoad, error, isDataStale } = useDashboard();
+  const [businessName, setBusinessName] = useState("My Business");
+
+  // Fetch the business name when the component mounts
+  useEffect(() => {
+    const fetchBusinessName = async () => {
+      try {
+        const name = await getBusinessProfileName();
+        setBusinessName(name);
+      } catch (error) {
+        console.error("Error fetching business name:", error);
+      }
+    };
+
+    fetchBusinessName();
+  }, []);
 
   // Show error message if there was an error fetching data
   if (error) {
@@ -71,13 +87,11 @@ function DashboardContent({
     );
   }
 
-  
-
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
       {/* Header - Using the improved PageHeader component */}
       <PageHeader
-        title="Welcome to ShelfWise"
+        title={`Welcome ${businessName}`}
         isLoading={isLoading}
         actions={
           <div className="flex items-center gap-2">
