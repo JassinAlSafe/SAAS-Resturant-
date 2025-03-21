@@ -44,7 +44,7 @@ export function PlanSelector({
 
   // Safe default to monthly if no current subscription
   const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">(
-    currentSubscription?.plan?.interval === "yearly" ? "yearly" : "monthly"
+    currentSubscription?.plan?.interval === "year" ? "yearly" : "monthly"
   );
 
   // Filter plans by billing interval

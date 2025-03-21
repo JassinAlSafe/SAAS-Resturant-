@@ -83,10 +83,11 @@ export default function LoginPage() {
     setResendSuccess(false);
 
     try {
-      await signIn(email, password);
-
-      // Since we've modified the auth-context to not check for email confirmation,
-      // we'll assume the user is confirmed if they can sign in
+      const result = await signIn(email, password);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       // Fade out the form
       await gsap.to(formRef.current, {
@@ -162,10 +163,43 @@ export default function LoginPage() {
   }, [emailForResend, resendingEmail, showSuccess, showError]);
 
   const handleTransitionComplete = () => {
-    startTransition(() => {
-      router.push("/dashboard");
-    });
+    // Get redirect URL from query params if available
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTo = urlParams.get("redirectTo");
+    
+    // Force a hard navigation to dashboard to ensure a full page reload
+    // This helps clear any stale state and ensures proper redirection
+    if (redirectTo && redirectTo.startsWith('/')) {
+      window.location.href = redirectTo;
+    } else {
+      window.location.href = "/dashboard";
+    }
   };
+
+  // Check for URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const logoutParam = urlParams.get("logout");
+    const errorParam = urlParams.get("error");
+
+    if (logoutParam === "success") {
+      // Clear any logout cookies to ensure clean state
+      document.cookie =
+        "logout-in-progress=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
+      document.cookie =
+        "just-logged-out=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0";
+
+      showSuccess(
+        "Logged Out Successfully",
+        "You have been securely logged out of your account."
+      );
+    } else if (errorParam === "logout_failed") {
+      showError(
+        "Logout Issue",
+        "There was an issue during logout. Please try again or clear your browser cookies."
+      );
+    }
+  }, [showSuccess, showError]);
 
   return (
     <div className="relative min-h-screen flex">
@@ -174,40 +208,14 @@ export default function LoginPage() {
         <AuthBackground />
       </div>
 
-      {/* Right side - login form */}
-      <div
-        className="w-full lg:w-1/2 bg-white dark:bg-slate-900 flex flex-col relative"
-        ref={cardRef}
-      >
-        {/* Back to website link */}
-        <Link
-          href="/"
-          className="absolute top-8 left-8 text-sm text-slate-500 hover:text-slate-600 flex items-center gap-2 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
+      {/* Right side - form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
+        <div
+          ref={cardRef}
+          className="w-full max-w-md mx-auto rounded-xl shadow-lg bg-white dark:bg-slate-900 overflow-hidden"
         >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to website
-        </Link>
-
-        {/* Logo - positioned in top right */}
-        <div className="absolute top-8 right-8">
-          <div className="relative h-8 w-8">
-            <Image
-              src={
-                theme === "dark"
-                  ? "/assets/brand/logo-light.png"
-                  : "/assets/brand/logo-dark.png"
-              }
-              alt="ShelfWise Logo"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Form content - centered vertically and horizontally */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-[440px] px-8">
+          {/* Form content */}
+          <div className="p-6 md:p-8">
             <div className="space-y-2 mb-8">
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 Welcome!

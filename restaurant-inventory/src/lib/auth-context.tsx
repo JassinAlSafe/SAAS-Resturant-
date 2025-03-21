@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { User } from "./types";
 import { useNotificationHelpers } from "./notification-context";
+import { authService } from "@/lib/services/auth-service";
 
 // Define minimal types to avoid dependencies
 type Session = {
@@ -103,12 +104,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
         setSession(session as Session | null);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          fetchProfile(session.user.id);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setIsLoading(false);
@@ -255,15 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch the user's profile
       if (data.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", data.user.id)
-          .single();
-
-        if (!profileError && profileData) {
-          setProfile(profileData as User);
-        }
+        await fetchProfile(data.user.id);
       }
 
       return { success: true };
@@ -283,6 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Construct the redirect URL with the correct origin and type parameter
       const redirectUrl = new URL("/auth/callback", window.location.origin);
       redirectUrl.searchParams.append("type", "signup");
+      redirectUrl.searchParams.append("email", encodeURIComponent(email));
 
       // Add a random state parameter to prevent CSRF attacks
       const state = Math.random().toString(36).substring(2);
@@ -296,6 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: {
             name,
+            signup_completed: false,
           },
           emailRedirectTo: redirectUrl.toString(),
         },
@@ -318,38 +315,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Show success notification with more detailed instructions
       showSuccess(
         "Account Created Successfully",
-        "Please check your email to verify your account. The verification link will expire in 1 hour. You can continue setting up your profile in the meantime."
+        "Please check your email to verify your account. The verification link will expire in 1 hour. You'll need to complete your business profile setup after verification."
       );
 
-      // Create a profile for the new user with basic fields
+      // We'll create the profile after email verification in the callback page
+      // This avoids RLS policy violations since the user will be authenticated by then
       if (data.user) {
-        try {
-          // Create a basic profile
-          const profileData = {
-            id: data.user.id,
-            email,
-            name,
-            role: "staff", // Default role
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            email_confirmed: false, // Will be updated after email verification
-          };
-
-          // Insert the profile
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert([profileData], {
-              onConflict: "id",
-              ignoreDuplicates: false,
-            });
-
-          if (profileError) {
-            console.error("Error creating profile:", profileError);
-            // Don't throw here, allow the signup to complete
-          }
-        } catch (profileError) {
-          console.error("Error in profile creation:", profileError);
-        }
+        console.log(
+          "User created successfully, profile will be created after email verification"
+        );
       }
 
       // Check if email confirmation is required
@@ -376,25 +350,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out
   const signOut = async () => {
     try {
-      // Clear local state first
+      // First clear the local state
       setUser(null);
       setProfile(null);
       setSession(null);
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-      
-      // Set a cookie to indicate logout in progress
-      document.cookie = "logout-in-progress=true; path=/; max-age=60";
-      
-      // Force redirect to login page
-      window.location.href = '/login';
+
+      // Then sign out from Supabase
+      await supabase.auth.signOut();
+
+      // Use the auth service for a comprehensive logout
+      await authService.logout();
+
+      // No need to redirect here as the auth service handles it
     } catch (error) {
       console.error("Error signing out:", error);
-      throw error;
+      showError("Logout Failed", "There was an error signing out. Please try again.");
     }
   };
 

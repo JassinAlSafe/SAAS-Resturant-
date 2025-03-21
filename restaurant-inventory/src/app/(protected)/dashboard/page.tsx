@@ -14,24 +14,27 @@ import { getBusinessProfileName } from "@/lib/services/dashboard/profile-service
 import { useAuth } from "@/lib/auth-context";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, session, isLoading } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Check if user is authenticated
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
+    if (!isLoading && !user && !session) {
+      console.log("No user or session found, redirecting to login");
+      // Use window.location for a hard redirect to clear any stale state
+      window.location.href = "/login?redirect=dashboard";
     }
-  }, [user, router]);
+  }, [user, session, isLoading, router]);
 
-  // If not authenticated, show loading state
-  if (!user) {
+  // If loading or not authenticated, show loading state
+  if (isLoading || (!user && !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
         <div className="animate-pulse flex flex-col items-center">
           <div className="h-16 w-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-4"></div>
           <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+          <p className="mt-4 text-slate-500">Loading authentication state...</p>
         </div>
       </div>
     );
@@ -40,7 +43,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="px-4 py-6 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-6">
-        <DashboardContent
+        <DashboardContent 
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />

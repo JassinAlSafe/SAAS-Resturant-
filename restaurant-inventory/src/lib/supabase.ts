@@ -1,6 +1,7 @@
 "use client";
 
 import { createBrowserClient } from '@supabase/ssr';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Initialize the Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -14,7 +15,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create the Supabase client with persistent session handling
-let supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+const supabase: SupabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         persistSession: true,
         storageKey: 'supabase-auth-token',
@@ -35,15 +36,19 @@ try {
     });
 } catch (error) {
     console.error('Error initializing Supabase client:', error);
-    // If there was an error, recreate the client
-    supabase = createBrowserClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder', {
+}
+
+// Function to reinitialize the Supabase client with session persistence disabled
+// This can be called during logout to ensure no session persistence
+export const getLogoutClient = (): SupabaseClient => {
+    return createBrowserClient(supabaseUrl, supabaseAnonKey, {
         auth: {
-            persistSession: true,
+            persistSession: false,
             storageKey: 'supabase-auth-token',
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
         }
     });
-}
+};
 
 export { supabase };

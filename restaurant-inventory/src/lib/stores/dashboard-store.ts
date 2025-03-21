@@ -70,86 +70,6 @@ interface DashboardState {
     updateStats: (stats: Partial<DashboardStats>) => void;
 }
 
-// Mock data for when real data is unavailable
-const mockSalesData = [
-    { month: 'Jan', sales: 4200 },
-    { month: 'Feb', sales: 3800 },
-    { month: 'Mar', sales: 5100 },
-    { month: 'Apr', sales: 4700 },
-    { month: 'May', sales: 5600 },
-    { month: 'Jun', sales: 6200 }
-];
-
-const mockCategoryStats: CategoryStat[] = [
-    { id: '1', name: 'Produce', count: 35, change: 5, iconName: 'Leaf', color: 'green' },
-    { id: '2', name: 'Meat', count: 25, change: -2, iconName: 'Beef', color: 'red' },
-    { id: '3', name: 'Dairy', count: 20, change: 0, iconName: 'Milk', color: 'blue' },
-    { id: '4', name: 'Dry Goods', count: 15, change: 3, iconName: 'Package', color: 'amber' },
-    { id: '5', name: 'Beverages', count: 5, change: 1, iconName: 'Coffee', color: 'purple' }
-];
-
-const mockRecentActivity = [
-    {
-        action: 'New Sale',
-        item: 'Order #1234',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-        user: 'Admin'
-    },
-    {
-        action: 'Inventory Update',
-        item: 'Tomatoes restocked',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
-        user: 'Admin'
-    },
-    {
-        action: 'Low Stock Alert',
-        item: 'Onions below threshold',
-        timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(), // 3 hours ago
-        user: 'System'
-    },
-    {
-        action: 'New Sale',
-        item: 'Order #1233',
-        timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(), // 4 hours ago
-        user: 'Admin'
-    }
-];
-
-const mockInventoryAlerts = [
-    {
-        id: '1',
-        name: 'Tomatoes',
-        currentStock: 2,
-        reorderLevel: 5,
-        expiryDate: null,
-        type: 'low_stock' as const
-    },
-    {
-        id: '2',
-        name: 'Lettuce',
-        currentStock: 3,
-        reorderLevel: 10,
-        expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days from now
-        type: 'expiring' as const
-    },
-    {
-        id: '3',
-        name: 'Milk',
-        currentStock: 4,
-        reorderLevel: 8,
-        expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1).toISOString(), // 1 day from now
-        type: 'expiring' as const
-    }
-];
-
-const mockTopSellingItems = [
-    { name: 'Chicken Breast', quantity: 42 },
-    { name: 'Tomatoes', quantity: 36 },
-    { name: 'Onions', quantity: 28 },
-    { name: 'Rice', quantity: 25 },
-    { name: 'Pasta', quantity: 22 }
-];
-
 const initialState = {
     stats: {
         totalInventoryValue: 0,
@@ -227,24 +147,19 @@ export const useDashboardStore = create<DashboardState>()(
                         topSellingItems: data.topSellingItems || [],
                     };
 
-                    // Check if we have valid data, if not use mock data
-                    const hasValidData = 
-                        dashboardData.salesData.length > 0 && 
-                        dashboardData.stats.totalInventoryValue > 0;
-
-                    // Update the store with fetched data or mock data if real data is empty
+                    // Update the store with fetched data (no mock data for new accounts)
                     set({
-                        stats: hasValidData ? dashboardData.stats : {
-                            totalInventoryValue: 12500,
-                            lowStockItems: 3,
-                            monthlySales: 6200,
-                            salesGrowth: 8
+                        stats: {
+                            totalInventoryValue: dashboardData.stats.totalInventoryValue,
+                            lowStockItems: dashboardData.stats.lowStockItems,
+                            monthlySales: dashboardData.stats.monthlySales,
+                            salesGrowth: dashboardData.stats.salesGrowth
                         },
-                        salesData: dashboardData.salesData.length > 0 ? dashboardData.salesData : mockSalesData,
-                        categoryStats: dashboardData.categoryStats.length > 0 ? dashboardData.categoryStats : mockCategoryStats,
-                        recentActivity: dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity : mockRecentActivity,
-                        inventoryAlerts: dashboardData.inventoryAlerts.length > 0 ? dashboardData.inventoryAlerts : mockInventoryAlerts,
-                        topSellingItems: dashboardData.topSellingItems.length > 0 ? dashboardData.topSellingItems : mockTopSellingItems,
+                        salesData: dashboardData.salesData,
+                        categoryStats: dashboardData.categoryStats,
+                        recentActivity: dashboardData.recentActivity,
+                        inventoryAlerts: dashboardData.inventoryAlerts,
+                        topSellingItems: dashboardData.topSellingItems,
                         isLoading: false,
                         fetchInProgress: false,
                         error: null,
@@ -256,27 +171,27 @@ export const useDashboardStore = create<DashboardState>()(
                 } catch (error) {
                     console.error('Error fetching dashboard data:', error);
                     
-                    // On error, use mock data instead of showing an error state
+                    // On error, show empty data instead of mock data
                     set({
                         stats: {
-                            totalInventoryValue: 12500,
-                            lowStockItems: 3,
-                            monthlySales: 6200,
-                            salesGrowth: 8
+                            totalInventoryValue: 0,
+                            lowStockItems: 0,
+                            monthlySales: 0,
+                            salesGrowth: 0
                         },
-                        salesData: mockSalesData,
-                        categoryStats: mockCategoryStats,
-                        recentActivity: mockRecentActivity,
-                        inventoryAlerts: mockInventoryAlerts,
-                        topSellingItems: mockTopSellingItems,
+                        salesData: [],
+                        categoryStats: [],
+                        recentActivity: [],
+                        inventoryAlerts: [],
+                        topSellingItems: [],
                         isLoading: false,
                         fetchInProgress: false,
-                        error: null, // Don't set error so UI doesn't show error state
+                        error: 'Failed to load dashboard data. Please try again later.',
                         lastUpdated: Date.now(),
                         shouldRefresh: false // Reset the refresh flag
                     });
                     
-                    console.log('Using mock data due to fetch error');
+                    console.log('Using empty data due to fetch error');
                 }
             },
 

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { authService } from "@/lib/services/auth-service";
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -11,25 +11,12 @@ export default function LogoutPage() {
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Clear any auth cookies
-        document.cookie = "sb-access-token=; path=/; max-age=0";
-        document.cookie = "sb-refresh-token=; path=/; max-age=0";
-        document.cookie = "supabase-auth-token=; path=/; max-age=0";
-        
-        // Sign out from Supabase
-        await supabase.auth.signOut();
-        
-        // Set a special cookie to prevent redirect loops
-        document.cookie = "just-logged-out=true; path=/; max-age=30";
-        
-        // Redirect to login page after a short delay
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 500);
+        // Use the centralized auth service to handle logout
+        await authService.logout();
       } catch (error) {
         console.error("Error during logout:", error);
         // Redirect to login even if there's an error
-        window.location.href = "/login";
+        window.location.href = "/login?error=logout_failed";
       }
     };
 
@@ -37,9 +24,14 @@ export default function LogoutPage() {
   }, [router]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="mt-4 text-muted-foreground">Logging you out...</p>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <h1 className="text-2xl font-semibold mb-2">Logging out...</h1>
+        <p className="text-muted-foreground">
+          Please wait while we securely log you out.
+        </p>
+      </div>
     </div>
   );
 }

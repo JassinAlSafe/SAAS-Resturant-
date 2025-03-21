@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { lufga } from "@/lib/fonts";
@@ -45,16 +44,8 @@ export default function RootLayout({
         )}
       >
         <Providers>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            storageKey="shelfwise-theme"
-          >
-            {children}
-            <Sonner />
-          </ThemeProvider>
+          {children}
+          <Sonner />
         </Providers>
       </body>
     </html>

@@ -71,10 +71,10 @@ export default function AuthCallbackPage() {
               toast({
                 title: "Already Verified",
                 description:
-                  "Your email was already verified. Proceeding to dashboard.",
+                  "Your email was already verified. Proceeding to onboarding.",
               });
               setTimeout(() => {
-                router.push("/dashboard");
+                router.push("/onboarding");
               }, 2000);
               return;
             }
@@ -97,7 +97,7 @@ export default function AuthCallbackPage() {
             // Pre-fill the email field if available from the URL
             const emailFromUrl = searchParams.get("email");
             if (emailFromUrl) {
-              setEmail(emailFromUrl);
+              setEmail(decodeURIComponent(emailFromUrl));
             }
           } else {
             setError(
@@ -110,20 +110,10 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // DEBUG: Log all URL parameters to see what's actually there
-        console.log(
-          "URL search params:",
-          Object.fromEntries([...searchParams.entries()])
-        );
-        console.log(
-          "URL hash params:",
-          Object.fromEntries([...hashParams.entries()])
-        );
-
         // Extract parameters using Supabase's newer auth flow (with code parameter)
         const code = searchParams.get("code");
         const type = searchParams.get("type") as EmailOtpType | null;
-        const next = searchParams.get("next") || "/dashboard";
+        const next = searchParams.get("next") || "/onboarding"; // Default to onboarding instead of dashboard
 
         console.log("Auth parameters:", { code, type });
 
@@ -144,10 +134,10 @@ export default function AuthCallbackPage() {
           toast({
             title: "Already Verified",
             description:
-              "Your email was already verified. Proceeding to dashboard.",
+              "Your email was already verified. Proceeding to onboarding.",
           });
           setTimeout(() => {
-            router.push("/dashboard");
+            router.push("/onboarding");
           }, 2000);
           return;
         }
@@ -172,10 +162,10 @@ export default function AuthCallbackPage() {
                 toast({
                   title: "Verification Successful",
                   description:
-                    "Your email has been verified. Proceeding to dashboard.",
+                    "Your email has been verified. Proceeding to onboarding.",
                 });
                 setTimeout(() => {
-                  router.push("/dashboard");
+                  router.push("/onboarding");
                 }, 2000);
                 return;
               }
@@ -211,7 +201,7 @@ export default function AuthCallbackPage() {
             toast({
               title: "Email Verified Successfully",
               description:
-                "Your email has been verified. You can now access all features.",
+                "Your email has been verified. Let's complete your business profile setup.",
               variant: "default",
             });
 
@@ -219,22 +209,86 @@ export default function AuthCallbackPage() {
             if (type === "signup" || !type) {
               try {
                 if (data.user) {
-                  // Use upsert to create or update the profile
+                  // First check if a profile exists
+                  const { data: profileData, error: profileCheckError } =
+                    await supabase
+                      .from("profiles")
+                      .select("*")
+                      .eq("id", data.user.id)
+                      .maybeSingle();
+
+                  if (profileCheckError) {
+                    console.error("Error checking profile:", profileCheckError);
+                  }
+
+                  // Create or update the profile
+                  const profileUpdateData = {
+                    id: data.user.id,
+                    email: data.user.email,
+                    email_confirmed: true,
+                    role: "owner",
+                    // If we have existing profile data, use the name from there, otherwise try to get it from user metadata
+                    name:
+                      profileData?.name ||
+                      data.user.user_metadata?.name ||
+                      "User",
+                  };
+
                   const { error: upsertError } = await supabase
                     .from("profiles")
-                    .upsert(
-                      {
-                        id: data.user.id,
-                        email: data.user.email,
-                        email_confirmed: true,
-                        // Set other required fields with default values
-                        role: "staff",
-                      },
-                      { onConflict: "id", ignoreDuplicates: false }
-                    );
+                    .upsert(profileUpdateData, {
+                      onConflict: "id",
+                      ignoreDuplicates: true, // This will ignore duplicate key errors
+                    });
 
                   if (upsertError) {
                     console.error("Error updating profile:", upsertError);
+                    // Continue anyway - don't block the flow if profile update fails
+                    console.log("Continuing despite profile update error");
+                  } else {
+                    console.log("Profile updated successfully");
+                  }
+
+                  // Check if a business profile exists for this user
+                  const { data: businessData, error: businessError } =
+                    await supabase
+                      .from("business_profiles")
+                      .select("id")
+                      .eq("user_id", data.user.id)
+                      .maybeSingle();
+
+                  if (businessError) {
+                    console.error(
+                      "Error checking business profile:",
+                      businessError
+                    );
+                    // Continue anyway - don't block the flow
+                  } else if (!businessData) {
+                    // Create a placeholder business profile with minimal fields
+                    const { error: createBusinessError } = await supabase
+                      .from("business_profiles")
+                      .insert({
+                        user_id: data.user.id,
+                        name: "My Restaurant", // Default name that will be updated during onboarding
+                        default_currency: "USD", // Default currency that will be updated during onboarding
+                        type: "restaurant", // Default type
+                      });
+
+                    if (createBusinessError) {
+                      console.error(
+                        "Error creating placeholder business profile:",
+                        createBusinessError
+                      );
+                      // Continue anyway - don't block the flow
+                    } else {
+                      console.log(
+                        "Successfully created placeholder business profile"
+                      );
+                    }
+                  } else {
+                    console.log(
+                      "Business profile already exists, skipping creation"
+                    );
                   }
                 }
               } catch (updateError) {
@@ -245,7 +299,7 @@ export default function AuthCallbackPage() {
               }
             }
 
-            // Redirect to the next URL after a short delay
+            // Redirect to the onboarding page after a short delay
             setTimeout(() => {
               router.push(next);
             }, 2000);
@@ -292,6 +346,7 @@ export default function AuthCallbackPage() {
       // Create a redirect URL with the type parameter
       const redirectUrl = new URL("/auth/callback", window.location.origin);
       redirectUrl.searchParams.append("type", "signup");
+      redirectUrl.searchParams.append("email", email.trim());
 
       console.log("Resending with redirect URL:", redirectUrl.toString());
 
@@ -358,18 +413,18 @@ export default function AuthCallbackPage() {
             </p>
             <div className="mt-4 flex flex-col space-y-3 w-full">
               <Button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/onboarding")}
                 className="w-full flex items-center justify-center"
               >
-                Go to Dashboard
+                Complete Your Onboarding
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push("/settings")}
+                onClick={() => router.push("/dashboard")}
                 className="w-full"
               >
-                Complete Your Profile
+                Skip to Dashboard
               </Button>
             </div>
           </div>

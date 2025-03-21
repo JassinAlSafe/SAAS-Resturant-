@@ -136,12 +136,22 @@ export default function SignupPage() {
       feedback.push("Add uppercase letters");
     }
 
-    // Contains numbers or special characters
-    if (/[0-9!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      strength += 25;
+    // Contains numbers
+    if (/[0-9]/.test(password)) {
+      strength += 15;
     } else {
-      feedback.push("Add numbers or special characters");
+      feedback.push("Add numbers");
     }
+    
+    // Contains special characters
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      strength += 10;
+    } else {
+      feedback.push("Add special characters");
+    }
+
+    // Ensure strength is capped at 100
+    strength = Math.min(strength, 100);
 
     setPasswordStrength(strength);
     setPasswordFeedback(feedback.join(", "));
@@ -261,13 +271,12 @@ export default function SignupPage() {
                       </li>
                       <li>Click the link to verify your email address</li>
                       <li>
-                        Once verified, you&apos;ll have full access to all
-                        features
+                        Complete your business profile setup in the onboarding process
                       </li>
                     </ol>
                     <p className="mt-2">
-                      You can continue to the dashboard now, but some features
-                      may be limited until you verify your email.
+                      The verification link will expire in 1 hour. Please verify your email 
+                      to access all features of your account.
                     </p>
                   </div>
                 </div>
@@ -275,10 +284,10 @@ export default function SignupPage() {
 
               <div className="space-y-3">
                 <Button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={() => router.push("/login")}
                   className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-xs"
                 >
-                  Continue to Dashboard
+                  Go to Login
                 </Button>
                 <Button
                   variant="outline"
@@ -534,4 +543,3 @@ export default function SignupPage() {
     </div>
   );
 }
-  
