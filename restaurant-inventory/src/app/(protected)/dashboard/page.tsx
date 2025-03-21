@@ -43,10 +43,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <div className="px-4 py-6 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-6">
-        <DashboardContent 
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
+        <DashboardDataProvider autoRefresh={true}>
+          <DashboardContent 
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        </DashboardDataProvider>
       </div>
     </div>
   );
@@ -182,52 +184,50 @@ function DashboardContent({
       </div>
 
       {/* Main content */}
-      <DashboardDataProvider>
-        <Tabs defaultValue="overview" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <TabsList className="bg-slate-100 p-0 h-auto shadow-none border-0 rounded-lg">
-              <TabsTrigger 
-                value="overview" 
-                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger 
-                value="inventory"
-                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-              >
-                Inventory
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sales"
-                className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-              >
-                Sales
-              </TabsTrigger>
-            </TabsList>
-            
-            <button 
-              onClick={() => refresh()} 
-              className="flex items-center text-slate-600 hover:text-primary text-sm"
+      <Tabs defaultValue="overview" className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList className="bg-slate-100 p-0 h-auto shadow-none border-0 rounded-lg">
+            <TabsTrigger 
+              value="overview" 
+              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
             >
-              <FiRefreshCw className="h-4 w-4 mr-1" />
-              Refresh
-            </button>
-          </div>
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="inventory"
+              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
+            >
+              Inventory
+            </TabsTrigger>
+            <TabsTrigger 
+              value="sales"
+              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
+            >
+              Sales
+            </TabsTrigger>
+          </TabsList>
+          
+          <button 
+            onClick={() => refresh()} 
+            className="flex items-center text-slate-600 hover:text-primary text-sm"
+          >
+            <FiRefreshCw className="h-4 w-4 mr-1" />
+            Refresh
+          </button>
+        </div>
 
-          <TabsContent value="overview" className="mt-4">
-            <OverviewTab />
-          </TabsContent>
+        <TabsContent value="overview" className="mt-4">
+          <OverviewTab />
+        </TabsContent>
 
-          <TabsContent value="inventory" className="mt-4">
-            <InventoryTab />
-          </TabsContent>
+        <TabsContent value="inventory" className="mt-4">
+          <InventoryTab />
+        </TabsContent>
 
-          <TabsContent value="sales" className="mt-4">
-            <SalesTab />
-          </TabsContent>
-        </Tabs>
-      </DashboardDataProvider>
+        <TabsContent value="sales" className="mt-4">
+          <SalesTab />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }

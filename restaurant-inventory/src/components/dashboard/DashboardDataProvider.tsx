@@ -38,7 +38,6 @@ export function DashboardDataProvider({
     error,
     refresh,
     hasData,
-    lastUpdated,
   } = useDashboard(autoRefresh, refreshInterval);
 
   // Helper for safe refreshing - wrapped in useCallback to prevent recreation on each render
@@ -51,125 +50,123 @@ export function DashboardDataProvider({
       retryTimeoutRef.current = undefined;
     }
 
-    // Add a small delay for UI feedback
+    // Reset loading start time
+    loadingStartTimeRef.current = Date.now();
+
+    // Trigger refresh
+    refresh();
+
+    // Reset retry state after a delay
     setTimeout(() => {
-      refresh();
+      setIsRetrying(false);
+      setHasRetried(true);
+    }, 1000);
+  }, [refresh]);
 
-      // Reset retrying state after a short delay
-      setTimeout(() => {
-        setIsRetrying(false);
-        setHasRetried(true);
-      }, 500);
-    }, 100);
-  }, [refresh, setIsRetrying, setHasRetried]);
-
-  // Set up automatic retry on error
+  // Effect to handle loading timeout
   useEffect(() => {
-    if (error && !isRetrying) {
-      // Clear any existing timeout
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
-
-      // Set new timeout for retry
-      retryTimeoutRef.current = setTimeout(() => {
-        console.log("Auto-retrying dashboard data fetch due to error...");
-        triggerRefresh();
-      }, RETRY_INTERVAL);
-    } else if (!error) {
-      // Reset retry flag when error resolves
-      setHasRetried(false);
+    // Track loading start time
+    if (isLoading && !loadingStartTimeRef.current) {
+      loadingStartTimeRef.current = Date.now();
+    } else if (!isLoading) {
+      loadingStartTimeRef.current = null;
     }
 
+    // If loading takes too long, set up auto-retry
+    if (isLoading && loadingStartTimeRef.current) {
+      const loadingDuration = Date.now() - loadingStartTimeRef.current;
+      
+      if (loadingDuration > MAX_LOADING_DURATION && !retryTimeoutRef.current && !isRetrying) {
+        console.log(`Dashboard loading timeout after ${loadingDuration}ms, scheduling auto-retry`);
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          console.log('Auto-retrying dashboard data fetch');
+          triggerRefresh();
+          retryTimeoutRef.current = undefined;
+        }, RETRY_INTERVAL);
+      }
+    }
+
+    // Cleanup on unmount
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = undefined;
       }
     };
-  }, [error, isRetrying, triggerRefresh]);
+  }, [isLoading, isRetrying, triggerRefresh]);
 
-  // Track loading time and prevent endless loading states
-  useEffect(() => {
-    if (isLoading) {
-      if (loadingStartTimeRef.current === null) {
-        loadingStartTimeRef.current = Date.now();
-      } else if (
-        Date.now() - loadingStartTimeRef.current >
-        MAX_LOADING_DURATION
-      ) {
-        console.warn("Loading taking too long, forcing refresh");
-        triggerRefresh();
-      }
-    } else {
-      loadingStartTimeRef.current = null;
-    }
-  }, [isLoading, triggerRefresh]);
-
-  // Show loading state during initial load
-  if (isInitialLoad && showLoading) {
+  // If there's an error and we've already retried, show error state
+  if (error && hasRetried) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] bg-background rounded-md border p-6">
-        <LoadingSpinner className="h-8 w-8 mb-4" />
-        <span className="text-sm text-muted-foreground">
-          Loading dashboard data...
-        </span>
-      </div>
-    );
-  }
-
-  // Show error state with retry button
-  if (error && showLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-6 bg-destructive/10 rounded-md border border-destructive/20 min-h-[300px]">
-        <FiAlertCircle className="h-10 w-10 text-destructive mb-4" />
-        <p className="text-center text-destructive font-medium mb-2">
-          Failed to load dashboard data
+      <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+        <FiAlertCircle className="w-12 h-12 text-red-500" />
+        <h2 className="text-xl font-semibold text-gray-800">Failed to load dashboard data</h2>
+        <p className="text-gray-600 max-w-md">
+          {error || "There was a problem loading your dashboard. Please try again."}
         </p>
-        <p className="text-center text-muted-foreground text-sm mb-4 max-w-md">
-          {error}
-        </p>
-        <Button
-          onClick={triggerRefresh}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
+        <Button 
+          onClick={triggerRefresh} 
+          variant="outline" 
+          className="mt-4"
           disabled={isRetrying}
         >
-          <FiRefreshCw
-            className={`h-4 w-4 ${isRetrying ? "animate-spin" : ""}`}
-          />
-          {isRetrying
-            ? "Retrying..."
-            : hasRetried
-            ? "Retry Again"
-            : "Retry Now"}
+          {isRetrying ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Retrying...
+            </>
+          ) : (
+            <>
+              <FiRefreshCw className="mr-2" />
+              Retry
+            </>
+          )}
         </Button>
-        {lastUpdated && (
-          <p className="text-xs text-muted-foreground mt-4">
-            Last successful update: {new Date(lastUpdated).toLocaleTimeString()}
-          </p>
-        )}
       </div>
     );
   }
 
-  // Only show a loading overlay for initial load with no data
-  if (isLoading && !hasData && showLoading) {
+  // If we're still loading and should show loading state
+  if ((isLoading || isInitialLoad) && showLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <LoadingSpinner className="h-8 w-8" />
-        <span className="ml-2 text-sm text-muted-foreground">
-          Loading dashboard data...
-        </span>
+      <div className="flex flex-col items-center justify-center p-8 space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-gray-600">Loading dashboard data...</p>
       </div>
     );
   }
 
-  // For normal refreshes with existing data, render children
-  // without any loading indicator
-  return (
-    <div className="relative">
-      {children}
-    </div>
-  );
+  // If we have no data but we're not loading, show empty state
+  if (!hasData && !isLoading && !isInitialLoad) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+        <h2 className="text-xl font-semibold text-gray-800">No dashboard data available</h2>
+        <p className="text-gray-600 max-w-md">
+          We couldn&apos;t find any data for your dashboard. This could be because your account is new or there&apos;s no activity yet.
+        </p>
+        <Button 
+          onClick={triggerRefresh} 
+          variant="outline" 
+          className="mt-4"
+          disabled={isRetrying}
+        >
+          {isRetrying ? (
+            <>
+              <LoadingSpinner size="sm" className="mr-2" />
+              Refreshing...
+            </>
+          ) : (
+            <>
+              <FiRefreshCw className="mr-2" />
+              Refresh
+            </>
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // Render children with data
+  return <>{children}</>;
 }

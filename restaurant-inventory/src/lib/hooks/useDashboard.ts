@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useDashboardStore } from '@/lib/stores/dashboard-store';
 import { useCurrency } from '@/lib/hooks/useCurrency';
 
@@ -42,9 +42,41 @@ export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFR
     const isRefreshingRef = useRef(false);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const localLastRefreshTime = useRef(globalLastRefreshTime);
+    
+    // Track local state for better debugging
+    const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number | null>(null);
+    const [refreshCount, setRefreshCount] = useState(0);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // Check if we have meaningful data
-    const hasData = stats.totalInventoryValue > 0 || salesData.length > 0 || categoryStats.length > 0;
+    const hasData = useCallback(() => {
+        // Check if we have any sales data
+        const hasSalesData = salesData && salesData.length > 0;
+        
+        // Check if we have any stats data
+        const hasStatsData = stats && (
+            stats.totalInventoryValue > 0 || 
+            stats.lowStockItems > 0 || 
+            stats.monthlySales > 0 ||
+            stats.salesGrowth !== 0
+        );
+        
+        // Check if we have any category stats
+        const hasCategoryData = categoryStats && categoryStats.length > 0;
+        
+        // Check if we have any activity data
+        const hasActivityData = recentActivity && recentActivity.length > 0;
+        
+        // Check if we have any inventory alerts
+        const hasAlertData = inventoryAlerts && inventoryAlerts.length > 0;
+        
+        // Check if we have any top selling items
+        const hasTopSellingData = topSellingItems && topSellingItems.length > 0;
+        
+        // Return true if we have any meaningful data
+        return hasSalesData || hasStatsData || hasCategoryData || 
+               hasActivityData || hasAlertData || hasTopSellingData;
+    }, [salesData, stats, categoryStats, recentActivity, inventoryAlerts, topSellingItems]);
 
     // Format stats for display
     const formattedStats = {
@@ -60,132 +92,116 @@ export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFR
         return Date.now() - lastUpdated > refreshInterval;
     }, [lastUpdated, refreshInterval]);
 
-    // Memoized refresh function with throttling
-    const refreshData = useCallback(() => {
-        // Prevent multiple rapid refreshes
-        if (isRefreshingRef.current || fetchInProgress) {
-            console.log('Refresh already in progress, ignoring request');
+    // Function to refresh data
+    const refreshData = useCallback(async (force = false) => {
+        // Skip if already fetching
+        if (fetchInProgress) {
+            console.log('Skipping refresh - fetch already in progress');
             return;
         }
-
-        // Global throttling to prevent refresh storms
+        
+        // Get current time
         const now = Date.now();
-        if (now - globalLastRefreshTime < GLOBAL_MIN_REFRESH_INTERVAL) {
-            console.log(`Global throttling active (${now - globalLastRefreshTime}ms since last refresh), skipping refresh`);
+        
+        // Check global throttling (unless forced)
+        if (!force && now - globalLastRefreshTime < GLOBAL_MIN_REFRESH_INTERVAL) {
+            console.log(`Global throttling active (${now - globalLastRefreshTime}ms since last refresh)`);
             return;
         }
-
-        isRefreshingRef.current = true;
+        
+        // Update global refresh time
         globalLastRefreshTime = now;
-        localLastRefreshTime.current = now;
-
-        // Clear any existing refresh timeout
-        if (refreshTimeoutRef.current) {
-            clearTimeout(refreshTimeoutRef.current);
-            refreshTimeoutRef.current = null;
+        setLastRefreshAttempt(now);
+        setRefreshCount(prev => prev + 1);
+        
+        try {
+            // Trigger fetch in the store
+            await fetchDashboardData();
+            
+            // Update initial fetch flag if this is the first successful fetch
+            if (isInitialMount.current) {
+                globalInitialFetchDone = true;
+                isInitialMount.current = false;
+                setIsInitialLoad(false);
+            }
+            
+            // Store the local refresh time
+            localLastRefreshTime.current = now;
+        } catch (error) {
+            console.error('Error refreshing dashboard data:', error);
         }
-
-        // Set refresh flag to trigger data fetch
-        setShouldRefresh(true);
-
-        // Reset local flag after a delay
-        setTimeout(() => {
-            isRefreshingRef.current = false;
-        }, 300);
-    }, [fetchInProgress, setShouldRefresh]);
+    }, [fetchDashboardData, fetchInProgress]);
 
     // Initial fetch effect - runs only once across all instances
     useEffect(() => {
-        if (isInitialMount.current) {
-            console.log('Initial fetch triggered on first mount');
-            isInitialMount.current = false;
-            
-            // Only set the global flag if we're actually going to fetch
-            if (!fetchInProgress && !globalInitialFetchDone) {
-                globalInitialFetchDone = true;
-                
-                // Use a small delay to avoid React 18 double mounting issues
-                const initialFetchTimer = setTimeout(() => {
-                    if (!fetchInProgress) {
-                        setShouldRefresh(true);
-                    }
-                }, 50);
-
-                return () => clearTimeout(initialFetchTimer);
+        const loadInitialData = async () => {
+            if (isInitialMount.current) {
+                console.log('Initial dashboard data load starting');
+                await refreshData(true); // Force refresh on initial load
             }
-        }
-    }, [setShouldRefresh, fetchInProgress]);
+        };
+        
+        loadInitialData();
+    }, [refreshData]);
 
-    // Handle the shouldRefresh flag
+    // Auto-refresh effect
     useEffect(() => {
-        // Only proceed if shouldRefresh is true, not already fetching, and not locally refreshing
-        if (shouldRefresh && !fetchInProgress && !isRefreshingRef.current) {
-            console.log('Processing shouldRefresh flag');
+        // Only set up auto-refresh if enabled
+        if (!autoRefresh) return;
+        
+        // Function to check and refresh data if needed
+        const checkAndRefresh = async () => {
+            // Skip if already fetching
+            if (fetchInProgress) return;
             
-            fetchDashboardData()
-                .catch(err => console.error('Error fetching dashboard data:', err))
-                .finally(() => {
-                    isRefreshingRef.current = false;
-                });
-        }
-    }, [shouldRefresh, fetchDashboardData, fetchInProgress]);
-
-    // Auto refresh effect with jitter
-    useEffect(() => {
-        // Skip if auto refresh is disabled or we're already loading
-        if (!autoRefresh || isLoading) {
-            return;
-        }
-
-        // Clear any existing timeout
-        if (refreshTimeoutRef.current) {
-            clearTimeout(refreshTimeoutRef.current);
-        }
-
-        // Add jitter (±10%) to refresh interval to prevent refresh storms
-        const jitter = Math.random() * 0.2 - 0.1; // Random value between -10% and +10%
-        const jitteredInterval = refreshInterval * (1 + jitter);
-
-        // Set up new timeout
-        refreshTimeoutRef.current = setTimeout(() => {
-            // Only refresh if data is stale
-            if (isDataStale() && !fetchInProgress && !isRefreshingRef.current) {
-                refreshData();
+            // Check if data is stale
+            if (isDataStale()) {
+                console.log('Data is stale, refreshing...');
+                await refreshData();
             }
-        }, jitteredInterval);
-
-        // Cleanup
+        };
+        
+        // Initial check
+        checkAndRefresh();
+        
+        // Set up interval for future checks
+        const intervalId = setInterval(checkAndRefresh, Math.min(refreshInterval, 60000));
+        
+        // Clean up on unmount
         return () => {
+            clearInterval(intervalId);
             if (refreshTimeoutRef.current) {
                 clearTimeout(refreshTimeoutRef.current);
                 refreshTimeoutRef.current = null;
             }
         };
-    }, [
-        autoRefresh,
-        refreshInterval,
-        isLoading,
-        fetchInProgress,
-        refreshData,
-        isDataStale
-    ]);
+    }, [autoRefresh, refreshInterval, isDataStale, refreshData, fetchInProgress]);
 
+    // Effect to respond to shouldRefresh flag changes
+    useEffect(() => {
+        if (shouldRefresh && !fetchInProgress) {
+            console.log('shouldRefresh flag detected, triggering refresh');
+            refreshData();
+        }
+    }, [shouldRefresh, refreshData, fetchInProgress]);
+
+    // Return everything needed by components
     return {
         stats: formattedStats,
+        rawStats: stats,
         salesData,
         categoryStats,
         recentActivity,
         inventoryAlerts,
         topSellingItems,
         isLoading,
-        isInitialLoad: isInitialMount.current,
+        isInitialLoad,
         error,
-        lastUpdated,
-        shouldRefresh,
-        fetchInProgress,
         refresh: refreshData,
-        isDataStale,
-        hasData,
+        hasData: hasData(),
+        lastUpdated,
+        refreshCount,
+        lastRefreshAttempt,
         currencySymbol
     };
 };

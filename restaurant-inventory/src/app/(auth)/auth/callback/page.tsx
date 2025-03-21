@@ -28,9 +28,21 @@ export default function AuthCallbackPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.log("Email verification timeout after 15 seconds");
+        setIsLoading(false);
+        setError("Verification is taking longer than expected. Please try logging in directly or contact support.");
+      }
+    }, 15000); // 15 seconds timeout
+
     const handleEmailConfirmation = async () => {
       try {
         setIsLoading(true);
+        console.log("Starting email verification process");
+        console.log("URL parameters:", Object.fromEntries(searchParams.entries()));
+        console.log("URL hash:", window.location.hash);
 
         // Check for error in URL query parameters
         const errorParam = searchParams.get("error");
@@ -71,10 +83,10 @@ export default function AuthCallbackPage() {
               toast({
                 title: "Already Verified",
                 description:
-                  "Your email was already verified. Proceeding to onboarding.",
+                  "Your email was already verified. Proceeding to dashboard.",
               });
               setTimeout(() => {
-                router.push("/onboarding");
+                router.push("/dashboard");
               }, 2000);
               return;
             }
@@ -113,7 +125,7 @@ export default function AuthCallbackPage() {
         // Extract parameters using Supabase's newer auth flow (with code parameter)
         const code = searchParams.get("code");
         const type = searchParams.get("type") as EmailOtpType | null;
-        const next = searchParams.get("next") || "/onboarding"; // Default to onboarding instead of dashboard
+        const next = searchParams.get("next") || "/dashboard"; // Default to dashboard instead of onboarding
 
         console.log("Auth parameters:", { code, type });
 
@@ -128,16 +140,17 @@ export default function AuthCallbackPage() {
 
         // First try to get an existing session
         const { data: existingSession } = await supabase.auth.getSession();
+        console.log("Existing session check:", existingSession?.session ? "Found" : "Not found");
         if (existingSession?.session) {
           console.log("Using existing session");
           setIsSuccess(true);
           toast({
             title: "Already Verified",
             description:
-              "Your email was already verified. Proceeding to onboarding.",
+              "Your email was already verified. Proceeding to dashboard.",
           });
           setTimeout(() => {
-            router.push("/onboarding");
+            router.push("/dashboard");
           }, 2000);
           return;
         }
@@ -145,6 +158,7 @@ export default function AuthCallbackPage() {
         console.log("Attempting to exchange code for session");
 
         try {
+          console.log("Exchanging code for session...");
           const { data, error } = await supabase.auth.exchangeCodeForSession(
             code
           );
@@ -162,10 +176,10 @@ export default function AuthCallbackPage() {
                 toast({
                   title: "Verification Successful",
                   description:
-                    "Your email has been verified. Proceeding to onboarding.",
+                    "Your email has been verified. Proceeding to dashboard.",
                 });
                 setTimeout(() => {
-                  router.push("/onboarding");
+                  router.push("/dashboard");
                 }, 2000);
                 return;
               }
@@ -201,7 +215,7 @@ export default function AuthCallbackPage() {
             toast({
               title: "Email Verified Successfully",
               description:
-                "Your email has been verified. Let's complete your business profile setup.",
+                "Your email has been verified. You'll now be redirected to the dashboard.",
               variant: "default",
             });
 
@@ -209,6 +223,8 @@ export default function AuthCallbackPage() {
             if (type === "signup" || !type) {
               try {
                 if (data.user) {
+                  console.log("Updating profile for user:", data.user.id);
+                  
                   // First check if a profile exists
                   const { data: profileData, error: profileCheckError } =
                     await supabase
@@ -220,6 +236,8 @@ export default function AuthCallbackPage() {
                   if (profileCheckError) {
                     console.error("Error checking profile:", profileCheckError);
                   }
+
+                  console.log("Existing profile data:", profileData);
 
                   // Create or update the profile
                   const profileUpdateData = {
@@ -234,11 +252,13 @@ export default function AuthCallbackPage() {
                       "User",
                   };
 
+                  console.log("Updating profile with data:", profileUpdateData);
+
                   const { error: upsertError } = await supabase
                     .from("profiles")
                     .upsert(profileUpdateData, {
                       onConflict: "id",
-                      ignoreDuplicates: true, // This will ignore duplicate key errors
+                      ignoreDuplicates: false, // This will update the record if it exists
                     });
 
                   if (upsertError) {
@@ -252,8 +272,8 @@ export default function AuthCallbackPage() {
                   // Check if a business profile exists for this user
                   const { data: businessData, error: businessError } =
                     await supabase
-                      .from("business_profiles")
-                      .select("id")
+                      .from("business_profile_users")
+                      .select("business_profile_id")
                       .eq("user_id", data.user.id)
                       .maybeSingle();
 
@@ -264,49 +284,112 @@ export default function AuthCallbackPage() {
                     );
                     // Continue anyway - don't block the flow
                   } else if (!businessData) {
-                    // Create a placeholder business profile with minimal fields
-                    const { error: createBusinessError } = await supabase
-                      .from("business_profiles")
-                      .insert({
-                        user_id: data.user.id,
-                        name: "My Restaurant", // Default name that will be updated during onboarding
-                        default_currency: "USD", // Default currency that will be updated during onboarding
-                        type: "restaurant", // Default type
-                      });
+                    console.log("No business profile found, creating one");
+                    
+                    try {
+                      // First create a business profile
+                      const { data: newBusinessProfile, error: createBusinessError } = await supabase
+                        .from("business_profiles")
+                        .insert({
+                          user_id: data.user.id, // Set the user_id field
+                          name: "My Restaurant", // Default name that will be updated during onboarding
+                          default_currency: "USD", // Default currency that will be updated during onboarding
+                          type: "restaurant", // Default type
+                          subscription_plan: "free", // Default plan
+                          subscription_status: "active", // Default status
+                          max_users: 1, // Default max users
+                          tax_enabled: false, // Default tax setting
+                          created_at: new Date().toISOString(),
+                          updated_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
 
-                    if (createBusinessError) {
-                      console.error(
-                        "Error creating placeholder business profile:",
-                        createBusinessError
-                      );
-                      // Continue anyway - don't block the flow
-                    } else {
-                      console.log(
-                        "Successfully created placeholder business profile"
-                      );
+                      if (createBusinessError) {
+                        console.error(
+                          "Error creating business profile:",
+                          createBusinessError
+                        );
+                        // Continue anyway - don't block the flow
+                      } else if (newBusinessProfile) {
+                        console.log(
+                          "Successfully created business profile:",
+                          newBusinessProfile.id
+                        );
+                        
+                        // Now associate the user with the business profile
+                        const { error: associationError } = await supabase
+                          .from("business_profile_users")
+                          .insert({
+                            user_id: data.user.id,
+                            business_profile_id: newBusinessProfile.id,
+                            role: "owner",
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                          });
+                          
+                        if (associationError) {
+                          console.error(
+                            "Error associating user with business profile:",
+                            associationError
+                          );
+                          
+                          // If we fail to create the association, try a direct approach
+                          console.log("Attempting alternative association method");
+                          
+                          // Try a simpler insert without additional fields
+                          const { error: simpleAssociationError } = await supabase
+                            .from("business_profile_users")
+                            .insert({
+                              user_id: data.user.id,
+                              business_profile_id: newBusinessProfile.id,
+                              role: "owner"
+                            });
+                            
+                          if (simpleAssociationError) {
+                            console.error(
+                              "Error with simple association method:",
+                              simpleAssociationError
+                            );
+                          } else {
+                            console.log("Successfully associated user with business profile using simple method");
+                          }
+                        } else {
+                          console.log("Successfully associated user with business profile");
+                        }
+                      }
+                    } catch (businessCreationError) {
+                      console.error("Error in business profile creation flow:", businessCreationError);
+                      // Don't block the verification process, continue to dashboard
                     }
                   } else {
                     console.log(
-                      "Business profile already exists, skipping creation"
+                      "Business profile association already exists:",
+                      businessData.business_profile_id
                     );
                   }
                 }
               } catch (updateError) {
                 console.error(
-                  "Error updating email_confirmed status:",
+                  "Error updating user profile or business profile:",
                   updateError
                 );
               }
             }
 
-            // Redirect to the onboarding page after a short delay
+            // Redirect to the dashboard page after a short delay
             setTimeout(() => {
               router.push(next);
             }, 2000);
           } else {
+            console.error("No session created after code exchange");
             setError(
               "Failed to create a session. Please try logging in manually."
             );
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              router.push("/login");
+            }, 3000);
           }
 
           setIsLoading(false);
@@ -316,6 +399,10 @@ export default function AuthCallbackPage() {
             "An error occurred during verification. Please try again or contact support."
           );
           setIsLoading(false);
+          // Redirect to login after a short delay
+          setTimeout(() => {
+            router.push("/login");
+          }, 3000);
         }
       } catch (err) {
         console.error("Unexpected error during auth callback:", err);
@@ -323,11 +410,18 @@ export default function AuthCallbackPage() {
           "An unexpected error occurred. Please try again or contact support."
         );
         setIsLoading(false);
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          router.push("/login");
+        }, 3000);
       }
     };
 
     handleEmailConfirmation();
-  }, [searchParams, router, toast]);
+
+    // Clean up the timeout
+    return () => clearTimeout(timeoutId);
+  }, [searchParams, router, toast, isLoading]);
 
   const handleResendConfirmation = async () => {
     if (!email || email.trim() === "") {
@@ -413,7 +507,7 @@ export default function AuthCallbackPage() {
             </p>
             <div className="mt-4 flex flex-col space-y-3 w-full">
               <Button
-                onClick={() => router.push("/onboarding")}
+                onClick={() => router.push("/dashboard")}
                 className="w-full flex items-center justify-center"
               >
                 Complete Your Onboarding

@@ -20,7 +20,7 @@ let activeFetchPromise: Promise<unknown> | null = null;
 
 // Track last fetch time for throttling
 let lastFetchTime = 0;
-const MIN_FETCH_INTERVAL = 10000; // Increase to 10 seconds minimum between fetch attempts to reduce load
+const MIN_FETCH_INTERVAL = 10000; // 10 seconds minimum between fetch attempts
 
 // Define the dashboard data type
 interface DashboardData {
@@ -53,17 +53,29 @@ let dashboardCache: {
 // Cache TTL in milliseconds (30 seconds)
 const CACHE_TTL = 30000;
 
+// Maximum number of retries for failed requests
+const MAX_RETRIES = 2;
+
+// Retry delay in milliseconds (exponential backoff)
+const RETRY_DELAY_BASE = 1000;
+
 /**
  * Main service for fetching all dashboard data
  */
 export const dashboardService = {
     /**
-     * Fetch all dashboard data with deduplication
+     * Fetch all dashboard data with deduplication and improved error handling
      */
     async fetchDashboardData(): Promise<DashboardData> {
         try {
             // First, get the business profile ID to check if cache is valid
             const businessProfileId = await getBusinessProfileId();
+            
+            // If no business profile ID, return empty data immediately
+            if (!businessProfileId) {
+                console.log('No business profile ID found, returning empty dashboard data');
+                return this.getEmptyDashboardData();
+            }
             
             // Check if we have valid cached data for this business profile
             if (
@@ -108,13 +120,13 @@ export const dashboardService = {
             // Create a timeout promise to prevent hanging
             const timeoutPromise = new Promise<never>((_, reject) => {
                 setTimeout(() => {
-                    reject(new Error('Dashboard data fetch timed out after 15 seconds'));
-                }, 15000); // 15 second timeout
+                    reject(new Error('Dashboard data fetch timed out after 20 seconds'));
+                }, 20000); // 20 second timeout (increased from 15)
             });
 
-            // Create a new promise for this fetch
+            // Create a new promise for this fetch with retry logic
             activeFetchPromise = Promise.race([
-                this.fetchAllDataInParallel(businessProfileId),
+                this.fetchWithRetry(businessProfileId),
                 timeoutPromise
             ]).then(data => {
                 // Cache the result
@@ -135,13 +147,50 @@ export const dashboardService = {
             activeFetchPromise = null;
             console.error('Dashboard fetch error:', error);
             
-            // Return cached data if available
+            // Return cached data if available, even if it's stale
             if (dashboardCache) {
                 console.log('Returning cached dashboard data after error');
                 return dashboardCache.data;
             }
             
-            throw error;
+            // If no cache is available, return empty data structure instead of throwing
+            return this.getEmptyDashboardData();
+        }
+    },
+
+    /**
+     * Fetch with retry logic for resilience
+     */
+    async fetchWithRetry(businessProfileId: string | null, retryCount = 0): Promise<DashboardData> {
+        try {
+            // If no business profile ID, return empty data immediately
+            if (!businessProfileId) {
+                console.log('No business profile ID for retry, returning empty dashboard data');
+                return this.getEmptyDashboardData();
+            }
+            
+            // Attempt to fetch all data in parallel
+            return await this.fetchAllDataInParallel(businessProfileId);
+        } catch (error) {
+            console.error(`Dashboard data fetch attempt ${retryCount + 1} failed:`, error);
+            
+            // Implement exponential backoff with jitter for retries
+            if (retryCount < MAX_RETRIES) {
+                const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount) * (0.5 + Math.random());
+                console.log(`Retrying dashboard data fetch in ${Math.round(delay)}ms...`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return this.fetchWithRetry(businessProfileId, retryCount + 1);
+            }
+            
+            // If all retries fail, return cached data if available
+            if (dashboardCache) {
+                console.log('All retries failed, returning cached dashboard data');
+                return dashboardCache.data;
+            }
+            
+            // If no cache is available, return empty data structure
+            return this.getEmptyDashboardData();
         }
     },
 
@@ -149,92 +198,93 @@ export const dashboardService = {
      * Fetch all data in parallel with proper error handling for each service
      */
     async fetchAllDataInParallel(businessProfileId: string | null): Promise<DashboardData> {
+        console.log(`Fetching dashboard data for business profile: ${businessProfileId || 'none'}`);
+        
+        // If no business profile ID, return empty data immediately
+        if (!businessProfileId) {
+            console.log('No business profile ID for parallel fetch, returning empty dashboard data');
+            return this.getEmptyDashboardData();
+        }
+        
         try {
-            console.log('Fetching all dashboard data in parallel...');
-            
-            // Log the business profile ID for debugging
-            if (businessProfileId) {
-                console.log(`Fetching dashboard data for business profile: ${businessProfileId}`);
-            } else {
-                console.log('No business profile ID available for dashboard data fetch');
-            }
-
-            // Store promises so we can handle individual failures without failing the whole request
-            const promises = {
-                salesData: fetchMonthlySales().catch(err => {
-                    console.error('Monthly sales fetch failed:', err);
+            // Run all fetches in parallel with individual error handling
+            const [
+                inventoryValueResult,
+                lowStockCountResult,
+                monthlySalesResult,
+                salesGrowthResult,
+                categoryStatsResult,
+                recentActivityResult,
+                recentSalesResult,
+                topSellingItemsResult,
+                inventoryAlertsResult
+            ] = await Promise.allSettled([
+                fetchInventoryValue().catch(err => {
+                    console.error('Error fetching inventory value:', err);
+                    return 0;
+                }),
+                fetchLowStockCount().catch(err => {
+                    console.error('Error fetching low stock count:', err);
+                    return 0;
+                }),
+                fetchMonthlySales().catch(err => {
+                    console.error('Error fetching monthly sales:', err);
                     return { currentMonthSales: 0, monthlySalesData: [] };
                 }),
-                salesGrowth: fetchSalesGrowth().catch(err => {
-                    console.error('Sales growth fetch failed:', err);
+                fetchSalesGrowth().catch(err => {
+                    console.error('Error fetching sales growth:', err);
                     return 0;
                 }),
-                lowStockCount: fetchLowStockCount().catch(err => {
-                    console.error('Low stock count fetch failed:', err);
-                    return 0;
-                }),
-                inventoryValue: fetchInventoryValue().catch(err => {
-                    console.error('Inventory value fetch failed:', err);
-                    return 0;
-                }),
-                categoryStats: fetchCategoryStats().catch(err => {
-                    console.error('Category stats fetch failed:', err);
+                fetchCategoryStats().catch(err => {
+                    console.error('Error fetching category stats:', err);
                     return [];
                 }),
-                recentActivity: fetchRecentActivity().catch(err => {
-                    console.error('Recent activity fetch failed:', err);
+                fetchRecentActivity().catch(err => {
+                    console.error('Error fetching recent activity:', err);
                     return [];
                 }),
-                recentSales: fetchRecentSales().catch(err => {
-                    console.error('Recent sales fetch failed:', err);
+                fetchRecentSales().catch(err => {
+                    console.error('Error fetching recent sales:', err);
                     return [];
                 }),
-                topSellingItems: fetchTopSellingItems().catch(err => {
-                    console.error('Top selling items fetch failed:', err);
+                fetchTopSellingItems().catch(err => {
+                    console.error('Error fetching top selling items:', err);
                     return [];
                 }),
-                inventoryAlerts: fetchInventoryAlerts().catch(err => {
-                    console.error('Inventory alerts fetch failed:', err);
+                fetchInventoryAlerts().catch(err => {
+                    console.error('Error fetching inventory alerts:', err);
                     return [];
                 })
-            };
-
-            // Wait for all promises to resolve (they won't reject due to our catch handlers)
-            const [
-                salesData,
-                salesGrowth,
-                lowStockCount,
-                inventoryValue,
-                categoryStats,
-                recentActivity,
-                recentSales,
-                topSellingItems,
-                inventoryAlerts
-            ] = await Promise.all([
-                promises.salesData,
-                promises.salesGrowth,
-                promises.lowStockCount,
-                promises.inventoryValue,
-                promises.categoryStats,
-                promises.recentActivity,
-                promises.recentSales,
-                promises.topSellingItems,
-                promises.inventoryAlerts
             ]);
 
-            // Return consolidated data in the same structure as before
-            return {
+            // Extract values from Promise.allSettled results
+            const getValue = <T>(result: PromiseSettledResult<T>, defaultValue: T): T => {
+                return result.status === 'fulfilled' ? result.value : defaultValue;
+            };
+
+            const inventoryValue = getValue(inventoryValueResult, 0);
+            const lowStockCount = getValue(lowStockCountResult, 0);
+            const monthlySales = getValue(monthlySalesResult, { currentMonthSales: 0, monthlySalesData: [] });
+            const salesGrowth = getValue(salesGrowthResult, 0);
+            const categoryStats = getValue(categoryStatsResult, []);
+            const recentActivity = getValue(recentActivityResult, []);
+            const recentSales = getValue(recentSalesResult, []);
+            const topSellingItems = getValue(topSellingItemsResult, []);
+            const inventoryAlerts = getValue(inventoryAlertsResult, []);
+
+            // Construct the dashboard data
+            const dashboardData: DashboardData = {
                 salesData: {
-                    currentMonthSales: salesData.currentMonthSales,
-                    monthlySalesData: salesData.monthlySalesData,
+                    currentMonthSales: monthlySales.currentMonthSales,
+                    monthlySalesData: monthlySales.monthlySalesData,
                     salesGrowth: salesGrowth
                 },
                 stats: {
                     totalInventoryValue: inventoryValue,
                     lowStockItems: lowStockCount,
-                    monthlySales: salesData.currentMonthSales,
+                    monthlySales: monthlySales.currentMonthSales,
                     salesGrowth: salesGrowth,
-                    categoryStats
+                    categoryStats: categoryStats
                 },
                 recentActivity,
                 recentSales,
@@ -242,29 +292,37 @@ export const dashboardService = {
                 inventoryAlerts,
                 lastUpdated: new Date().toISOString()
             };
+
+            return dashboardData;
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            // Return minimal data instead of throwing
-            return {
-                salesData: {
-                    currentMonthSales: 0,
-                    monthlySalesData: [],
-                    salesGrowth: 0
-                },
-                stats: {
-                    totalInventoryValue: 0,
-                    lowStockItems: 0,
-                    monthlySales: 0,
-                    salesGrowth: 0,
-                    categoryStats: []
-                },
-                recentActivity: [],
-                recentSales: [],
-                topSellingItems: [],
-                inventoryAlerts: [],
-                lastUpdated: new Date().toISOString()
-            };
+            throw error;
         }
+    },
+
+    /**
+     * Get empty dashboard data structure for fallback
+     */
+    getEmptyDashboardData(): DashboardData {
+        return {
+            salesData: {
+                currentMonthSales: 0,
+                monthlySalesData: [],
+                salesGrowth: 0
+            },
+            stats: {
+                totalInventoryValue: 0,
+                lowStockItems: 0,
+                monthlySales: 0,
+                salesGrowth: 0,
+                categoryStats: []
+            },
+            recentActivity: [],
+            recentSales: [],
+            topSellingItems: [],
+            inventoryAlerts: [],
+            lastUpdated: new Date().toISOString()
+        };
     }
 };
 
