@@ -17,6 +17,32 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+interface SalesChannel {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface Product {
+  name: string;
+  unitsSold: number;
+  color: string;
+}
+
+interface ChartData {
+  month: string;
+  sales: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    payload: ChartData;
+  }>;
+  label?: string;
+}
+
 interface SalesGrowthCardProps {
   title?: string;
   dateRange?: string;
@@ -28,8 +54,11 @@ interface SalesGrowthCardProps {
   lowestMonth?: number;
   percentComplete?: number;
   growthPercent?: number;
-  salesData?: { month: string; sales: number }[];
-  data?: { month: string; sales: number }[];
+  salesData?: ChartData[];
+  data?: ChartData[];
+  salesChannels?: SalesChannel[];
+  topProducts?: Product[];
+  ariaLabel?: string;
 }
 
 export const SalesGrowthCard = ({
@@ -45,6 +74,9 @@ export const SalesGrowthCard = ({
   growthPercent = 0,
   salesData,
   data,
+  salesChannels,
+  topProducts,
+  ariaLabel = "Sales growth chart showing monthly performance",
 }: SalesGrowthCardProps) => {
   const { formatCurrency, currencySymbol } = useCurrency();
   
@@ -59,29 +91,50 @@ export const SalesGrowthCard = ({
       { month: "Jun", sales: 0 },
     ];
 
+  // Default sales channels if not provided
+  const defaultSalesChannels: SalesChannel[] = [
+    { name: "Online Store", value: 8400, color: "#10b981" },
+    { name: "In-Store", value: 6200, color: "#3b82f6" },
+    { name: "Wholesale", value: 4800, color: "#8b5cf6" },
+  ];
+
+  // Default top products if not provided
+  const defaultTopProducts: Product[] = [
+    { name: "Product A", unitsSold: 245, color: "#f59e0b" },
+    { name: "Product B", unitsSold: 187, color: "#f43f5e" },
+    { name: "Product C", unitsSold: 143, color: "#6366f1" },
+  ];
+
+  // Use provided data or defaults
+  const channelsToShow = salesChannels || defaultSalesChannels;
+  const productsToShow = topProducts || defaultTopProducts;
+
+  // Error handling for empty data
+  const hasData = chartData && chartData.length > 0;
+  
   // Calculate derived values if not provided
   const calculatedTotalRevenue =
-    totalRevenue || chartData.reduce((sum, item) => sum + item.sales, 0);
+    totalRevenue || (hasData ? chartData.reduce((sum, item) => sum + item.sales, 0) : 0);
   const calculatedAvgMonthly =
-    averageMonthly || (calculatedTotalRevenue / (chartData.length || 1));
+    averageMonthly || (hasData ? (calculatedTotalRevenue / (chartData.length || 1)) : 0);
   const calculatedHighestMonth =
-    highestMonth || Math.max(...chartData.map((item) => item.sales), 0);
+    highestMonth || (hasData ? Math.max(...chartData.map((item) => item.sales), 0) : 0);
   const calculatedLowestMonth =
-    lowestMonth || Math.min(...chartData.map((item) => item.sales), 0);
+    lowestMonth || (hasData ? Math.min(...chartData.map((item) => item.sales), 0) : 0);
 
   // Calculate growth percentage (comparing last two months)
-  const lastMonthSales = chartData[chartData.length - 1]?.sales || 0;
-  const previousMonthSales = chartData[chartData.length - 2]?.sales || 0;
+  const lastMonthSales = hasData && chartData.length >= 1 ? chartData[chartData.length - 1]?.sales || 0 : 0;
+  const previousMonthSales = hasData && chartData.length >= 2 ? chartData[chartData.length - 2]?.sales || 0 : 0;
   const growthPercentCalculated = previousMonthSales === 0 
     ? 100 
     : Math.round(((lastMonthSales - previousMonthSales) / previousMonthSales) * 100);
   const growthPercentUsed = growthPercent !== undefined ? growthPercent : growthPercentCalculated;
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  // Custom tooltip with proper typing
+  const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-md border border-slate-200">
+        <div className="bg-white p-3 rounded-lg shadow-md border border-slate-200" role="tooltip">
           <p className="text-sm font-medium text-slate-700">{payload[0].payload.month}</p>
           <p className="text-sm font-bold text-emerald-600">
             {formatCurrency(payload[0].value)}
@@ -100,12 +153,12 @@ export const SalesGrowthCard = ({
       {/* Top accent bar */}
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-500"></div>
       
-      <div className="p-5">
-        <div className="flex justify-between items-start mb-4">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-3">
           <div className="space-y-1">
             <div className="flex items-center">
-              <div className="bg-emerald-100 text-emerald-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
-                <FiTrendingUp className="h-5 w-5" />
+              <div className="bg-emerald-100 text-emerald-600 p-2 rounded-full mr-2 transition-transform group-hover:scale-110 duration-300">
+                <FiTrendingUp className="h-4 w-4" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-base font-semibold text-slate-800">{title}</p>
@@ -114,146 +167,131 @@ export const SalesGrowthCard = ({
             </div>
           </div>
           
-          <div className="flex items-center px-3 py-1.5 bg-slate-100 rounded-full text-slate-600 text-xs">
-            <FiCalendar className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+          <div className="flex items-center px-2 py-1 bg-slate-100 rounded-full text-slate-600 text-xs">
+            <FiCalendar className="h-3 w-3 mr-1 text-slate-500" aria-hidden="true" />
             <span>{dateRange}</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-baseline">
-            <p className="text-2xl font-bold text-emerald-700 group-hover:scale-105 transition-transform duration-300">
+            <p className="text-xl font-bold text-emerald-700 group-hover:scale-105 transition-transform duration-300">
               {growthPercentUsed >= 0 ? "+" : ""}{growthPercentUsed}%
             </p>
             <span className="ml-2 text-xs text-slate-500">vs last period</span>
           </div>
           
-          <div className="bg-emerald-50 px-3 py-1.5 rounded-full flex items-center">
+          <div className="bg-emerald-50 px-2 py-1 rounded-full flex items-center">
             <span className="text-xs font-medium text-emerald-600">
               {formatCurrency(calculatedTotalRevenue)}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center text-sm text-slate-500 mb-2">
-                <span className="flex-1">Top Sales Channels</span>
-                <span className="text-right">Revenue</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">Online Store</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">{formatCurrency(8400)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">In-Store</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">{formatCurrency(6200)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">Wholesale</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">{formatCurrency(4800)}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center text-sm text-slate-500 mb-2">
-                <span className="flex-1">Top Products</span>
-                <span className="text-right">Units Sold</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">Product A</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">245</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-rose-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">Product B</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">187</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>
-                    <span className="text-sm font-medium text-slate-700">Product C</span>
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">143</span>
-                </div>
-              </div>
-            </div>
+        {!hasData ? (
+          <div className="text-center p-4 bg-slate-50 rounded-lg my-4">
+            <p className="text-sm text-slate-500">No sales data available for this period</p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs text-slate-500 mb-2">Top Sales Channels</div>
+              <div className="space-y-2">
+                {channelsToShow.map((channel, index) => (
+                  <div key={`channel-${index}`} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-2 h-2 rounded-full mr-2" 
+                        style={{ backgroundColor: channel.color }}
+                        aria-hidden="true"
+                      ></div>
+                      <span className="text-xs font-medium text-slate-700">{channel.name}</span>
+                    </div>
+                    <span className="text-xs font-medium text-slate-700">{formatCurrency(channel.value)}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-xs text-slate-500 mt-4 mb-2">Top Products</div>
+              <div className="space-y-2">
+                {productsToShow.map((product, index) => (
+                  <div key={`product-${index}`} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-2 h-2 rounded-full mr-2" 
+                        style={{ backgroundColor: product.color }}
+                        aria-hidden="true"
+                      ></div>
+                      <span className="text-xs font-medium text-slate-700">{product.name}</span>
+                    </div>
+                    <span className="text-xs font-medium text-slate-700">{product.unitsSold}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{
-                  top: 10,
-                  right: 0,
-                  left: -20,
-                  bottom: 0,
-                }}
-                barSize={36}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  vertical={false}
-                  stroke="#f1f5f9"
-                />
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: "#64748b" }}
-                  tickFormatter={(value) => `${currencySymbol}${value}`}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={false} />
-                <Bar
-                  dataKey="sales"
-                  radius={[4, 4, 0, 0]}
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{
+                    top: 5,
+                    right: 0,
+                    left: -25,
+                    bottom: 0,
+                  }}
+                  barSize={24}
+                  aria-label={ariaLabel}
                 >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={index % 2 === 0 ? "#10b981" : "#34d399"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#f1f5f9"
+                  />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: "#64748b" }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: "#64748b" }}
+                    tickFormatter={(value) => `${currencySymbol}${value}`}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={false} />
+                  <Bar
+                    dataKey="sales"
+                    radius={[4, 4, 0, 0]}
+                    name="Sales"
+                    role="graphics-symbol"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={index % 2 === 0 ? "#10b981" : "#34d399"}
+                        aria-label={`${entry.month}: ${formatCurrency(entry.sales)}`}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
         
         {viewAllLink && (
-          <div className="mt-4 text-right">
+          <div className="mt-3 text-right">
             <Link href={viewAllLink} passHref>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary hover:text-primary/80 hover:bg-primary/10"
+                className="text-primary hover:text-primary/80 hover:bg-primary/10 text-xs py-1 h-auto"
+                aria-label={`View detailed ${title} report`}
               >
                 View Detailed Report
-                <FiArrowRight className="ml-1 h-4 w-4" />
+                <FiArrowRight className="ml-1 h-3 w-3" aria-hidden="true" />
               </Button>
             </Link>
           </div>
@@ -265,72 +303,53 @@ export const SalesGrowthCard = ({
           <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <div className="space-y-6">
+        <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <div className="flex items-center text-sm text-slate-500 mb-2">
-                <span className="flex-1">Total Revenue</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="bg-slate-100 p-2 rounded-full mr-2">
-                  </div>
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-bold text-slate-900">
-                      {formatCurrency(calculatedTotalRevenue)}
-                    </div>
-                    {growthPercentUsed !== 0 && (
-                      <div className={`flex items-center px-2 py-1 rounded-md text-sm font-medium ${
-                        growthPercentUsed >= 0 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'bg-rose-100 text-rose-700'
-                      }`}>
-                        {Math.abs(growthPercentUsed)}%
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <p className="text-xs font-medium text-slate-700">Total Revenue</p>
+              <p className="text-lg font-bold text-slate-900">
+                {formatCurrency(calculatedTotalRevenue)}
+              </p>
             </div>
-
-            <div className="space-y-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-700">Average Monthly</p>
-                <p className="text-sm font-semibold text-slate-900">
+            
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Avg Monthly</p>
+                <p className="text-xs font-semibold text-slate-900">
                   {formatCurrency(calculatedAvgMonthly)}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-700">Highest Month</p>
-                <p className="text-sm font-semibold text-emerald-600">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Highest</p>
+                <p className="text-xs font-semibold text-emerald-600">
                   {formatCurrency(calculatedHighestMonth)}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-700">Lowest Month</p>
-                <p className="text-sm font-semibold text-amber-600">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Lowest</p>
+                <p className="text-xs font-semibold text-amber-600">
                   {formatCurrency(calculatedLowestMonth)}
                 </p>
               </div>
             </div>
-
-            <div className="pt-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Target Completion
-                </span>
-                <span className="text-sm font-medium text-slate-900">
-                  {percentComplete}%
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className="bg-primary h-2.5 rounded-full transition-all duration-700 ease-in-out"
-                  style={{ width: `${percentComplete}%` }}
-                ></div>
-              </div>
+          </div>
+          
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-slate-700">
+                Target Completion
+              </span>
+              <span className="text-xs font-medium text-slate-900">
+                {percentComplete}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden" role="progressbar" aria-valuenow={percentComplete} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all duration-700 ease-in-out"
+                style={{ width: `${percentComplete}%` }}
+              ></div>
             </div>
           </div>
         </div>

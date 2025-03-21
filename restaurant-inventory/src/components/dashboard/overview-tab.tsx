@@ -163,13 +163,14 @@ export function OverviewTab() {
       </div>
 
       {/* Charts and Analysis */}
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-8 grid-cols-1">
         <SalesGrowthCard 
           title="Sales Growth"
           dateRange="Last 30 days"
           salesData={salesData}
           growthPercent={salesGrowthValue}
           viewAllLink="/reports/sales"
+          className="w-full"
         />
 
         <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group h-full relative overflow-hidden">
