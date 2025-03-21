@@ -1,7 +1,5 @@
-import { FiAlertTriangle, FiRefreshCw, FiExternalLink } from "react-icons/fi";
-import Link from "next/link";
+import { FiAlertTriangle, FiRefreshCw } from "react-icons/fi";
 import { cn } from "@/lib/utils";
-import Card from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { StockAlert } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -105,7 +103,7 @@ const AlertCard = ({
 }: AlertCardProps) => {
   if (isLoading) {
     return (
-      <Card>
+      <div className="overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-9 w-9 rounded" />
@@ -117,12 +115,12 @@ const AlertCard = ({
             ))}
           </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
+    <div className="overflow-hidden">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="font-medium">{title}</h3>
         {onRefresh && (
@@ -156,7 +154,7 @@ const AlertCard = ({
           )}
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 
