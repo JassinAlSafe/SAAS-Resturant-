@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { FiPlus, FiBook, FiChevronsRight, FiUpload } from "react-icons/fi";
+import { FiPlus, FiBook, FiUpload } from "react-icons/fi";
 import { motion } from "framer-motion";
 
 interface EmptyRecipesProps {
@@ -18,7 +18,7 @@ export default function EmptyRecipes({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex flex-col items-center justify-center py-16 px-6 text-center border border-gray-100 dark:border-gray-800 shadow-xs rounded-lg bg-white dark:bg-slate-950"
+      className="flex flex-col items-center justify-center py-16 px-6 text-center border border-slate-200 dark:border-slate-800 shadow-sm rounded-lg bg-white dark:bg-slate-950"
     >
       <motion.div
         className="bg-indigo-50 dark:bg-indigo-950/30 p-8 rounded-full mb-8 shadow-inner relative overflow-hidden group"
@@ -26,7 +26,7 @@ export default function EmptyRecipes({
         transition={{ type: "spring", stiffness: 400, damping: 10 }}
       >
         <motion.div
-          className="absolute inset-0 bg-linear-to-r from-indigo-100/0 via-indigo-100/50 to-indigo-100/0 dark:from-indigo-900/0 dark:via-indigo-900/20 dark:to-indigo-900/0"
+          className="absolute inset-0 bg-gradient-to-r from-indigo-100/0 via-indigo-100/50 to-indigo-100/0 dark:from-indigo-900/0 dark:via-indigo-900/20 dark:to-indigo-900/0"
           initial={{ x: "-100%" }}
           animate={{ x: "100%" }}
           transition={{
@@ -40,7 +40,7 @@ export default function EmptyRecipes({
       </motion.div>
 
       <motion.h2
-        className="text-2xl font-semibold mb-3 text-gray-800 dark:text-gray-100"
+        className="text-2xl font-semibold mb-3 text-slate-800 dark:text-slate-100"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
@@ -49,36 +49,34 @@ export default function EmptyRecipes({
       </motion.h2>
 
       <motion.p
-        className="text-gray-500 dark:text-gray-400 max-w-md mb-8 text-base leading-relaxed"
+        className="text-slate-500 dark:text-slate-400 mb-8 max-w-md"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        Start by adding your restaurant's recipes. You'll be able to track
-        ingredients, calculate costs, and manage your menu more efficiently.
+        Start creating your restaurant&apos;s menu by adding recipes. Track ingredients, costs, and pricing to optimize your menu profitability.
       </motion.p>
 
       <motion.div
-        className="flex flex-col sm:flex-row gap-4"
+        className="flex flex-col sm:flex-row gap-3"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
         <Button
-          onClick={onAddClick}
           size="lg"
-          className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-xs transition-colors"
+          onClick={onAddClick}
+          className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
         >
           <FiPlus className="mr-2 h-5 w-5" />
-          Create Your First Recipe
+          Create First Recipe
         </Button>
-
         {onImportClick && (
           <Button
-            onClick={onImportClick}
-            size="lg"
             variant="outline"
-            className="px-6 py-2 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 font-medium rounded-md shadow-xs"
+            size="lg"
+            onClick={onImportClick}
+            className="border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <FiUpload className="mr-2 h-5 w-5" />
             Import Recipes
@@ -87,24 +85,80 @@ export default function EmptyRecipes({
       </motion.div>
 
       <motion.div
-        className="mt-8 flex items-center gap-2 text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
+        className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        whileHover={{ x: 5 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
       >
-        <span>Learn how to efficiently manage your recipes</span>
-        <FiChevronsRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-      </motion.div>
+        <div className="flex flex-col items-center p-5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+          <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-green-600 dark:text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Track Ingredients</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+            Manage ingredients and their costs for accurate food cost calculations
+          </p>
+        </div>
 
-      <motion.p
-        className="mt-6 text-sm text-gray-400 dark:text-gray-500"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        You can also import recipes from a spreadsheet or other systems.
-      </motion.p>
+        <div className="flex flex-col items-center p-5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+          <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-blue-600 dark:text-blue-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Optimize Pricing</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+            Set optimal prices based on food costs to maximize profitability
+          </p>
+        </div>
+
+        <div className="flex flex-col items-center p-5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+          <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-purple-600 dark:text-purple-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-1">Manage Menu</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+            Organize recipes by categories and track allergen information
+          </p>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

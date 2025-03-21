@@ -21,6 +21,11 @@ const authRoutes = [
   '/reset-password',
 ];
 
+// Define public routes that are accessible to everyone
+const publicRoutes = [
+  '/logout',
+];
+
 // Function to check if a route is protected
 const isProtectedRoute = (path: string): boolean => {
   return protectedRoutes.some(route => path.startsWith(route));
@@ -29,6 +34,11 @@ const isProtectedRoute = (path: string): boolean => {
 // Function to check if a route is an auth route
 const isAuthRoute = (path: string): boolean => {
   return authRoutes.some(route => path.startsWith(route));
+};
+
+// Function to check if a route is a public route
+const isPublicRoute = (path: string): boolean => {
+  return publicRoutes.some(route => path.startsWith(route));
 };
 
 // Function to check if a route is an API route
@@ -84,6 +94,14 @@ export async function middleware(request: NextRequest) {
     const session = data?.session;
     const path = request.nextUrl.pathname;
 
+    // Check for the just-logged-out cookie
+    const justLoggedOut = request.cookies.get('just-logged-out')?.value === 'true';
+
+    // Handle public routes (like logout)
+    if (isPublicRoute(path)) {
+      return response;
+    }
+
     // Handle protected routes
     if (isProtectedRoute(path)) {
       if (!session) {
@@ -96,6 +114,13 @@ export async function middleware(request: NextRequest) {
 
     // Handle auth routes (login, register, etc.)
     else if (isAuthRoute(path)) {
+      // If just logged out, allow access to login page
+      if (justLoggedOut) {
+        // Clear the flag after use
+        response.cookies.set('just-logged-out', '', { maxAge: -1 });
+        return response;
+      }
+
       if (session) {
         // Redirect to dashboard if already authenticated
         return NextResponse.redirect(new URL('/dashboard', request.url));
@@ -122,7 +147,7 @@ export async function middleware(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Error in middleware:', error);
-    
+
     // If there's an error, allow the request to continue
     // This prevents users from being locked out due to auth errors
     return response;

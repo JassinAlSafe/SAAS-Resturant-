@@ -17,24 +17,23 @@ export interface UserData {
  * @returns Formatted user data and auth methods
  */
 export function useUser() {
-    const { user, profile: userProfile, signOut } = useAuth();
     const router = useRouter();
+    const { user, profile } = useAuth();
 
     // Combine data from both user and userProfile
     const userData: UserData = {
-        name: userProfile?.name || user?.user_metadata?.name || "User",
-        email: userProfile?.email || user?.email || "user@example.com",
-        image: userProfile?.avatar_url || "",
-        role: userProfile?.role || "staff",
-        id: user?.id || userProfile?.id,
+        name: profile?.name || "",
+        email: profile?.email || user?.email || "",
+        image: profile?.avatar_url || "",
+        role: profile?.role || "",
+        id: user?.id || "",
     };
 
     // Handle user logout
     const handleLogout = async () => {
         try {
-            await signOut();
-            toast.success("Logged out successfully");
-            router.push("/login");
+            // Redirect to the dedicated logout page
+            router.push("/logout");
         } catch (error) {
             console.error("Logout failed", error);
             toast.error("Failed to logout. Please try again.");

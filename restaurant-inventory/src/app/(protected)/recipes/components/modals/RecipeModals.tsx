@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FiAlertCircle } from "react-icons/fi";
 import { RecipeModalsProps, RecipeModalsHookReturn } from "../../types";
+import { motion } from "framer-motion";
 
 export function RecipeModals({
   ingredients,
@@ -39,16 +40,16 @@ export function RecipeModals({
         open={modalType === "add"}
         onOpenChange={() => modalType === "add" && closeModal()}
       >
-        <DialogContent className="sm:max-w-[800px] p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <DialogTitle className="text-xl text-gray-800">
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 overflow-hidden bg-white rounded-lg shadow-lg border border-gray-100">
+          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <DialogTitle className="text-xl font-medium text-gray-800">
               Add New Recipe
             </DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogDescription className="text-sm text-gray-500">
               Create a new recipe with ingredients and pricing.
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-4 max-h-[80vh] overflow-y-auto">
+          <div className="px-0 py-0 max-h-[80vh] overflow-y-auto">
             <RecipeForm
               ingredients={ingredients}
               onSave={onAddRecipe}
@@ -64,22 +65,26 @@ export function RecipeModals({
         open={modalType === "edit"}
         onOpenChange={() => modalType === "edit" && closeModal()}
       >
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader>
-            <DialogTitle>Edit Recipe</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[800px] p-0 gap-0 overflow-hidden bg-white rounded-lg shadow-lg border border-gray-100">
+          <DialogHeader className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <DialogTitle className="text-xl font-medium text-gray-800">
+              Edit Recipe
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
               Update recipe details, ingredients, or pricing.
             </DialogDescription>
           </DialogHeader>
-          {currentRecipe && (
-            <RecipeForm
-              dish={currentRecipe}
-              ingredients={ingredients}
-              onSave={onEditRecipe}
-              onCancel={closeModal}
-              isLoading={isProcessing}
-            />
-          )}
+          <div className="px-0 py-0 max-h-[80vh] overflow-y-auto">
+            {currentRecipe && (
+              <RecipeForm
+                dish={currentRecipe}
+                ingredients={ingredients}
+                onSave={onEditRecipe}
+                onCancel={closeModal}
+                isLoading={isProcessing}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -88,22 +93,52 @@ export function RecipeModals({
         open={modalType === "delete"}
         onOpenChange={() => modalType === "delete" && closeModal()}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Recipe</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-lg shadow-lg border border-gray-100">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-xl font-medium text-gray-800">
+              Delete Recipe
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-1">
               Are you sure you want to delete this recipe? This action cannot be
               undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-4">
-            <Button variant="outline" onClick={closeModal}>
+          
+          {showArchiveOption && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-md"
+            >
+              <div className="flex items-start">
+                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-800 text-sm">
+                    Cannot Delete Recipe
+                  </h4>
+                  <p className="text-xs text-amber-700 mt-1">
+                    This recipe cannot be deleted because it is referenced in
+                    sales records. You can archive it instead, which will hide
+                    it from active recipes but preserve the sales history.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={closeModal}
+              className="text-sm h-9 px-4"
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => currentRecipe && onDeleteRecipe(currentRecipe.id)}
               disabled={showArchiveOption || isProcessing}
+              className="text-sm h-9 px-4"
             >
               {isProcessing ? "Processing..." : "Delete"}
             </Button>
@@ -114,28 +149,12 @@ export function RecipeModals({
                   currentRecipe && onArchiveRecipe(currentRecipe.id)
                 }
                 disabled={isProcessing}
+                className="text-sm h-9 px-4 bg-amber-600 hover:bg-amber-700"
               >
                 {isProcessing ? "Processing..." : "Archive Instead"}
               </Button>
             )}
           </div>
-          {showArchiveOption && (
-            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
-              <div className="flex items-start">
-                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-amber-800">
-                    Cannot Delete Recipe
-                  </h4>
-                  <p className="text-sm text-amber-700">
-                    This recipe cannot be deleted because it is referenced in
-                    sales records. You can archive it instead, which will hide
-                    it from active recipes but preserve the sales history.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
@@ -144,22 +163,53 @@ export function RecipeModals({
         open={modalType === "bulkDelete"}
         onOpenChange={() => modalType === "bulkDelete" && closeModal()}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Multiple Recipes</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[500px] p-6 bg-white rounded-lg shadow-lg border border-gray-100">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-xl font-medium text-gray-800">
+              Delete Multiple Recipes
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-1">
               Are you sure you want to delete {recipesToDelete.length} recipes?
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-4">
-            <Button variant="outline" onClick={closeModal}>
+          
+          {showBulkArchiveOption && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-md"
+            >
+              <div className="flex items-start">
+                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-800 text-sm">
+                    Some Recipes Cannot Be Deleted
+                  </h4>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Some of the selected recipes cannot be deleted because they are
+                    referenced in sales records. You can archive these recipes
+                    instead, which will hide them from active recipes but preserve
+                    the sales history.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          <div className="flex justify-end space-x-3 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={closeModal}
+              className="text-sm h-9 px-4"
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={onBulkDeleteRecipes}
               disabled={showBulkArchiveOption || isProcessing}
+              className="text-sm h-9 px-4"
             >
               {isProcessing ? "Processing..." : "Delete"}
             </Button>
@@ -168,29 +218,12 @@ export function RecipeModals({
                 variant="default"
                 onClick={onBulkArchiveRecipes}
                 disabled={isProcessing}
+                className="text-sm h-9 px-4 bg-amber-600 hover:bg-amber-700"
               >
                 {isProcessing ? "Processing..." : "Archive Instead"}
               </Button>
             )}
           </div>
-          {showBulkArchiveOption && (
-            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
-              <div className="flex items-start">
-                <FiAlertCircle className="text-amber-500 mr-2 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-amber-800">
-                    Cannot Delete Recipes
-                  </h4>
-                  <p className="text-sm text-amber-700">
-                    Some or all of these recipes cannot be deleted because they
-                    are referenced in sales records. You can archive them
-                    instead, which will hide them from active recipes but
-                    preserve the sales history.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 

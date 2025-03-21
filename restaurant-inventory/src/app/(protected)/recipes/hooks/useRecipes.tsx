@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dish, Ingredient } from "@/lib/types";
 import { recipeService } from "@/lib/services/recipe-service";
 import { inventoryService } from "@/lib/services/inventory-service";
@@ -19,7 +19,7 @@ export function useRecipes() {
   const { success, error: showError } = useNotificationHelpers();
 
   // Fetch recipes and ingredients
-  const fetchRecipesAndIngredients = async () => {
+  const fetchRecipesAndIngredients = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -40,7 +40,7 @@ export function useRecipes() {
           category: item.category || "",
           quantity: item.quantity,
           unit: item.unit,
-          reorderLevel: item.minimum_stock_level || 0,
+          reorderLevel: item.reorder_level ?? 0,
           cost: item.cost || 0,
           createdAt:
             typeof item.created_at === "string"
@@ -65,7 +65,7 @@ export function useRecipes() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showArchivedRecipes, showError]);
 
   // Add a new recipe
   const addRecipe = async (
@@ -226,7 +226,7 @@ export function useRecipes() {
   // Load data on initial render
   useEffect(() => {
     fetchRecipesAndIngredients();
-  }, []);
+  }, [fetchRecipesAndIngredients]);
 
   return {
     recipes,

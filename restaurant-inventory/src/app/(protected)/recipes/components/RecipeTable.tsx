@@ -11,14 +11,22 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FiEdit2, FiTrash2, FiCopy, FiArchive, FiList } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCopy, FiArchive, FiList, FiMoreHorizontal } from "react-icons/fi";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useCurrency } from "@/lib/currency";
+import { motion } from "framer-motion";
 
 interface RecipeTableProps {
   recipes: Dish[];
@@ -51,27 +59,52 @@ export default function RecipeTable({
     (recipe) => recipe.isArchived === showArchivedRecipes
   );
 
+  // Animation variants
+  const tableVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+      },
+    },
+  };
+
+  const rowVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="rounded-lg border border-gray-100 shadow-xs overflow-hidden bg-white">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={tableVariants}
+      className="rounded-md border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-950"
+    >
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-transparent border-gray-100">
-            <TableHead className="w-[300px] bg-gray-50/50 font-medium">
+          <TableRow className="hover:bg-transparent border-slate-200 dark:border-slate-800">
+            <TableHead className="w-[300px] bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
               Recipe Name
             </TableHead>
-            <TableHead className="bg-gray-50/50 font-medium">
+            <TableHead className="bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
               Category
             </TableHead>
-            <TableHead className="bg-gray-50/50 font-medium">Price</TableHead>
-            <TableHead className="bg-gray-50/50 font-medium">
+            <TableHead className="bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
+              Price
+            </TableHead>
+            <TableHead className="bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
               Food Cost
             </TableHead>
-            <TableHead className="bg-gray-50/50 font-medium">Margin</TableHead>
-            <TableHead className="bg-gray-50/50 font-medium">
+            <TableHead className="bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
+              Margin
+            </TableHead>
+            <TableHead className="bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm">
               Allergens
             </TableHead>
-            <TableHead className="bg-gray-50/50 font-medium text-right">
-              Actions
+            <TableHead className="w-10 bg-slate-50/50 dark:bg-slate-900/30 font-medium text-slate-600 dark:text-slate-400 text-sm text-right">
+              <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -79,16 +112,16 @@ export default function RecipeTable({
           {filteredRecipes.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="h-32 text-center">
-                <div className="flex flex-col items-center justify-center text-gray-500">
-                  <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <FiList className="h-6 w-6 text-gray-400" />
+                <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                  <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                    <FiList className="h-6 w-6 text-slate-400 dark:text-slate-500" />
                   </div>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-200">
                     {showArchivedRecipes
                       ? "No archived recipes found"
                       : "No recipes found"}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     {showArchivedRecipes
                       ? "Archive a recipe to see it here"
                       : "Add a new recipe to get started"}
@@ -104,17 +137,18 @@ export default function RecipeTable({
               );
 
               return (
-                <TableRow
+                <motion.tr
                   key={recipe.id}
-                  className="group hover:bg-gray-50/50 transition-colors border-gray-100"
+                  variants={rowVariants}
+                  className="group hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors border-slate-200 dark:border-slate-800"
                 >
                   <TableCell className="py-3">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-slate-900 dark:text-slate-200">
                         {recipe.name}
                       </span>
                       {recipe.description && (
-                        <span className="text-sm text-gray-500 truncate max-w-[280px] mt-0.5">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[280px] mt-0.5">
                           {recipe.description}
                         </span>
                       )}
@@ -124,24 +158,24 @@ export default function RecipeTable({
                     {recipe.category ? (
                       <Badge
                         variant="secondary"
-                        className="font-normal bg-gray-100 text-gray-700 border-0"
+                        className="font-normal text-xs bg-slate-100/70 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-0 px-2 py-0.5"
                       >
                         {recipe.category}
                       </Badge>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-slate-900 dark:text-slate-200 text-sm">
                     {formatCurrency(recipe.price)}
                   </TableCell>
                   <TableCell>
                     {recipe.foodCost ? (
-                      <span className="text-gray-600">
+                      <span className="text-slate-600 dark:text-slate-400 text-sm">
                         {formatCurrency(recipe.foodCost)}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -154,102 +188,125 @@ export default function RecipeTable({
                             ? "warning"
                             : "destructive"
                         }
-                        className="font-normal"
+                        className={`font-normal text-xs px-2 py-0.5 ${
+                          parseFloat(margin) > 30
+                            ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-0"
+                            : parseFloat(margin) > 15
+                            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-0"
+                            : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-0"
+                        }`}
                       >
                         {margin}
                       </Badge>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">-</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {recipe.allergies && recipe.allergies.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {recipe.allergies.map((allergen) => (
-                          <Badge
-                            key={allergen}
-                            variant="outline"
-                            className="font-normal text-xs bg-transparent"
-                          >
-                            {allergen}
-                          </Badge>
-                        ))}
+                        {recipe.allergies.length <= 2 ? (
+                          recipe.allergies.map((allergen) => (
+                            <Badge
+                              key={allergen}
+                              variant="outline"
+                              className="font-normal text-xs bg-transparent border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 px-1.5 py-0"
+                            >
+                              {allergen}
+                            </Badge>
+                          ))
+                        ) : (
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="font-normal text-xs bg-transparent border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 px-1.5 py-0"
+                            >
+                              {recipe.allergies[0]}
+                            </Badge>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant="outline"
+                                    className="font-normal text-xs bg-transparent border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 px-1.5 py-0 cursor-default"
+                                  >
+                                    +{recipe.allergies.length - 1}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="flex flex-col gap-1">
+                                    {recipe.allergies.slice(1).map((allergen) => (
+                                      <span key={allergen} className="text-xs">
+                                        {allergen}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </>
+                        )}
                       </div>
                     ) : (
-                      <span className="text-gray-400">None</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">None</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
-                              onClick={() => onEdit(recipe)}
-                            >
-                              <FiEdit2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit recipe</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
-                              onClick={() => onDuplicate(recipe)}
-                            >
-                              <FiCopy className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Duplicate recipe</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-gray-500 hover:text-gray-900"
-                              onClick={() => onArchive(recipe)}
-                            >
-                              <FiArchive className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {recipe.isArchived ? "Unarchive" : "Archive"} recipe
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {!recipe.isArchived && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  <TableCell className="p-0 pr-2">
+                    <div className="flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+                          >
+                            <FiMoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => onEdit(recipe)}
+                            className="cursor-pointer"
+                          >
+                            <FiEdit2 className="h-4 w-4 mr-2" />
+                            <span>Edit recipe</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDuplicate(recipe)}
+                            className="cursor-pointer"
+                          >
+                            <FiCopy className="h-4 w-4 mr-2" />
+                            <span>Duplicate recipe</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onArchive(recipe)}
+                            className="cursor-pointer"
+                          >
+                            <FiArchive className="h-4 w-4 mr-2" />
+                            <span>{recipe.isArchived ? "Unarchive" : "Archive"} recipe</span>
+                          </DropdownMenuItem>
+                          {!recipe.isArchived && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
                                 onClick={() => onDelete(recipe)}
+                                className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
                               >
-                                <FiTrash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Delete recipe</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </TooltipProvider>
+                                <FiTrash2 className="h-4 w-4 mr-2" />
+                                <span>Delete recipe</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
-                </TableRow>
+                </motion.tr>
               );
             })
           )}
         </TableBody>
       </Table>
-    </div>
+    </motion.div>
   );
 }

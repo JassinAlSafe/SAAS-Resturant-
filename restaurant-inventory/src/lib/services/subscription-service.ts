@@ -5,427 +5,638 @@ import {
     Invoice,
     InvoiceItem
 } from "@/lib/types";
-import { CurrencyCode } from "@/lib/currency";
+import { supabase } from "@/lib/supabase";
 
-// Mock subscription plans
-const mockSubscriptionPlans: SubscriptionPlan[] = [
-    {
-        id: "plan_basic",
-        name: "Basic",
-        description: "Perfect for small restaurants just getting started",
-        features: [
-            "Up to 500 inventory items",
-            "Basic reporting",
-            "1 user account",
-            "Email support"
-        ],
-        monthlyPrice: 29.99,
-        yearlyPrice: 299.99,
-        price: 299.99,  // Default to yearly price
-        interval: "yearly",
-        currency: "USD",
-        isPopular: false,
-        priority: 1
-    },
-    {
-        id: "plan_pro",
-        name: "Professional",
-        description: "Ideal for growing restaurants with more needs",
-        features: [
-            "Unlimited inventory items",
-            "Advanced reporting & analytics",
-            "Up to 5 user accounts",
-            "Priority email support",
-            "Menu planning tools",
-            "Supplier management"
-        ],
-        monthlyPrice: 59.99,
-        yearlyPrice: 599.99,
-        price: 599.99,  // Default to yearly price
-        interval: "yearly",
-        currency: "USD",
-        isPopular: true,
-        priority: 2
-    },
-    {
-        id: "plan_enterprise",
-        name: "Enterprise",
-        description: "For restaurant chains and large operations",
-        features: [
-            "Everything in Professional",
-            "Unlimited user accounts",
-            "Multi-location support",
-            "API access",
-            "Dedicated account manager",
-            "Custom integrations",
-            "24/7 phone support"
-        ],
-        monthlyPrice: 119.99,
-        yearlyPrice: 1199.99,
-        price: 1199.99,  // Default to yearly price
-        interval: "yearly",
-        currency: "USD",
-        isPopular: false,
-        priority: 3
-    }
-];
+// Track the billing interval for proper price display
+let billingInterval: 'monthly' | 'yearly' = 'monthly';
 
-// Mock subscription data
-const mockSubscription: Subscription = {
-    id: "sub_123456",
-    userId: "user_123",
-    planId: "plan_pro",
-    status: "active",
-    currentPeriodStart: new Date("2023-01-01").toISOString(),
-    currentPeriodEnd: new Date("2023-12-31").toISOString(),
-    cancelAtPeriodEnd: false,
-    createdAt: new Date("2023-01-01").toISOString(),
-    updatedAt: new Date("2023-01-01").toISOString(),
-    billingInterval: "yearly",
-    trialEnd: null,
-    pausedAt: null,
-    resumesAt: null,
-    plan: {
-        id: "plan_pro",
-        name: "Professional",
-        description: "Ideal for growing restaurants with more needs",
-        features: [
-            "Unlimited inventory items",
-            "Advanced reporting & analytics",
-            "Up to 5 user accounts",
-            "Priority email support",
-            "Menu planning tools",
-            "Supplier management"
-        ],
-        monthlyPrice: 59.99,
-        yearlyPrice: 599.99,
-        price: 599.99,
-        interval: "yearly",
-        currency: "USD",
-        isPopular: true,
-        priority: 2
-    }
-};
+// Helper function to map database rows to frontend types
+const mapDbToSubscriptionPlan = (plan: Record<string, unknown>): SubscriptionPlan => ({
+    id: plan.id as string,
+    name: plan.name as string,
+    description: plan.description as string,
+    features: Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features as string),
+    price: billingInterval === 'monthly' ? plan.monthly_price as number : plan.yearly_price as number,
+    monthlyPrice: plan.monthly_price as number,
+    yearlyPrice: plan.yearly_price as number,
+    interval: billingInterval === 'monthly' ? 'month' : 'year',
+    currency: (plan.currency as string) || "SEK", // Default to SEK
+    isPopular: plan.is_popular as boolean,
+    priority: plan.priority as number,
+    metadata: plan.metadata as Record<string, unknown>
+});
 
-// Mock payment methods
-const mockPaymentMethods: PaymentMethod[] = [
-    {
-        id: "pm_123456",
-        userId: "user_123",
-        type: "card",
-        cardBrand: "visa",
-        cardLastFour: "4242",
-        expiryMonth: 12,
-        expiryYear: 2025,
-        isDefault: true,
-        billingDetails: {
-            name: "John Doe",
-            line1: "123 Main St",
-            line2: "Apt 4B",
-            city: "San Francisco",
-            state: "CA",
-            postalCode: "94107",
-            country: "US"
-        },
-        createdAt: new Date("2023-01-01").toISOString()
-    },
-    {
-        id: "pm_789012",
-        userId: "user_123",
-        type: "card",
-        cardBrand: "mastercard",
-        cardLastFour: "5678",
-        expiryMonth: 10,
-        expiryYear: 2024,
-        isDefault: false,
-        billingDetails: {
-            name: "John Doe",
-            line1: "123 Main St",
-            line2: "Apt 4B",
-            city: "San Francisco",
-            state: "CA",
-            postalCode: "94107",
-            country: "US"
-        },
-        createdAt: new Date("2023-02-15").toISOString()
-    }
-];
+const mapDbToPaymentMethod = (pm: Record<string, unknown>): PaymentMethod => ({
+    id: pm.id as string,
+    userId: pm.user_id as string,
+    type: pm.type as string,
+    brand: pm.brand as string | undefined,
+    lastFour: pm.last_four as string | undefined,
+    last4: pm.last_four as string | undefined, // For compatibility
+    expiryMonth: pm.expiry_month as number,
+    expiryYear: pm.expiry_year as number,
+    isDefault: pm.is_default as boolean,
+    name: pm.name as string | undefined,
+    createdAt: pm.created_at as string
+});
 
-// Mock invoices
-const mockInvoices: Invoice[] = [
-    {
-        id: "inv_123456",
-        userId: "user_123",
-        subscriptionId: "sub_123456",
-        invoiceNumber: "INV-2023-001",
-        amount: 599.99,
-        currency: "USD",
-        status: "paid",
-        invoiceDate: new Date("2023-01-01").toISOString(),
-        dueDate: new Date("2023-01-15").toISOString(),
-        paidAt: new Date("2023-01-05").toISOString(),
-        pdf: "https://example.com/invoices/INV-2023-001.pdf",
-        items: [
-            {
-                id: "item_123",
-                description: "Professional Plan (Yearly)",
-                amount: 599.99,
-                quantity: 1
-            }
-        ]
-    },
-    {
-        id: "inv_789012",
-        userId: "user_123",
-        subscriptionId: "sub_123456",
-        invoiceNumber: "INV-2022-012",
-        amount: 599.99,
-        currency: "USD",
-        status: "paid",
-        invoiceDate: new Date("2022-01-01").toISOString(),
-        dueDate: new Date("2022-01-15").toISOString(),
-        paidAt: new Date("2022-01-03").toISOString(),
-        pdf: "https://example.com/invoices/INV-2022-012.pdf",
-        items: [
-            {
-                id: "item_456",
-                description: "Professional Plan (Yearly)",
-                amount: 599.99,
-                quantity: 1
-            }
-        ]
-    },
-    {
-        id: "inv_345678",
-        userId: "user_123",
-        subscriptionId: "sub_123456",
-        invoiceNumber: "INV-2023-002",
-        amount: 49.99,
-        currency: "USD",
-        status: "open",
-        invoiceDate: new Date("2023-06-15").toISOString(),
-        dueDate: new Date("2023-06-30").toISOString(),
-        paidAt: null,
-        pdf: "https://example.com/invoices/INV-2023-002.pdf",
-        items: [
-            {
-                id: "item_789",
-                description: "Additional User Seats (5)",
-                amount: 9.99,
-                quantity: 5
-            }
-        ]
-    }
-];
+const mapDbToInvoice = (invoice: Record<string, unknown>): Invoice => ({
+    id: invoice.id as string,
+    userId: invoice.user_id as string,
+    subscriptionId: invoice.subscription_id as string | undefined,
+    amount: invoice.amount as number,
+    status: invoice.status as Invoice['status'],
+    currency: (invoice.currency as string) || "SEK", // Default to SEK
+    date: invoice.invoice_date as string,
+    dueDate: invoice.due_date as string | undefined,
+    description: invoice.description as string | undefined,
+    pdf: invoice.pdf_url as string | undefined,
+    hostedInvoiceUrl: invoice.hosted_invoice_url as string | undefined,
+    createdAt: invoice.created_at as string
+});
 
-// Helper function to simulate async API calls
-const simulateApiCall = <T>(data: T, delay = 500): Promise<T> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(data);
-        }, delay);
-    });
+const mapDbToSubscription = async (sub: Record<string, unknown>): Promise<Subscription> => {
+    // Update billing interval based on subscription
+    billingInterval = (sub.billing_interval as 'monthly' | 'yearly') || 'monthly';
+    
+    // Fetch the plan details
+    const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', sub.plan_id)
+        .single();
+
+    return {
+        id: sub.id as string,
+        userId: sub.user_id as string,
+        planId: sub.plan_id as string,
+        status: sub.status as Subscription['status'],
+        currentPeriodStart: sub.current_period_start as string,
+        currentPeriodEnd: sub.current_period_end as string,
+        cancelAtPeriodEnd: sub.cancel_at_period_end as boolean,
+        billingInterval: sub.billing_interval as 'monthly' | 'yearly',
+        trialEnd: sub.trial_end as string | undefined,
+        pausedAt: sub.paused_at as string | undefined,
+        resumesAt: sub.resumes_at as string | undefined,
+        createdAt: sub.created_at as string,
+        updatedAt: sub.updated_at as string,
+        plan: planData ? mapDbToSubscriptionPlan(planData) : undefined
+    };
 };
 
 // Subscription service
 export const subscriptionService = {
     // Get subscription plans
-    getSubscriptionPlans: async (): Promise<SubscriptionPlan[]> => {
-        return simulateApiCall(mockSubscriptionPlans);
+    async getSubscriptionPlans(interval: 'monthly' | 'yearly' = 'monthly'): Promise<SubscriptionPlan[]> {
+        try {
+            // Update billing interval for proper price display
+            billingInterval = interval;
+            
+            // Always use mock plans for now to ensure consistent display
+            console.log('Using mock subscription plans with SEK currency');
+            return [
+                {
+                    id: '1',
+                    name: 'Basic',
+                    description: 'Perfect for small restaurants just getting started',
+                    features: [
+                        'Up to 500 inventory items',
+                        'Basic reporting',
+                        '1 user account',
+                        'Email support'
+                    ],
+                    price: interval === 'monthly' ? 150 : 1500,
+                    monthlyPrice: 150,
+                    yearlyPrice: 1500,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: false,
+                    priority: 1,
+                    metadata: {}
+                },
+                {
+                    id: '2',
+                    name: 'Professional',
+                    description: 'Ideal for growing restaurants with more needs',
+                    features: [
+                        'Unlimited inventory items',
+                        'Advanced reporting & analytics',
+                        'Up to 5 user accounts',
+                        'Priority email support',
+                        'Menu planning tools',
+                        'Supplier management'
+                    ],
+                    price: interval === 'monthly' ? 300 : 3000,
+                    monthlyPrice: 300,
+                    yearlyPrice: 3000,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: true,
+                    priority: 2,
+                    metadata: {}
+                },
+                {
+                    id: '3',
+                    name: 'Enterprise',
+                    description: 'For restaurant chains and large operations',
+                    features: [
+                        'Everything in Professional',
+                        'Unlimited user accounts',
+                        'Multi-location support',
+                        'API access',
+                        'Dedicated account manager',
+                        'Custom integrations',
+                        '24/7 phone support'
+                    ],
+                    price: interval === 'monthly' ? 500 : 5000,
+                    monthlyPrice: 500,
+                    yearlyPrice: 5000,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: false,
+                    priority: 3,
+                    metadata: {}
+                }
+            ];
+            
+            /* Temporarily disabled database access to ensure consistent display
+            const { data, error } = await supabase
+                .from('subscription_plans')
+                .select('*')
+                .order('priority', { ascending: true });
+
+            if (error) throw error;
+            
+            // If no plans found in the database, return mock plans with SEK currency
+            if (!data || data.length === 0) {
+                console.log('No subscription plans found in database, using mock plans');
+                return mockPlans;
+            }
+            
+            return (data || []).map(mapDbToSubscriptionPlan);
+            */
+        } catch (error) {
+            console.error('Error fetching subscription plans:', error);
+            // Return mock plans as fallback in case of error
+            return [
+                {
+                    id: '1',
+                    name: 'Basic',
+                    description: 'Perfect for small restaurants just getting started',
+                    features: [
+                        'Up to 500 inventory items',
+                        'Basic reporting',
+                        '1 user account',
+                        'Email support'
+                    ],
+                    price: interval === 'monthly' ? 150 : 1500,
+                    monthlyPrice: 150,
+                    yearlyPrice: 1500,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: false,
+                    priority: 1,
+                    metadata: {}
+                },
+                {
+                    id: '2',
+                    name: 'Professional',
+                    description: 'Ideal for growing restaurants with more needs',
+                    features: [
+                        'Unlimited inventory items',
+                        'Advanced reporting & analytics',
+                        'Up to 5 user accounts',
+                        'Priority email support',
+                        'Menu planning tools',
+                        'Supplier management'
+                    ],
+                    price: interval === 'monthly' ? 300 : 3000,
+                    monthlyPrice: 300,
+                    yearlyPrice: 3000,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: true,
+                    priority: 2,
+                    metadata: {}
+                },
+                {
+                    id: '3',
+                    name: 'Enterprise',
+                    description: 'For restaurant chains and large operations',
+                    features: [
+                        'Everything in Professional',
+                        'Unlimited user accounts',
+                        'Multi-location support',
+                        'API access',
+                        'Dedicated account manager',
+                        'Custom integrations',
+                        '24/7 phone support'
+                    ],
+                    price: interval === 'monthly' ? 500 : 5000,
+                    monthlyPrice: 500,
+                    yearlyPrice: 5000,
+                    interval: interval === 'monthly' ? 'month' : 'year',
+                    currency: 'SEK',
+                    isPopular: false,
+                    priority: 3,
+                    metadata: {}
+                }
+            ];
+        }
     },
 
     // Get subscription for a user
-    getSubscription: async (userId: string): Promise<Subscription> => {
-        // In a real app, we would fetch from an API
-        const subscription = { ...mockSubscription, userId };
+    async getSubscription(userId: string): Promise<Subscription | null> {
+        try {
+            if (!userId) throw new Error('User ID is required');
 
-        // Add the complete plan object to the subscription
-        const plan = mockSubscriptionPlans.find(p => p.id === subscription.planId);
+            // Ensure we're using the authenticated client
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
-        return simulateApiCall({
-            ...subscription,
-            plan: plan || {
-                id: "unknown",
-                name: "Unknown Plan",
-                description: "Plan details unavailable",
-                features: [],
-                monthlyPrice: 0,
-                yearlyPrice: 0,
-                currency: "USD",
-                isPopular: false,
-                priority: 0
+            if (error) {
+                // If no subscription found, return null instead of throwing
+                if (error.code === 'PGRST116') {
+                    return null;
+                }
+                console.error('Supabase error:', error);
+                throw error;
             }
-        });
+
+            return data ? await mapDbToSubscription(data) : null;
+        } catch (error) {
+            console.error('Error fetching subscription:', error);
+            throw error;
+        }
     },
 
     // Change subscription plan
-    changePlan: async (
+    async changePlan(
         userId: string,
         planId: string,
-        billingInterval: "monthly" | "yearly" = "yearly"
-    ): Promise<Subscription> => {
-        // In a real app, we would call an API to change the plan
-        const plan = mockSubscriptionPlans.find(p => p.id === planId);
-        if (!plan) {
-            throw new Error("Plan not found");
+        billingIntervalParam: "monthly" | "yearly" = "monthly"
+    ): Promise<Subscription> {
+        try {
+            if (!userId) throw new Error('User ID is required');
+            if (!planId) throw new Error('Plan ID is required');
+
+            // Update billing interval for proper price display
+            billingInterval = billingIntervalParam;
+            
+            // Get the plan details
+            const { data: planData, error: planError } = await supabase
+                .from('subscription_plans')
+                .select('*')
+                .eq('id', planId)
+                .single();
+
+            if (planError) throw planError;
+            if (!planData) throw new Error('Plan not found');
+
+            // Get current subscription
+            const { data: currentSub, error: subError } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            // Calculate new period dates
+            const now = new Date();
+            const endDate = new Date();
+            if (billingIntervalParam === 'yearly') {
+                endDate.setFullYear(endDate.getFullYear() + 1);
+            } else {
+                endDate.setMonth(endDate.getMonth() + 1);
+            }
+
+            if (subError && subError.code !== 'PGRST116') throw subError;
+
+            let result;
+            if (currentSub) {
+                // Update existing subscription
+                const { data, error } = await supabase
+                    .from('subscriptions')
+                    .update({
+                        plan_id: planId,
+                        billing_interval: billingIntervalParam,
+                        current_period_start: now.toISOString(),
+                        current_period_end: endDate.toISOString(),
+                        cancel_at_period_end: false,
+                        status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentSub.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                result = data;
+            } else {
+                // Create new subscription
+                const { data, error } = await supabase
+                    .from('subscriptions')
+                    .insert({
+                        user_id: userId,
+                        plan_id: planId,
+                        billing_interval: billingIntervalParam,
+                        current_period_start: now.toISOString(),
+                        current_period_end: endDate.toISOString(),
+                        status: 'active'
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                result = data;
+            }
+
+            return await mapDbToSubscription(result);
+        } catch (error) {
+            console.error('Error changing subscription plan:', error);
+            throw error;
         }
-
-        const updatedSubscription: Subscription = {
-            ...mockSubscription,
-            userId,
-            planId,
-            billingInterval,
-            plan: {
-                ...plan,
-                price: billingInterval === "monthly" ? plan.monthlyPrice : plan.yearlyPrice,
-                interval: billingInterval
-            },
-            updatedAt: new Date().toISOString()
-        };
-
-        return simulateApiCall(updatedSubscription, 1000);
     },
 
     // Cancel subscription
-    cancelSubscription: async (
+    async cancelSubscription(
         userId: string,
         cancelAtPeriodEnd: boolean = true
-    ): Promise<Subscription> => {
-        // In a real app, we would call an API to cancel the subscription
-        const updatedSubscription: Subscription = {
-            ...mockSubscription,
-            userId,
-            cancelAtPeriodEnd,
-            updatedAt: new Date().toISOString()
-        };
+    ): Promise<Subscription> {
+        try {
+            if (!userId) throw new Error('User ID is required');
 
-        return simulateApiCall(updatedSubscription, 1000);
-    },
+            // Get current subscription
+            const { data: currentSub, error: subError } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
-    // Pause subscription
-    pauseSubscription: async (
-        subscriptionId: string,
-        resumeDate?: Date
-    ): Promise<Subscription> => {
-        // In a real app, we would call an API to pause the subscription
-        const updatedSubscription: Subscription = {
-            ...mockSubscription,
-            status: "paused",
-            pausedAt: new Date().toISOString(),
-            resumesAt: resumeDate ? resumeDate.toISOString() : null,
-            updatedAt: new Date().toISOString()
-        };
+            if (subError) throw subError;
+            if (!currentSub) throw new Error('No active subscription found');
 
-        return simulateApiCall(updatedSubscription, 1000);
-    },
+            const updates: Record<string, unknown> = {
+                cancel_at_period_end: cancelAtPeriodEnd,
+                updated_at: new Date().toISOString()
+            };
 
-    // Resume subscription
-    resumeSubscription: async (subscriptionId: string): Promise<Subscription> => {
-        // In a real app, we would call an API to resume the subscription
-        const updatedSubscription: Subscription = {
-            ...mockSubscription,
-            status: "active",
-            pausedAt: null,
-            resumesAt: null,
-            updatedAt: new Date().toISOString()
-        };
+            // If immediate cancellation, update status
+            if (!cancelAtPeriodEnd) {
+                updates.status = 'canceled';
+            }
 
-        return simulateApiCall(updatedSubscription, 1000);
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .update(updates)
+                .eq('id', currentSub.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return await mapDbToSubscription(data);
+        } catch (error) {
+            console.error('Error canceling subscription:', error);
+            throw error;
+        }
     },
 
     // Get payment methods for a user
-    getPaymentMethods: async (userId: string): Promise<PaymentMethod[]> => {
-        // In a real app, we would fetch from an API
-        return simulateApiCall(mockPaymentMethods.map(pm => ({ ...pm, userId })));
+    async getPaymentMethods(userId: string): Promise<PaymentMethod[]> {
+        try {
+            if (!userId) throw new Error('User ID is required');
+
+            const { data, error } = await supabase
+                .from('payment_methods')
+                .select('*')
+                .eq('user_id', userId)
+                .order('is_default', { ascending: false });
+
+            if (error) throw error;
+            return (data || []).map(mapDbToPaymentMethod);
+        } catch (error) {
+            console.error('Error fetching payment methods:', error);
+            throw error;
+        }
     },
 
     // Add a payment method
-    addPaymentMethod: async (
+    async addPaymentMethod(
         userId: string,
         paymentMethodData: Omit<PaymentMethod, "id" | "userId" | "createdAt">
-    ): Promise<PaymentMethod> => {
-        // In a real app, we would call an API to add the payment method
-        const newPaymentMethod: PaymentMethod = {
-            id: `pm_${Math.random().toString(36).substring(2, 11)}`,
-            userId,
-            ...paymentMethodData,
-            createdAt: new Date().toISOString()
-        };
+    ): Promise<PaymentMethod> {
+        try {
+            if (!userId) throw new Error('User ID is required');
 
-        // If this is set as default, we would update all other payment methods
-        if (newPaymentMethod.isDefault) {
-            mockPaymentMethods.forEach(pm => {
-                if (pm.userId === userId) {
-                    pm.isDefault = false;
-                }
-            });
+            // Check if this is the first payment method
+            const { count, error: countError } = await supabase
+                .from('payment_methods')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+
+            if (countError) throw countError;
+
+            // If this is the first payment method, make it default
+            const isDefault = (count === 0 || count === null) || paymentMethodData.isDefault;
+
+            // If this is set as default, unset other defaults
+            if (isDefault && count && count > 0) {
+                const { error: updateError } = await supabase
+                    .from('payment_methods')
+                    .update({ is_default: false })
+                    .eq('user_id', userId)
+                    .eq('is_default', true);
+
+                if (updateError) throw updateError;
+            }
+
+            // Insert the new payment method
+            const { data, error } = await supabase
+                .from('payment_methods')
+                .insert({
+                    user_id: userId,
+                    type: paymentMethodData.type,
+                    brand: paymentMethodData.brand,
+                    last_four: paymentMethodData.lastFour || paymentMethodData.last4,
+                    expiry_month: paymentMethodData.expiryMonth,
+                    expiry_year: paymentMethodData.expiryYear,
+                    is_default: isDefault,
+                    name: paymentMethodData.name
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return mapDbToPaymentMethod(data);
+        } catch (error) {
+            console.error('Error adding payment method:', error);
+            throw error;
         }
-
-        // Add to mock data
-        mockPaymentMethods.push(newPaymentMethod);
-
-        return simulateApiCall(newPaymentMethod, 1000);
     },
 
     // Update a payment method
-    updatePaymentMethod: async (
+    async updatePaymentMethod(
         paymentMethodId: string,
         updates: Partial<PaymentMethod>
-    ): Promise<PaymentMethod> => {
-        // In a real app, we would call an API to update the payment method
-        const paymentMethod = mockPaymentMethods.find(pm => pm.id === paymentMethodId);
-        if (!paymentMethod) {
-            throw new Error("Payment method not found");
+    ): Promise<PaymentMethod> {
+        try {
+            if (!paymentMethodId) throw new Error('Payment method ID is required');
+
+            // Get the payment method to check user_id
+            const { data: existingPM, error: getError } = await supabase
+                .from('payment_methods')
+                .select('*')
+                .eq('id', paymentMethodId)
+                .single();
+
+            if (getError) throw getError;
+            if (!existingPM) throw new Error('Payment method not found');
+
+            // If setting as default, unset other defaults
+            if (updates.isDefault) {
+                const { error: updateError } = await supabase
+                    .from('payment_methods')
+                    .update({ is_default: false })
+                    .eq('user_id', existingPM.user_id)
+                    .eq('is_default', true)
+                    .neq('id', paymentMethodId);
+
+                if (updateError) throw updateError;
+            }
+
+            // Map frontend fields to database fields
+            const dbUpdates: Record<string, unknown> = {};
+            if (updates.name !== undefined) dbUpdates.name = updates.name;
+            if (updates.expiryMonth !== undefined) dbUpdates.expiry_month = updates.expiryMonth;
+            if (updates.expiryYear !== undefined) dbUpdates.expiry_year = updates.expiryYear;
+            if (updates.isDefault !== undefined) dbUpdates.is_default = updates.isDefault;
+
+            // Update the payment method
+            const { data, error } = await supabase
+                .from('payment_methods')
+                .update(dbUpdates)
+                .eq('id', paymentMethodId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return mapDbToPaymentMethod(data);
+        } catch (error) {
+            console.error('Error updating payment method:', error);
+            throw error;
         }
-
-        // If setting as default, update all other payment methods
-        if (updates.isDefault) {
-            mockPaymentMethods.forEach(pm => {
-                if (pm.userId === paymentMethod.userId) {
-                    pm.isDefault = pm.id === paymentMethodId;
-                }
-            });
-        }
-
-        // Update the payment method
-        const updatedPaymentMethod = { ...paymentMethod, ...updates };
-
-        return simulateApiCall(updatedPaymentMethod, 1000);
     },
 
     // Delete a payment method
-    deletePaymentMethod: async (paymentMethodId: string): Promise<void> => {
-        // In a real app, we would call an API to delete the payment method
-        const index = mockPaymentMethods.findIndex(pm => pm.id === paymentMethodId);
-        if (index === -1) {
-            throw new Error("Payment method not found");
+    async deletePaymentMethod(paymentMethodId: string): Promise<void> {
+        try {
+            if (!paymentMethodId) throw new Error('Payment method ID is required');
+
+            // Get the payment method to check if it's default
+            const { data: existingPM, error: getError } = await supabase
+                .from('payment_methods')
+                .select('*')
+                .eq('id', paymentMethodId)
+                .single();
+
+            if (getError) throw getError;
+            if (!existingPM) throw new Error('Payment method not found');
+
+            // Delete the payment method
+            const { error } = await supabase
+                .from('payment_methods')
+                .delete()
+                .eq('id', paymentMethodId);
+
+            if (error) throw error;
+
+            // If this was the default payment method, set another one as default if available
+            if (existingPM.is_default) {
+                const { data: otherPMs, error: listError } = await supabase
+                    .from('payment_methods')
+                    .select('*')
+                    .eq('user_id', existingPM.user_id)
+                    .limit(1);
+
+                if (listError) throw listError;
+
+                if (otherPMs && otherPMs.length > 0) {
+                    const { error: updateError } = await supabase
+                        .from('payment_methods')
+                        .update({ is_default: true })
+                        .eq('id', otherPMs[0].id);
+
+                    if (updateError) throw updateError;
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting payment method:', error);
+            throw error;
         }
-
-        // Check if it's the default payment method
-        if (mockPaymentMethods[index].isDefault) {
-            throw new Error("Cannot delete default payment method");
-        }
-
-        // Remove from mock data
-        mockPaymentMethods.splice(index, 1);
-
-        return simulateApiCall(undefined, 1000);
     },
 
     // Get invoices for a user
-    getInvoices: async (userId: string): Promise<Invoice[]> => {
-        // In a real app, we would fetch from an API
-        return simulateApiCall(mockInvoices.map(inv => ({ ...inv, userId })));
+    async getInvoices(userId: string): Promise<Invoice[]> {
+        try {
+            if (!userId) throw new Error('User ID is required');
+
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('user_id', userId)
+                .order('invoice_date', { ascending: false });
+
+            if (error) throw error;
+            return (data || []).map(mapDbToInvoice);
+        } catch (error) {
+            console.error('Error fetching invoices:', error);
+            throw error;
+        }
     },
 
     // Get a specific invoice
-    getInvoice: async (invoiceId: string): Promise<Invoice> => {
-        // In a real app, we would fetch from an API
-        const invoice = mockInvoices.find(inv => inv.id === invoiceId);
-        if (!invoice) {
-            throw new Error("Invoice not found");
-        }
+    async getInvoice(invoiceId: string): Promise<Invoice> {
+        try {
+            if (!invoiceId) throw new Error('Invoice ID is required');
 
-        return simulateApiCall(invoice);
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*')
+                .eq('id', invoiceId)
+                .single();
+
+            if (error) throw error;
+            if (!data) throw new Error('Invoice not found');
+
+            // Get invoice items
+            const { data: items, error: itemsError } = await supabase
+                .from('invoice_items')
+                .select('*')
+                .eq('invoice_id', invoiceId);
+
+            if (itemsError) throw itemsError;
+
+            const invoice = mapDbToInvoice(data);
+            invoice.items = items?.map(item => ({
+                id: item.id,
+                invoiceId: item.invoice_id,
+                description: item.description,
+                amount: item.amount,
+                quantity: item.quantity
+            })) as InvoiceItem[] || [];
+
+            return invoice;
+        } catch (error) {
+            console.error('Error fetching invoice:', error);
+            throw error;
+        }
     }
-}; 
+};

@@ -254,6 +254,7 @@ export interface PaymentMethod {
   type: string;
   brand?: string;
   lastFour?: string;
+  last4?: string; // Added for compatibility with Stripe
   expiryMonth: number;
   expiryYear: number;
   isDefault: boolean;
@@ -261,7 +262,66 @@ export interface PaymentMethod {
   createdAt: string;
 }
 
-interface OperatingHours {
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  interval: 'month' | 'year';
+  currency: string;
+  features: string[];
+  isPopular?: boolean;
+  priority?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  status: 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid' | 'paused';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  billingInterval: 'monthly' | 'yearly';
+  canceledAt?: string;
+  endedAt?: string;
+  trialStart?: string;
+  trialEnd?: string;
+  pausedAt?: string;
+  resumesAt?: string;
+  plan?: SubscriptionPlan;
+  planId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  invoiceId: string;
+  description: string;
+  amount: number;
+  quantity: number;
+}
+
+export interface Invoice {
+  id: string;
+  userId: string;
+  subscriptionId?: string;
+  amount: number;
+  status: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
+  currency: string;
+  date: string;
+  dueDate?: string;
+  description?: string;
+  pdf?: string;
+  hostedInvoiceUrl?: string;
+  createdAt: string;
+  items?: InvoiceItem[];
+}
+
+export interface OperatingHours {
   open: string;
   close: string;
   closed: boolean;

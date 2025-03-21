@@ -204,30 +204,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const email = userData.user.email || "";
 
           // Create a new profile
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert([
-              {
-                id: userId,
-                email,
-                name,
-                role: "staff", // Default role
-              },
-            ]);
+          const profileData = {
+            id: userId,
+            email,
+            name,
+            role: "staff", // Default role
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            email_confirmed: false, // Will be updated after email verification
+          };
 
-          if (insertError) {
-            console.error("Error creating fallback profile:", insertError);
-          } else {
-            // Set the profile after creation
-            setProfile({
-              id: userId,
-              email,
-              name,
-              role: "staff",
+          // Insert the profile
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert([profileData], {
+              onConflict: "id",
+              ignoreDuplicates: false,
             });
+
+          if (profileError) {
+            console.error("Error creating fallback profile:", profileError);
+            // Don't throw here, allow the signup to complete
           }
-        } catch (createError) {
-          console.error("Error in fallback profile creation:", createError);
+        } catch (profileError) {
+          console.error("Error in fallback profile creation:", profileError);
         }
       }
     } catch (error) {
@@ -376,10 +376,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out
   const signOut = async () => {
     try {
+      // Clear local state first
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         throw error;
       }
+      
+      // Set a cookie to indicate logout in progress
+      document.cookie = "logout-in-progress=true; path=/; max-age=60";
+      
+      // Force redirect to login page
+      window.location.href = '/login';
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;

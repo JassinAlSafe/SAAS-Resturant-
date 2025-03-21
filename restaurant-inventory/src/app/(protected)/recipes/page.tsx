@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRecipes } from "./hooks/useRecipes";
 import { useRecipeModals } from "./hooks/useRecipeModals";
 import RecipeHeader from "./components/RecipeHeader";
@@ -13,6 +13,7 @@ import { RecipeModals } from "./components/modals/RecipeModals";
 import RecipeFilterDialog from "./components/modals/RecipeFilterDialog";
 import { Dish } from "@/lib/types";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface FilterCriteria {
   categories: string[];
@@ -40,6 +41,11 @@ export default function RecipesPage() {
     fetchRecipesAndIngredients,
   } = useRecipes();
 
+  // Memoize the fetch function to prevent infinite loops
+  const fetchRecipesAndIngredientsMemoized = useCallback(() => {
+    fetchRecipesAndIngredients();
+  }, [fetchRecipesAndIngredients]);
+
   // Use recipe modals hook
   const recipeModals = useRecipeModals();
 
@@ -56,8 +62,8 @@ export default function RecipesPage() {
 
   // Effect to refetch recipes when archive state changes
   useEffect(() => {
-    fetchRecipesAndIngredients();
-  }, [showArchivedRecipes]);
+    fetchRecipesAndIngredientsMemoized();
+  }, [showArchivedRecipes, fetchRecipesAndIngredientsMemoized]);
 
   // Update the filter recipes function to include all criteria
   const filteredRecipes = recipes.filter((recipe) => {
@@ -164,7 +170,7 @@ export default function RecipesPage() {
     try {
       await addRecipe(recipe);
       recipeModals.closeModal();
-      await fetchRecipesAndIngredients(); // Refetch after adding
+      await fetchRecipesAndIngredientsMemoized(); // Refetch after adding
       toast.success("Recipe added successfully");
     } catch (error) {
       console.error("Error in handleAddRecipe:", error);
@@ -181,7 +187,7 @@ export default function RecipesPage() {
       const { id, ...recipeData } = recipe;
       await updateRecipe(id, recipeData);
       recipeModals.closeModal();
-      await fetchRecipesAndIngredients(); // Refetch after editing
+      await fetchRecipesAndIngredientsMemoized(); // Refetch after editing
       toast.success("Recipe updated successfully");
     } catch (error) {
       console.error("Error in handleEditRecipe:", error);
@@ -200,7 +206,7 @@ export default function RecipesPage() {
     setIsProcessing(true);
     try {
       await unarchiveRecipe(recipe.id);
-      await fetchRecipesAndIngredients(); // Refetch after unarchiving
+      await fetchRecipesAndIngredientsMemoized(); // Refetch after unarchiving
       toast.success("Recipe unarchived successfully");
     } catch (error) {
       console.error("Error unarchiving recipe:", error);
@@ -247,7 +253,7 @@ export default function RecipesPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <RecipeHeader
             error={error || ""}
-            retry={fetchRecipesAndIngredients}
+            retry={fetchRecipesAndIngredientsMemoized}
             totalRecipes={recipes.length}
             showArchivedRecipes={showArchivedRecipes}
           />
@@ -259,7 +265,12 @@ export default function RecipesPage() {
   // Empty state
   if (recipes.length === 0) {
     return (
-      <div className="w-full py-6">
+      <motion.div 
+        className="w-full py-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <RecipeHeader
             totalRecipes={0}
@@ -286,18 +297,23 @@ export default function RecipesPage() {
           isProcessing={isProcessing}
           {...recipeModals}
         />
-      </div>
+      </motion.div>
     );
   }
 
   // Main view with recipes
   return (
-    <div className="w-full py-6 space-y-6">
+    <motion.div 
+      className="w-full py-6 space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <RecipeHeader
           totalRecipes={recipes.length}
           error={error || ""}
-          retry={fetchRecipesAndIngredients}
+          retry={fetchRecipesAndIngredientsMemoized}
           showArchivedRecipes={showArchivedRecipes}
         />
         <RecipeActions
@@ -357,6 +373,6 @@ export default function RecipesPage() {
         recipes={recipes}
         onFilter={handleFilterApply}
       />
-    </div>
+    </motion.div>
   );
 }

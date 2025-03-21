@@ -35,8 +35,8 @@ import {
 
 interface PaymentMethodsProps {
   paymentMethods: PaymentMethod[];
-  userId: string;
-  onPaymentMethodsChange: (updatedPaymentMethods: PaymentMethod[]) => void;
+  userId?: string;
+  onPaymentMethodsChange: () => void;
 }
 
 export function PaymentMethods({
@@ -61,6 +61,11 @@ export function PaymentMethods({
 
   // Handle adding a new payment method
   const handleAddPaymentMethod = async () => {
+    if (!userId) {
+      error("Error", "User ID is required to add a payment method");
+      return;
+    }
+
     // Basic validation
     if (!cardName || !cardNumber || !expiryMonth || !expiryYear || !cvc) {
       error("Missing Information", "Please fill in all fields.");
@@ -112,7 +117,7 @@ export function PaymentMethods({
 
       // Close dialog and refresh payment methods
       setIsAddDialogOpen(false);
-      onPaymentMethodsChange(paymentMethods);
+      onPaymentMethodsChange();
     } catch (err) {
       console.error("Error adding payment method:", err);
       error(
@@ -137,7 +142,7 @@ export function PaymentMethods({
         "Your default payment method has been updated."
       );
 
-      onPaymentMethodsChange(paymentMethods);
+      onPaymentMethodsChange();
     } catch (err) {
       console.error("Error updating payment method:", err);
       error(
@@ -164,7 +169,7 @@ export function PaymentMethods({
 
       setIsDeleteDialogOpen(false);
       setPaymentMethodToDelete(null);
-      onPaymentMethodsChange(paymentMethods);
+      onPaymentMethodsChange();
     } catch (err) {
       console.error("Error deleting payment method:", err);
       error(

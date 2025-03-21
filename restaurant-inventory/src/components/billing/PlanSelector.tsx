@@ -49,12 +49,26 @@ export function PlanSelector({
 
   // Filter plans by billing interval
   const filteredPlans = plans.filter(
-    (plan) => plan.interval === billingInterval
+    (plan) => {
+      // Update the interval check to be more robust
+      if (billingInterval === 'monthly') {
+        return plan.interval === 'month' || !plan.interval;
+      } else {
+        return plan.interval === 'year';
+      }
+    }
   );
 
+  // If no filtered plans, use all plans and update their interval and price
+  const plansToDisplay = filteredPlans.length > 0 ? filteredPlans : plans.map(plan => ({
+    ...plan,
+    interval: billingInterval === 'monthly' ? 'month' : 'year',
+    price: billingInterval === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+  }));
+  
   // Sort plans by priority
-  const sortedPlans = [...filteredPlans].sort(
-    (a, b) => a.priority - b.priority
+  const sortedPlans = [...plansToDisplay].sort(
+    (a, b) => (a.priority || 0) - (b.priority || 0)
   );
 
   // Handle plan selection
@@ -119,9 +133,9 @@ export function PlanSelector({
                 }
                 className="w-full max-w-md"
               >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="monthly">Monthly Billing</TabsTrigger>
-                  <TabsTrigger value="yearly">
+                <TabsList className="w-full flex">
+                  <TabsTrigger value="monthly" className="flex-1 py-2">Monthly Billing</TabsTrigger>
+                  <TabsTrigger value="yearly" className="flex-1 py-2 flex items-center justify-center">
                     Yearly Billing
                     <Badge
                       variant="secondary"
@@ -138,11 +152,15 @@ export function PlanSelector({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {sortedPlans.map((plan) => {
                 const isCurrentPlan = currentSubscription?.planId === plan.id;
+                // Determine the correct price based on billing interval
+                const displayPrice = billingInterval === 'monthly' 
+                  ? plan.monthlyPrice || plan.price 
+                  : plan.yearlyPrice || plan.price;
 
                 return (
                   <Card
                     key={plan.id}
-                    className={`relative overflow-hidden ${
+                    className={`relative overflow-hidden h-full flex flex-col ${
                       plan.isPopular ? "border-primary shadow-md" : ""
                     }`}
                   >
@@ -157,11 +175,11 @@ export function PlanSelector({
                       <CardDescription>{plan.description}</CardDescription>
                     </CardHeader>
 
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6 flex-grow">
                       <div className="text-3xl font-bold">
-                        {formatCurrency(plan.price ?? 0)}
+                        {formatCurrency(displayPrice ?? 0)}
                         <span className="text-sm font-normal text-muted-foreground">
-                          /{billingInterval}
+                          /{billingInterval === 'monthly' ? 'month' : 'year'}
                         </span>
                       </div>
 
@@ -173,7 +191,9 @@ export function PlanSelector({
                           </li>
                         ))}
                       </ul>
+                    </CardContent>
 
+                    <div className="p-6 pt-0 mt-auto">
                       <Button
                         className="w-full"
                         variant={isCurrentPlan ? "outline" : "default"}
@@ -182,7 +202,7 @@ export function PlanSelector({
                       >
                         {isCurrentPlan ? "Current Plan" : "Select Plan"}
                       </Button>
-                    </CardContent>
+                    </div>
                   </Card>
                 );
               })}
