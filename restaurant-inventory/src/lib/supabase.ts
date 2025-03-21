@@ -13,8 +13,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
-// Create the Supabase client
-let supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Create the Supabase client with persistent session handling
+let supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        persistSession: true,
+        storageKey: 'supabase-auth-token',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+    }
+});
 
 // Handle errors safely
 try {
@@ -29,7 +36,14 @@ try {
 } catch (error) {
     console.error('Error initializing Supabase client:', error);
     // If there was an error, recreate the client
-    supabase = createBrowserClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+    supabase = createBrowserClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder', {
+        auth: {
+            persistSession: true,
+            storageKey: 'supabase-auth-token',
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        }
+    });
 }
 
-export { supabase }; 
+export { supabase };

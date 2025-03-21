@@ -2,91 +2,137 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-// Define public routes that don't require authentication
-const publicRoutes = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback'];
+// Define protected routes that require authentication
+const protectedRoutes = [
+  '/dashboard',
+  '/inventory',
+  '/suppliers',
+  '/recipes',
+  '/reports',
+  '/settings',
+  '/profile',
+];
 
-// Define API routes that require authentication
-const protectedApiRoutes = ['/api/setup-restaurant-icons'];
+// Define routes that should be accessible only to non-authenticated users
+const authRoutes = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+];
 
-// This middleware protects routes that require authentication
-export async function middleware(req: NextRequest) {
-    const res = NextResponse.next();
+// Function to check if a route is protected
+const isProtectedRoute = (path: string): boolean => {
+  return protectedRoutes.some(route => path.startsWith(route));
+};
 
-    // Get the pathname from the request
-    const { pathname } = req.nextUrl;
+// Function to check if a route is an auth route
+const isAuthRoute = (path: string): boolean => {
+  return authRoutes.some(route => path.startsWith(route));
+};
 
-    // Skip middleware for public routes
-    if (publicRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`))) {
-        return res;
+// Function to check if a route is an API route
+const isApiRoute = (path: string): boolean => {
+  return path.startsWith('/api/');
+};
+
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // Create a Supabase client for server-side operations
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    {
+      cookies: {
+        get: (name) => {
+          return request.cookies.get(name)?.value;
+        },
+        set: (name, value, options) => {
+          // If the cookie is being deleted, pass the options directly
+          if (!value) {
+            response.cookies.set(name, '', options);
+            return;
+          }
+
+          // If the cookie is being set, ensure it has the right options
+          response.cookies.set(name, value, {
+            ...options,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            path: '/',
+          });
+        },
+        remove: (name, options) => {
+          response.cookies.set(name, '', {
+            ...options,
+            maxAge: -1,
+          });
+        },
+      },
+    }
+  );
+
+  try {
+    // Get the user's session
+    const { data } = await supabase.auth.getSession();
+    const session = data?.session;
+    const path = request.nextUrl.pathname;
+
+    // Handle protected routes
+    if (isProtectedRoute(path)) {
+      if (!session) {
+        // Redirect to login if no session
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('redirectTo', path);
+        return NextResponse.redirect(redirectUrl);
+      }
     }
 
-    // Check if this is a protected API route
-    const isProtectedApiRoute = protectedApiRoutes.some(route =>
-        pathname === route || pathname.startsWith(`${route}/`)
-    );
-
-    // Skip middleware for API routes that are not explicitly protected
-    if (pathname.startsWith('/api/') && !isProtectedApiRoute) {
-        return res;
+    // Handle auth routes (login, register, etc.)
+    else if (isAuthRoute(path)) {
+      if (session) {
+        // Redirect to dashboard if already authenticated
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
 
-    try {
-        // Create a Supabase client
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-            {
-                cookies: {
-                    get: (name) => req.cookies.get(name)?.value,
-                    set: (name, value, options) => {
-                        res.cookies.set(name, value, options);
-                    },
-                    remove: (name, options) => {
-                        res.cookies.set(name, '', { ...options, maxAge: 0 });
-                    },
-                },
-            }
+    // Handle API routes that require authentication
+    else if (isApiRoute(path) && path.startsWith('/api/protected/')) {
+      if (!session) {
+        // Return 401 for API routes requiring authentication
+        return new NextResponse(
+          JSON.stringify({ error: 'Unauthorized' }),
+          {
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         );
-
-        // Check if the user is authenticated
-        const { data } = await supabase.auth.getSession();
-        const session = data?.session;
-
-        // If the user is not authenticated, redirect to login or return 401 for API routes
-        if (!session) {
-            if (isProtectedApiRoute) {
-                return NextResponse.json(
-                    { error: 'Unauthorized: Authentication required' },
-                    { status: 401 }
-                );
-            } else {
-                const redirectUrl = new URL('/login', req.url);
-                return NextResponse.redirect(redirectUrl);
-            }
-        }
-
-        // If the user is authenticated, allow access to protected routes
-        return res;
-    } catch (error) {
-        console.error('Middleware error:', error);
-
-        // For API routes, return a proper error response
-        if (pathname.startsWith('/api/')) {
-            return NextResponse.json(
-                { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
-                { status: 500 }
-            );
-        }
-
-        // For other routes, allow the request to proceed
-        return res;
+      }
     }
+
+    // For all other routes, just continue
+    return response;
+  } catch (error) {
+    console.error('Error in middleware:', error);
+    
+    // If there's an error, allow the request to continue
+    // This prevents users from being locked out due to auth errors
+    return response;
+  }
 }
 
 // Configure the middleware to run on specific paths
 export const config = {
-    matcher: [
-        // Match all routes except for static files, _next
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
-}; 
+  matcher: [
+    // Match all routes except for static files, _next
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};

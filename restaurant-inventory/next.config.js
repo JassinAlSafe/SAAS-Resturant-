@@ -69,8 +69,37 @@ const nextConfig = {
       );
     }
 
+    // Fix for Unicode issues in development mode
+    if (dev) {
+      // Ensure proper handling of Unicode characters
+      config.optimization = {
+        ...config.optimization,
+        // Ensure moduleIds are more deterministic
+        moduleIds: "named",
+        // Ensure proper chunk handling
+        splitChunks: {
+          chunks: "all",
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Merge all chunks together
+            commons: {
+              name: "commons",
+              chunks: "all",
+              minChunks: 2,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+
     return config;
   },
+
+  // Ensure proper handling of static assets
+  poweredByHeader: false,
+  generateEtags: false,
 };
 
 module.exports = nextConfig;

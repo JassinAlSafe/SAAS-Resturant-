@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import {
   FiPackage,
   FiAlertTriangle,
@@ -27,6 +26,19 @@ import { CategoryIcon } from "./CategoryIcon";
 import { Alert } from "@/components/ui/alert";
 import { RefreshCw } from "lucide-react";
 
+// Define interfaces for our data types
+interface RecentActivity {
+  id: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  user?: string;
+  action?: string;
+  item?: string;
+  timestamp?: string;
+  amount?: number;
+}
+
 export function OverviewTab() {
   const router = useRouter();
   const {
@@ -38,352 +50,306 @@ export function OverviewTab() {
     error,
     refresh,
     hasData,
+    currencySymbol = "$"
   } = useDashboard();
 
-  // Handle the initial loading state
+  // Helper function for number formatting
+  const formatNumber = (num: number | string): string => {
+    if (typeof num === 'string') {
+      // If it's already a string, assume it's already formatted
+      return num.replace(/[^0-9.]/g, ''); // Remove any non-numeric characters except decimal
+    }
+    return new Intl.NumberFormat().format(num);
+  };
+
   if (isLoading && !hasData) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-36 rounded-xl bg-slate-100 animate-pulse"
+            />
+          ))}
+        </div>
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="h-[400px] rounded-xl bg-slate-100 animate-pulse" />
+          <div className="h-[400px] rounded-xl bg-slate-100 animate-pulse" />
+        </div>
       </div>
     );
   }
 
-  // Handle error state
   if (error) {
     return (
-      <div className="space-y-4">
-        <Alert variant="destructive">
-          <p>{error}</p>
-        </Alert>
-        <Button onClick={refresh} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Retry
+      <div className="rounded-xl bg-red-50 border border-red-200 p-8 text-center">
+        <FiAlertTriangle className="mx-auto h-10 w-10 text-red-500 mb-4" />
+        <h3 className="text-lg font-medium text-red-800 mb-2">
+          Error Loading Dashboard
+        </h3>
+        <p className="text-red-600 max-w-md mx-auto">
+          {typeof error === 'string' ? error : "Failed to load dashboard data. Please try again."}
+        </p>
+        <Button 
+          onClick={() => refresh()} 
+          className="mt-4 bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
+          size="sm"
+        >
+          <FiRefreshCw className="mr-2 h-4 w-4" />
+          Try Again
         </Button>
       </div>
     );
   }
 
-  if (!hasData) {
+  if (!formattedStats) {
     return (
-      <div className="space-y-4">
-        <Alert>
-          <p>No dashboard data available.</p>
-        </Alert>
-        <Button onClick={refresh} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
+      <div className="text-center p-8 rounded-xl bg-slate-50 border border-slate-200">
+        <FiPackage className="mx-auto h-10 w-10 text-slate-400 mb-4" />
+        <p className="text-slate-500 mb-4">No data available</p>
+        <Button onClick={() => refresh()} className="mt-2" size="sm">
+          <FiRefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
     );
   }
 
-  // Parse numeric values
-  const salesGrowth = parseFloat(formattedStats.salesGrowth);
+  const { totalInventoryValue, lowStockItems, monthlySales, salesGrowth } = formattedStats;
+  const salesGrowthValue = parseFloat(salesGrowth);
 
   return (
-    <div className="space-y-8">
-      {/* Keep only one set of stat cards - the more detailed ones with footers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
+    <div className="space-y-10">
+      {/* Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Inventory Value"
-          value={formattedStats.totalInventoryValue}
+          value={`${currencySymbol}${formatNumber(totalInventoryValue)}`}
           icon={<FiPackage className="h-5 w-5" />}
           variant="primary"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs">Last updated:</span>
-              <span className="text-xs font-medium flex items-center">
-                <FiClock className="h-3 w-3 mr-1" />{" "}
-                {format(new Date(), "h:mm a")}
-              </span>
-            </div>
-          }
+          trend={{
+            value: 12,
+            isPositive: true,
+          }}
         />
         <StatCard
           title="Low Stock Items"
-          value={formattedStats.lowStockItems.toString()}
+          value={lowStockItems.toString()}
           icon={<FiAlertTriangle className="h-5 w-5" />}
-          variant="warning"
-          footer={
-            <div className="flex items-center justify-center gap-1.5 text-amber-700 bg-amber-50 rounded-md px-2 py-1 mt-1">
-              <FiAlertTriangle className="h-3 w-3" /> Needs attention
-            </div>
+          variant={parseInt(lowStockItems.toString()) > 5 ? "warning" : "default"}
+          trend={
+            parseInt(lowStockItems.toString()) > 0
+              ? { value: 15, isPositive: false }
+              : undefined
           }
         />
         <StatCard
           title="Monthly Sales"
-          value={formattedStats.monthlySales}
+          value={`${currencySymbol}${formatNumber(monthlySales)}`}
           icon={<CiMoneyBill className="h-5 w-5" />}
-          variant="success"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs">Current Month:</span>
-              <span className="text-xs font-medium text-green-600">
-                {format(new Date(), "MMMM yyyy")}
-              </span>
-            </div>
-          }
+          variant="info"
         />
         <StatCard
           title="Sales Growth"
-          value={formattedStats.salesGrowth}
+          value={`${salesGrowth}%`}
           icon={<FiTrendingUp className="h-5 w-5" />}
+          variant={salesGrowthValue >= 0 ? "success" : "warning"}
           trend={{
-            value: Math.abs(salesGrowth),
-            isPositive: salesGrowth >= 0,
+            value: salesGrowthValue,
+            isPositive: salesGrowthValue >= 0,
           }}
-          variant="info"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <span className="text-xs">vs. Last Month:</span>
-              <span
-                className={`text-xs font-medium ${
-                  salesGrowth >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {salesGrowth >= 0 ? "+" : ""}
-                {salesGrowth}%
-              </span>
-            </div>
-          }
         />
       </div>
 
-      <div className="grid grid-cols-12 gap-4 sm:gap-6">
-        <div className="col-span-12 lg:col-span-8 space-y-6">
-          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-            <div className="p-4 sm:p-6 border-b">
-              <h2 className="text-xl font-semibold mb-1">Sales Performance</h2>
-              <p className="text-sm text-muted-foreground">
-                Monthly revenue and growth trends
-              </p>
-            </div>
-            <div className="p-4 sm:p-6">
-              {salesData.length > 0 ? (
-                <SalesGrowthCard
-                  title=""
-                  totalRevenue={salesData.reduce(
-                    (sum, item) => sum + item.sales,
-                    0
-                  )}
-                  averageMonthly={
-                    salesData.reduce((sum, item) => sum + item.sales, 0) /
-                    (salesData.length || 1)
-                  }
-                  highestMonth={Math.max(
-                    ...salesData.map((item) => item.sales),
-                    0
-                  )}
-                  lowestMonth={Math.min(
-                    ...salesData.map((item) => item.sales),
-                    0
-                  )}
-                  percentComplete={75}
-                  growthPercent={salesGrowth}
-                  salesData={salesData}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <LoadingSpinner size="lg" className="mb-4" />
-                  <p className="text-muted-foreground">Loading sales data...</p>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Charts and Analysis */}
+      <div className="grid gap-8 md:grid-cols-2">
+        <SalesGrowthCard 
+          title="Sales Growth"
+          dateRange="Last 30 days"
+          salesData={salesData}
+          growthPercent={salesGrowthValue}
+          viewAllLink="/reports/sales"
+        />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <Card className="shadow-xs hover:shadow-md transition-all group">
-              <div className="p-5 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FiShoppingBag className="h-6 w-6 text-primary" />
+        <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group h-full relative overflow-hidden">
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
+          
+          <div className="p-5">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center">
+                <div className="bg-amber-100 text-amber-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
+                  <FiClock className="h-5 w-5" />
                 </div>
-                <h3 className="font-medium mb-1">Add Inventory</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Quickly add new items to your inventory
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full group-hover:bg-primary/10 transition-colors"
-                  onClick={() => router.push("/inventory/add")}
-                >
-                  Add New Items
-                  <FiArrowRight className="ml-2 h-4 w-4 opacity-70" />
-                </Button>
+                <div>
+                  <p className="text-base font-semibold text-slate-800">Expiry Alerts</p>
+                  <p className="text-xs text-slate-500">Items expiring soon</p>
+                </div>
               </div>
-            </Card>
-
-            <Card className="shadow-xs hover:shadow-md transition-all group">
-              <div className="p-5 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FiBarChart2 className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="font-medium mb-1">Generate Reports</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create detailed inventory reports
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full group-hover:bg-blue-50 transition-colors"
-                  onClick={() => router.push("/reports")}
-                >
-                  View Reports
-                  <FiArrowRight className="ml-2 h-4 w-4 opacity-70" />
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="shadow-xs hover:shadow-md transition-all group">
-              <div className="p-5 flex flex-col items-center text-center">
-                <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FiUsers className="h-6 w-6 text-green-600" />
-                </div>
-                <h3 className="font-medium mb-1">Team Management</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage your team and permissions
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full group-hover:bg-green-50 transition-colors"
-                  onClick={() => router.push("/users")}
-                >
-                  Manage Team
-                  <FiArrowRight className="ml-2 h-4 w-4 opacity-70" />
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="font-semibold flex items-center">
-                <FiActivity className="h-4 w-4 mr-2 text-primary" />
-                Recent Activity
-              </h2>
-            </div>
-            <div className="p-4">
-              {recentActivity.length > 0 ? (
-                <div className="space-y-3">
-                  {recentActivity.map((activity, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center p-2 rounded-lg bg-background/50 hover:bg-background transition-colors"
-                    >
-                      <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                        <FiActivity className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          <span className="text-muted-foreground">
-                            {activity.user}
-                          </span>{" "}
-                          {activity.action}{" "}
-                          <span className="font-semibold">{activity.item}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(activity.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {" - "}
-                          {new Date(activity.timestamp).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-8 text-center">
-                  <p className="text-muted-foreground">No recent activity</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-            <div className="p-4 border-b bg-amber-50/50 flex items-center justify-between">
-              <h2 className="font-semibold text-amber-800 flex items-center">
-                <FiAlertTriangle className="h-4 w-4 mr-2" />
-                Inventory Alerts
-              </h2>
+              
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-amber-700 hover:text-amber-800 hover:bg-amber-100/50"
-                onClick={() => router.push("/inventory?filter=alerts")}
+                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => router.push('/inventory?filter=expiring-soon')}
               >
                 View All
+                <FiArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
-            <div className="max-h-[180px] overflow-y-auto">
-              <ExpiryAlerts compact={true} />
+            
+            <ExpiryAlerts />
+            
+            {/* Hover effect */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
+              <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {categoryStats.length > 0 ? (
-            <div className="bg-card rounded-xl border shadow-xs hover:shadow-md transition-all overflow-hidden">
-              <div className="p-3 border-b flex items-center justify-between">
-                <h2 className="font-medium">Inventory by Category</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.push("/inventory")}
-                >
-                  View All
-                </Button>
+      {/* Category Breakdown */}
+      <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-blue-500"></div>
+        
+        <div className="p-5">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center">
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
+                <FiBarChart2 className="h-5 w-5" />
               </div>
-              <div className="p-3 max-h-[240px] overflow-y-auto">
-                <div className="space-y-2">
-                  {categoryStats.map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between p-2 rounded-md bg-background/50 hover:bg-background transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded-md ${category.color}`}>
-                          <CategoryIcon categoryName={category.iconName} />
-                        </div>
-                        <span className="font-medium text-sm">
-                          {category.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {category.count} items
-                        </Badge>
-                        <span
-                          className={`text-xs ${
-                            category.change > 0
-                              ? "text-green-600"
-                              : category.change < 0
-                              ? "text-red-600"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {category.change > 0 ? "+" : ""}
-                          {category.change}%
-                        </span>
+              <div>
+                <p className="text-base font-semibold text-slate-800">Inventory by Category</p>
+                <p className="text-xs text-slate-500">Distribution of your inventory</p>
+              </div>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              onClick={() => router.push('/inventory')}
+            >
+              View Inventory
+              <FiArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
+            {categoryStats && categoryStats.length > 0 ? (
+              categoryStats.map((category, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center p-4 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors"
+                  onClick={() => router.push(`/inventory?category=${encodeURIComponent(category.name)}`)}
+                  role="button"
+                >
+                  <div className="mr-3 bg-white p-2 rounded-full">
+                    <CategoryIcon categoryName={category.name} className="h-5 w-5 text-slate-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{category.name}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500">{category.count} items</p>
+                      <p className="text-xs font-medium text-slate-700">{currencySymbol}{formatNumber(category.count * 100)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center p-8">
+                <p className="text-slate-500">No category data available</p>
+              </div>
+            )}
+          </div>
+          
+          {/* Hover effect */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
+            <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-purple-500"></div>
+        
+        <div className="p-5">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center">
+              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
+                <FiActivity className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-800">Recent Activity</p>
+                <p className="text-xs text-slate-500">Latest inventory changes</p>
+              </div>
+            </div>
+          </div>
+          
+          {recentActivity && recentActivity.length > 0 ? (
+            <div className="space-y-4">
+              {(recentActivity as RecentActivity[]).map((activity, index) => {
+                // Determine activity type based on action or description
+                const activityType = activity.action?.toLowerCase().includes('add') ? 'add' : 
+                                    activity.action?.toLowerCase().includes('remove') ? 'remove' : 'other';
+                
+                return (
+                  <div 
+                    key={activity.id || index} 
+                    className="flex items-start p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    <div className={`p-2 rounded-full mr-3 ${
+                      activityType === 'add' ? 'bg-emerald-100 text-emerald-600' :
+                      activityType === 'remove' ? 'bg-rose-100 text-rose-600' :
+                      'bg-blue-100 text-blue-600'
+                    }`}>
+                      {activityType === 'add' ? (
+                        <FiPackage className="h-4 w-4" />
+                      ) : activityType === 'remove' ? (
+                        <FiShoppingBag className="h-4 w-4" />
+                      ) : (
+                        <FiUsers className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700">
+                        {activity.user ? `${activity.user} ` : ''}{activity.action || ''} {activity.item || ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-slate-500">
+                          {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }) : 'Recently'}
+                        </p>
+                        {activity.amount && (
+                          <Badge variant="outline" className="text-xs">
+                            {currencySymbol}{formatNumber(activity.amount)}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="bg-card rounded-xl border shadow-xs p-4 flex items-center justify-center h-48">
-              <div className="text-center">
-                <LoadingSpinner size="lg" className="mx-auto mb-2" />
-                <p className="text-muted-foreground">
-                  Loading category data...
-                </p>
-              </div>
+            <div className="text-center p-8">
+              <p className="text-slate-500">No recent activity</p>
             </div>
           )}
+          
+          {/* Hover effect */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
+            <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+          </div>
         </div>
       </div>
     </div>

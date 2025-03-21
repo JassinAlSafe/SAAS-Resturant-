@@ -2,25 +2,6 @@
 
 import React from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  ArrowUpRight,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  ArrowRight,
-} from "lucide-react";
-import { cva } from "class-variance-authority";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
   BarChart,
   Bar,
   XAxis,
@@ -28,26 +9,18 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
+import { FiTrendingUp, FiCalendar, FiArrowRight } from "react-icons/fi";
 import { useCurrency } from "@/lib/hooks/useCurrency";
-
-// Define bar chart styling variants
-const barVariants = cva(
-  "rounded-t-md relative group transition-all duration-300",
-  {
-    variants: {
-      active: {
-        true: "bg-blue-500 hover:bg-blue-600",
-        false: "bg-blue-400 hover:bg-blue-500",
-      },
-    },
-    defaultVariants: {
-      active: false,
-    },
-  }
-);
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SalesGrowthCardProps {
+  title?: string;
+  dateRange?: string;
+  viewAllLink?: string;
   className?: string;
   totalRevenue?: number;
   averageMonthly?: number;
@@ -56,62 +29,61 @@ interface SalesGrowthCardProps {
   percentComplete?: number;
   growthPercent?: number;
   salesData?: { month: string; sales: number }[];
-  title?: string;
-  viewAllLink?: string;
   data?: { month: string; sales: number }[];
 }
 
-const SalesGrowthCard = ({
+export const SalesGrowthCard = ({
+  title = "Sales Growth",
+  dateRange = "Last 30 days",
+  viewAllLink,
   className,
   totalRevenue,
   averageMonthly,
   highestMonth,
   lowestMonth,
   percentComplete = 75,
-  growthPercent = 15.5,
+  growthPercent = 0,
   salesData,
   data,
-  title = "Sales Growth Summary",
-  viewAllLink,
 }: SalesGrowthCardProps) => {
-  const { formatCurrency } = useCurrency();
-
+  const { formatCurrency, currencySymbol } = useCurrency();
+  
   // Use data prop if provided, otherwise use salesData
   const chartData = data ||
     salesData || [
-      { month: "Jan", sales: 12400 },
-      { month: "Feb", sales: 13800 },
-      { month: "Mar", sales: 15200 },
-      { month: "Apr", sales: 14900 },
-      { month: "May", sales: 16300 },
-      { month: "Jun", sales: 17500 },
+      { month: "Jan", sales: 0 },
+      { month: "Feb", sales: 0 },
+      { month: "Mar", sales: 0 },
+      { month: "Apr", sales: 0 },
+      { month: "May", sales: 0 },
+      { month: "Jun", sales: 0 },
     ];
 
   // Calculate derived values if not provided
   const calculatedTotalRevenue =
     totalRevenue || chartData.reduce((sum, item) => sum + item.sales, 0);
   const calculatedAvgMonthly =
-    averageMonthly || calculatedTotalRevenue / chartData.length;
+    averageMonthly || (calculatedTotalRevenue / (chartData.length || 1));
   const calculatedHighestMonth =
-    highestMonth || Math.max(...chartData.map((item) => item.sales));
+    highestMonth || Math.max(...chartData.map((item) => item.sales), 0);
   const calculatedLowestMonth =
-    lowestMonth || Math.min(...chartData.map((item) => item.sales));
+    lowestMonth || Math.min(...chartData.map((item) => item.sales), 0);
 
-  // Calculate the max sales value for normalization
-  const maxSales = Math.max(...chartData.map((item) => item.sales));
+  // Calculate growth percentage (comparing last two months)
+  const lastMonthSales = chartData[chartData.length - 1]?.sales || 0;
+  const previousMonthSales = chartData[chartData.length - 2]?.sales || 0;
+  const growthPercentCalculated = previousMonthSales === 0 
+    ? 100 
+    : Math.round(((lastMonthSales - previousMonthSales) / previousMonthSales) * 100);
+  const growthPercentUsed = growthPercent !== undefined ? growthPercent : growthPercentCalculated;
 
-  // Calculate which month has the highest sales
-  const highestMonthIndex = chartData.findIndex(
-    (item) => item.sales === maxSales
-  );
-
-  // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background/95 backdrop-blur-xs border border-border/50 shadow-md rounded-md p-3">
-          <p className="font-medium text-sm">{label}</p>
-          <p className="text-primary font-semibold">
+        <div className="bg-white p-3 rounded-lg shadow-md border border-slate-200">
+          <p className="text-sm font-medium text-slate-700">{payload[0].payload.month}</p>
+          <p className="text-sm font-bold text-emerald-600">
             {formatCurrency(payload[0].value)}
           </p>
         </div>
@@ -121,67 +93,223 @@ const SalesGrowthCard = ({
   };
 
   return (
-    <Card
-      className={cn(
-        "overflow-hidden bg-card shadow-xs hover:shadow-md transition-all duration-300 h-full",
-        className
-      )}
-    >
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 pt-6 px-6">
-        <div>
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            {title}
-            <span className="bg-blue-100 text-blue-700 text-xs rounded-full px-2 py-0.5 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {growthPercent}%
+    <div className={cn(
+      "relative overflow-hidden rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group h-full",
+      className
+    )}>
+      {/* Top accent bar */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-500"></div>
+      
+      <div className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-1">
+            <div className="flex items-center">
+              <div className="bg-emerald-100 text-emerald-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
+                <FiTrendingUp className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-slate-800">{title}</p>
+                <p className="text-xs text-slate-500">Monthly sales performance analysis</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center px-3 py-1.5 bg-slate-100 rounded-full text-slate-600 text-xs">
+            <FiCalendar className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+            <span>{dateRange}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-baseline">
+            <p className="text-2xl font-bold text-emerald-700 group-hover:scale-105 transition-transform duration-300">
+              {growthPercentUsed >= 0 ? "+" : ""}{growthPercentUsed}%
+            </p>
+            <span className="ml-2 text-xs text-slate-500">vs last period</span>
+          </div>
+          
+          <div className="bg-emerald-50 px-3 py-1.5 rounded-full flex items-center">
+            <span className="text-xs font-medium text-emerald-600">
+              {formatCurrency(calculatedTotalRevenue)}
             </span>
-          </CardTitle>
-          <CardDescription className="mt-1">
-            Monthly sales performance analysis
-          </CardDescription>
+          </div>
         </div>
-        <div className="flex items-center px-3 py-1.5 bg-muted/50 rounded-md text-muted-foreground text-sm border border-border/50">
-          <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/70" />
-          <span>January - June 2024</span>
-          <ChevronDown className="h-4 w-4 ml-1.5 text-muted-foreground/70" />
-        </div>
-      </CardHeader>
-      <CardContent className="px-6 pb-6">
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div>
-              <div className="flex items-center text-sm text-muted-foreground mb-2">
-                <DollarSign className="h-3.5 w-3.5 mr-1 text-blue-500" />
-                <span>Total Revenue</span>
+              <div className="flex items-center text-sm text-slate-500 mb-2">
+                <span className="flex-1">Top Sales Channels</span>
+                <span className="text-right">Revenue</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-3xl sm:text-4xl font-bold">
-                  {formatCurrency(calculatedTotalRevenue)}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">Online Store</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">{formatCurrency(8400)}</span>
                 </div>
-                <div className="flex items-center bg-green-100 text-green-700 px-2 py-1 rounded-md text-sm font-medium">
-                  <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
-                  {growthPercent}%
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">In-Store</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">{formatCurrency(6200)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">Wholesale</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">{formatCurrency(4800)}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex items-center text-sm text-slate-500 mb-2">
+                <span className="flex-1">Top Products</span>
+                <span className="text-right">Units Sold</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">Product A</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">245</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-rose-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">Product B</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">187</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></div>
+                    <span className="text-sm font-medium text-slate-700">Product C</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">143</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 10,
+                  right: 0,
+                  left: -20,
+                  bottom: 0,
+                }}
+                barSize={36}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f1f5f9"
+                />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                  tickFormatter={(value) => `${currencySymbol}${value}`}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar
+                  dataKey="sales"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={index % 2 === 0 ? "#10b981" : "#34d399"}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {viewAllLink && (
+          <div className="mt-4 text-right">
+            <Link href={viewAllLink} passHref>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary hover:text-primary/80 hover:bg-primary/10"
+              >
+                View Detailed Report
+                <FiArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        )}
+        
+        {/* Hover effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
+          <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center text-sm text-slate-500 mb-2">
+                <span className="flex-1">Total Revenue</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="bg-slate-100 p-2 rounded-full mr-2">
+                  </div>
+                  <div>
+                    <div className="text-3xl sm:text-4xl font-bold text-slate-900">
+                      {formatCurrency(calculatedTotalRevenue)}
+                    </div>
+                    {growthPercentUsed !== 0 && (
+                      <div className={`flex items-center px-2 py-1 rounded-md text-sm font-medium ${
+                        growthPercentUsed >= 0 
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : 'bg-rose-100 text-rose-700'
+                      }`}>
+                        {Math.abs(growthPercentUsed)}%
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border/40">
+            <div className="space-y-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Average Monthly</p>
-                <p className="text-sm font-semibold">
+                <p className="text-sm font-medium text-slate-700">Average Monthly</p>
+                <p className="text-sm font-semibold text-slate-900">
                   {formatCurrency(calculatedAvgMonthly)}
                 </p>
               </div>
 
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Highest Month</p>
-                <p className="text-sm font-semibold text-green-600">
+                <p className="text-sm font-medium text-slate-700">Highest Month</p>
+                <p className="text-sm font-semibold text-emerald-600">
                   {formatCurrency(calculatedHighestMonth)}
                 </p>
               </div>
 
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Lowest Month</p>
+                <p className="text-sm font-medium text-slate-700">Lowest Month</p>
                 <p className="text-sm font-semibold text-amber-600">
                   {formatCurrency(calculatedLowestMonth)}
                 </p>
@@ -190,96 +318,24 @@ const SalesGrowthCard = ({
 
             <div className="pt-1">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Quarterly Target
-                </p>
-                <p className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  {percentComplete}% completed
-                </p>
+                <span className="text-sm font-medium text-slate-700">
+                  Target Completion
+                </span>
+                <span className="text-sm font-medium text-slate-900">
+                  {percentComplete}%
+                </span>
               </div>
-              <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
+              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-700 ease-in-out"
+                  className="bg-primary h-2.5 rounded-full transition-all duration-700 ease-in-out"
                   style={{ width: `${percentComplete}%` }}
                 ></div>
               </div>
             </div>
           </div>
-
-          <div className="h-[260px] flex flex-col">
-            <div className="text-sm font-medium text-muted-foreground mb-3">
-              Monthly Sales
-            </div>
-            <div className="grow flex flex-col">
-              <div className="grow flex items-end">
-                <div className="w-full h-full flex gap-2">
-                  {chartData.map((item, i) => {
-                    // Calculate height as a percentage of the maximum value (max height is 90%)
-                    const heightPercentage = (item.sales / maxSales) * 90;
-                    const isHighest = i === highestMonthIndex;
-
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 flex flex-col items-center justify-end group relative"
-                      >
-                        {/* Tooltip that appears on hover */}
-                        <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground text-card-foreground p-1 rounded text-xs whitespace-nowrap">
-                          {formatCurrency(item.sales)}
-                        </div>
-                        <div
-                          className={cn(barVariants({ active: isHighest }))}
-                          style={{
-                            height: `${heightPercentage}%`,
-                            width: "80%",
-                          }}
-                        >
-                          {/* Highlight circle on top of the highest bar */}
-                          {isHighest && (
-                            <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 h-3 w-3 bg-blue-500 rounded-full border-2 border-white dark:border-gray-900" />
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="h-8 flex gap-2 mt-1">
-                {chartData.map((item, i) => (
-                  <div key={i} className="flex-1 flex justify-center">
-                    <span className="text-xs text-muted-foreground">
-                      {item.month}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {/* Y axis label */}
-              <div className="h-4 flex justify-end pr-1">
-                <span className="text-[10px] text-muted-foreground/70 italic">
-                  in USD
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
-
-        {viewAllLink && (
-          <div className="pt-4 mt-2 border-t border-border/50">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
-              asChild
-            >
-              <Link href={viewAllLink}>
-                View detailed sales reports
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
