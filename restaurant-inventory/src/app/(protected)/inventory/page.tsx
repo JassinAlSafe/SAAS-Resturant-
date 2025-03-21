@@ -10,6 +10,7 @@ import InventoryHeader from "./components/InventoryHeader";
 import { InventoryStats } from "./components/InventoryStats";
 import InventoryLoading from "./components/InventoryLoading";
 import { InventoryModals } from "./components/modals";
+import { BatchOperations } from "./components/BatchOperations";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useInventoryManager } from "./hooks/useInventoryStore";
@@ -479,6 +480,101 @@ export default function Inventory() {
     closeDeleteModal();
   };
 
+  // Handle batch operations
+  const handleDeleteSelected = async (itemIds: string[]) => {
+    try {
+      // Delete each item one by one
+      for (const itemId of itemIds) {
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+          await deleteInventoryItem(itemId, item.name);
+        }
+      }
+      
+      toast({
+        title: "Success",
+        description: `Deleted ${itemIds.length} items successfully`,
+        variant: "default",
+      });
+      
+      // Clear selection after successful deletion
+      setSelectedItems([]);
+      return Promise.resolve();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete selected items",
+        variant: "destructive",
+      });
+      return Promise.reject(error);
+    }
+  };
+
+  const handleUpdateCategory = async (itemIds: string[], category: string) => {
+    try {
+      // Update each item one by one
+      for (const itemId of itemIds) {
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+          await updateInventoryItem(itemId, {
+            ...item,
+            category,
+          });
+        }
+      }
+      
+      toast({
+        title: "Success",
+        description: `Updated category for ${itemIds.length} items`,
+        variant: "default",
+      });
+      
+      return Promise.resolve();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update categories",
+        variant: "destructive",
+      });
+      return Promise.reject(error);
+    }
+  };
+
+  const handleExportSelected = (itemIds: string[]) => {
+    const selectedData = items.filter(item => itemIds.includes(item.id));
+    
+    // Convert to CSV
+    const headers = ["Name", "Category", "Quantity", "Unit", "Cost", "Reorder Level"];
+    const csvContent = [
+      headers.join(","),
+      ...selectedData.map(item => 
+        [
+          item.name,
+          item.category,
+          item.quantity,
+          item.unit,
+          item.cost_per_unit || item.cost,
+          item.reorder_level
+        ].join(",")
+      )
+    ].join("\n");
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `inventory_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const clearSelection = () => {
+    setSelectedItems([]);
+  };
+
   // Calculate inventory value on client side only to avoid hydration mismatch
   const totalInventoryValue = useMemo(() => {
     if (!mounted) return 0;
@@ -671,6 +767,16 @@ export default function Inventory() {
         customCategories={categories}
         suppliers={suppliers as Supplier[]}
         userRole={userRole as "admin" | "manager" | "staff"}
+      />
+      
+      {/* Batch Operations */}
+      <BatchOperations
+        selectedItems={selectedItems}
+        items={items}
+        onClearSelection={clearSelection}
+        onDeleteSelected={handleDeleteSelected}
+        onUpdateCategory={handleUpdateCategory}
+        onExportSelected={handleExportSelected}
       />
     </div>
   );

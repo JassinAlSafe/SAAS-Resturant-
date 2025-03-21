@@ -32,7 +32,13 @@ import {
   FiInfo,
   FiMapPin,
   FiTruck,
+  FiCalendar,
+  FiAlertCircle,
 } from "react-icons/fi";
+import { motion } from "framer-motion";
+import { useCurrency } from "@/lib/currency";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
@@ -75,6 +81,7 @@ export default function InventoryItemModal({
       unit: item?.unit || "units",
       cost: item?.cost || 0,
       reorder_level: item?.reorder_level || 0,
+      max_stock: item?.max_stock || 0,
       supplier_id: item?.supplier_id || "",
       location: item?.location || "",
       expiry_date: item?.expiry_date || "",
@@ -86,6 +93,7 @@ export default function InventoryItemModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { formatCurrency } = useCurrency();
 
   // Reset form when modal opens/closes or item changes
   useEffect(() => {
@@ -96,160 +104,195 @@ export default function InventoryItemModal({
     }
   }, [isOpen, initialFormData]);
 
-  // Memoize categories to avoid recalculation
-  const allCategories = useMemo(() => {
-    const uniqueCategories = new Set([
-      ...COMMON_CATEGORIES,
-      ...customCategories,
-    ]);
-    return Array.from(uniqueCategories).sort();
-  }, [customCategories]);
-
-  // Use callbacks for event handlers to prevent unnecessary re-renders
-  const handleChange = useCallback(
-    (
-      e:
-        | React.ChangeEvent<
-            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-          >
-        | { name: string; value: string | number }
-    ) => {
-      // Handle both event objects and direct value objects from Shadcn Select
-      const { name, value } = "target" in e ? e.target : e;
-
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-
-      // Clear error when field is updated
-      if (errors[name]) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[name];
-          return newErrors;
-        });
-      }
-    },
-    [errors]
-  );
-
-  const handleNumberChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      const numValue = value === "" ? 0 : parseFloat(value);
-
-      setFormData((prev) => ({
-        ...prev,
-        [name]: numValue,
-      }));
-
-      // Clear error when field is updated
-      if (errors[name]) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[name];
-          return newErrors;
-        });
-      }
-    },
-    [errors]
-  );
-
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-
-      // Validate form
-      const newErrors: Record<string, string> = {};
-      if (!formData.name.trim()) newErrors.name = "Name is required";
-      if (!formData.category) newErrors.category = "Category is required";
-      if (!formData.unit) newErrors.unit = "Unit is required";
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      // Log form data for debugging
-      console.log("Submitting form data:", formData);
-
-      try {
-        // Call the appropriate handler based on whether we're adding or editing
-        if (item) {
-          console.log("Updating item:", item.id);
-          if (onUpdate) {
-            onUpdate(formData);
-          } else {
-            console.error("onUpdate handler is not defined");
-          }
-        } else {
-          console.log("Creating new item");
-          onSave(formData);
-        }
-      } catch (error) {
-        console.error("Error submitting form:", error);
-        setIsSubmitting(false);
-      }
-    },
-    [formData, item, onSave, onUpdate]
-  );
-
-  const toggleQuickMode = useCallback(() => {
-    setQuickMode((prev) => !prev);
-  }, []);
-
-  // Determine if user can see advanced options
-  const canAccessAdvanced = userRole === "admin" || userRole === "manager";
-
-  // Common units
+  // Common units for inventory items
   const commonUnits = [
     "units",
     "kg",
     "g",
+    "lb",
+    "oz",
     "l",
     "ml",
-    "pieces",
-    "boxes",
-    "cans",
-    "bottles",
+    "gal",
+    "qt",
+    "pt",
+    "fl oz",
+    "ea",
+    "box",
+    "case",
+    "pack",
+    "bottle",
+    "jar",
+    "can",
+    "bag",
+    "dozen",
   ];
+
+  // Combine custom categories with common categories
+  const allCategories = useMemo(() => {
+    const uniqueCategories = new Set([
+      ...customCategories,
+      ...COMMON_CATEGORIES,
+    ]);
+    return Array.from(uniqueCategories);
+  }, [customCategories]);
+
+  // Handle form input changes
+  const handleChange = useCallback(
+    (
+      e:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { name: string; value: string | number }
+    ) => {
+      // Handle both event objects and direct value objects
+      const { name, value } = "target" in e ? e.target : e;
+      
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      
+      // Clear error for this field if it exists
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
+
+  // Handle number input changes
+  const handleNumberChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      const numValue = parseFloat(value);
+      handleChange({
+        name,
+        value: isNaN(numValue) ? 0 : numValue,
+      });
+    },
+    [handleChange]
+  );
+
+  // Toggle between quick and full mode
+  const toggleMode = useCallback(() => {
+    setQuickMode((prev) => !prev);
+  }, []);
+
+  // Validate form before submission
+  const validateForm = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+    
+    // Required fields validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    
+    if (!formData.category) {
+      newErrors.category = "Category is required";
+    }
+    
+    if (formData.quantity < 0) {
+      newErrors.quantity = "Quantity cannot be negative";
+    }
+    
+    if (!formData.unit) {
+      newErrors.unit = "Unit is required";
+    }
+    
+    if (formData.cost < 0) {
+      newErrors.cost = "Cost cannot be negative";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
+
+  // Handle form submission
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!validateForm()) {
+        return;
+      }
+      
+      setIsSubmitting(true);
+      
+      try {
+        if (item && onUpdate) {
+          await onUpdate(formData);
+        } else {
+          await onSave(formData);
+        }
+        onClose();
+      } catch (error) {
+        console.error("Error saving inventory item:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, item, onClose, onSave, onUpdate, validateForm]
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-        <DialogHeader className="pb-4 border-b">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl flex items-center gap-2">
-              {item ? "Edit Inventory Item" : "Add Inventory Item"}
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              {item ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center"
+                >
+                  <span className="mr-2">Edit</span>
+                  <span className="text-primary">{item.name}</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  Add Inventory Item
+                </motion.div>
+              )}
               {quickMode && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <FiZap className="mr-1 h-3 w-3" />
+                <Badge variant="secondary" className="ml-2 gap-1 text-xs">
+                  <FiZap className="h-3 w-3" />
                   Quick Mode
-                </span>
+                </Badge>
               )}
             </DialogTitle>
-            {canAccessAdvanced && (
-              <Button
-                variant={quickMode ? "outline" : "secondary"}
-                size="sm"
-                onClick={toggleQuickMode}
-                className="gap-1.5"
-              >
-                {quickMode ? (
-                  <>
-                    <FiMaximize2 className="h-4 w-4" />
-                    <span>Show All Fields</span>
-                  </>
-                ) : (
-                  <>
-                    <FiMinimize2 className="h-4 w-4" />
-                    <span>Quick Mode</span>
-                  </>
-                )}
-              </Button>
+            {userRole === "admin" || userRole === "manager" && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={quickMode ? "outline" : "secondary"}
+                      size="sm"
+                      onClick={toggleMode}
+                      className="gap-1.5"
+                    >
+                      {quickMode ? (
+                        <>
+                          <FiMaximize2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Show All Fields</span>
+                        </>
+                      ) : (
+                        <>
+                          <FiMinimize2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Quick Mode</span>
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {quickMode ? "Show all available fields" : "Show only essential fields"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <DialogDescription className="mt-1">
@@ -259,7 +302,7 @@ export default function InventoryItemModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="py-4">
+        <form onSubmit={handleSubmit} className="p-6">
           {quickMode ? (
             // Quick Mode Layout - Single column with only essential fields
             <div className="space-y-5 max-w-xl mx-auto">
@@ -274,8 +317,11 @@ export default function InventoryItemModal({
                   onChange={handleChange}
                   placeholder="Enter item name"
                   required
-                  className="mt-1.5"
+                  className={`mt-1.5 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -306,7 +352,7 @@ export default function InventoryItemModal({
                       handleChange({ name: "unit", value })
                     }
                   >
-                    <SelectTrigger id="unit" className="mt-1.5">
+                    <SelectTrigger id="unit" className={`mt-1.5 ${errors.unit ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,6 +363,9 @@ export default function InventoryItemModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.unit && (
+                    <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
+                  )}
                 </div>
               </div>
 
@@ -329,7 +378,7 @@ export default function InventoryItemModal({
                   }
                   required
                 >
-                  <SelectTrigger className="mt-1.5">
+                  <SelectTrigger className={`mt-1.5 ${errors.category ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -340,31 +389,43 @@ export default function InventoryItemModal({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.category && (
+                  <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                )}
               </div>
 
-              <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+              <motion.div 
+                className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
                 <p className="text-sm text-blue-600 dark:text-blue-300 flex items-center">
                   <FiZap className="mr-2 h-4 w-4" />
-                  <span className="font-medium">Quick Mode</span>
+                  <span className="font-medium">Quick Mode Active</span>
                 </p>
                 <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
                   You&apos;re using quick mode which includes only essential
                   fields.
-                  {canAccessAdvanced &&
+                  {userRole === "admin" || userRole === "manager" &&
                     " Toggle to full mode to add details like cost, reorder level, images, and supplier info."}
                 </p>
-              </div>
+              </motion.div>
             </div>
           ) : (
             // Full Mode Layout - Organized with clear sections
             <div className="space-y-8">
               {/* Basic Information Section */}
-              <div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiPackage className="mr-2 h-4 w-4" />
+                  <FiPackage className="mr-2 h-4 w-4 text-primary" />
                   Basic Information
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div>
                     <Label htmlFor="name" className="text-sm font-medium">
                       Item Name <span className="text-red-500">*</span>
@@ -376,8 +437,11 @@ export default function InventoryItemModal({
                       onChange={handleChange}
                       placeholder="Enter item name"
                       required
-                      className="mt-1.5"
+                      className={`mt-1.5 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                     />
+                    {errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
 
                   <div>
@@ -391,7 +455,7 @@ export default function InventoryItemModal({
                       }
                       required
                     >
-                      <SelectTrigger className="mt-1.5">
+                      <SelectTrigger className={`mt-1.5 ${errors.category ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -402,6 +466,9 @@ export default function InventoryItemModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    {errors.category && (
+                      <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -418,8 +485,11 @@ export default function InventoryItemModal({
                         value={formData.quantity}
                         onChange={handleNumberChange}
                         required
-                        className="mt-1.5"
+                        className={`mt-1.5 ${errors.quantity ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                       />
+                      {errors.quantity && (
+                        <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
+                      )}
                     </div>
 
                     <div>
@@ -432,7 +502,7 @@ export default function InventoryItemModal({
                           handleChange({ name: "unit", value })
                         }
                       >
-                        <SelectTrigger id="unit" className="mt-1.5">
+                        <SelectTrigger id="unit" className={`mt-1.5 ${errors.unit ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
                           <SelectValue placeholder="Select unit" />
                         </SelectTrigger>
                         <SelectContent>
@@ -443,6 +513,9 @@ export default function InventoryItemModal({
                           ))}
                         </SelectContent>
                       </Select>
+                      {errors.unit && (
+                        <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
+                      )}
                     </div>
                   </div>
 
@@ -463,15 +536,19 @@ export default function InventoryItemModal({
                     />
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Inventory Management Section */}
-              <div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
                 <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiDollarSign className="mr-2 h-4 w-4" />
+                  <FiDollarSign className="mr-2 h-4 w-4 text-primary" />
                   Inventory Management
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div>
                     <Label
                       htmlFor="costPerUnit"
@@ -479,17 +556,27 @@ export default function InventoryItemModal({
                     >
                       Cost Per Unit <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="costPerUnit"
-                      name="cost"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.cost}
-                      onChange={handleNumberChange}
-                      required
-                      className="mt-1.5"
-                    />
+                    <div className="relative mt-1.5">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                        <FiDollarSign className="h-4 w-4" />
+                      </div>
+                      <Input
+                        id="costPerUnit"
+                        name="cost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.cost}
+                        onChange={handleNumberChange}
+                        required
+                        className="pl-8"
+                      />
+                    </div>
+                    {item && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Total value: {formatCurrency(formData.cost * formData.quantity)}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -509,27 +596,53 @@ export default function InventoryItemModal({
                       onChange={handleNumberChange}
                       className="mt-1.5"
                     />
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                      <FiAlertCircle className="h-3 w-3 mr-1 text-amber-500" />
+                      The quantity at which you&apos;ll be alerted to reorder this item
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="maxStock"
+                      className="text-sm font-medium"
+                    >
+                      Maximum Stock Level
+                    </Label>
+                    <Input
+                      id="maxStock"
+                      name="max_stock"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.max_stock}
+                      onChange={handleNumberChange}
+                      className="mt-1.5"
+                    />
                     <p className="text-xs text-muted-foreground mt-1">
-                      The quantity at which you&apos;ll be alerted to reorder
-                      this item
+                      Used for inventory level visualization (optional)
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Additional Details Section */}
-              <div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
                 <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiInfo className="mr-2 h-4 w-4" />
+                  <FiInfo className="mr-2 h-4 w-4 text-primary" />
                   Additional Details
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-4 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div>
                     <Label
                       htmlFor="location"
                       className="text-sm font-medium flex items-center gap-1.5"
                     >
-                      <FiMapPin className="h-4 w-4" />
+                      <FiMapPin className="h-4 w-4 text-muted-foreground" />
                       Location
                     </Label>
                     <Input
@@ -548,7 +661,7 @@ export default function InventoryItemModal({
                         htmlFor="supplierId"
                         className="text-sm font-medium flex items-center gap-1.5"
                       >
-                        <FiTruck className="h-4 w-4" />
+                        <FiTruck className="h-4 w-4 text-muted-foreground" />
                         Supplier
                       </Label>
                       <Select
@@ -561,7 +674,7 @@ export default function InventoryItemModal({
                           <SelectValue placeholder="Select supplier" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="">None</SelectItem>
                           {suppliers.map((supplier) => (
                             <SelectItem key={supplier.id} value={supplier.id}>
                               {supplier.name}
@@ -574,10 +687,28 @@ export default function InventoryItemModal({
 
                   <div>
                     <Label
+                      htmlFor="expiryDate"
+                      className="text-sm font-medium flex items-center gap-1.5"
+                    >
+                      <FiCalendar className="h-4 w-4 text-muted-foreground" />
+                      Expiry Date
+                    </Label>
+                    <Input
+                      id="expiryDate"
+                      name="expiry_date"
+                      type="date"
+                      value={formData.expiry_date}
+                      onChange={handleChange}
+                      className="mt-1.5"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
                       htmlFor="imageUrl"
                       className="text-sm font-medium flex items-center gap-1.5"
                     >
-                      <FiImage className="h-4 w-4" />
+                      <FiImage className="h-4 w-4 text-muted-foreground" />
                       Product Image URL
                     </Label>
                     <Input
@@ -588,24 +719,58 @@ export default function InventoryItemModal({
                       placeholder="Enter image URL"
                       className="mt-1.5"
                     />
+                    {formData.image_url && (
+                      <div className="mt-2 rounded-md overflow-hidden border border-slate-200 dark:border-slate-800 h-16 w-16">
+                        <img 
+                          src={formData.image_url} 
+                          alt="Product preview" 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/EEE/999?text=No+Image';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           )}
 
-          <DialogFooter className="mt-8 pt-4 border-t">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={onClose}
-              className="mr-2"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="px-6" disabled={isSubmitting}>
-              {item ? "Save Changes" : "Add Item"}
-            </Button>
+          <DialogFooter className="mt-8 pt-4 border-t flex items-center justify-between">
+            <div>
+              {item && (
+                <div className="text-xs text-muted-foreground">
+                  Last updated: {new Date(item.updated_at).toLocaleString()}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="px-6" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {item ? "Saving..." : "Adding..."}
+                  </div>
+                ) : (
+                  item ? "Save Changes" : "Add Item"
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
