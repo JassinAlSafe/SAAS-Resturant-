@@ -91,157 +91,102 @@ export const subscriptionService = {
         try {
             // Update billing interval for proper price display
             billingInterval = interval;
+            console.log(`Getting subscription plans with ${interval} billing interval`);
             
-            // Always use mock plans for now to ensure consistent display
-            console.log('Using mock subscription plans with SEK currency');
-            return [
-                {
-                    id: '1',
-                    name: 'Basic',
-                    description: 'Perfect for small restaurants just getting started',
-                    features: [
-                        'Up to 500 inventory items',
-                        'Basic reporting',
-                        '1 user account',
-                        'Email support'
-                    ],
-                    price: interval === 'monthly' ? 150 : 1500,
-                    monthlyPrice: 150,
-                    yearlyPrice: 1500,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: false,
-                    priority: 1,
-                    metadata: {}
-                },
-                {
-                    id: '2',
-                    name: 'Professional',
-                    description: 'Ideal for growing restaurants with more needs',
-                    features: [
-                        'Unlimited inventory items',
-                        'Advanced reporting & analytics',
-                        'Up to 5 user accounts',
-                        'Priority email support',
-                        'Menu planning tools',
-                        'Supplier management'
-                    ],
-                    price: interval === 'monthly' ? 300 : 3000,
-                    monthlyPrice: 300,
-                    yearlyPrice: 3000,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: true,
-                    priority: 2,
-                    metadata: {}
-                },
-                {
-                    id: '3',
-                    name: 'Enterprise',
-                    description: 'For restaurant chains and large operations',
-                    features: [
-                        'Everything in Professional',
-                        'Unlimited user accounts',
-                        'Multi-location support',
-                        'API access',
-                        'Dedicated account manager',
-                        'Custom integrations',
-                        '24/7 phone support'
-                    ],
-                    price: interval === 'monthly' ? 500 : 5000,
-                    monthlyPrice: 500,
-                    yearlyPrice: 5000,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: false,
-                    priority: 3,
-                    metadata: {}
-                }
-            ];
-            
-            /* Temporarily disabled database access to ensure consistent display
+            // Fetch subscription plans from the database
             const { data, error } = await supabase
                 .from('subscription_plans')
                 .select('*')
                 .order('priority', { ascending: true });
-
-            if (error) throw error;
-            
-            // If no plans found in the database, return mock plans with SEK currency
-            if (!data || data.length === 0) {
-                console.log('No subscription plans found in database, using mock plans');
-                return mockPlans;
+                
+            if (error) {
+                console.error('Error fetching subscription plans:', error);
+                throw error;
             }
             
-            return (data || []).map(mapDbToSubscriptionPlan);
-            */
+            // If no plans found in the database, return empty array
+            if (!data || data.length === 0) {
+                console.log('No subscription plans found in database, using fallback mock data');
+                // Return fallback mock data only if no plans exist in the database
+                return [
+                    {
+                        id: '1',
+                        name: 'Basic',
+                        description: 'Perfect for small restaurants just getting started',
+                        features: [
+                            'Up to 500 inventory items',
+                            'Basic reporting',
+                            '1 user account',
+                            'Email support'
+                        ],
+                        price: interval === 'monthly' ? 150 : 1500,
+                        monthlyPrice: 150,
+                        yearlyPrice: 1500,
+                        interval: interval === 'monthly' ? 'month' : 'year',
+                        currency: 'SEK',
+                        isPopular: false,
+                        priority: 1,
+                        metadata: {}
+                    },
+                    {
+                        id: '2',
+                        name: 'Professional',
+                        description: 'Ideal for growing restaurants with more needs',
+                        features: [
+                            'Unlimited inventory items',
+                            'Advanced reporting & analytics',
+                            'Up to 5 user accounts',
+                            'Priority email support',
+                            'Menu planning tools',
+                            'Supplier management'
+                        ],
+                        price: interval === 'monthly' ? 300 : 3000,
+                        monthlyPrice: 300,
+                        yearlyPrice: 3000,
+                        interval: interval === 'monthly' ? 'month' : 'year',
+                        currency: 'SEK',
+                        isPopular: true,
+                        priority: 2,
+                        metadata: {}
+                    },
+                    {
+                        id: '3',
+                        name: 'Enterprise',
+                        description: 'For restaurant chains and large operations',
+                        features: [
+                            'Everything in Professional',
+                            'Unlimited user accounts',
+                            'Multi-location support',
+                            'API access',
+                            'Dedicated account manager',
+                            'Custom integrations',
+                            '24/7 phone support'
+                        ],
+                        price: interval === 'monthly' ? 500 : 5000,
+                        monthlyPrice: 500,
+                        yearlyPrice: 5000,
+                        interval: interval === 'monthly' ? 'month' : 'year',
+                        currency: 'SEK',
+                        isPopular: false,
+                        priority: 3,
+                        metadata: {}
+                    }
+                ];
+            }
+            
+            console.log(`Found ${data.length} subscription plans in database`);
+            
+            // Map database records to SubscriptionPlan objects
+            return data.map(plan => {
+                const mappedPlan = mapDbToSubscriptionPlan(plan);
+                // Ensure price is set based on the requested interval
+                mappedPlan.price = interval === 'monthly' ? mappedPlan.monthlyPrice : mappedPlan.yearlyPrice;
+                mappedPlan.interval = interval === 'monthly' ? 'month' : 'year';
+                return mappedPlan;
+            });
         } catch (error) {
-            console.error('Error fetching subscription plans:', error);
-            // Return mock plans as fallback in case of error
-            return [
-                {
-                    id: '1',
-                    name: 'Basic',
-                    description: 'Perfect for small restaurants just getting started',
-                    features: [
-                        'Up to 500 inventory items',
-                        'Basic reporting',
-                        '1 user account',
-                        'Email support'
-                    ],
-                    price: interval === 'monthly' ? 150 : 1500,
-                    monthlyPrice: 150,
-                    yearlyPrice: 1500,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: false,
-                    priority: 1,
-                    metadata: {}
-                },
-                {
-                    id: '2',
-                    name: 'Professional',
-                    description: 'Ideal for growing restaurants with more needs',
-                    features: [
-                        'Unlimited inventory items',
-                        'Advanced reporting & analytics',
-                        'Up to 5 user accounts',
-                        'Priority email support',
-                        'Menu planning tools',
-                        'Supplier management'
-                    ],
-                    price: interval === 'monthly' ? 300 : 3000,
-                    monthlyPrice: 300,
-                    yearlyPrice: 3000,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: true,
-                    priority: 2,
-                    metadata: {}
-                },
-                {
-                    id: '3',
-                    name: 'Enterprise',
-                    description: 'For restaurant chains and large operations',
-                    features: [
-                        'Everything in Professional',
-                        'Unlimited user accounts',
-                        'Multi-location support',
-                        'API access',
-                        'Dedicated account manager',
-                        'Custom integrations',
-                        '24/7 phone support'
-                    ],
-                    price: interval === 'monthly' ? 500 : 5000,
-                    monthlyPrice: 500,
-                    yearlyPrice: 5000,
-                    interval: interval === 'monthly' ? 'month' : 'year',
-                    currency: 'SEK',
-                    isPopular: false,
-                    priority: 3,
-                    metadata: {}
-                }
-            ];
+            console.error('Error in getSubscriptionPlans:', error);
+            throw error;
         }
     },
 
@@ -249,26 +194,88 @@ export const subscriptionService = {
     async getSubscription(userId: string): Promise<Subscription | null> {
         try {
             if (!userId) throw new Error('User ID is required');
-
-            // Ensure we're using the authenticated client
-            const { data, error } = await supabase
-                .from('subscriptions')
-                .select('*')
+            
+            console.log(`Fetching subscription for user: ${userId}`);
+            
+            // First, get the business profile ID for this user
+            const { data: profileData, error: profileError } = await supabase
+                .from('business_profile_users')
+                .select('business_profile_id')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-
-            if (error) {
-                // If no subscription found, return null instead of throwing
-                if (error.code === 'PGRST116') {
+                
+            if (profileError) {
+                console.error('Error fetching business profile:', profileError);
+                if (profileError.code === 'PGRST116') {
+                    console.log('No business profile found for user');
                     return null;
                 }
-                console.error('Supabase error:', error);
-                throw error;
+                throw profileError;
             }
-
-            return data ? await mapDbToSubscription(data) : null;
+            
+            if (!profileData || !profileData.business_profile_id) {
+                console.log('No business profile ID found for user');
+                return null;
+            }
+            
+            const businessProfileId = profileData.business_profile_id;
+            console.log(`Found business profile ID: ${businessProfileId}`);
+            
+            // Get subscription from the subscriptions table
+            const { data: subscriptionData, error: subscriptionError } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('business_profile_id', businessProfileId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+                
+            // Also get subscription info from the business_profiles table as a fallback
+            const { data: profileSubscriptionData, error: profileSubscriptionError } = await supabase
+                .from('business_profiles')
+                .select('subscription_id, subscription_plan, subscription_status, subscription_current_period_end, subscription_price_id')
+                .eq('id', businessProfileId)
+                .single();
+                
+            if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+                console.error('Error fetching subscription:', subscriptionError);
+            }
+            
+            if (profileSubscriptionError) {
+                console.error('Error fetching profile subscription data:', profileSubscriptionError);
+            }
+            
+            // If we have subscription data from the subscriptions table, use that
+            if (subscriptionData) {
+                console.log('Found subscription in subscriptions table:', subscriptionData.id);
+                return await mapDbToSubscription(subscriptionData);
+            }
+            
+            // If we have subscription data from the business_profiles table, use that as fallback
+            if (profileSubscriptionData && profileSubscriptionData.subscription_id) {
+                console.log('Found subscription in business_profiles table:', profileSubscriptionData.subscription_id);
+                
+                // Create a properly typed subscription object with all required fields
+                const subscription: Subscription = {
+                    id: profileSubscriptionData.subscription_id,
+                    userId: userId,
+                    planId: profileSubscriptionData.subscription_plan || '',
+                    status: (profileSubscriptionData.subscription_status as Subscription['status']) || 'active',
+                    currentPeriodStart: new Date().toISOString(),
+                    currentPeriodEnd: profileSubscriptionData.subscription_current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    cancelAtPeriodEnd: false,
+                    billingInterval: 'monthly',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                return subscription;
+            }
+            
+            console.log('No subscription found for user');
+            return null;
         } catch (error) {
             console.error('Error fetching subscription:', error);
             throw error;

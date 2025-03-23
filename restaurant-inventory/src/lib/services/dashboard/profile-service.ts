@@ -6,6 +6,8 @@ let businessProfileCache: {
     userId: string;
     currency: string;
     name: string;
+    plan?: string;
+    subscriptionStatus?: string;
     timestamp: number;
 } | null = null;
 
@@ -259,3 +261,128 @@ export async function getBusinessProfileName(): Promise<string> {
         return 'My Business'; // Default fallback
     }
 }
+
+/**
+ * Get the subscription plan for a specific business profile
+ */
+export async function getBusinessProfilePlanById(profileId: string): Promise<string> {
+    try {
+        // Check if we have it in cache first
+        if (businessProfileCache && businessProfileCache.id === profileId && businessProfileCache.plan) {
+            return businessProfileCache.plan;
+        }
+
+        // Fetch from database
+        const { data, error } = await supabase
+            .from('business_profiles')
+            .select('subscription_plan')
+            .eq('id', profileId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching business profile plan:', error);
+            return 'free'; // Default fallback
+        }
+
+        const plan = data.subscription_plan || 'free';
+        
+        // Update cache if it exists for this profile
+        if (businessProfileCache && businessProfileCache.id === profileId) {
+            businessProfileCache.plan = plan;
+            businessProfileCache.timestamp = Date.now();
+        }
+
+        return plan;
+    } catch (error) {
+        console.error('Error in getBusinessProfilePlanById:', error);
+        return 'free'; // Default fallback
+    }
+}
+
+/**
+ * Get the subscription status for a specific business profile
+ */
+export async function getBusinessProfileSubscriptionStatusById(profileId: string): Promise<string> {
+    try {
+        // Check if we have it in cache first
+        if (businessProfileCache && businessProfileCache.id === profileId && businessProfileCache.subscriptionStatus) {
+            return businessProfileCache.subscriptionStatus;
+        }
+
+        // Fetch from database
+        const { data, error } = await supabase
+            .from('business_profiles')
+            .select('subscription_status')
+            .eq('id', profileId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching business profile subscription status:', error);
+            return 'free'; // Default fallback
+        }
+
+        const status = data.subscription_status || 'free';
+        
+        // Update cache if it exists for this profile
+        if (businessProfileCache && businessProfileCache.id === profileId) {
+            businessProfileCache.subscriptionStatus = status;
+            businessProfileCache.timestamp = Date.now();
+        }
+
+        return status;
+    } catch (error) {
+        console.error('Error in getBusinessProfileSubscriptionStatusById:', error);
+        return 'free'; // Default fallback
+    }
+}
+
+/**
+ * Get the current user's business profile plan
+ */
+export async function getBusinessProfilePlan(): Promise<string> {
+    try {
+        const profileId = await getBusinessProfileId();
+        
+        if (!profileId) {
+            return 'free'; // Default fallback
+        }
+        
+        return getBusinessProfilePlanById(profileId);
+    } catch (error) {
+        console.error('Error in getBusinessProfilePlan:', error);
+        return 'free'; // Default fallback
+    }
+}
+
+/**
+ * Get the current user's business profile subscription status
+ */
+export async function getBusinessProfileSubscriptionStatus(): Promise<string> {
+    try {
+        const profileId = await getBusinessProfileId();
+        
+        if (!profileId) {
+            return 'free'; // Default fallback
+        }
+        
+        return getBusinessProfileSubscriptionStatusById(profileId);
+    } catch (error) {
+        console.error('Error in getBusinessProfileSubscriptionStatus:', error);
+        return 'free'; // Default fallback
+    }
+}
+
+/**
+ * Hook for accessing business profile data
+ * This provides a consistent interface for the billing page and other components
+ */
+export const useBusinessProfile = {
+    getBusinessProfileId,
+    getBusinessProfileName,
+    getBusinessProfileCurrency,
+    getBusinessProfilePlan,
+    getBusinessProfileSubscriptionStatus,
+    
+    // Additional method for the billing page
+    getBusinessProfilePlanById
+};

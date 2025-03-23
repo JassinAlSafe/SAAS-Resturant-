@@ -226,24 +226,24 @@ export function PlanSelector({
                   <strong>{selectedPlan.name}</strong> plan?
                   {selectedPlan.price >
                   (currentSubscription.plan.price ?? 0) ? (
-                    <div className="mt-2">
+                    <span className="mt-2 block">
                       You will be charged the difference immediately and your
                       billing date will remain the same.
-                    </div>
+                    </span>
                   ) : selectedPlan.price <
                     (currentSubscription.plan.price ?? 0) ? (
-                    <div className="mt-2">
+                    <span className="mt-2 block">
                       Your plan will be downgraded immediately. You&apos;ll
                       receive a prorated credit for your current billing period.
-                    </div>
+                    </span>
                   ) : null}
                 </>
               )}
               {(!selectedPlan || !currentSubscription?.plan) && (
-                <div className="flex items-center gap-2">
+                <span className="flex items-center gap-2">
                   <FiInfo className="text-blue-500" />
                   <span>Confirm to change your subscription plan.</span>
-                </div>
+                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
