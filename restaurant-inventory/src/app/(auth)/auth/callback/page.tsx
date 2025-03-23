@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,21 +16,32 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function AuthCallbackPage() {
-  const router = useRouter();
+// Component to handle URL params
+function CallbackHandler({ 
+  setError, 
+  setIsLoading, 
+  setIsSuccess, 
+  setEmail, 
+  setIsResending, 
+  setResendSuccess, 
+  router, 
+  toast 
+}: { 
+  setError: (value: string | null) => void;
+  setIsLoading: (value: boolean) => void;
+  setIsSuccess: (value: boolean) => void;
+  setEmail: (value: string) => void;
+  setIsResending: (value: boolean) => void;
+  setResendSuccess: (value: boolean) => void;
+  router: any;
+  toast: any;
+}) {
   const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [isResending, setIsResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
-  const { toast } = useToast();
-
+  
   useEffect(() => {
     // Add a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
+      if (true) {
         console.log("Email verification timeout after 15 seconds");
         setIsLoading(false);
         setError("Verification is taking longer than expected. Please try logging in directly or contact support.");
@@ -104,7 +115,7 @@ export default function AuthCallbackPage() {
             (finalErrorDescription && finalErrorDescription.includes("expired"))
           ) {
             setError(
-              "Your email verification link has expired (they're valid for 1 hour). Please enter your email below to request a new one."
+              "Your email verification link has expired (they\'re valid for 1 hour). Please enter your email below to request a new one."
             );
             // Pre-fill the email field if available from the URL
             const emailFromUrl = searchParams.get("email");
@@ -122,7 +133,7 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // Extract parameters using Supabase's newer auth flow (with code parameter)
+        // Extract parameters using Supabase\'s newer auth flow (with code parameter)
         const code = searchParams.get("code");
         const type = searchParams.get("type") as EmailOtpType | null;
         const next = searchParams.get("next") || "/dashboard"; // Default to dashboard instead of onboarding
@@ -215,11 +226,11 @@ export default function AuthCallbackPage() {
             toast({
               title: "Email Verified Successfully",
               description:
-                "Your email has been verified. You'll now be redirected to the dashboard.",
+                "Your email has been verified. You\'ll now be redirected to the dashboard.",
               variant: "default",
             });
 
-            // If this is a signup confirmation, update the user's profile
+            // If this is a signup confirmation, update the user\'s profile
             if (type === "signup" || !type) {
               try {
                 if (data.user) {
@@ -263,7 +274,7 @@ export default function AuthCallbackPage() {
 
                   if (upsertError) {
                     console.error("Error updating profile:", upsertError);
-                    // Continue anyway - don't block the flow if profile update fails
+                    // Continue anyway - don\'t block the flow if profile update fails
                     console.log("Continuing despite profile update error");
                   } else {
                     console.log("Profile updated successfully");
@@ -282,7 +293,7 @@ export default function AuthCallbackPage() {
                       "Error checking business profile:",
                       businessError
                     );
-                    // Continue anyway - don't block the flow
+                    // Continue anyway - don\'t block the flow
                   } else if (!businessData) {
                     console.log("No business profile found, creating one");
                     
@@ -310,7 +321,7 @@ export default function AuthCallbackPage() {
                           "Error creating business profile:",
                           createBusinessError
                         );
-                        // Continue anyway - don't block the flow
+                        // Continue anyway - don\'t block the flow
                       } else if (newBusinessProfile) {
                         console.log(
                           "Successfully created business profile:",
@@ -360,7 +371,7 @@ export default function AuthCallbackPage() {
                       }
                     } catch (businessCreationError) {
                       console.error("Error in business profile creation flow:", businessCreationError);
-                      // Don't block the verification process, continue to dashboard
+                      // Don\'t block the verification process, continue to dashboard
                     }
                   } else {
                     console.log(
@@ -421,7 +432,20 @@ export default function AuthCallbackPage() {
 
     // Clean up the timeout
     return () => clearTimeout(timeoutId);
-  }, [searchParams, router, toast, isLoading]);
+  }, [searchParams, setError, setIsLoading, setIsSuccess, setEmail, setIsResending, setResendSuccess, router, toast]);
+
+  return null;
+}
+
+export default function AuthCallbackPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const { toast } = useToast();
 
   const handleResendConfirmation = async () => {
     if (!email || email.trim() === "") {
@@ -490,6 +514,19 @@ export default function AuthCallbackPage() {
           Email Verification
         </h1>
 
+        <Suspense fallback={null}>
+          <CallbackHandler 
+            setError={setError} 
+            setIsLoading={setIsLoading} 
+            setIsSuccess={setIsSuccess} 
+            setEmail={setEmail} 
+            setIsResending={setIsResending} 
+            setResendSuccess={setResendSuccess} 
+            router={router} 
+            toast={toast} 
+          />
+        </Suspense>
+
         {isLoading && (
           <div className="flex flex-col items-center justify-center space-y-4 py-8">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -536,7 +573,7 @@ export default function AuthCallbackPage() {
             <div className="w-full space-y-4 pt-4">
               <div className="space-y-2 px-4 text-center">
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  If you&apos;re having trouble with automatic verification, you
+                  If you\'re having trouble with automatic verification, you
                   can try to:
                 </p>
                 <div className="flex flex-col space-y-3">

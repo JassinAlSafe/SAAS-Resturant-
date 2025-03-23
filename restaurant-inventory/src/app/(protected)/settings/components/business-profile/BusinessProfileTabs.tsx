@@ -97,7 +97,7 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
           <CardHeader>
             <CardTitle>Business Information</CardTitle>
             <CardDescription>
-              Update your restaurant&apos;s basic information
+              Update your restaurant\'s basic information
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,7 +125,7 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
           <CardHeader>
             <CardTitle>Address Information</CardTitle>
             <CardDescription>
-              Update your restaurant&apos;s physical location
+              Update your restaurant\'s physical location
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -153,7 +153,7 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
           <CardHeader>
             <CardTitle>Operating Hours</CardTitle>
             <CardDescription>
-              Set your restaurant&apos;s regular business hours
+              Set your restaurant\'s regular business hours
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -211,7 +211,7 @@ export function BusinessProfileTabs({ userId }: BusinessProfileTabsProps) {
             <CardHeader>
               <CardTitle>Currency Settings</CardTitle>
               <CardDescription>
-                Set your restaurant&apos;s default currency
+                Set your restaurant\'s default currency
               </CardDescription>
             </CardHeader>
             <CardContent>

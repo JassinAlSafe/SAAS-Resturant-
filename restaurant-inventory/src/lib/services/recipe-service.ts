@@ -76,7 +76,7 @@ export const recipeService = {
                 try {
                     query = query.or('is_archived.is.null,is_archived.eq.false');
                 } catch {
-                    // If the column doesn't exist, just continue without filtering
+                    // If the column doesn\'t exist, just continue without filtering
                     console.log('is_archived column may not exist, continuing without filtering');
                 }
             }
@@ -379,7 +379,7 @@ export const recipeService = {
                 console.error('Unknown error type:', typeof error);
                 console.error('Error details:', JSON.stringify(error, null, 2));
             }
-            throw error; // Re-throw the error so it's caught by the hook
+            throw error; // Re-throw the error so it\'s caught by the hook
         }
     },
 
@@ -568,7 +568,7 @@ export const recipeService = {
 
     /**
      * Archive a recipe instead of deleting it
-     * This is useful for recipes that are referenced in sales and can't be deleted
+     * This is useful for recipes that are referenced in sales and can\'t be deleted
      */
     async archiveRecipe(id: string): Promise<boolean> {
         try {
@@ -598,7 +598,7 @@ export const recipeService = {
             if (error) {
                 console.error('Error archiving recipe:', error);
 
-                // If the column doesn't exist, we'll get an error
+                // If the column doesn\'t exist, we\'ll get an error
                 if (error.message && error.message.includes('column "is_archived" of relation "recipes" does not exist')) {
                     throw new Error('The archive feature is not available. Please contact your administrator to enable this feature.');
                 }

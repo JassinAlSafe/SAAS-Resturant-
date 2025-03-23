@@ -2,7 +2,7 @@ import { InventoryItem } from "@/lib/types";
 
 // Helper function to pluralize units correctly
 export const formatUnit = (quantity: number, unit: string): string => {
-    // Don't pluralize certain units
+    // Don\'t pluralize certain units
     if (["kg", "g", "l", "ml"].includes(unit.toLowerCase())) {
         return unit;
     }

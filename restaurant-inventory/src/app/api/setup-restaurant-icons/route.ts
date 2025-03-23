@@ -131,7 +131,7 @@ export async function GET() {
             const bucketExists = buckets.some(bucket => bucket.name === 'restaurant-icons');
             console.log('Bucket exists:', bucketExists);
 
-            // If bucket doesn't exist, create it
+            // If bucket doesn\'t exist, create it
             if (!bucketExists) {
                 console.log('Creating restaurant-icons bucket');
                 try {
@@ -201,7 +201,7 @@ export async function GET() {
                 }
             }
 
-            // Create user folder if it doesn't exist
+            // Create user folder if it doesn\'t exist
             const userId = session.user.id;
             const folderPath = `${userId}/`;
 
@@ -226,7 +226,7 @@ export async function GET() {
                 );
             }
 
-            // If folder doesn't exist, create an empty placeholder file to establish the folder
+            // If folder doesn\'t exist, create an empty placeholder file to establish the folder
             if (!folderCheck || folderCheck.length === 0) {
                 const placeholderContent = new Uint8Array([]);
                 const placeholderPath = `${folderPath}.placeholder`;
@@ -263,7 +263,7 @@ export async function GET() {
 
                 if (functionCheckError && functionCheckError.message.includes('function get_policies_for_bucket')) {
                     console.log('get_policies_for_bucket function does not exist, skipping policy check');
-                    // Function doesn't exist, return empty policies
+                    // Function doesn\'t exist, return empty policies
                     policies = [];
                 } else {
                     // Function exists, get the policies

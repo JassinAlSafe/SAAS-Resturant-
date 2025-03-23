@@ -87,12 +87,12 @@ export const dashboardService = {
                 return dashboardCache.data;
             }
             
-            // Check if we're fetching too frequently
+            // Check if we\'re fetching too frequently
             const now = Date.now();
             if (now - lastFetchTime < MIN_FETCH_INTERVAL) {
                 console.log(`Fetch attempted too soon (${now - lastFetchTime}ms since last fetch), throttling`);
                 
-                // If there's an active fetch, return that instead
+                // If there\'s an active fetch, return that instead
                 if (activeFetchPromise) {
                     console.log('Returning existing fetch promise');
                     return activeFetchPromise as Promise<DashboardData>;
@@ -108,7 +108,7 @@ export const dashboardService = {
                 await new Promise(resolve => setTimeout(resolve, MIN_FETCH_INTERVAL - (now - lastFetchTime)));
             }
 
-            // If there's already an active fetch, return that promise instead of starting a new one
+            // If there\'s already an active fetch, return that promise instead of starting a new one
             if (activeFetchPromise) {
                 console.log('Another fetch is already in progress, returning that promise');
                 return activeFetchPromise as Promise<DashboardData>;
@@ -147,7 +147,7 @@ export const dashboardService = {
             activeFetchPromise = null;
             console.error('Dashboard fetch error:', error);
             
-            // Return cached data if available, even if it's stale
+            // Return cached data if available, even if it\'s stale
             if (dashboardCache) {
                 console.log('Returning cached dashboard data after error');
                 return dashboardCache.data;

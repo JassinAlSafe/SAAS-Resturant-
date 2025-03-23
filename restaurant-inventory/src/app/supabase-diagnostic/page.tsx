@@ -29,7 +29,7 @@ export default function SupabaseDiagnosticPage() {
       const suppliersData = await supplierService.getSuppliers();
       setSuppliers(suppliersData);
 
-      let resultText = `✅ Successfully fetched ${suppliersData.length} suppliers\n\n`;
+      let resultText = ` Successfully fetched ${suppliersData.length} suppliers\n\n`;
 
       if (suppliersData.length > 0) {
         resultText += "Sample supplier data:\n";
@@ -45,7 +45,7 @@ export default function SupabaseDiagnosticPage() {
         error instanceof Error ? error.message : "Unknown error";
       console.error("Error in supplier diagnostic test:", error);
       setError(errorMessage);
-      setResult(`❌ Error: ${errorMessage}`);
+      setResult(` Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function SupabaseDiagnosticPage() {
       const inventoryData = await inventoryService.getItems();
       setInventory(inventoryData);
 
-      let resultText = `✅ Successfully fetched ${inventoryData.length} inventory items\n\n`;
+      let resultText = ` Successfully fetched ${inventoryData.length} inventory items\n\n`;
 
       if (inventoryData.length > 0) {
         resultText += "Sample inventory data:\n";
@@ -78,7 +78,7 @@ export default function SupabaseDiagnosticPage() {
         error instanceof Error ? error.message : "Unknown error";
       console.error("Error in inventory diagnostic test:", error);
       setError(errorMessage);
-      setResult(`❌ Error: ${errorMessage}`);
+      setResult(` Error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -256,7 +256,7 @@ export default function SupabaseDiagnosticPage() {
               <li>Create a new query</li>
               <li>
                 Run the SQL scripts for suppliers and ingredients tables (from
-                the &apos;SQL Scripts&apos; section below)
+                the \'SQL Scripts\' section below)
               </li>
             </ol>
           </div>
@@ -272,7 +272,7 @@ export default function SupabaseDiagnosticPage() {
               <li>Verify RLS policies allow proper access to these tables</li>
               <li>Check for any errors in the browser console</li>
               <li>
-                Ensure you&apos;re authenticated - most RLS policies require
+                Ensure you\'re authenticated - most RLS policies require
               </li>
             </ul>
           </div>

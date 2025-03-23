@@ -4,7 +4,7 @@ This directory contains reusable UI components for the restaurant inventory appl
 
 ## CustomCheckbox
 
-The `CustomCheckbox` component is a styled checkbox that provides a consistent look and feel across the application. It's designed to replace the default Checkbox component from Radix UI.
+The `CustomCheckbox` component is a styled checkbox that provides a consistent look and feel across the application. It\'s designed to replace the default Checkbox component from Radix UI.
 
 ### Usage
 

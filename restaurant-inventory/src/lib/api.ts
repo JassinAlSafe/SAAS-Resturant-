@@ -290,7 +290,7 @@ export async function getSales(startDate?: string, endDate?: string) {
         return [];
     }
 
-    // Get the user's business profile
+    // Get the user\'s business profile
     const { data: businessProfile, error: businessError } = await supabase
         .from('business_profiles')
         .select('id')
@@ -357,13 +357,13 @@ export async function deleteSale(id: string) {
 
 // ============ INVENTORY IMPACT ============
 export async function getInventoryImpact(ingredientId: string, startDate?: string, endDate?: string) {
-    // Get the current user's business profile
+    // Get the current user\'s business profile
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         throw new Error('User not authenticated');
     }
 
-    // Get the user's business profile
+    // Get the user\'s business profile
     const { data: businessProfile, error: businessError } = await supabase
         .from('business_profiles')
         .select('id')

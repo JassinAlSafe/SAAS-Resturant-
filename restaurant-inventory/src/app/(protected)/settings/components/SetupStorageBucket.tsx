@@ -214,7 +214,7 @@ export function SetupStorageBucket() {
           <p className="text-sm text-muted-foreground">
             This will create the necessary storage bucket and set up proper
             security policies to store your restaurant logo and other assets. If
-            you&apos;re having trouble uploading your logo, click the button
+            you\'re having trouble uploading your logo, click the button
             below to set up the required infrastructure.
           </p>
         </div>

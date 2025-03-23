@@ -137,7 +137,7 @@ export default function UsersPage() {
     }
   };
 
-  // Handle updating a user's role
+  // Handle updating a user\'s role
   const handleUpdateRole = async () => {
     if (!selectedUser?.id || !editRole) {
       error("Missing Information", "Please select a role.");
@@ -156,7 +156,7 @@ export default function UsersPage() {
       fetchUsers();
     } catch (err) {
       console.error("Error updating role:", err);
-      error("Update Failed", "There was an error updating the user's role.");
+      error("Update Failed", "There was an error updating the user\'s role.");
     } finally {
       setIsEditing(false);
     }
@@ -207,12 +207,12 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  // If user doesn't have permission to manage users
+  // If user doesn\'t have permission to manage users
   if (!canManageUsers) {
     return (
       <AccessDenied
         icon={<FiUsers className="h-12 w-12 text-red-600 dark:text-red-400" />}
-        message="You don't have permission to access the user management page. Please contact your administrator for assistance."
+        message="You don\'t have permission to access the user management page. Please contact your administrator for assistance."
       />
     );
   }

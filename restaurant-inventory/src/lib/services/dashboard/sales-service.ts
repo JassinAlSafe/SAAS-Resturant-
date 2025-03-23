@@ -71,7 +71,7 @@ async function deduplicate<T>(key: string, fetchFn: () => Promise<T>): Promise<T
         }
     }
 
-    // If there's already a request in progress, return that instead
+    // If there\'s already a request in progress, return that instead
     if (key in pendingRequests) {
         console.log(`Reusing pending request for ${key}`);
         return pendingRequests[key] as Promise<T>;
@@ -430,7 +430,7 @@ export async function fetchRecentSales(): Promise<RecentSale[]> {
             // Actual fetch promise
             const fetchPromise = async () => {
                 try {
-                    // Try first without customer_name since it doesn't exist
+                    // Try first without customer_name since it doesn\'t exist
                     const { data, error } = await supabase
                         .from('sales')
                         .select('id, created_at, total_amount')  // Removed customer_name

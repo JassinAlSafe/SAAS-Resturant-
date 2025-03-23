@@ -184,7 +184,7 @@ export default function AppearanceSettings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Use Custom Branding</Label>
-              <div className="text-sm text-muted-foreground">Apply your restaurant&apos;s branding to the interface</div>
+              <div className="text-sm text-muted-foreground">Apply your restaurant\'s branding to the interface</div>
             </div>
             <Switch defaultChecked />
           </div>

@@ -181,12 +181,12 @@ export default function IntegrationSettings() {
             <div className="space-y-2">
               <Label htmlFor="api-key">API Key</Label>
               <div className="flex gap-2">
-                <Input id="api-key" value="••••••••••••••••••••••••••••••" readOnly />
+                <Input id="api-key" value="" readOnly />
                 <Button variant="outline">Show</Button>
                 <Button variant="outline">Regenerate</Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                This key provides access to your restaurant's data. Keep it secure.
+                This key provides access to your restaurant\'s data. Keep it secure.
               </p>
             </div>
 
@@ -221,7 +221,7 @@ export default function IntegrationSettings() {
               <Label>Webhook URL</Label>
               <Input placeholder="https://your-service.com/webhook" />
               <p className="text-sm text-muted-foreground">
-                We'll send real-time updates to this URL when data changes.
+                We\'ll send real-time updates to this URL when data changes.
               </p>
             </div>
           </CardContent>

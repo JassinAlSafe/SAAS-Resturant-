@@ -133,14 +133,14 @@ export default function RecipeForm({
     setRecipeIngredients(updatedIngredients);
   };
 
-  // Function to update an ingredient's quantity
+  // Function to update an ingredient\'s quantity
   const updateIngredientQuantity = (index: number, quantity: number) => {
     const updatedIngredients = [...recipeIngredients];
     updatedIngredients[index].quantity = quantity;
     setRecipeIngredients(updatedIngredients);
   };
 
-  // Function to update an ingredient's id
+  // Function to update an ingredient\'s id
   const updateIngredientId = (index: number, ingredientId: string) => {
     if (index < 0 || index >= recipeIngredients.length) return;
 
@@ -193,7 +193,7 @@ export default function RecipeForm({
   // Calculate total food cost based on ingredients
   useEffect(() => {
     // This would be more accurate with actual ingredient costs
-    // For now, we'll just set it to a percentage of the price for demonstration
+    // For now, we\'ll just set it to a percentage of the price for demonstration
     if (price && !foodCost) {
       const estimatedCost = parseFloat(price) * 0.4; // 40% of price as default
       setFoodCost(estimatedCost.toFixed(2));

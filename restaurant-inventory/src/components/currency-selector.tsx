@@ -12,7 +12,7 @@ import {
 import { useCurrency } from "@/lib/currency";
 
 export function CurrencySelector() {
-  // Since we're now standardized on Swedish Krona, this component will
+  // Since we\'re now standardized on Swedish Krona, this component will
   // just display the current currency without allowing changes
 
   return (

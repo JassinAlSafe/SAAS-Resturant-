@@ -44,7 +44,7 @@ export default function EmptyInventory({
         <p className="text-muted-foreground max-w-md mb-6">
           {isFiltered
             ? filterDescription
-            : "Start by adding items to your inventory. You'll be able to track quantities, set reorder alerts, and manage costs."}
+            : "Start by adding items to your inventory. You\'ll be able to track quantities, set reorder alerts, and manage costs."}
         </p>
         {!isFiltered && (
           <Button onClick={onAddClick} className="flex items-center gap-1.5">

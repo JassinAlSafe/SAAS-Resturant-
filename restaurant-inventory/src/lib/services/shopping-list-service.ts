@@ -68,7 +68,7 @@ export const shoppingListService = {
                     continue;
                 }
 
-                // If the item doesn't exist, add it to the shopping list
+                // If the item doesn\'t exist, add it to the shopping list
                 if (!existingItems || existingItems.length === 0) {
                     const { data: newItem, error: insertError } = await supabase
                         .from('shopping_list')
@@ -221,7 +221,7 @@ export const shoppingListService = {
                 throw new Error('User not authenticated');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')

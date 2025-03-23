@@ -126,7 +126,7 @@ export function useSalesEntry(initialDishes: Dish[]) {
     setShowInventoryImpact(!showInventoryImpact);
   };
 
-  // Load previous day's data as a template
+  // Load previous day\'s data as a template
   const loadPreviousDayTemplate = () => {
     if (previousDayEntries) {
       setSalesEntries(previousDayEntries);
@@ -157,7 +157,7 @@ export function useSalesEntry(initialDishes: Dish[]) {
     bulkUpdateQuantities((_, currentQty) => {
       if (currentQty === 0) return 0;
       const newQty = Math.round(currentQty * (1 + percentage / 100));
-      return Math.max(0, newQty); // Ensure we don't go below 0
+      return Math.max(0, newQty); // Ensure we don\'t go below 0
     });
   };
 

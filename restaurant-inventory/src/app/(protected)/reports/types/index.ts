@@ -11,7 +11,7 @@ export interface ReportMetrics {
 export type DateRangeType = "week" | "month" | "quarter" | "custom";
 export type TabType = "sales" | "inventory" | "executive";
 
-// Date Range Type - Use react-day-picker's DateRange instead of defining our own
+// Date Range Type - Use react-day-picker\'s DateRange instead of defining our own
 import { DateRange } from 'react-day-picker';
 export type { DateRange };
 

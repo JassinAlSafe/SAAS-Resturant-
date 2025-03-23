@@ -109,7 +109,7 @@ export const userService = {
         }
     },
 
-    // Update a user's role
+    // Update a user\'s role
     updateUserRole: async (userId: string, role: User["role"]): Promise<User> => {
         try {
             const { data, error } = await supabase
@@ -276,7 +276,7 @@ export const userService = {
             }
 
             // In a real app, send an email with the invitation link
-            // For now, we'll just return success with the temp password
+            // For now, we\'ll just return success with the temp password
             return {
                 success: true,
                 message: `User invited successfully. Temporary password: ${tempPassword}`
@@ -294,9 +294,9 @@ export const userService = {
     resendInvitation: async (userId: string): Promise<{ success: boolean, message: string }> => {
         try {
             // In a real app, this would regenerate the invitation link and send a new email
-            // For this mock implementation, we'll simulate the process
+            // For this mock implementation, we\'ll simulate the process
 
-            // Get the user's email
+            // Get the user\'s email
             const { data: userData, error: userError } = await supabase
                 .from("profiles")
                 .select("email, name")
@@ -310,7 +310,7 @@ export const userService = {
                 };
             }
 
-            // Update the user's status to ensure it's still pending
+            // Update the user\'s status to ensure it\'s still pending
             const { error: updateError } = await supabase
                 .from("profiles")
                 .update({
@@ -330,7 +330,7 @@ export const userService = {
             const newTempPassword = Math.random().toString(36).slice(-8);
 
             // In a real app, we would send an email with the new invitation link
-            // For now, we'll just return success with the new temp password
+            // For now, we\'ll just return success with the new temp password
             return {
                 success: true,
                 message: `Invitation resent to ${userData.email}. New temporary password: ${newTempPassword}`
@@ -397,7 +397,7 @@ export const userService = {
     // Bulk delete users
     bulkDeleteUsers: async (userIds: string[]): Promise<{ success: boolean, message: string }> => {
         try {
-            // Delete users one by one since Supabase doesn't support bulk delete for auth users
+            // Delete users one by one since Supabase doesn\'t support bulk delete for auth users
             let successCount = 0;
             let failCount = 0;
 

@@ -96,7 +96,7 @@ export function DashboardDataProvider({
     };
   }, [isLoading, isRetrying, triggerRefresh]);
 
-  // If there's an error and we've already retried, show error state
+  // If there\'s an error and we\'ve already retried, show error state
   if (error && hasRetried) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
@@ -127,7 +127,7 @@ export function DashboardDataProvider({
     );
   }
 
-  // If we're still loading and should show loading state
+  // If we\'re still loading and should show loading state
   if ((isLoading || isInitialLoad) && showLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
@@ -137,13 +137,13 @@ export function DashboardDataProvider({
     );
   }
 
-  // If we have no data but we're not loading, show empty state
+  // If we have no data but we\'re not loading, show empty state
   if (!hasData && !isLoading && !isInitialLoad) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
         <h2 className="text-xl font-semibold text-gray-800">No dashboard data available</h2>
         <p className="text-gray-600 max-w-md">
-          We couldn&apos;t find any data for your dashboard. This could be because your account is new or there&apos;s no activity yet.
+          We couldn\'t find any data for your dashboard. This could be because your account is new or there\'s no activity yet.
         </p>
         <Button 
           onClick={triggerRefresh} 

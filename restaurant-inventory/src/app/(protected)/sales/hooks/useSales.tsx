@@ -20,7 +20,7 @@ export function useSales() {
 
   // Ref to store recipe cache and prevent redundant fetches
   const recipeCache = useRef<Recipe[] | null>(null);
-  // Ref to track if we're currently fetching recipes to prevent concurrent fetches
+  // Ref to track if we\'re currently fetching recipes to prevent concurrent fetches
   const isFetchingRecipes = useRef(false);
 
   // Notifications
@@ -242,7 +242,7 @@ export function useSales() {
       return recipeCache.current;
     }
 
-    // If we're already fetching, don't start another fetch
+    // If we\'re already fetching, don\'t start another fetch
     if (isFetchingRecipes.current) {
       console.log("Recipes fetch already in progress, waiting...");
       // Wait for current fetch to complete

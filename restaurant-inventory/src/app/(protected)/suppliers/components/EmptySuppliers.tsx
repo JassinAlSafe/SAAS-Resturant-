@@ -18,7 +18,7 @@ export default function EmptySuppliers({ onAddClick }: EmptySuppliersProps) {
       </h2>
       <p className="text-gray-500 max-w-md mb-8 text-base">
         Add suppliers to keep track of your vendors and their contact
-        information. You&apos;ll be able to link inventory items to specific
+        information. You\'ll be able to link inventory items to specific
         suppliers.
       </p>
       <Button

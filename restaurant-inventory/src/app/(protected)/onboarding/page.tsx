@@ -260,7 +260,7 @@ export default function OnboardingPage() {
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold">Complete Your Setup</CardTitle>
               <CardDescription>
-                Let&apos;s set up your business profile to get started with inventory management
+                Let\'s set up your business profile to get started with inventory management
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -417,7 +417,7 @@ export default function OnboardingPage() {
               </div>
               <CardTitle className="text-2xl font-bold text-center">Setup Complete!</CardTitle>
               <CardDescription className="text-center">
-                Your business profile has been set up successfully. You&apos;re now ready to start managing your inventory.
+                Your business profile has been set up successfully. You\'re now ready to start managing your inventory.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">

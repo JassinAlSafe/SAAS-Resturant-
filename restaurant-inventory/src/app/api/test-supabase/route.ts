@@ -15,7 +15,7 @@ export async function GET() {
             .select('count(*)', { count: 'exact', head: true })
             .limit(1);
 
-        // Step 3: Try to create a test row (this will fail if the table doesn't exist)
+        // Step 3: Try to create a test row (this will fail if the table doesn\'t exist)
         const testRow = {
             user_id: '00000000-0000-0000-0000-000000000000', // Dummy ID
             name: 'Test Restaurant',

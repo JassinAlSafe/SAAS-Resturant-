@@ -9,7 +9,7 @@ interface CurrencyHookReturn {
 }
 
 /**
- * Custom hook for currency formatting based on the user's business profile settings
+ * Custom hook for currency formatting based on the user\'s business profile settings
  */
 export function useCurrency(): CurrencyHookReturn {
   const [currency, setCurrency] = useState<string>('USD');

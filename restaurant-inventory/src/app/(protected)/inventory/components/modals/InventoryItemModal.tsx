@@ -405,7 +405,7 @@ export default function InventoryItemModal({
                   <span className="font-medium">Quick Mode Active</span>
                 </p>
                 <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                  You&apos;re using quick mode which includes only essential
+                  You\'re using quick mode which includes only essential
                   fields.
                   {userRole === "admin" || userRole === "manager" &&
                     " Toggle to full mode to add details like cost, reorder level, images, and supplier info."}
@@ -598,7 +598,7 @@ export default function InventoryItemModal({
                     />
                     <p className="text-xs text-muted-foreground mt-1 flex items-center">
                       <FiAlertCircle className="h-3 w-3 mr-1 text-amber-500" />
-                      The quantity at which you&apos;ll be alerted to reorder this item
+                      The quantity at which you\'ll be alerted to reorder this item
                     </p>
                   </div>
 

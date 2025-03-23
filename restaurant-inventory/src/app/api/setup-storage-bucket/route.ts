@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     let policiesUpdated = false;
     const bucketExists = buckets?.some(bucket => bucket.name === 'business_assets') || false;
 
-    // Create the bucket if it doesn't exist
+    // Create the bucket if it doesn\'t exist
     if (!bucketExists) {
       const { error: createError } = await supabaseAdmin.storage.createBucket('business_assets', {
         public: false,
@@ -134,7 +134,7 @@ export async function GET(request: Request) {
           p.policyname === policy.name
         );
 
-        // If policy exists and we're not forcing update, skip it
+        // If policy exists and we\'re not forcing update, skip it
         if (existingPolicy && !force) {
           policyResults.push({
             name: policy.name,
@@ -144,7 +144,7 @@ export async function GET(request: Request) {
           continue;
         }
 
-        // If policy exists and we're forcing update, drop it first
+        // If policy exists and we\'re forcing update, drop it first
         if (existingPolicy) {
           const { error: dropError } = await supabaseAdmin.rpc(
             'drop_policy',

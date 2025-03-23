@@ -70,7 +70,7 @@ import {
 // Hooks
 import { useReports } from "./hooks/useReports";
 
-// Add a direct import for TabType to ensure it's recognized
+// Add a direct import for TabType to ensure it\'s recognized
 import { TabType } from "./types";
 
 // Register ChartJS components
@@ -287,7 +287,7 @@ function ReportsContent() {
                   className="px-0 h-auto font-normal"
                   asChild
                 >
-                  <a href="/inventory?filter=low-stock">View items →</a>
+                  <a href="/inventory?filter=low-stock">View items </a>
                 </Button>
               </CardFooter>
             </Card>
@@ -306,7 +306,7 @@ function ReportsContent() {
                   className="px-0 h-auto font-normal"
                   asChild
                 >
-                  <a href="/shopping-list">Go to Shopping List →</a>
+                  <a href="/shopping-list">Go to Shopping List </a>
                 </Button>
               </CardFooter>
             </Card>

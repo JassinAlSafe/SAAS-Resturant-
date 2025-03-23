@@ -447,7 +447,7 @@ export const supplierService = {
             }
 
             // In a real application, this would send an email or create a purchase order
-            // For now, we'll just log the request
+            // For now, we\'ll just log the request
             console.log(`Sending reorder request to ${supplierData.name} (${supplierData.email})`);
             console.log('Items to reorder:', items);
 

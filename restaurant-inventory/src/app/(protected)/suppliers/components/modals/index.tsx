@@ -69,8 +69,8 @@ export function SupplierModals({
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the supplier &quot;
-              {supplierToDelete?.name}&quot; and all associated data. This
+              This will permanently delete the supplier \"
+              {supplierToDelete?.name}\" and all associated data. This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -20,10 +20,10 @@ export default function SupabaseTableHelper() {
   const [copiedExpiry, setCopiedExpiry] = useState(false);
   const [copiedSupplierColumn, setCopiedSupplierColumn] = useState(false);
 
-  const suppliersSqlScript = `-- Create UUID extension if it doesn't exist
+  const suppliersSqlScript = `-- Create UUID extension if it doesn\'t exist
 create extension if not exists "uuid-ossp";
 
--- Create suppliers table if it doesn't exist
+-- Create suppliers table if it doesn\'t exist
 create table if not exists public.suppliers (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
@@ -106,10 +106,10 @@ begin
 end;
 $$;`;
 
-  const ingredientsSqlScript = `-- Create UUID extension if it doesn't exist
+  const ingredientsSqlScript = `-- Create UUID extension if it doesn\'t exist
 create extension if not exists "uuid-ossp";
 
--- Create ingredients table if it doesn't exist
+-- Create ingredients table if it doesn\'t exist
 create table if not exists public.ingredients (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
@@ -195,7 +195,7 @@ begin
 end;
 $$;`;
 
-  const addExpiryDateScript = `-- Add expiry_date column to ingredients table if it doesn't exist
+  const addExpiryDateScript = `-- Add expiry_date column to ingredients table if it doesn\'t exist
 DO $$
 BEGIN
     -- Check if the column exists
@@ -216,7 +216,7 @@ BEGIN
     END IF;
 END $$;`;
 
-  const addSupplierIdScript = `-- Add supplier_id column to ingredients table if it doesn't exist
+  const addSupplierIdScript = `-- Add supplier_id column to ingredients table if it doesn\'t exist
 DO $$
 BEGIN
     -- Check if the column exists

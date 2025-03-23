@@ -38,7 +38,7 @@ function useRenderGuard() {
     // Increment render count
     renderCountRef.current++;
 
-    // Check if we've exceeded render threshold
+    // Check if we\'ve exceeded render threshold
     if (renderCountRef.current > maxRendersRef.current) {
       console.error("Detected potential infinite loop in SalesPage");
       renderGuardActiveRef.current = true;
@@ -107,7 +107,7 @@ export default function SalesPage({
 
   // Use activeTab in an effect to satisfy the linter
   useEffect(() => {
-    // This effect ensures we're tracking the active tab state
+    // This effect ensures we\'re tracking the active tab state
     if (activeTab === "history") {
       // No action needed, just referencing the value
     }
@@ -178,7 +178,7 @@ export default function SalesPage({
           Sales Module Temporarily Unavailable
         </h2>
         <p className="text-muted-foreground mb-4">
-          We&apos;ve detected an issue with this page. Please try refreshing the
+          We\'ve detected an issue with this page. Please try refreshing the
           browser.
         </p>
         <button

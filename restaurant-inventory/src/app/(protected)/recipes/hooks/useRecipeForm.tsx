@@ -68,14 +68,14 @@ export function useRecipeForm({
     setRecipeIngredients(updatedIngredients);
   };
 
-  // Function to update an ingredient's quantity
+  // Function to update an ingredient\'s quantity
   const updateIngredientQuantity = (index: number, quantity: number) => {
     const updatedIngredients = [...recipeIngredients];
     updatedIngredients[index].quantity = quantity;
     setRecipeIngredients(updatedIngredients);
   };
 
-  // Function to update an ingredient's id
+  // Function to update an ingredient\'s id
   const updateIngredientId = (index: number, ingredientId: string) => {
     const updatedIngredients = [...recipeIngredients];
     updatedIngredients[index].ingredientId = ingredientId;

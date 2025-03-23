@@ -46,7 +46,7 @@ export function useInventorySubscription({
                 throw new Error('No authenticated user found');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')

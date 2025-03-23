@@ -30,7 +30,7 @@ This module provides comprehensive billing and subscription management for the R
 
 The following types are used throughout the billing module:
 
-- `Subscription`: Represents a user's subscription to a plan.
+- `Subscription`: Represents a user\'s subscription to a plan.
 - `SubscriptionPlan`: Defines the details of a subscription plan.
 - `PaymentMethod`: Represents a payment method used for billing.
 - `Invoice`: Represents a billing invoice with line items.

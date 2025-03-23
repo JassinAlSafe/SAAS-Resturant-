@@ -149,7 +149,7 @@ export default function DebugPage() {
       setServiceRoleStatus(data.keysAreSame ? "same" : "ok");
     } catch (err) {
       console.error("Error checking Supabase keys:", err);
-      // Default to unchecked if there's an error
+      // Default to unchecked if there\'s an error
     }
   };
 
@@ -201,7 +201,7 @@ export default function DebugPage() {
               <p className="font-medium">How to fix this:</p>
               <ol className="list-decimal list-inside mt-2 space-y-1">
                 <li>Go to your Supabase project dashboard</li>
-                <li>Navigate to Project Settings → API</li>
+                <li>Navigate to Project Settings  API</li>
                 <li>Copy the "service_role key" (not the anon/public key)</li>
                 <li>Update your .env.local file with the correct key</li>
                 <li>Restart your development server</li>

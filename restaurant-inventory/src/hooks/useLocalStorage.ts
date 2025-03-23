@@ -19,7 +19,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         }
     });
 
-    // Return a wrapped version of useState's setter function that
+    // Return a wrapped version of useState\'s setter function that
     // persists the new value to localStorage
     const setValue = (value: T | ((val: T) => T)) => {
         try {

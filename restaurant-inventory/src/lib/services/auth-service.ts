@@ -69,7 +69,7 @@ export const authService = {
     } catch (error) {
       console.error("Error during logout:", error);
 
-      // Even if there's an error, try to redirect to login
+      // Even if there\'s an error, try to redirect to login
       if (typeof window !== 'undefined') {
         window.location.href = `/login?error=logout_failed&t=${Date.now()}`;
       }

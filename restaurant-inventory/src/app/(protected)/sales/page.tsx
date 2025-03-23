@@ -65,7 +65,7 @@ export default function Page() {
                 Sales Management
               </h1>
               <p className="text-muted-foreground">
-                Record and analyze your restaurant&apos;s sales data
+                Record and analyze your restaurant\'s sales data
               </p>
             </div>
           </div>

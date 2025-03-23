@@ -12,15 +12,15 @@ This directory contains the unified type system for the Restaurant Inventory Man
 
 ```
 /src/types/
-├── README.md              # This documentation file
-├── index.ts               # Main entry point for types
-├── database/              # Database schema types (snake_case)
-│   └── index.ts
-├── app/                   # Application types (camelCase)
-│   └── index.ts
-└── adapters/              # Functions to convert between types
-    ├── index.ts
-    └── shopping-list.ts   # Adapters for shopping list types
+ README.md              # This documentation file
+ index.ts               # Main entry point for types
+ database/              # Database schema types (snake_case)
+    index.ts
+ app/                   # Application types (camelCase)
+    index.ts
+ adapters/              # Functions to convert between types
+     index.ts
+     shopping-list.ts   # Adapters for shopping list types
 ```
 
 ## Usage Guidelines

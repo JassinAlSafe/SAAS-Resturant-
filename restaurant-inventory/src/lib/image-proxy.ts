@@ -3,7 +3,7 @@
  */
 
 /**
- * Converts an image URL to a proxied URL if it's external
+ * Converts an image URL to a proxied URL if it\'s external
  * @param url The original image URL
  * @returns The proxied URL if external, or the original URL if internal
  */
@@ -20,7 +20,7 @@ export function getProxiedImageUrl(url: string): string {
         return url;
     }
 
-    // If we're on the client side, check if the URL is from our domain
+    // If we\'re on the client side, check if the URL is from our domain
     if (typeof window !== 'undefined') {
         if (url.startsWith(window.location.origin)) {
             return url;
@@ -39,12 +39,12 @@ export function getProxiedImageUrl(url: string): string {
 export function needsProxy(url: string): boolean {
     if (!url) return false;
 
-    // Data URLs, relative URLs, and blob URLs don't need to be proxied
+    // Data URLs, relative URLs, and blob URLs don\'t need to be proxied
     if (url.startsWith('data:') || url.startsWith('/') || url.startsWith('blob:')) {
         return false;
     }
 
-    // If we're on the client side, check if the URL is from our domain
+    // If we\'re on the client side, check if the URL is from our domain
     if (typeof window !== 'undefined') {
         if (url.startsWith(window.location.origin)) {
             return false;

@@ -326,7 +326,7 @@ export default function Inventory() {
   const closeEditModal = useCallback(() => setIsEditModalOpen(false), []);
 
   const openDeleteModal = useCallback((groupedItem: GroupedInventoryItem) => {
-    // For deletion, we'll need to handle deletion of all related items or select a specific one
+    // For deletion, we\'ll need to handle deletion of all related items or select a specific one
     // For now, just use the first item in the group
     setCurrentItem(groupedItem.originalItems[0]);
     setIsDeleteModalOpen(true);
@@ -630,7 +630,7 @@ export default function Inventory() {
         Performance Optimizations:
         1. Using useMemo for filtered and sorted items to avoid recalculation on every render
         2. Using useCallback for event handlers to prevent unnecessary re-renders
-        3. Using React.memo for components to skip rendering when props haven't changed
+        3. Using React.memo for components to skip rendering when props haven\'t changed
         4. Using virtualization for large lists to only render visible items
         5. Implementing pagination to limit the number of items rendered at once
       */}

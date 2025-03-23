@@ -25,7 +25,7 @@ export const salesService = {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfileData, error: profileError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -98,7 +98,7 @@ export const salesService = {
                 return [];
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -191,7 +191,7 @@ export const salesService = {
                 throw new Error('User not authenticated');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -407,7 +407,7 @@ export const salesService = {
                 return [];
             }
 
-            // Get dish ingredients for each recipe's dish
+            // Get dish ingredients for each recipe\'s dish
             const dishIds = recipesData.map(recipe => recipe.dish_id).filter(Boolean);
             const { data: dishIngredientsData, error: dishIngredientsError } = await supabase
                 .from('dish_ingredients')
@@ -486,7 +486,7 @@ export const salesService = {
                 return [];
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')

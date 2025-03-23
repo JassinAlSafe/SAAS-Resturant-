@@ -41,7 +41,7 @@ export function SalesEntryHeader({
       <div className="space-y-1">
         <h2 className="text-xl font-semibold">Menu Items</h2>
         <p className="text-sm text-muted-foreground">
-          Enter quantities sold for today&apos;s sales
+          Enter quantities sold for today\'s sales
         </p>
       </div>
       <div className="flex items-center gap-4">
@@ -117,7 +117,7 @@ export function SalesEntryHeader({
               size="sm"
               onClick={onLoadPreviousDay}
               className="shrink-0"
-              aria-label="Load previous day's sales template"
+              aria-label="Load previous day\'s sales template"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Load Previous

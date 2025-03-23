@@ -158,7 +158,7 @@ export function BusinessProfileContent({
             Business Profile
           </h1>
           <p className="text-muted-foreground">
-            Manage your restaurant&apos;s business information and settings.
+            Manage your restaurant\'s business information and settings.
           </p>
         </div>
 
@@ -175,7 +175,7 @@ export function BusinessProfileContent({
               <CardHeader>
                 <CardTitle>Basic Information</CardTitle>
                 <CardDescription>
-                  Update your restaurant&apos;s basic contact information.
+                  Update your restaurant\'s basic contact information.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -200,7 +200,7 @@ export function BusinessProfileContent({
               <CardHeader>
                 <CardTitle>Restaurant Logo</CardTitle>
                 <CardDescription>
-                  Upload your restaurant&apos;s logo for receipts and digital
+                  Upload your restaurant\'s logo for receipts and digital
                   menus.
                 </CardDescription>
               </CardHeader>
@@ -219,7 +219,7 @@ export function BusinessProfileContent({
               <CardHeader>
                 <CardTitle>Address Information</CardTitle>
                 <CardDescription>
-                  Update your restaurant&apos;s physical location.
+                  Update your restaurant\'s physical location.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -246,7 +246,7 @@ export function BusinessProfileContent({
               <CardHeader>
                 <CardTitle>Operating Hours</CardTitle>
                 <CardDescription>
-                  Set your restaurant&apos;s regular business hours.
+                  Set your restaurant\'s regular business hours.
                 </CardDescription>
               </CardHeader>
               <CardContent>

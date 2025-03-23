@@ -147,7 +147,7 @@ function DashboardContent({
             Welcome to <span className="text-primary">{businessName}</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400">
-            Here&apos;s what&apos;s happening with your inventory today.
+            Here\'s what\'s happening with your inventory today.
           </p>
           {lastUpdated && (
             <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">

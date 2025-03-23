@@ -102,7 +102,7 @@ export const useDashboardStore = create<DashboardState>()(
                 // Only apply throttling when setting to true
                 if (value === true) {
                     const now = Date.now();
-                    // Check if we're requesting refresh too frequently
+                    // Check if we\'re requesting refresh too frequently
                     if (now - lastRefreshRequest < MIN_REFRESH_INTERVAL) {
                         console.log(`Refresh requested too soon (${now - lastRefreshRequest}ms since last request), throttling`);
                         return; // Skip this refresh request

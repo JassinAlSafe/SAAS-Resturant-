@@ -26,7 +26,7 @@ export const useMediaQueries = () => {
 
 // SSR-friendly media query hook with fallback
 export const useSafeMediaQueries = () => {
-    // Create state to track if we've hydrated
+    // Create state to track if we\'ve hydrated
     const [hasMounted, setHasMounted] = useState(false);
 
     // We need to call hooks unconditionally at the top level

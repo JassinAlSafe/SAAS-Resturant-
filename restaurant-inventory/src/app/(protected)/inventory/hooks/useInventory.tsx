@@ -88,7 +88,7 @@ export function useInventory() {
           `${newItem.name} has been added to your inventory.`
         );
 
-        // Add new category if it doesn't exist
+        // Add new category if it doesn\'t exist
         if (!categories.includes(newItem.category)) {
           setCategories([...categories, newItem.category]);
         }
@@ -116,7 +116,7 @@ export function useInventory() {
         );
         success("Item Updated", `${updatedItem.name} has been updated.`);
 
-        // Add new category if it doesn't exist
+        // Add new category if it doesn\'t exist
         if (!categories.includes(updatedItem.category)) {
           setCategories([...categories, updatedItem.category]);
         }

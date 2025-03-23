@@ -11,7 +11,7 @@ Error: Row-Level Security Policy Error
 Details: The operation was blocked by Supabase RLS policies.
 ```
 
-This means that the current user doesn't have permission to perform the requested operation on the storage bucket.
+This means that the current user doesn\'t have permission to perform the requested operation on the storage bucket.
 
 ## Diagnosing the Issue
 
@@ -37,7 +37,7 @@ Based on the results, you can choose the appropriate fix from the options below.
 
 ## Testing the API Route
 
-If you're experiencing issues with the API route that sets up the bucket, you can test it directly:
+If you\'re experiencing issues with the API route that sets up the bucket, you can test it directly:
 
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
@@ -64,7 +64,7 @@ To fix RLS policy issues with the `restaurant-icons` bucket, follow these steps:
 
 The SQL script will:
 
-- Create the `restaurant-icons` bucket if it doesn't exist
+- Create the `restaurant-icons` bucket if it doesn\'t exist
 - Enable Row Level Security on the storage tables
 - Drop any existing policies for the bucket
 - Create new policies that allow:
@@ -76,7 +76,7 @@ The SQL script will:
 
 ## Solution 2: Alternative Direct Fix
 
-If Solution 1 doesn't work, try the alternative approach:
+If Solution 1 doesn\'t work, try the alternative approach:
 
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
@@ -94,7 +94,7 @@ This alternative script:
 
 ## Solution 3: Comprehensive Final Fix (Recommended)
 
-If you're still experiencing issues, or want the most robust solution, use the final fix script:
+If you\'re still experiencing issues, or want the most robust solution, use the final fix script:
 
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
@@ -184,9 +184,9 @@ Sometimes the authenticated role needs additional permissions. The fix scripts g
 - `USAGE ON SCHEMA auth`
 - `SELECT ON auth.users`
 
-### 3. Bucket Doesn't Exist
+### 3. Bucket Doesn\'t Exist
 
-If the bucket doesn't exist, the fix scripts will create it automatically.
+If the bucket doesn\'t exist, the fix scripts will create it automatically.
 
 ### 4. Conflicting Policies
 

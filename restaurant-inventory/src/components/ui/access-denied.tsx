@@ -8,7 +8,7 @@ interface AccessDeniedProps {
 
 export function AccessDenied({
   title = "Access Denied",
-  message = "You don't have permission to access this page. Please contact your administrator for assistance.",
+  message = "You don\'t have permission to access this page. Please contact your administrator for assistance.",
   icon = <FiLock className="h-12 w-12 text-red-600 dark:text-red-400" />,
 }: AccessDeniedProps) {
   return (

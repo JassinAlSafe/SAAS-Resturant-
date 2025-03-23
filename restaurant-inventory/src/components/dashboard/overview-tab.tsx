@@ -56,7 +56,7 @@ export function OverviewTab() {
   // Helper function for number formatting
   const formatNumber = (num: number | string): string => {
     if (typeof num === 'string') {
-      // If it's already a string, assume it's already formatted
+      // If it\'s already a string, assume it\'s already formatted
       return num.replace(/[^0-9.]/g, ''); // Remove any non-numeric characters except decimal
     }
     return new Intl.NumberFormat().format(num);

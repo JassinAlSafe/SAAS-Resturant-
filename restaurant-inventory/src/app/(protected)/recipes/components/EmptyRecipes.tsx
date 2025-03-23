@@ -54,7 +54,7 @@ export default function EmptyRecipes({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        Start creating your restaurant&apos;s menu by adding recipes. Track ingredients, costs, and pricing to optimize your menu profitability.
+        Start creating your restaurant\'s menu by adding recipes. Track ingredients, costs, and pricing to optimize your menu profitability.
       </motion.p>
 
       <motion.div

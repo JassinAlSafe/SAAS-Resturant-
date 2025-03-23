@@ -52,14 +52,14 @@ export default function UserFlowPage() {
           <FlowStep
             number="2"
             title="Add Ingredients"
-            description="Go to 'Inventory' → Add all ingredients (e.g., Tomatoes, Cheese, Flour)"
+            description="Go to \'Inventory\'  Add all ingredients (e.g., Tomatoes, Cheese, Flour)"
             icon={<Package className="h-5 w-5" />}
           />
           <FlowArrow />
           <FlowStep
             number="3"
             title="Create Menu Items"
-            description="Go to 'Menu Items' → Add dishes and their recipes (linking ingredients)"
+            description="Go to \'Menu Items\'  Add dishes and their recipes (linking ingredients)"
             icon={<ClipboardList className="h-5 w-5" />}
           />
         </FlowSection>
@@ -80,7 +80,7 @@ export default function UserFlowPage() {
           <FlowStep
             number="1"
             title="Enter Sales"
-            description="Go to 'Sales Entry' → Select the menu items sold today"
+            description="Go to \'Sales Entry\'  Select the menu items sold today"
             icon={<DollarSign className="h-5 w-5" />}
           />
           <FlowArrow />
@@ -94,7 +94,7 @@ export default function UserFlowPage() {
           <FlowStep
             number="3"
             title="Submit & Update"
-            description="Click 'Submit' → The system automatically updates stock levels"
+            description="Click \'Submit\'  The system automatically updates stock levels"
             icon={<RefreshCw className="h-5 w-5" />}
           />
         </FlowSection>
@@ -122,7 +122,7 @@ export default function UserFlowPage() {
           <FlowStep
             number="2"
             title="Review Inventory"
-            description="Go to 'Inventory' → See stock levels & ingredient usage history"
+            description="Go to \'Inventory\'  See stock levels & ingredient usage history"
             icon={<ClipboardList className="h-5 w-5" />}
           />
           <FlowArrow />
@@ -150,7 +150,7 @@ export default function UserFlowPage() {
           <FlowStep
             number="1"
             title="View Reports"
-            description="Go to 'Reports' → View Top-Selling Dishes and usage trends"
+            description="Go to \'Reports\'  View Top-Selling Dishes and usage trends"
             icon={<LineChart className="h-5 w-5" />}
           />
           <FlowArrow />
@@ -181,15 +181,15 @@ export default function UserFlowPage() {
         <CardContent className="space-y-6">
           <SummaryItem
             title="Daily Routine"
-            description="Log sales → Auto-update stock → Check dashboard alerts → Restock if needed"
+            description="Log sales  Auto-update stock  Check dashboard alerts  Restock if needed"
           />
           <SummaryItem
             title="Weekly Review"
-            description="Check reports → Analyze sales trends → Optimize inventory purchasing"
+            description="Check reports  Analyze sales trends  Optimize inventory purchasing"
           />
           <SummaryItem
             title="First-Time Setup"
-            description="Add ingredients & menu items → Set up recipes → Start tracking automatically"
+            description="Add ingredients & menu items  Set up recipes  Start tracking automatically"
           />
         </CardContent>
       </Card>

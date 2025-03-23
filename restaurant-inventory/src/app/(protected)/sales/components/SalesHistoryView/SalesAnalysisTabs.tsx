@@ -341,7 +341,7 @@ function TransactionHistory({
                             variant="outline"
                             className="mb-1 bg-primary/5 whitespace-nowrap"
                           >
-                            {item.dish_name} × {item.quantity}
+                            {item.dish_name}  {item.quantity}
                           </Badge>
                         ))}
                       </div>

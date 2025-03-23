@@ -312,7 +312,7 @@ export default function BillingSettings() {
                         variant="outline" 
                         className="w-full"
                         onClick={() => {
-                          // These are placeholder price IDs - you'll need to replace with your actual Stripe price IDs
+                          // These are placeholder price IDs - you\'ll need to replace with your actual Stripe price IDs
                           const priceIds = {
                             starter: "price_starter123",
                             professional: "price_professional456",
@@ -353,7 +353,7 @@ export default function BillingSettings() {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  You don&apos;t have any payment methods saved. Subscribe to a plan to add a payment method.
+                  You don\'t have any payment methods saved. Subscribe to a plan to add a payment method.
                 </p>
               </div>
             )}

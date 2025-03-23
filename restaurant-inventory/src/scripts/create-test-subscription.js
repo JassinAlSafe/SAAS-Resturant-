@@ -19,14 +19,14 @@ async function createTestSubscription() {
     console.log('Response:', data);
     
     if (data.success) {
-      console.log('✅ Test subscription created successfully!');
+      console.log(' Test subscription created successfully!');
       console.log('Subscription ID:', data.subscription.id);
       console.log('Business Profile updated with plan:', data.profile.subscription_plan);
     } else {
-      console.error('❌ Failed to create test subscription:', data.error);
+      console.error(' Failed to create test subscription:', data.error);
     }
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error(' Error:', error);
   }
 }
 

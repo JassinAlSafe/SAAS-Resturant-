@@ -84,6 +84,18 @@ export type User = {
   mfa_enabled?: boolean;
 };
 
+// User profile types
+export interface Profile {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  business_profile_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Database row type for ingredients table
 export interface IngredientRow {
   id: string;
@@ -162,6 +174,29 @@ export interface Supplier {
   logo?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// Business profile type
+export interface BusinessProfile {
+  id: string;
+  name: string;
+  description?: string;
+  logo_url?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  tax_id?: string;
+  tax_rate?: number;
+  currency?: string;
+  default_currency?: string;
+  created_at: string;
+  updated_at: string;
+  owner_id: string;
 }
 
 // Recipe type
@@ -325,33 +360,6 @@ export interface OperatingHours {
   open: string;
   close: string;
   closed: boolean;
-}
-
-export interface BusinessProfile {
-  id: string;
-  name: string;
-  type: string;
-  email: string;
-  phone: string;
-  website: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  logo?: string;
-  operatingHours: Record<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday', OperatingHours>;
-  defaultCurrency: string;
-  taxSettings: {
-    rate: number;
-    enabled: boolean;
-    name: string;
-  };
-  taxRate: number;
-  taxEnabled: boolean;
-  taxName: string;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 // 1. Database schema types (snake_case - matches Supabase columns)

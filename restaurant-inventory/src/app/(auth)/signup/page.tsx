@@ -190,7 +190,7 @@ export default function SignupPage() {
     } catch (error) {
       console.error("Signup error:", error);
 
-      // Reset the form animation if there's an error
+      // Reset the form animation if there\'s an error
       gsap.to(formRef.current, {
         opacity: 1,
         scale: 1,
@@ -254,7 +254,7 @@ export default function SignupPage() {
                   Verify Your Email
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
-                  We&apos;ve sent a verification link to{" "}
+                  We\'ve sent a verification link to{" "}
                   <strong>{userEmail}</strong>
                 </p>
               </div>
@@ -301,7 +301,7 @@ export default function SignupPage() {
                 </Button>
                 <div className="pt-2">
                   <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                    Didn&apos;t receive the email?{" "}
+                    Didn\'t receive the email?{" "}
                     <Button
                       variant="link"
                       onClick={() => router.push("/auth/callback")}
@@ -378,7 +378,7 @@ export default function SignupPage() {
                     Email verification required
                   </p>
                   <p>
-                    For your security, you&apos;ll need to verify your email
+                    For your security, you\'ll need to verify your email
                     address before accessing all features. After signing up,
                     check your inbox for a verification link from us.
                   </p>
@@ -440,7 +440,7 @@ export default function SignupPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder=""
                   {...form.register("password")}
                   className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
                 />
@@ -499,7 +499,7 @@ export default function SignupPage() {
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder=""
                   {...form.register("confirmPassword")}
                   className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
                 />

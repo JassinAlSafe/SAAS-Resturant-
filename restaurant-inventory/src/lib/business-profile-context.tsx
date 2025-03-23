@@ -1,113 +1,111 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useCallback,
-} from "react";
-import { BusinessProfile } from "@/lib/types";
-import { businessProfileService } from "@/lib/services/business-profile-service";
-import { useAuth } from "@/lib/auth-context";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { useAuth } from "./auth-context";
 
-// Define the context type
+// Define the business profile type
+interface BusinessProfile {
+  id: string;
+  name: string;
+  logo_url?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  created_at: string;
+  updated_at: string;
+  owner_id: string;
+  currency?: string;
+}
+
+// Define the business profile context type
 interface BusinessProfileContextType {
-  profile: BusinessProfile | null;
+  businessProfile: BusinessProfile | null;
   isLoading: boolean;
   error: string | null;
-  refreshProfile: () => Promise<void>;
+  refreshBusinessProfile: () => Promise<void>;
 }
 
 // Create the context with default values
 const BusinessProfileContext = createContext<BusinessProfileContextType>({
-  profile: null,
-  isLoading: false,
+  businessProfile: null,
+  isLoading: true,
   error: null,
-  refreshProfile: async () => {},
+  refreshBusinessProfile: async () => {},
 });
 
-// Hook for components to use the business profile
-export function useBusinessProfile() {
-  const context = useContext(BusinessProfileContext);
-  if (context === undefined) {
-    throw new Error(
-      "useBusinessProfile must be used within a BusinessProfileProvider"
-    );
-  }
-  return context;
-}
-
-// Provider component props
 interface BusinessProfileProviderProps {
   children: ReactNode;
 }
 
-// Provider component that fetches and provides business profile data
-export function BusinessProfileProvider({
-  children,
-}: BusinessProfileProviderProps) {
-  // State for the business profile
-  const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+// Create a provider component
+export function BusinessProfileProvider({ children }: BusinessProfileProviderProps) {
+  const { user } = useAuth();
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get the authenticated user from the auth context
-  const auth = useAuth();
-
-  // Function to fetch the business profile
-  const fetchProfile = useCallback(async () => {
-    // Check if user is authenticated
-    if (!auth.user?.id) {
+  // Fetch the business profile
+  const fetchBusinessProfile = useCallback(async () => {
+    if (!user?.id) {
       setIsLoading(false);
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      const profileData = await businessProfileService.getBusinessProfile(
-        auth.user.id
-      );
-      setProfile(profileData);
+    try {
+      // Fetch the business profile from the API
+      const response = await fetch(`/api/business-profile/${user.businessProfileId || user.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch business profile: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setBusinessProfile(data);
     } catch (err) {
       console.error("Error fetching business profile:", err);
-      setError("Failed to load business profile");
+      setError(err instanceof Error ? err.message : "Failed to fetch business profile");
     } finally {
       setIsLoading(false);
     }
-  }, [auth.user?.id]);
+  }, [user?.id, user?.businessProfileId]);
 
-  // Load profile on initial mount or when user changes
+  // Fetch the business profile when the user changes
   useEffect(() => {
-    if (auth.user?.id) {
-      fetchProfile();
+    if (user?.id) {
+      fetchBusinessProfile();
     } else {
-      // Reset state if no user
-      setProfile(null);
       setIsLoading(false);
-      setError(null);
     }
-  }, [auth.user?.id, fetchProfile]);
+  }, [user?.id, fetchBusinessProfile]);
 
-  // Function to manually refresh the profile
-  const refreshProfile = async () => {
-    await fetchProfile();
+  // Function to refresh the business profile
+  const refreshBusinessProfile = async () => {
+    await fetchBusinessProfile();
   };
 
-  // Provide the context value
+  const value = {
+    businessProfile,
+    isLoading,
+    error,
+    refreshBusinessProfile,
+  };
+
   return (
-    <BusinessProfileContext.Provider
-      value={{
-        profile,
-        isLoading,
-        error,
-        refreshProfile,
-      }}
-    >
+    <BusinessProfileContext.Provider value={value}>
       {children}
     </BusinessProfileContext.Provider>
   );
+}
+
+// Create a hook to use the business profile context
+export function useBusinessProfile() {
+  const context = useContext(BusinessProfileContext);
+  if (context === undefined) {
+    throw new Error("useBusinessProfile must be used within a BusinessProfileProvider");
+  }
+  return context;
 }

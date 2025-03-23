@@ -100,7 +100,7 @@ export default function LoginPage() {
       // Show the transition animation
       setShowTransition(true);
     } catch (error: unknown) {
-      // Reset the form animation if there's an error
+      // Reset the form animation if there\'s an error
       gsap.to(formRef.current, {
         opacity: 1,
         scale: 1,
@@ -304,7 +304,7 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder=""
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -359,7 +359,7 @@ export default function LoginPage() {
 
             <div className="text-center mt-8">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Don&apos;t have an account?{" "}
+                Don\'t have an account?{" "}
                 <Link
                   href="/signup"
                   className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"

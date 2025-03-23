@@ -162,7 +162,7 @@ export const reportsService = {
                 throw new Error('User not authenticated');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -277,7 +277,7 @@ export const reportsService = {
                 throw new Error('User not authenticated');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -454,7 +454,7 @@ export const reportsService = {
                 throw new Error('User not authenticated');
             }
 
-            // Get the user's business profile
+            // Get the user\'s business profile
             const { data: businessProfile, error: businessError } = await supabase
                 .from('business_profiles')
                 .select('id')
@@ -588,7 +588,7 @@ export const reportsService = {
      */
     async getDashboardSummary() {
         try {
-            // Get today's date and previous periods
+            // Get today\'s date and previous periods
             const today = new Date();
             const lastWeek = {
                 from: subDays(today, 7),

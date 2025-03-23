@@ -35,7 +35,7 @@ const SalesHeader: React.FC<SalesHeaderProps> = ({
             Sales Management
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Record daily sales data and analyze your restaurant&apos;s
+            Record daily sales data and analyze your restaurant\'s
             performance
           </p>
         </div>

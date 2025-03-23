@@ -505,7 +505,7 @@ export default function SupplierTable({
                                   new Date(supplier.lastOrderDate),
                                   "MMM d, yyyy"
                                 )
-                              : "—"}
+                              : "-"}
                           </TableCell>
                           <TableCell className="py-4">
                             <div className="flex justify-center space-x-2">

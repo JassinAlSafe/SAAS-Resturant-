@@ -33,7 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 2. **Better Code Organization**: Related code is grouped together
 3. **Enhanced Readability**: Smaller files are easier to understand
 4. **Easier Testing**: Components can be tested in isolation
-5. **Simplified Updates**: Changes to one aspect of the sidebar don't require modifying the entire file
+5. **Simplified Updates**: Changes to one aspect of the sidebar don\'t require modifying the entire file
 
 ## Component Responsibilities
 

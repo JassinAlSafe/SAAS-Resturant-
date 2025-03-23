@@ -207,13 +207,13 @@ const businessProfileService = {
             } catch (fetchError: unknown) {
                 console.error('Error fetching business profiles directly:', fetchError);
 
-                // Try alternative approach if there's an RLS policy error
+                // Try alternative approach if there\'s an RLS policy error
                 if (fetchError instanceof Error && fetchError.message.includes('infinite recursion detected in policy')) {
                     console.log('Detected RLS policy error, trying alternative approach');
 
                     // Try to get the profile through a different query or approach
                     // This could be a custom RPC function or a different table access pattern
-                    // For now, we'll just create a new profile as a fallback
+                    // For now, we\'ll just create a new profile as a fallback
                 }
             }
 
@@ -321,7 +321,7 @@ const businessProfileService = {
             console.log("Updating business profile with ID:", profileId);
             console.log("Update data:", profileData);
 
-            // We don't need to fetch the profile first, we can update directly by ID
+            // We don\'t need to fetch the profile first, we can update directly by ID
             // Prepare the update data
             const updates = {
                 ...transformForDatabase(profileData),
@@ -364,7 +364,7 @@ const businessProfileService = {
         }
 
         // Validate time format (HH:MM in 24-hour format)
-        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        const timeRegex = /^([01]\\d|2[0-3]):([0-5]\\d)$/;
 
         if (!timeRegex.test(hours.open)) {
             return {
@@ -384,7 +384,7 @@ const businessProfileService = {
         // This accommodates businesses that close after midnight
         // For example: Open 22:00, Close 02:00 (next day)
 
-        // We're removing this validation because restaurants often operate overnight
+        // We\'re removing this validation because restaurants often operate overnight
         // If needed, we can add a more sophisticated check that detects unreasonable
         // hours rather than just checking if opening time is before closing time
 
@@ -670,7 +670,7 @@ const businessProfileService = {
             const height = 300;
             const logoUrl = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
 
-            // Log that we're using a placeholder
+            // Log that we\'re using a placeholder
             console.log('Using placeholder image URL due to storage permission issues:', logoUrl);
 
             // Update the profile with the new logo URL

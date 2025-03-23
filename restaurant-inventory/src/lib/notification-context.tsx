@@ -1,132 +1,120 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
 
-export type NotificationType = "success" | "error" | "warning" | "info";
+// Define notification types
+export type NotificationType = "success" | "error" | "info" | "warning";
 
 export interface Notification {
   id: string;
   type: NotificationType;
-  title: string;
   message: string;
+  title?: string;
   duration?: number;
 }
 
+// Define the notification context type
 interface NotificationContextType {
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, "id">) => void;
   removeNotification: (id: string) => void;
+  clearNotifications: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
+// Create the context with default values
+const NotificationContext = createContext<NotificationContextType>({
+  notifications: [],
+  addNotification: () => {},
+  removeNotification: () => {},
+  clearNotifications: () => {},
+});
 
-export function NotificationProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+interface NotificationProviderProps {
+  children: ReactNode;
+}
+
+// Create a provider component
+export function NotificationProvider({ children }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = useCallback(
-    (notification: Omit<Notification, "id">) => {
-      const id = uuidv4();
-      const newNotification = {
-        ...notification,
-        id,
-        duration: notification.duration || 5000,
-      };
-
-      setNotifications((prev) => [...prev, newNotification]);
-
-      // Auto-remove notification after duration
-      if (newNotification.duration !== Infinity) {
-        setTimeout(() => {
-          removeNotification(id);
-        }, newNotification.duration);
-      }
-    },
-    []
-  );
-
+  // Remove a notification by ID
   const removeNotification = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.filter((notification) => notification.id !== id)
+    setNotifications((prevNotifications) =>
+      prevNotifications.filter((notification) => notification.id !== id)
     );
   }, []);
 
+  // Add a new notification
+  const addNotification = useCallback((notification: Omit<Notification, "id">) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    const newNotification: Notification = {
+      ...notification,
+      id,
+      duration: notification.duration || 5000, // Default duration: 5 seconds
+    };
+
+    setNotifications((prevNotifications) => [...prevNotifications, newNotification]);
+
+    // Auto-remove notification after duration
+    if (newNotification.duration !== 0) {
+      setTimeout(() => {
+        removeNotification(id);
+      }, newNotification.duration);
+    }
+  }, [removeNotification]);
+
+  // Clear all notifications
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  const value = {
+    notifications,
+    addNotification,
+    removeNotification,
+    clearNotifications,
+  };
+
   return (
-    <NotificationContext.Provider
-      value={{ notifications, addNotification, removeNotification }}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );
 }
 
+// Create a hook to use the notification context
 export function useNotification() {
   const context = useContext(NotificationContext);
   if (context === undefined) {
-    throw new Error(
-      "useNotification must be used within a NotificationProvider"
-    );
+    throw new Error("useNotification must be used within a NotificationProvider");
   }
   return context;
 }
 
-// Helper functions for common notification types
+// Export notification helper functions for use in components
 export function useNotificationHelpers() {
   const { addNotification } = useNotification();
-
-  const success = useCallback(
-    (title: string, message: string, duration?: number) => {
-      addNotification({
-        type: "success",
-        title,
-        message,
-        duration,
-      });
-    },
-    [addNotification]
-  );
-
-  const error = useCallback(
-    (title: string, message: string, duration?: number) => {
-      addNotification({
-        type: "error",
-        title,
-        message,
-        duration,
-      });
-    },
-    [addNotification]
-  );
-
-  const warning = useCallback(
-    (title: string, message: string, duration?: number) => {
-      addNotification({
-        type: "warning",
-        title,
-        message,
-        duration,
-      });
-    },
-    [addNotification]
-  );
-
-  const info = useCallback(
-    (title: string, message: string, duration?: number) => {
-      addNotification({
-        type: "info",
-        title,
-        message,
-        duration,
-      });
-    },
-    [addNotification]
-  );
-
-  return { success, error, warning, info };
+  
+  const showSuccess = useCallback((message: string) => {
+    addNotification({ type: "success", message });
+  }, [addNotification]);
+  
+  const showError = useCallback((message: string) => {
+    addNotification({ type: "error", message });
+  }, [addNotification]);
+  
+  const showInfo = useCallback((message: string) => {
+    addNotification({ type: "info", message });
+  }, [addNotification]);
+  
+  const showWarning = useCallback((message: string) => {
+    addNotification({ type: "warning", message });
+  }, [addNotification]);
+  
+  return {
+    showSuccess,
+    showError,
+    showInfo,
+    showWarning
+  };
 }

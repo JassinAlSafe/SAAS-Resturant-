@@ -212,7 +212,7 @@ export default function SupplierForm({
                       {...field}
                       onChange={(e) => {
                         // Auto-format phone number
-                        let value = e.target.value.replace(/\D/g, "");
+                        let value = e.target.value.replace(/\\D/g, "");
                         if (value.length <= 10) {
                           if (value.length > 6) {
                             value = `(${value.slice(0, 3)}) ${value.slice(

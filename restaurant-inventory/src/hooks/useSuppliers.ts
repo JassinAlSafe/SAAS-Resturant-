@@ -26,7 +26,7 @@ export function useSuppliers() {
         return useQuery({
             queryKey: ['suppliers', id],
             queryFn: () => id ? getSupplier(id) : null,
-            enabled: !!id, // Only run the query if there's an ID
+            enabled: !!id, // Only run the query if there\'s an ID
         });
     };
 

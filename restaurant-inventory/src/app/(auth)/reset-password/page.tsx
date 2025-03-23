@@ -2,118 +2,144 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { useNotificationHelpers } from "@/lib/notification-context";
-import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { FiArrowLeft } from "react-icons/fi";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { FiArrowLeft, FiAlertCircle, FiCheckCircle } from "react-icons/fi";
+import Link from "next/link";
+
+export default function ResetPasswordPage() {
+  return (
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
+      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]">
+        <ResetPasswordForm />
+      </div>
+    </div>
+  );
+}
 
 // Create a separate component that uses searchParams
 function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { updatePassword } = useAuth();
-  const { error: showError, success: showSuccess } = useNotificationHelpers();
+  const { toast } = useToast();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Get the token from the URL
-  const token = searchParams.get("token");
+  const [token, setToken] = useState<string | null>(null);
+
+  const TokenHandler = () => {
+    const searchParams = useSearchParams();
+    
+    useEffect(() => {
+      const token = searchParams.get("token");
+      setToken(token);
+    }, [searchParams]);
+    
+    return null;
+  };
 
   useEffect(() => {
     if (!token) {
-      showError(
-        "Invalid Token",
-        "Invalid or missing reset token. Please request a new password reset link."
-      );
+      setErrorMessage("No reset token found. Please request a new password reset link.");
+    } else {
+      setErrorMessage(null);
     }
-  }, [token, showError]);
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token) {
-      showError(
-        "Invalid Token",
-        "Invalid or missing reset token. Please request a new password reset link."
-      );
-      return;
-    }
-
     if (password !== confirmPassword) {
-      showError("Validation Error", "Passwords do not match");
+      setErrorMessage("Passwords do not match");
       return;
     }
 
     if (password.length < 8) {
-      showError(
-        "Validation Error",
-        "Password must be at least 8 characters long"
-      );
+      setErrorMessage("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!token) {
+      setErrorMessage("No reset token found. Please request a new password reset link.");
       return;
     }
 
     setIsLoading(true);
+    setErrorMessage(null);
 
     try {
       await updatePassword(token, password);
       setSuccess(true);
-      showSuccess(
-        "Password Reset",
-        "Your password has been reset successfully! Redirecting you to login..."
-      );
+      toast({
+        title: "Password Reset Successful",
+        description: "Your password has been reset successfully. You can now log in with your new password.",
+        variant: "default",
+      });
 
       // Redirect to login after 3 seconds
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to reset password. Please try again.";
-
-      showError("Reset Failed", errorMessage);
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      setErrorMessage(error.message || "Failed to reset password. The token may be invalid or expired.");
+      toast({
+        title: "Password Reset Failed",
+        description: error.message || "Failed to reset password. The token may be invalid or expired.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
-          <CardDescription>Enter your new password below</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {success ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-md bg-green-50 text-green-800 border border-green-200 mb-4">
-                Your password has been reset successfully! Redirecting you to
-                login...
-              </div>
+    <Card className="w-full">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
+        <CardDescription>Enter a new password for your account</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <FiAlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+
+        {success ? (
+          <div className="space-y-4">
+            <Alert className="bg-green-50 border-green-200">
+              <FiCheckCircle className="h-4 w-4 text-green-600" />
+              <AlertTitle className="text-green-800">Success</AlertTitle>
+              <AlertDescription className="text-green-700">
+                Your password has been reset successfully. Redirecting to login...
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-center">
               <Button
                 variant="outline"
-                className="w-full"
                 onClick={() => router.push("/login")}
+                className="mt-2"
               >
                 Go to Login
               </Button>
             </div>
-          ) : (
+          </div>
+        ) : (
+          <Suspense fallback={null}>
+            <TokenHandler />
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="password">New Password</Label>
@@ -122,7 +148,7 @@ function ResetPasswordForm() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder=""
                   disabled={isLoading || !token}
                   required
                 />
@@ -135,7 +161,7 @@ function ResetPasswordForm() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder=""
                   disabled={isLoading || !token}
                   required
                 />
@@ -166,36 +192,9 @@ function ResetPasswordForm() {
                 </Link>
               </div>
             </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Main component with Suspense boundary
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">
-                Reset Password
-              </CardTitle>
-              <CardDescription>Loading...</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center p-4">
-                <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      }
-    >
-      <ResetPasswordForm />
-    </Suspense>
+          </Suspense>
+        )}
+      </CardContent>
+    </Card>
   );
 }

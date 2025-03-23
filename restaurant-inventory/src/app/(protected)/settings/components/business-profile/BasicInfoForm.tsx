@@ -14,7 +14,7 @@ import { BusinessProfile } from "@/lib/types";
 
 // Business types with display names
 const businessTypes = [
-  { value: "cafe", label: "Café" },
+  { value: "cafe", label: "Caf" },
   { value: "fast_food", label: "Fast Food" },
   { value: "fine_dining", label: "Fine Dining" },
   { value: "casual_dining", label: "Casual Dining" },

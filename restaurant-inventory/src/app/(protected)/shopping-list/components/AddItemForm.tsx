@@ -61,7 +61,7 @@ export default function AddItemForm({ onSubmit }: AddItemFormProps) {
   });
 
   const handleSubmit = async (values: AddItemFormValues) => {
-    // If there's a custom category, use that instead of the selected one
+    // If there\'s a custom category, use that instead of the selected one
     const categoryToUse =
       isAddingCategory && customCategory ? customCategory : values.category;
 

@@ -79,7 +79,7 @@ export function ExecutiveDashboard({
             Executive Dashboard
           </h2>
           <p className="text-muted-foreground">
-            High-level overview of your restaurant&apos;s performance
+            High-level overview of your restaurant\'s performance
           </p>
         </div>
 

@@ -13,7 +13,7 @@ export function useSalesApi() {
             return [];
         }
 
-        // Get the user's business profile
+        // Get the user\'s business profile
         const { data: businessProfile, error: businessError } = await supabase
             .from('business_profiles')
             .select('id')
@@ -44,7 +44,7 @@ export function useSalesApi() {
             return [];
         }
 
-        // Get the user's business profile
+        // Get the user\'s business profile
         const { data: businessProfile, error: businessError } = await supabase
             .from('business_profiles')
             .select('id')
@@ -74,7 +74,7 @@ export function useSalesApi() {
             return [];
         }
 
-        // Get the user's business profile
+        // Get the user\'s business profile
         const { data: businessProfile, error: businessError } = await supabase
             .from('business_profiles')
             .select('id')
@@ -104,7 +104,7 @@ export function useSalesApi() {
             throw new Error('User not authenticated');
         }
 
-        // Get the user's business profile
+        // Get the user\'s business profile
         const { data: businessProfile, error: businessError } = await supabase
             .from('business_profiles')
             .select('id')

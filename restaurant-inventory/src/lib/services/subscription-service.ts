@@ -547,7 +547,7 @@ export const subscriptionService = {
         try {
             if (!paymentMethodId) throw new Error('Payment method ID is required');
 
-            // Get the payment method to check if it's default
+            // Get the payment method to check if it\'s default
             const { data: existingPM, error: getError } = await supabase
                 .from('payment_methods')
                 .select('*')

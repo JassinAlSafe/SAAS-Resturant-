@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   PaymentMethod,
@@ -44,10 +44,22 @@ interface ApiError {
   retryCount: number;
 }
 
-export default function BillingPage() {
-  const { user, profile } = useAuth();
+// Component to handle URL params
+function BillingTabsWithParams({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
+  
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, setActiveTab]);
+  
+  return null;
+}
+
+export default function BillingPage() {
+  const { user, profile } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -59,7 +71,7 @@ export default function BillingPage() {
     plans: false,
   });
   const [errors, setErrors] = useState<ApiError[]>([]);
-  const [activeTab, setActiveTab] = useState(tabParam || "subscription");
+  const [activeTab, setActiveTab] = useState("subscription");
 
   // Retry an API call with exponential backoff
   const retryApiCall = useCallback(
@@ -81,7 +93,7 @@ export default function BillingPage() {
           // Don't add error to state until we've exhausted all retries
           if (retryCount >= maxRetries) {
             const errorMessage =
-              error instanceof Error ? error.message : "Unknown error occurred";
+              error instanceof Error ? error.message : 'Unknown error occurred';
 
             setErrors((prev) => [
               ...prev,
@@ -295,7 +307,7 @@ export default function BillingPage() {
               ) : (
                 <p className="text-xl font-semibold">
                   {paymentMethods.length > 0
-                    ? `${paymentMethods[0].brand} •••• ${paymentMethods[0].last4}`
+                    ? `${paymentMethods[0].brand}  ${paymentMethods[0].last4}`
                     : "No payment method"}
                 </p>
               )}
@@ -337,7 +349,10 @@ export default function BillingPage() {
       )}
 
       {/* Top navigation tabs */}
-      <BillingTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <Suspense fallback={<Skeleton className="h-12 w-full max-w-md" />}>
+        <BillingTabsWithParams setActiveTab={setActiveTab} />
+        <BillingTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      </Suspense>
 
       {/* Main content tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -353,7 +368,7 @@ export default function BillingPage() {
                 <CardHeader>
                   <CardTitle>No Active Subscription</CardTitle>
                   <CardDescription>
-                    You don&apos;t have an active subscription. Choose a plan to get started.
+                    You don't have an active subscription. Choose a plan to get started.
                   </CardDescription>
                 </CardHeader>
                 <CardFooter>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-// Breakpoints aligned with Tailwind's default breakpoints
+// Breakpoints aligned with Tailwind\'s default breakpoints
 export const BREAKPOINTS = {
   sm: 640,
   md: 768,

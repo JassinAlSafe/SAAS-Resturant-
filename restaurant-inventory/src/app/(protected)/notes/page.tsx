@@ -109,7 +109,7 @@ export default function Notes() {
         tags: selectedTags,
         entityType: noteEntityType,
         entityId: noteEntityId || undefined,
-        createdBy: "user-1", // In a real app, this would be the current user's ID
+        createdBy: "user-1", // In a real app, this would be the current user\'s ID
       });
 
       setNotes([...notes, newNote]);
@@ -169,7 +169,7 @@ export default function Notes() {
 
     try {
       const newTag = await notesService.addTag({
-        name: tagName.toLowerCase().replace(/\s+/g, "-"),
+        name: tagName.toLowerCase().replace(/\\s+/g, "-"),
         color: tagColor,
       });
 

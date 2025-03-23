@@ -256,7 +256,7 @@ export function RecipeForm({
                     <FormLabel>Category</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., Appetizer, Entrée, Dessert"
+                        placeholder="e.g., Appetizer, Entre, Dessert"
                         {...field}
                       />
                     </FormControl>

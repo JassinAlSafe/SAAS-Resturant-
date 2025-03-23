@@ -89,7 +89,7 @@ export default function EntityNotes({
         tags: selectedTags,
         entityType,
         entityId,
-        createdBy: "user-1", // In a real app, this would be the current user's ID
+        createdBy: "user-1", // In a real app, this would be the current user\'s ID
       });
 
       setNotes([...notes, newNote]);

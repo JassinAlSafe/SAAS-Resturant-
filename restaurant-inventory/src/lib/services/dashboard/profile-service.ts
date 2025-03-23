@@ -19,7 +19,7 @@ const MAX_RETRIES = 2;
 const RETRY_DELAY_BASE = 800;
 
 /**
- * Get the current user's business profile ID
+ * Get the current user\'s business profile ID
  * This is a core function used by many dashboard services
  */
 export async function getBusinessProfileId(): Promise<string | null> {
@@ -102,7 +102,7 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
             throw businessProfileError;
         }
 
-        // If no data found, check if there's a business profile directly owned by this user
+        // If no data found, check if there\'s a business profile directly owned by this user
         if (!businessProfileData) {
             console.log('No business profile association found, checking direct ownership');
             
@@ -149,7 +149,7 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
             
         if (profileDetailsError) {
             console.error(`Error fetching business profile details: ${profileDetailsError.message}`);
-            return businessProfileId; // Still return the ID even if we couldn't get details
+            return businessProfileId; // Still return the ID even if we couldn\'t get details
         }
         
         // Update cache with the full details
@@ -227,7 +227,7 @@ export async function getBusinessProfileNameById(profileId: string): Promise<str
 }
 
 /**
- * Get the current user's business profile currency
+ * Get the current user\'s business profile currency
  */
 export async function getBusinessProfileCurrency(): Promise<string> {
     try {
@@ -245,7 +245,7 @@ export async function getBusinessProfileCurrency(): Promise<string> {
 }
 
 /**
- * Get the current user's business profile name
+ * Get the current user\'s business profile name
  */
 export async function getBusinessProfileName(): Promise<string> {
     try {
@@ -337,7 +337,7 @@ export async function getBusinessProfileSubscriptionStatusById(profileId: string
 }
 
 /**
- * Get the current user's business profile plan
+ * Get the current user\'s business profile plan
  */
 export async function getBusinessProfilePlan(): Promise<string> {
     try {
@@ -355,7 +355,7 @@ export async function getBusinessProfilePlan(): Promise<string> {
 }
 
 /**
- * Get the current user's business profile subscription status
+ * Get the current user\'s business profile subscription status
  */
 export async function getBusinessProfileSubscriptionStatus(): Promise<string> {
     try {

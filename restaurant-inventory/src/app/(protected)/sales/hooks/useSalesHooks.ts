@@ -113,7 +113,7 @@ export function useSalesPage() {
         }
     };
 
-    // Load previous day's template
+    // Load previous day\'s template
     const loadPreviousDayTemplate = async () => {
         try {
             const previousDate = new Date(store.dateString);

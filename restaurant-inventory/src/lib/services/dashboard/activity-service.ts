@@ -98,12 +98,12 @@ function formatActivityDate(dateString: string | null): string {
 
         const now = new Date();
 
-        // If it's today, show the time
+        // If it\'s today, show the time
         if (date.toDateString() === now.toDateString()) {
             return `Today at ${format(date, 'h:mm a')}`;
         }
 
-        // If it's yesterday, show "Yesterday"
+        // If it\'s yesterday, show "Yesterday"
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
         if (date.toDateString() === yesterday.toDateString()) {

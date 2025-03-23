@@ -142,7 +142,7 @@ export default function ShoppingListTable({
             </span>
             {item.addedAt && (
               <div className="text-xs text-muted-foreground mt-1">
-                • Added {format(new Date(item.addedAt), "MMM d, yyyy")}
+                 Added {format(new Date(item.addedAt), "MMM d, yyyy")}
               </div>
             )}
           </div>

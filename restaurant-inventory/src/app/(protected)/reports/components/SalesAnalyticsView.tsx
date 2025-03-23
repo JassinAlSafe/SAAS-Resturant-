@@ -171,7 +171,7 @@ export function SalesAnalyticsView({
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Sales Analytics</h2>
           <p className="text-muted-foreground">
-            {getPeriodLabel()} • {format(new Date(), "MMM d, yyyy")}
+            {getPeriodLabel()}  {format(new Date(), "MMM d, yyyy")}
           </p>
         </div>
 

@@ -74,12 +74,12 @@ export default function SupplierModal({
     }
 
     // Email validation (if provided)
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
       newErrors.email = "Please enter a valid email address";
     }
 
     // Phone validation (if provided)
-    if (phone && !/^[\d\s\-+()]+$/.test(phone)) {
+    if (phone && !/^[\\d\\s\\-+()]+$/.test(phone)) {
       newErrors.phone = "Please enter a valid phone number";
     }
 
@@ -119,7 +119,7 @@ export default function SupplierModal({
                 <DialogHeader>
                   <DialogTitle>Edit Supplier</DialogTitle>
                   <DialogDescription>
-                    Update your supplier&apos;s information below.
+                    Update your supplier\'s information below.
                   </DialogDescription>
                 </DialogHeader>
 

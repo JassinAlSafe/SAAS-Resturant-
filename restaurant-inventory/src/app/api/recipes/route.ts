@@ -14,7 +14,7 @@ export const revalidate = 300; // Cache for 5 minutes
 export async function GET() {
     try {
         // For server API routes, we need to rely on server-side authorization
-        // Since this is a mock API for the MVP, we'll return mock data if needed
+        // Since this is a mock API for the MVP, we\'ll return mock data if needed
         // In a production app, we would properly check authorization and fetch real data
 
         // Try to fetch real data first

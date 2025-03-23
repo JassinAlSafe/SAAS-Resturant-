@@ -377,7 +377,7 @@ export default function DataSettings() {
                 </Button>
               </div>
               <div className="flex gap-2">
-                <Input id="api-key" value="••••••••••••••••••••••••••••••" readOnly />
+                <Input id="api-key" value="" readOnly />
                 <Button variant="outline">Show</Button>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -518,7 +518,7 @@ export default function DataSettings() {
               <Label htmlFor="webhook-url">Webhook URL</Label>
               <Input id="webhook-url" placeholder="https://your-service.com/webhook" />
               <p className="text-sm text-muted-foreground">
-                We'll send real-time updates to this URL when data changes.
+                We\'ll send real-time updates to this URL when data changes.
               </p>
             </div>
           </CardContent>

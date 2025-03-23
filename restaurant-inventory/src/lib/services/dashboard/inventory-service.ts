@@ -69,7 +69,7 @@ async function deduplicate<T>(key: string, fetchFn: () => Promise<T>): Promise<T
         }
     }
 
-    // If there's already a request in progress, return that instead
+    // If there\'s already a request in progress, return that instead
     if (key in pendingRequests) {
         console.log(`Reusing pending request for ${key}`);
         return pendingRequests[key] as Promise<T>;
@@ -373,7 +373,7 @@ export async function fetchCategoryStats(): Promise<CategoryStat[]> {
             return cache.categoryStats.data;
         }
 
-        // Return default categories if there's an error
+        // Return default categories if there\'s an error
         return getDefaultCategories();
     }
 }

@@ -1,87 +1,106 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useAuth } from "./auth-context";
 
-// Currency types and constants
-export type CurrencyCode =
-  | "USD"
-  | "EUR"
-  | "GBP"
-  | "JPY"
-  | "CAD"
-  | "AUD"
-  | "SEK";
+// Define available currencies
+export const CURRENCIES = [
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "$", name: "Euro" },
+  { code: "GBP", symbol: "$", name: "British Pound" },
+  { code: "SEK", symbol: "kr", name: "Swedish Krona" },
+  { code: "JPY", symbol: "$", name: "Japanese Yen" },
+  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
+  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
+  { code: "CHF", symbol: "Fr", name: "Swiss Franc" },
+  { code: "CNY", symbol: "$", name: "Chinese Yuan" },
+  { code: "INR", symbol: "", name: "Indian Rupee" },
+];
 
-export interface Currency {
-  name: string;
-  symbol: string;
-  code: CurrencyCode;
-}
-
-export const CURRENCIES: Record<CurrencyCode, Currency> = {
-  USD: { name: "US Dollar", symbol: "$", code: "USD" },
-  EUR: { name: "Euro", symbol: "€", code: "EUR" },
-  GBP: { name: "British Pound", symbol: "£", code: "GBP" },
-  JPY: { name: "Japanese Yen", symbol: "¥", code: "JPY" },
-  CAD: { name: "Canadian Dollar", symbol: "C$", code: "CAD" },
-  AUD: { name: "Australian Dollar", symbol: "A$", code: "AUD" },
-  SEK: { name: "Swedish Krona", symbol: "kr", code: "SEK" },
-};
-
-// Currency context
+// Define the currency context type
 interface CurrencyContextType {
-  currency: Currency;
-  setCurrency: (currency: Currency) => void;
+  currencySymbol: string;
+  currencyCode: string;
   formatCurrency: (amount: number) => string;
-  availableCurrencies: Currency[];
+  isLoading: boolean;
 }
 
-const CurrencyContext = createContext<CurrencyContextType | undefined>(
-  undefined
-);
+// Create the context with default values
+const CurrencyContext = createContext<CurrencyContextType>({
+  currencySymbol: "$",
+  currencyCode: "USD",
+  formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
+  isLoading: true,
+});
 
-// Currency provider component
 interface CurrencyProviderProps {
   children: ReactNode;
-  defaultCurrency?: CurrencyCode;
 }
 
-export function CurrencyProvider({
-  children,
-  defaultCurrency = "SEK", // Changed default to SEK
-}: CurrencyProviderProps) {
-  const [currency, setCurrency] = useState<Currency>(
-    CURRENCIES[defaultCurrency]
-  );
+// Create a provider component
+export function CurrencyProvider({ children }: CurrencyProviderProps) {
+  const { user } = useAuth();
+  const [currencySymbol, setCurrencySymbol] = useState("$");
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Format a number to a currency string with the current currency
-  const formatCurrency = (amount: number): string => {
-    if (!amount && amount !== 0) return "";
+  // Fetch the business profile\'s currency
+  useEffect(() => {
+    async function fetchBusinessProfileCurrency() {
+      if (!user?.businessProfileId) {
+        setIsLoading(false);
+        return;
+      }
 
-    // Special handling for SEK
-    if (currency.code === "SEK") {
-      return (
-        new Intl.NumberFormat("sv-SE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(amount) + " kr"
-      );
+      try {
+        const response = await fetch(`/api/business-profile/${user.businessProfileId}/currency`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.currency) {
+            // Set the currency based on the business profile
+            if (data.currency === "SEK") {
+              setCurrencySymbol("kr");
+              setCurrencyCode("SEK");
+            } else {
+              setCurrencySymbol("$");
+              setCurrencyCode(data.currency || "USD");
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching currency:", err);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    // Default handling for other currencies
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency.code,
-      minimumFractionDigits: currency.code === "JPY" ? 0 : 2,
-      maximumFractionDigits: currency.code === "JPY" ? 0 : 2,
-    }).format(amount);
+    fetchBusinessProfileCurrency();
+  }, [user?.businessProfileId]);
+
+  // Format currency based on the current currency code
+  const formatCurrency = (amount: number): string => {
+    if (isNaN(amount)) return `${currencySymbol}0.00`;
+    
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch (formatError) {
+      // Fallback to basic formatting if Intl.NumberFormat fails
+      console.error("Error formatting currency:", formatError);
+      return `${currencySymbol}${amount.toFixed(2)}`;
+    }
   };
 
   const value = {
-    currency,
-    setCurrency,
+    currencySymbol,
+    currencyCode,
     formatCurrency,
-    availableCurrencies: Object.values(CURRENCIES),
+    isLoading,
   };
 
   return (
@@ -91,26 +110,11 @@ export function CurrencyProvider({
   );
 }
 
-// Hook for using the currency context
+// Create a hook to use the currency context
 export function useCurrency() {
   const context = useContext(CurrencyContext);
-
-  // Create a default implementation for when context is unavailable
-  const defaultImplementation: CurrencyContextType = {
-    currency: CURRENCIES.SEK,
-    setCurrency: () => console.warn("setCurrency called outside provider"),
-    formatCurrency: (amount: number) => {
-      if (!amount && amount !== 0) return "";
-      return (
-        new Intl.NumberFormat("sv-SE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(amount) + " kr"
-      );
-    },
-    availableCurrencies: Object.values(CURRENCIES),
-  };
-
-  // Return the context if available, otherwise fallback to default implementation
-  return context || defaultImplementation;
+  if (context === undefined) {
+    throw new Error("useCurrency must be used within a CurrencyProvider");
+  }
+  return context;
 }

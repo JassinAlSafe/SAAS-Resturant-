@@ -150,7 +150,7 @@ function ShoppingListContent() {
           Shopping List
         </h1>
         <p className="text-muted-foreground">
-          Manage your restaurant&apos;s shopping items and track purchases
+          Manage your restaurant\'s shopping items and track purchases
         </p>
       </div>
 

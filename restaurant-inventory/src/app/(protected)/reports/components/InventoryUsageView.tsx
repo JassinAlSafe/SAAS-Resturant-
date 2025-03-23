@@ -435,7 +435,7 @@ export function InventoryUsageView({
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <span>{item.category}</span>
-                      <span>•</span>
+                      <span></span>
                       <span>
                         {item.quantity} {item.unit}
                       </span>

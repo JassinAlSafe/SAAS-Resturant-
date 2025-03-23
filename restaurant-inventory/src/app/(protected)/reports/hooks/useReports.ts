@@ -343,7 +343,7 @@ export const useReports = () => {
             // Always attempt to fetch executive summary data
             await fetchExecutiveSummary().catch(err => {
                 console.warn("Failed to fetch executive summary:", err);
-                // Don't set error state here, just log the issue
+                // Don\'t set error state here, just log the issue
             });
 
             if (activeTab === 'sales') {
@@ -402,7 +402,7 @@ export const useReports = () => {
                     await fetchInventoryData();
                 } catch (err) {
                     console.error('Error fetching inventory data:', err);
-                    // Don't set error state for this
+                    // Don\'t set error state for this
                 }
             }
         } catch (err) {

@@ -31,7 +31,7 @@ export default function DeleteRecipeDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Recipe</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{recipeName}&quot;? This
+            Are you sure you want to delete \"{recipeName}\"? This
             action cannot be undone, and the recipe will be permanently removed
             from your collection.
           </AlertDialogDescription>

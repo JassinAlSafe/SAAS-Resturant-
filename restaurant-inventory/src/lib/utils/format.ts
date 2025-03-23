@@ -1,5 +1,5 @@
 /**
- * Formats a number as currency with the appropriate currency symbol based on user's business profile
+ * Formats a number as currency with the appropriate currency symbol based on user\'s business profile
  */
 export async function formatCurrencyAsync(value: number): Promise<string> {
     // Dynamically import to avoid circular dependencies
@@ -18,7 +18,7 @@ export async function formatCurrencyAsync(value: number): Promise<string> {
 
 /**
  * Synchronous version that uses a cached or default currency
- * This is used when we can't use async functions (like in component rendering)
+ * This is used when we can\'t use async functions (like in component rendering)
  */
 let cachedCurrency: string | null = null;
 

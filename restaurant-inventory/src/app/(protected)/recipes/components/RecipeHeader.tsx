@@ -42,7 +42,7 @@ export default function RecipeHeader({
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {showArchivedRecipes
             ? "View and manage archived recipes"
-            : "Create and manage your restaurant's recipes and menu items"}
+            : "Create and manage your restaurant\'s recipes and menu items"}
         </p>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,16 +10,37 @@ import { CheckCircle, AlertCircle, CreditCard, Receipt } from "lucide-react";
 import { SubscriptionManager, PricingPlans } from "@/components/billing";
 import * as profileService from "@/lib/services/dashboard/profile-service";
 
+// Component to handle URL params
+function BillingStatusHandler({ setSuccess, setCanceled }: { 
+  setSuccess: (value: boolean) => void;
+  setCanceled: (value: boolean) => void;
+}) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    // Check for success/canceled URL parameters from Stripe redirect
+    const successParam = searchParams.get("success");
+    const canceledParam = searchParams.get("canceled");
+    
+    if (successParam === "true") {
+      setSuccess(true);
+    }
+    
+    if (canceledParam === "true") {
+      setCanceled(true);
+    }
+  }, [searchParams, setSuccess, setCanceled]);
+  
+  return null;
+}
+
 export default function BillingPage() {
   const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const searchParams = useSearchParams();
+  const [success, setSuccess] = useState(false);
+  const [canceled, setCanceled] = useState(false);
   const { toast } = useToast();
-  
-  // Check for success/canceled URL parameters from Stripe redirect
-  const success = searchParams.get("success");
-  const canceled = searchParams.get("canceled");
 
   // Get the business profile ID
   useEffect(() => {
@@ -46,13 +67,13 @@ export default function BillingPage() {
 
   // Show success/error toast on redirect from Stripe
   useEffect(() => {
-    if (success === "true") {
+    if (success) {
       toast({
         title: "Subscription Updated",
         description: "Your subscription has been successfully updated.",
         variant: "default",
       });
-    } else if (canceled === "true") {
+    } else if (canceled) {
       toast({
         title: "Subscription Update Canceled",
         description: "You've canceled the subscription update process.",
@@ -91,7 +112,11 @@ export default function BillingPage() {
     <div className="container py-10">
       <h1 className="text-3xl font-bold mb-6">Billing</h1>
       
-      {success === "true" && (
+      <Suspense fallback={null}>
+        <BillingStatusHandler setSuccess={setSuccess} setCanceled={setCanceled} />
+      </Suspense>
+      
+      {success && (
         <Alert className="mb-6 bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">Subscription Updated</AlertTitle>
@@ -101,12 +126,12 @@ export default function BillingPage() {
         </Alert>
       )}
       
-      {canceled === "true" && (
+      {canceled && (
         <Alert className="mb-6 bg-amber-50 border-amber-200">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-800">Subscription Update Canceled</AlertTitle>
           <AlertDescription className="text-amber-700">
-            You&apos;ve canceled the subscription update process. Your current plan remains unchanged.
+            You've canceled the subscription update process. Your current plan remains unchanged.
           </AlertDescription>
         </Alert>
       )}

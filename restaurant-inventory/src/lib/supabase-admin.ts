@@ -1,16 +1,2 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize the Supabase admin client with service role key
-// This client bypasses RLS policies and should only be used in server-side code
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-// Create the Supabase admin client
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
-
-export { supabaseAdmin };
+// This file needs to be implemented
+export {};

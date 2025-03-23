@@ -31,7 +31,7 @@ export default function DeleteConfirmationDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete &quot;{itemName}&quot;? This action
+            Are you sure you want to delete \"{itemName}\"? This action
             cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

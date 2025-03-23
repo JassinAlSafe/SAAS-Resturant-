@@ -23,7 +23,7 @@ export function BusinessSettings() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
 
-  // If there's no user, show a message
+  // If there\'s no user, show a message
   if (!user) {
     return (
       <Card>
@@ -60,7 +60,7 @@ export function BusinessSettings() {
           <CardHeader>
             <CardTitle>Preferences</CardTitle>
             <CardDescription>
-              Configure your restaurant&apos;s preferences.
+              Configure your restaurant\'s preferences.
             </CardDescription>
           </CardHeader>
           <CardContent>

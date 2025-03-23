@@ -314,7 +314,7 @@ export default function InventoryItemModal({
                       Reorder Alert Level{" "}
                       <span className="text-red-500">*</span>
                       <span className="block text-xs text-muted-foreground">
-                        You&apos;ll be alerted when stock falls below this level
+                        You\'ll be alerted when stock falls below this level
                       </span>
                     </Label>
                     <Input
@@ -579,7 +579,7 @@ export default function InventoryItemModal({
                 <Label htmlFor="reorderLevel">
                   Reorder Alert Level <span className="text-red-500">*</span>
                   <span className="block text-xs text-muted-foreground">
-                    You&apos;ll be alerted when stock falls below this level
+                    You\'ll be alerted when stock falls below this level
                   </span>
                 </Label>
                 <Input

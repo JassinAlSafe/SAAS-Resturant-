@@ -43,7 +43,7 @@ export default function TwoFactorSetupDialog({
       // In a real implementation, this would verify the code against the secret
       // For demo purposes, accept any 6-digit code
       const isValid =
-        verificationCode.length === 6 && /^\d+$/.test(verificationCode);
+        verificationCode.length === 6 && /^\\d+$/.test(verificationCode);
 
       if (isValid) {
         const success = await onConfirm(verificationCode);
@@ -70,7 +70,7 @@ export default function TwoFactorSetupDialog({
             <DialogTitle>Set Up Two-Factor Authentication</DialogTitle>
             <DialogDescription>
               Two-factor authentication adds an extra layer of security to your
-              account. Once configured, you&apos;ll need to enter a verification
+              account. Once configured, you\'ll need to enter a verification
               code from your authenticator app when signing in.
             </DialogDescription>
           </DialogHeader>
@@ -138,7 +138,7 @@ export default function TwoFactorSetupDialog({
                 {secretKey}
               </code>
               <p className="mt-2 text-xs text-slate-500">
-                If you can&apos;t scan the QR code, you can manually enter this
+                If you can\'t scan the QR code, you can manually enter this
                 code into your app.
               </p>
             </div>
@@ -208,7 +208,7 @@ export default function TwoFactorSetupDialog({
             <div className="rounded-md bg-green-50 p-4">
               <p className="text-sm text-green-800">
                 Your account is now protected with an additional layer of
-                security. You&apos;ll need to enter a verification code from
+                security. You\'ll need to enter a verification code from
                 your authenticator app when signing in.
               </p>
             </div>

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-import { DateRange } from "react-day-picker";
 import { DateRangeSelectorProps } from "../types";
 
 export function DateRangeSelector({
@@ -23,11 +22,19 @@ export function DateRangeSelector({
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleSelect = useCallback(
-    (range: DateRange | undefined) => {
-      setCustomDateRange(range);
-      if (range?.from && range?.to) {
-        setDateRange(range);
-        setIsCalendarOpen(false);
+    (value: Date | { from: Date; to: Date } | null) => {
+      if (value && typeof value === 'object' && 'from' in value) {
+        const range = {
+          from: value.from,
+          to: value.to
+        };
+        
+        setCustomDateRange(range);
+        
+        if (range.from && range.to) {
+          setDateRange(range);
+          setIsCalendarOpen(false);
+        }
       }
     },
     [setCustomDateRange, setDateRange]
@@ -65,7 +72,10 @@ export function DateRangeSelector({
             initialFocus
             mode="range"
             defaultMonth={dateRange?.from}
-            selected={customDateRange}
+            selected={dateRange && dateRange.from ? {
+              from: dateRange.from,
+              to: dateRange.to || dateRange.from
+            } : null}
             onSelect={handleSelect}
             numberOfMonths={2}
           />

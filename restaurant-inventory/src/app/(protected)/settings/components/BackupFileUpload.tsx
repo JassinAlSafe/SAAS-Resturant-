@@ -110,7 +110,7 @@ export default function BackupFileUpload({
           <div>
             <p className="font-medium">{selectedFile.name}</p>
             <p className="text-xs">
-              {(selectedFile.size / 1024).toFixed(2)} KB • Selected for restore
+              {(selectedFile.size / 1024).toFixed(2)} KB  Selected for restore
             </p>
           </div>
         </div>
