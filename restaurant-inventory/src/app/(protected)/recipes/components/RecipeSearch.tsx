@@ -2,126 +2,90 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FiSearch, FiArchive, FiSliders } from "react-icons/fi";
+import { FiSearch, FiFilter, FiArrowDown } from "react-icons/fi";
 import { motion } from "framer-motion";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Dispatch, SetStateAction } from "react";
 
 interface RecipeSearchProps {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
+  onSearch?: (query: string) => void;
+  onFilter?: () => void;
+  onSort?: () => void;
+  searchQuery?: string;
+  onSearchChange?: Dispatch<SetStateAction<string>>;
   showArchivedRecipes?: boolean;
   onToggleArchivedRecipes?: (show: boolean) => void;
   onFilterClick?: () => void;
 }
 
 export default function RecipeSearch({
-  searchQuery,
+  onSearch,
+  onFilter,
+  onSort,
+  searchQuery = "",
   onSearchChange,
-  showArchivedRecipes = false,
+  // These props are included for TypeScript compatibility with parent components
+  // but are not currently used in this component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  showArchivedRecipes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onToggleArchivedRecipes,
   onFilterClick,
 }: RecipeSearchProps) {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get("query") as string;
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onSearchChange) {
+      onSearchChange(e.target.value);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm"
+      className="mb-6"
     >
-      <div className="p-4 flex flex-col sm:flex-row gap-4">
+      <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 dark:text-slate-500">
-            <FiSearch className="h-4 w-4" />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <FiSearch className="w-4 h-4 text-slate-400" />
           </div>
           <Input
-            placeholder="Search recipes by name, category, or ingredients..."
+            type="search"
+            name="query"
+            placeholder="Search recipes..."
+            className="pl-10 h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-blue-500 focus:border-blue-500"
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400"
+            onChange={handleSearchChange}
           />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-              onClick={() => onSearchChange("")}
-            >
-              <span className="sr-only">Clear search</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </Button>
-          )}
         </div>
-        <div className="flex items-center gap-2">
-          {onToggleArchivedRecipes && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={showArchivedRecipes ? "secondary" : "outline"}
-                    size="sm"
-                    className={`text-slate-600 dark:text-slate-300 whitespace-nowrap ${
-                      showArchivedRecipes
-                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800"
-                        : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900"
-                    }`}
-                    onClick={() => onToggleArchivedRecipes(!showArchivedRecipes)}
-                  >
-                    <FiArchive className="h-4 w-4 mr-2" />
-                    {showArchivedRecipes ? "Show Active" : "Show Archived"}
-                    {showArchivedRecipes && (
-                      <Badge
-                        variant="secondary"
-                        className="ml-2 bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 border-0"
-                      >
-                        Archived
-                      </Badge>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {showArchivedRecipes
-                    ? "Switch to active recipes"
-                    : "View archived recipes"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 whitespace-nowrap"
-                  onClick={onFilterClick}
-                >
-                  <FiSliders className="h-4 w-4 mr-2" />
-                  Filters
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Filter recipes by category, price, and more</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
+        <Button
+          type="button"
+          onClick={onFilterClick || onFilter}
+          variant="outline"
+          className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          <FiFilter className="w-4 h-4 mr-2" />
+          Filter
+        </Button>
+        <Button
+          type="button"
+          onClick={onSort}
+          variant="outline"
+          className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          <FiArrowDown className="w-4 h-4 mr-2" />
+          Sort
+        </Button>
+      </form>
     </motion.div>
   );
 }

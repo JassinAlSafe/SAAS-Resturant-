@@ -256,6 +256,7 @@ export default function RecipesPage() {
             retry={fetchRecipesAndIngredientsMemoized}
             totalRecipes={recipes.length}
             showArchivedRecipes={showArchivedRecipes}
+            onToggleArchivedRecipes={handleToggleArchivedRecipes}
           />
         </div>
       </div>
@@ -275,6 +276,7 @@ export default function RecipesPage() {
           <RecipeHeader
             totalRecipes={0}
             showArchivedRecipes={showArchivedRecipes}
+            onToggleArchivedRecipes={handleToggleArchivedRecipes}
           />
           <RecipeActions
             onAddClick={recipeModals.openAddModal}
@@ -315,6 +317,7 @@ export default function RecipesPage() {
           error={error || ""}
           retry={fetchRecipesAndIngredientsMemoized}
           showArchivedRecipes={showArchivedRecipes}
+          onToggleArchivedRecipes={handleToggleArchivedRecipes}
         />
         <RecipeActions
           onAddClick={recipeModals.openAddModal}
