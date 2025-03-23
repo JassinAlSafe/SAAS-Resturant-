@@ -125,18 +125,38 @@ export function useRecipes() {
     }
   };
 
+  // Types for recipe deletion result
+  type RecipeDeleteResult = 
+    | { success: true; hasSalesReferences: false }
+    | { success: false; hasSalesReferences: true; error: string }
+    | { success: false; error: string; hasSalesReferences?: undefined };
+
   // Delete a recipe
-  const deleteRecipe = async (id: string) => {
+  const deleteRecipe = async (id: string): Promise<RecipeDeleteResult> => {
     try {
       if (!id) {
         throw new Error("Recipe ID is required");
       }
 
-      await recipeService.deleteRecipe(id);
-
-      setRecipes((prev) => prev.filter((recipe) => recipe.id !== id));
-      toast.success("The recipe has been deleted from your collection.");
-      return { success: true };
+      const result = await recipeService.deleteRecipe(id);
+      
+      if (result.success) {
+        setRecipes((prev) => prev.filter((recipe) => recipe.id !== id));
+        toast.success("The recipe has been deleted from your collection.");
+        return { success: true, hasSalesReferences: false };
+      } else if (result.hasSalesReferences) {
+        return {
+          success: false,
+          hasSalesReferences: true,
+          error: "This recipe has associated sales records and cannot be deleted. Please archive it instead."
+        };
+      }
+      
+      return {
+        success: false,
+        error: "Unknown error occurred",
+        hasSalesReferences: undefined
+      };
     } catch (err) {
       console.error("Error deleting recipe:", err);
       const errorMessage =
@@ -149,13 +169,16 @@ export function useRecipes() {
       ) {
         return {
           success: false,
-          error: errorMessage,
           hasSalesReferences: true,
+          error: "This recipe has associated sales records and cannot be deleted. Please archive it instead."
         };
       }
 
-      toast.error(`There was an error deleting the recipe: ${errorMessage}`);
-      return { success: false, error: errorMessage };
+      return {
+        success: false,
+        error: errorMessage,
+        hasSalesReferences: undefined
+      };
     }
   };
 

@@ -8,6 +8,8 @@ import { Dish } from "@/lib/types";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Edit, Copy, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 
 interface RecipeTableProps {
   recipes: Dish[];
@@ -130,13 +132,14 @@ export default function RecipeTable({
               <TableHead className="w-[120px] py-3 font-medium">Price</TableHead>
               <TableHead className="w-[150px] py-3 font-medium">Category</TableHead>
               <TableHead className="w-[150px] py-3 font-medium">Popularity</TableHead>
+              <TableHead className="w-[120px] py-3 font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedRecipes.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="h-32 text-center text-slate-500 dark:text-slate-400"
                 >
                   No recipes found
@@ -209,6 +212,58 @@ export default function RecipeTable({
                         value={recipe.popularity || 0}
                         className="h-2 bg-slate-200 dark:bg-slate-700"
                       />
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit?.(recipe)}
+                        className="h-8 w-8"
+                        title="Edit recipe"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDuplicate?.(recipe)}
+                        className="h-8 w-8"
+                        title="Duplicate recipe"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      {showArchivedRecipes ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onArchive?.(recipe)}
+                          className="h-8 w-8"
+                          title="Restore recipe"
+                        >
+                          <ArchiveRestore className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onArchive?.(recipe)}
+                          className="h-8 w-8"
+                          title="Archive recipe"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDelete?.(recipe)}
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        title="Delete recipe"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

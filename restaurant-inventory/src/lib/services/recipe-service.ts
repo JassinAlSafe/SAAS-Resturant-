@@ -379,6 +379,7 @@ export const recipeService = {
                 console.error('Unknown error type:', typeof error);
                 console.error('Error details:', JSON.stringify(error, null, 2));
             }
+            // Always throw an Error object with a message
             throw error; // Re-throw the error so it's caught by the hook
         }
     },
@@ -465,43 +466,21 @@ export const recipeService = {
     /**
      * Delete a recipe
      */
-    async deleteRecipe(id: string): Promise<boolean> {
+    async deleteRecipe(id: string): Promise<{ success: boolean, hasSalesReferences: boolean }> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
+            console.log(`Deleting recipe with ID: ${id}`);
+            const user = await this.getCurrentUser();
 
             if (!user) {
-                console.error('No authenticated user found');
                 throw new Error('User not authenticated');
             }
 
-            // First check if this recipe is referenced in sales
-            const { data: salesData, error: salesError } = await supabase
-                .from('sales')
-                .select('id')
-                .eq('dish_id', id)
-                .limit(1);
-
-            if (salesError) {
-                console.error('Error checking sales references:', salesError);
-                throw new Error(`Error checking sales: ${salesError.message}`);
-            }
-
-            // If the recipe is used in sales, prevent deletion
-            if (salesData && salesData.length > 0) {
-                throw new Error('Cannot delete this recipe because it is referenced in sales records. Remove the sales records first or archive the recipe instead.');
-            }
-
-            // Get the recipe to find its dish_id
+            // First, get the recipe to find its dish_id
             const { data: recipe, error: recipeError } = await supabase
                 .from('recipes')
                 .select('dish_id')
                 .eq('id', id)
+                .eq('user_id', user.id)
                 .single();
 
             if (recipeError) {
@@ -509,31 +488,32 @@ export const recipeService = {
                 throw new Error(`Error getting recipe: ${recipeError.message}`);
             }
 
-            // If the recipe has a dish_id, delete its ingredients first
-            if (recipe && recipe.dish_id) {
-                const { error: ingredientsError } = await supabase
-                    .from('dish_ingredients')
-                    .delete()
-                    .eq('dish_id', recipe.dish_id);
+            if (!recipe) {
+                console.error('Recipe not found');
+                throw new Error('Recipe not found');
+            }
 
-                if (ingredientsError) {
-                    console.error('Error deleting recipe ingredients:', ingredientsError);
-                    throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
+            // Check if the dish is referenced in sales
+            if (recipe.dish_id) {
+                const { data: salesData, error: salesError } = await supabase
+                    .from('sales')
+                    .select('id')
+                    .eq('dish_id', recipe.dish_id)
+                    .limit(1);
+
+                if (salesError) {
+                    console.error('Error checking sales references:', salesError);
+                    throw new Error(`Error checking sales references: ${salesError.message}`);
                 }
 
-                // Delete the dish
-                const { error: dishError } = await supabase
-                    .from('dishes')
-                    .delete()
-                    .eq('id', recipe.dish_id);
-
-                if (dishError) {
-                    console.error('Error deleting dish:', dishError);
-                    throw new Error(`Error deleting dish: ${dishError.message}`);
+                // If there are sales references, don't delete, suggest archiving instead
+                if (salesData && salesData.length > 0) {
+                    console.log('Recipe has sales references, cannot delete');
+                    return { success: false, hasSalesReferences: true };
                 }
             }
 
-            // Then delete the recipe
+            // First delete the recipe (this removes the foreign key constraint)
             const { error } = await supabase
                 .from('recipes')
                 .delete()
@@ -551,14 +531,37 @@ export const recipeService = {
                 throw new Error(`Database error: ${error.message}`);
             }
 
-            return true;
+            // If the recipe has a dish_id, delete its ingredients next
+            if (recipe.dish_id) {
+                const { error: ingredientsError } = await supabase
+                    .from('dish_ingredients')
+                    .delete()
+                    .eq('dish_id', recipe.dish_id);
+
+                if (ingredientsError) {
+                    console.error('Error deleting recipe ingredients:', ingredientsError);
+                    throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
+                }
+
+                // Finally delete the dish
+                const { error: dishError } = await supabase
+                    .from('dishes')
+                    .delete()
+                    .eq('id', recipe.dish_id);
+
+                if (dishError) {
+                    console.error('Error deleting dish:', dishError);
+                    throw new Error(`Error deleting dish: ${dishError.message}`);
+                }
+            }
+
+            console.log(`Recipe with ID ${id} deleted successfully`);
+            return { success: true, hasSalesReferences: false };
         } catch (error) {
             console.error('Exception in deleteRecipe:', error);
-            // Create a proper error object with a message
             if (error instanceof Error) {
                 console.error('Error message:', error.message);
             } else {
-                // Handle non-Error objects
                 console.error('Non-standard error:', String(error));
             }
             // Always throw an Error object with a message
@@ -696,5 +699,13 @@ export const recipeService = {
             console.error('Exception in calculateRecipeCost:', error);
             throw error;
         }
+    },
+
+    async getCurrentUser(): Promise<{ id: string; email?: string; app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> } | null> {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+            throw error;
+        }
+        return user;
     }
-}; 
+};

@@ -15,6 +15,8 @@ interface RecipeSearchProps {
   showArchivedRecipes?: boolean;
   onToggleArchivedRecipes?: (show: boolean) => void;
   onFilterClick?: () => void;
+  sortField?: "name" | "price" | "popularity" | "category";
+  sortDirection?: "asc" | "desc";
 }
 
 export default function RecipeSearch({
@@ -30,6 +32,8 @@ export default function RecipeSearch({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onToggleArchivedRecipes,
   onFilterClick,
+  sortField,
+  sortDirection,
 }: RecipeSearchProps) {
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,8 +86,8 @@ export default function RecipeSearch({
           variant="outline"
           className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
-          <FiArrowDown className="w-4 h-4 mr-2" />
-          Sort
+          <FiArrowDown className={`w-4 h-4 mr-2 ${sortDirection === "desc" ? "rotate-180" : ""}`} />
+          Sort: {sortField ? sortField.charAt(0).toUpperCase() + sortField.slice(1) : "Name"}
         </Button>
       </form>
     </motion.div>

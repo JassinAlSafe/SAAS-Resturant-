@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRecipes } from "./hooks/useRecipes";
 import { useRecipeModals } from "./hooks/useRecipeModals";
 import RecipeHeader from "./components/RecipeHeader";
-import RecipeTable from "./components/RecipeTable";
+import RecipeTableNew from "./components/RecipeTableNew";
 import RecipeSearch from "./components/RecipeSearch";
 import RecipeLoading from "./components/RecipeLoading";
 import EmptyRecipes from "./components/EmptyRecipes";
@@ -52,6 +52,10 @@ export default function RecipesPage() {
   // State for search and processing status
   const [searchQuery, setSearchQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Add state for sorting
+  const [sortField, setSortField] = useState<"name" | "price" | "popularity" | "category">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Add state for filter dialog and criteria
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
@@ -110,6 +114,30 @@ export default function RecipesPage() {
       matchesPrice &&
       matchesFoodCost
     );
+  });
+
+  // Sort the filtered recipes
+  const sortedRecipes = [...filteredRecipes].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortField) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "price":
+        comparison = a.price - b.price;
+        break;
+      case "category":
+        comparison = (a.category || "").localeCompare(b.category || "");
+        break;
+      case "popularity":
+        const aPopularity = a.popularity || 0;
+        const bPopularity = b.popularity || 0;
+        comparison = aPopularity - bPopularity;
+        break;
+    }
+    
+    return sortDirection === "asc" ? comparison : -comparison;
   });
 
   // Handle toggling archived recipes view
@@ -216,6 +244,27 @@ export default function RecipesPage() {
     }
   };
 
+  // Handle sorting recipes
+  const handleSort = () => {
+    // Toggle sort direction if clicking on the same field
+    if (sortField === "name") {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      // Cycle through sort fields
+      setSortField("price");
+    } else if (sortField === "price") {
+      setSortDirection("asc");
+      setSortField("category");
+    } else if (sortField === "category") {
+      setSortDirection("asc");
+      setSortField("popularity");
+    } else {
+      setSortDirection("asc");
+      setSortField("name");
+    }
+    
+    toast.success(`Sorted by ${sortField} (${sortDirection === "asc" ? "A-Z" : "Z-A"})`);
+  };
+
   // Handle filter dialog
   const handleFilterClick = () => {
     setIsFilterDialogOpen(true);
@@ -281,7 +330,7 @@ export default function RecipesPage() {
           <RecipeActions
             onAddClick={recipeModals.openAddModal}
             onCategoryFilterClick={handleCategoryFilterClick}
-            recipes={filteredRecipes}
+            recipes={sortedRecipes}
           />
         </div>
 
@@ -322,20 +371,23 @@ export default function RecipesPage() {
         <RecipeActions
           onAddClick={recipeModals.openAddModal}
           onCategoryFilterClick={handleCategoryFilterClick}
-          recipes={filteredRecipes}
+          recipes={sortedRecipes}
         />
       </div>
 
       <RecipeSearch
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onFilterClick={handleFilterClick}
         showArchivedRecipes={showArchivedRecipes}
         onToggleArchivedRecipes={handleToggleArchivedRecipes}
-        onFilterClick={handleFilterClick}
+        onSort={handleSort}
+        sortField={sortField}
+        sortDirection={sortDirection}
       />
 
-      <RecipeTable
-        recipes={filteredRecipes}
+      <RecipeTableNew
+        recipes={sortedRecipes}
         showArchivedRecipes={showArchivedRecipes}
         onEdit={recipeModals.openEditModal}
         onDelete={recipeModals.openDeleteModal}
