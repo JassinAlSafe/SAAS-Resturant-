@@ -64,9 +64,9 @@ export default function DashboardBillingContent() {
   if (loading) {
     return (
       <div className="container py-10">
-        <h1 className="text-3xl font-bold mb-6">Billing</h1>
+        <h1 className="text-3xl font-bold mb-6 text-base-content">Billing</h1>
         <div className="space-y-6">
-          <Skeleton className="h-[300px] w-full" />
+          <Skeleton className="h-[300px] w-full bg-base-200" />
         </div>
       </div>
     );
@@ -75,8 +75,8 @@ export default function DashboardBillingContent() {
   if (!businessProfileId) {
     return (
       <div className="container py-10">
-        <h1 className="text-3xl font-bold mb-6">Billing</h1>
-        <Alert variant="destructive">
+        <h1 className="text-3xl font-bold mb-6 text-base-content">Billing</h1>
+        <Alert variant="destructive" className="alert alert-error">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
@@ -89,76 +89,53 @@ export default function DashboardBillingContent() {
 
   return (
     <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-6">Billing</h1>
+      <h1 className="text-3xl font-bold mb-6 text-base-content">Billing</h1>
       
       {success === "true" && (
-        <Alert className="mb-6 bg-green-50 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Subscription Updated</AlertTitle>
-          <AlertDescription className="text-green-700">
+        <Alert className="mb-6 alert alert-success">
+          <CheckCircle className="h-4 w-4" />
+          <AlertTitle>Subscription Updated</AlertTitle>
+          <AlertDescription>
             Your subscription has been successfully updated. Thank you for your business!
           </AlertDescription>
         </Alert>
       )}
       
       {canceled === "true" && (
-        <Alert className="mb-6 bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Subscription Update Canceled</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            You&apos;ve canceled the subscription update process. Your current plan remains unchanged.
+        <Alert className="mb-6 alert alert-warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Subscription Update Canceled</AlertTitle>
+          <AlertDescription>
+            You&apos;ve canceled the subscription update process. Your current subscription remains unchanged.
           </AlertDescription>
         </Alert>
       )}
       
       <Tabs defaultValue="subscription" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="subscription">
+        <TabsList className="mb-6">
+          <TabsTrigger value="subscription" className="tab tab-bordered">
             <CreditCard className="mr-2 h-4 w-4" />
-            Subscription
+            Current Subscription
           </TabsTrigger>
-          <TabsTrigger value="plans">
+          <TabsTrigger value="plans" className="tab tab-bordered">
             <Receipt className="mr-2 h-4 w-4" />
-            Plans
+            Available Plans
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="subscription" className="mt-6">
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-48 w-full" />
-            </div>
-          ) : businessProfileId ? (
-            <SubscriptionManager businessProfileId={businessProfileId} />
-          ) : (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                Could not load your business profile. Please try refreshing the page.
-              </AlertDescription>
-            </Alert>
+        <TabsContent value="subscription" className="card bg-base-100 shadow-md p-6">
+          {businessProfileId && (
+            <SubscriptionManager 
+              businessProfileId={businessProfileId} 
+            />
           )}
         </TabsContent>
         
-        <TabsContent value="plans" className="mt-6">
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-96 w-full" />
-            </div>
-          ) : businessProfileId ? (
-            <PricingPlans businessProfileId={businessProfileId} currentPlan={currentPlan} />
-          ) : (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                Could not load your business profile. Please try refreshing the page.
-              </AlertDescription>
-            </Alert>
-          )}
+        <TabsContent value="plans" className="card bg-base-100 shadow-md p-6">
+          <PricingPlans 
+            businessProfileId={businessProfileId} 
+            currentPlan={currentPlan}
+          />
         </TabsContent>
       </Tabs>
     </div>

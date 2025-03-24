@@ -4,14 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FiSearch, FiSettings, FiRefreshCw, FiClock } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { OverviewTab } from "@/components/dashboard/overview-tab";
 import { InventoryTab } from "@/components/dashboard/inventory-tab";
 import { SalesTab } from "@/components/dashboard/sales-tab";
 import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
 import { useDashboard } from "@/lib/hooks/useDashboard";
-import { getBusinessProfileName } from "@/lib/services/dashboard/profile-service";
 import { useAuth } from "@/lib/auth-context";
+import { getBusinessProfileName } from "@/lib/services/dashboard/profile-service";
 
 export default function DashboardPage() {
   const { user, session, isLoading } = useAuth();
@@ -30,11 +29,10 @@ export default function DashboardPage() {
   // If loading or not authenticated, show loading state
   if (isLoading || (!user && !session)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-base-100">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center">
-          <div className="skeleton w-16 h-16 rounded-full mb-4"></div>
-          <div className="skeleton h-4 w-32 rounded-md"></div>
-          <p className="mt-4 text-base-content/60">
+          <span className="loading loading-spinner loading-lg text-orange-500"></span>
+          <p className="mt-4 text-black">
             Loading authentication state...
           </p>
         </div>
@@ -43,7 +41,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="min-h-screen bg-white">
       <div className="px-4 py-6 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-6">
         <DashboardDataProvider autoRefresh={true}>
           <DashboardContent
@@ -63,11 +61,13 @@ function DashboardContent({
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }) {
-  const { error, refresh, lastUpdated } = useDashboard();
-  const [businessName, setBusinessName] = useState("My Business");
+  const { error, refresh } = useDashboard();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [businessName, setBusinessName] = useState("O/O Brewing");
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Fetch business name and update time
   useEffect(() => {
     const fetchBusinessName = async () => {
       try {
@@ -90,42 +90,22 @@ function DashboardContent({
     return () => clearInterval(interval);
   }, []);
 
-  // Format the last updated time
-  const formatLastUpdated = () => {
-    if (!lastUpdated) return "Never";
-
-    const now = new Date();
-    const updated = new Date(lastUpdated);
-    const diffMs = now.getTime() - updated.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins === 1) return "1 minute ago";
-    if (diffMins < 60) return `${diffMins} minutes ago`;
-
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours === 1) return "1 hour ago";
-    if (diffHours < 24) return `${diffHours} hours ago`;
-
-    return updated.toLocaleString();
-  };
-
   // Show error message if there was an error fetching data
   if (error) {
     return (
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 text-center">
-        <div className="alert alert-error shadow-sm">
+        <div className="alert alert-error shadow-sm bg-white border border-red-500">
           <div className="flex flex-col items-center">
-            <FiRefreshCw className="h-8 w-8 mb-4" />
-            <h2 className="text-2xl font-semibold mb-3">
+            <FiRefreshCw className="h-8 w-8 mb-4 text-orange-500" />
+            <h2 className="text-2xl font-semibold mb-3 text-black">
               Error Loading Dashboard Data
             </h2>
-            <p className="mb-6 max-w-lg mx-auto">
+            <p className="mb-6 max-w-lg mx-auto text-black">
               {typeof error === "string"
                 ? error
                 : "We encountered an issue while loading your dashboard data. Please try refreshing."}
             </p>
-            <Button onClick={() => refresh()} className="btn btn-error">
+            <Button onClick={() => refresh()} className="bg-orange-500 hover:bg-orange-600 text-white">
               <FiRefreshCw className="mr-2 h-4 w-4" />
               Refresh Dashboard
             </Button>
@@ -137,90 +117,74 @@ function DashboardContent({
 
   return (
     <>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-6">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-base-content/60">
-            <FiClock className="h-3.5 w-3.5" />
+      {/* Header with business name, date, search and settings */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-black">{businessName}</h1>
+          <div className="flex items-center text-gray-500 text-sm">
+            <FiClock className="mr-1 h-4 w-4" />
             <span>
               {currentTime.toLocaleDateString(undefined, {
                 weekday: "long",
-                year: "numeric",
-                month: "long",
                 day: "numeric",
+                month: "long",
+                year: "numeric"
               })}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-base-content">
-            Welcome to <span className="text-primary">{businessName}</span>
-          </h1>
-          <p className="text-base-content/60">
-            Here&apos;s what&apos;s happening with your inventory today.
-          </p>
-          {lastUpdated && (
-            <div className="text-xs text-base-content/40 flex items-center gap-1.5">
-              <span>Last updated: {formatLastUpdated()}</span>
-              <button
-                onClick={() => refresh()}
-                className="inline-flex items-center text-primary hover:text-primary/80 transition-colors"
-                title="Refresh dashboard data"
-              >
-                <FiRefreshCw className="h-3 w-3" />
-              </button>
-            </div>
-          )}
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative w-full md:w-auto">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 h-4 w-4" />
+        
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input input-bordered pl-9 w-full"
+              className="pl-9 py-2 pr-3 rounded-md border border-gray-300 w-[200px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
           </div>
           <Button
             onClick={() => router.push("/settings")}
-            className="btn btn-primary gap-2"
+            className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
           >
-            <FiSettings className="h-4 w-4" />
+            <FiSettings className="h-4 w-4 mr-2" />
             <span>Settings</span>
           </Button>
         </div>
       </div>
 
-      {/* Main content */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <div className="flex justify-between items-center">
-          <TabsList variant="boxed">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="sales">Sales</TabsTrigger>
-          </TabsList>
-
-          <button
-            onClick={() => refresh()}
-            className="btn btn-ghost btn-sm gap-2"
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <div className="flex space-x-8">
+          <button 
+            className={`pb-3 px-1 ${activeTab === "overview" ? "text-black font-medium border-b-2 border-orange-500" : "text-gray-500 hover:text-orange-500"}`}
+            onClick={() => setActiveTab("overview")}
           >
-            <FiRefreshCw className="h-4 w-4" />
-            Refresh
+            Overview
+          </button>
+          <button 
+            className={`pb-3 px-1 ${activeTab === "inventory" ? "text-black font-medium border-b-2 border-orange-500" : "text-gray-500 hover:text-orange-500"}`}
+            onClick={() => setActiveTab("inventory")}
+          >
+            Inventory
+          </button>
+          <button 
+            className={`pb-3 px-1 ${activeTab === "sales" ? "text-black font-medium border-b-2 border-orange-500" : "text-gray-500 hover:text-orange-500"}`}
+            onClick={() => setActiveTab("sales")}
+          >
+            Sales
           </button>
         </div>
+      </div>
 
-        <TabsContent value="overview" className="mt-4">
-          <OverviewTab />
-        </TabsContent>
-
-        <TabsContent value="inventory" className="mt-4">
-          <InventoryTab />
-        </TabsContent>
-
-        <TabsContent value="sales" className="mt-4">
-          <SalesTab />
-        </TabsContent>
-      </Tabs>
+      {/* Render the active tab content */}
+      <div className="space-y-6">
+        {activeTab === "overview" && <OverviewTab />}
+        {activeTab === "inventory" && <InventoryTab searchQuery={searchQuery} />}
+        {activeTab === "sales" && <SalesTab />}
+      </div>
     </>
   );
 }

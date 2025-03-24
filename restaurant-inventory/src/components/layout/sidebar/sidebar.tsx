@@ -83,8 +83,8 @@ export function Sidebar({ children }: SidebarProps) {
       {!isMobile && (
         <aside
           className={cn(
-            "fixed top-0 left-0 h-full z-40 transition-all duration-200 ease-in-out",
-            "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
+            "fixed top-0 left-0 h-full z-40 transition-all duration-300 ease-in-out",
+            "bg-white border-r border-gray-200 shadow-sm",
             open ? "w-64" : "w-16"
           )}
           style={{ pointerEvents: "auto" }}
@@ -106,8 +106,8 @@ export function Sidebar({ children }: SidebarProps) {
             </div>
 
             {/* Navigation - Main Menu */}
-            <div className="flex-1 overflow-y-auto py-4">
-              <div className={cn(open ? "px-4 mb-2" : "px-0 mb-2")}>
+            <div className="flex-1 overflow-y-auto py-3">
+              <div className={cn(open ? "px-5 mb-2" : "px-0 mb-2")}>
                 <p
                   className={cn(
                     "text-xs font-medium text-gray-500 uppercase tracking-wider",
@@ -126,7 +126,7 @@ export function Sidebar({ children }: SidebarProps) {
             </div>
 
             {/* Other Section */}
-            <div className="px-4 py-2">
+            <div className="px-5 py-3">
               <p
                 className={cn(
                   "text-xs font-medium text-gray-500 uppercase tracking-wider mb-2",
@@ -140,24 +140,24 @@ export function Sidebar({ children }: SidebarProps) {
                   href="/settings"
                   className={cn(
                     "flex w-full items-center px-3 py-2 text-sm font-medium rounded-md",
-                    "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                    "text-gray-700 hover:bg-gray-100 transition-colors",
                     !open && "justify-center px-2"
                   )}
                 >
                   <SettingsIcon className={cn("h-5 w-5", open && "mr-2")} />
                   {open && "Settings"}
                 </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <Link
+                  href="/help"
                   className={cn(
-                    "w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
+                    "flex w-full items-center px-3 py-2 text-sm font-medium rounded-md",
+                    "text-gray-700 hover:bg-gray-100 transition-colors",
                     !open && "justify-center px-2"
                   )}
                 >
                   <HelpCircleIcon className={cn("h-5 w-5", open && "mr-2")} />
                   {open && "Help Center"}
-                </Button>
+                </Link>
               </div>
             </div>
 
@@ -181,7 +181,7 @@ export function Sidebar({ children }: SidebarProps) {
                 <div className="fixed top-4 left-4 z-40">
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="md"
                     onClick={() => setOpenMobile(!openMobile)}
                     className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
                   >

@@ -1,96 +1,13 @@
 @import "tailwindcss";
-@plugin "daisyui";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --font-sans: var(--font-satoshi), system-ui, sans-serif;
-  --font-headline: var(--font-cabinet-grotesk), system-ui, sans-serif;
-
-  --color-border: 220 13% 91%;
-  --color-input: 220 13% 91%;
-  --color-ring: 24 100% 50%;
-  --color-background: 0 0% 100%;
-  --color-foreground: 0 0% 7%;
-
-  --color-primary: 24 100% 50%;
-  --color-primary-foreground: 0 0% 100%;
-
-  --color-secondary: 240 4% 95%;
-  --color-secondary-foreground: 0 0% 7%;
-
-  --color-destructive: 0 84% 60%;
-  --color-destructive-foreground: 0 0% 100%;
-
-  --color-muted: 240 4% 95%;
-  --color-muted-foreground: 240 4% 46%;
-
-  --color-accent: 24 100% 97%;
-  --color-accent-foreground: 24 90% 40%;
-
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 0 0% 7%;
-
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 0 0% 7%;
-
-  --radius-lg: 0.5rem;
-  --radius-md: 0.375rem;
-  --radius-sm: 0.25rem;
-
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
-  }
-  @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
-}
-
-@utility container {
-  margin-inline: auto;
-  padding-inline: 2rem;
-  @media (width >= 640px) {
-    max-width: none;
-  }
-  @media (width >= 1400px) {
-    max-width: 1400px;
-  }
-}
-
-@theme {
-  --font-sans: var(--font-satoshi);
-  --font-headline: var(--font-cabinet-grotesk);
-  --font-mono: var(--font-geist-mono);
-}
-
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
-  /* Direct font-family application to ensure they work */
+  /* Font configuration */
   :root {
     --font-satoshi: "__satoshi_variable";
     --font-cabinet-grotesk: "__cabinetGrotesk_variable";
   }
 
+  /* Apply headline font to headings */
   h1,
   h2,
   h3,
@@ -98,8 +15,11 @@
   h5,
   h6 {
     font-family: var(--font-cabinet-grotesk), system-ui, sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
+  /* Apply body font to other elements */
   body,
   p,
   div,
@@ -110,570 +30,249 @@
     font-family: var(--font-satoshi), system-ui, sans-serif;
   }
 
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
-}
-
-@utility animate-collapsible-down {
-  /* Collapsible animations */
-  animation: collapsible-down 0.2s ease-out;
-}
-
-@utility animate-collapsible-up {
-  animation: collapsible-up 0.2s ease-out;
-}
-
-@utility hide-scrollbar {
-  /* Custom Scrollbar Styles */
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-@utility custom-scrollbar {
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 dark:bg-muted-foreground/20;
-    @apply rounded-sm;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50 dark:bg-muted-foreground/40;
-  }
-}
-
-@utility mask-bottom-fade {
-  /* Bottom fade for scrollable content */
-  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-  @apply bg-linear-to-b from-background to-transparent;
-}
-
-@utility table-responsive {
-  /* Force tables to be responsive */
-  display: block;
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-@utility flex-col-mobile {
-  /* Flex utilities for better mobile layouts */
-  display: flex;
-  flex-direction: column;
-  @media (width >= 640px) {
-    flex-direction: row;
-  }
-}
-
-@utility flex-col-reverse-mobile {
-  display: flex;
-  flex-direction: column-reverse;
-  @media (width >= 640px) {
-    flex-direction: row;
-  }
-}
-
-@utility grid-responsive {
-  /* Grid for responsive layouts */
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1rem;
-  @media (width >= 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  @media (width >= 1024px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  @media (width >= 1280px) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@utility content-width {
-  /* Content width constraint for readability */
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  @media (width >= 640px) {
-    max-width: 540px;
-  }
-  @media (width >= 768px) {
-    max-width: 720px;
-  }
-  @media (width >= 1024px) {
-    max-width: 960px;
-  }
-  @media (width >= 1280px) {
-    max-width: 1140px;
-  }
-}
-
-@utility text-mobile-body {
-  /* Text size adjustments for mobile */
-  font-size: 0.875rem;
-  @media (width >= 640px) {
-    font-size: 1rem;
-  }
-}
-
-@utility text-mobile-heading {
-  font-size: 1.25rem;
-  @media (width >= 640px) {
-    font-size: 1.5rem;
-  }
-  @media (width >= 768px) {
-    font-size: 1.875rem;
-  }
-}
-
-@utility text-mobile-subheading {
-  font-size: 1.125rem;
-  @media (width >= 640px) {
-    font-size: 1.25rem;
-  }
-}
-
-@utility p-mobile {
-  /* Spacing adjustments for mobile */
-  padding: 0.75rem;
-  @media (width >= 640px) {
-    padding: 1rem;
-  }
-  @media (width >= 768px) {
-    padding: 1.5rem;
-  }
-}
-
-@utility m-mobile {
-  margin: 0.5rem;
-  @media (width >= 640px) {
-    margin: 1rem;
-  }
-  @media (width >= 768px) {
-    margin: 1.5rem;
-  }
-}
-
-@utility gap-mobile {
-  gap: 0.5rem;
-  @media (width >= 640px) {
-    gap: 1rem;
-  }
-  @media (width >= 768px) {
-    gap: 1.5rem;
-  }
-}
-
-@utility touch-target {
-  /* Touch-friendly improvements */
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@utility responsive-table {
-  /* Improved mobile table accessibility */
-  & td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    text-align: left;
-    margin-right: 0.5rem;
-    position: absolute;
-    left: -10000px;
-
-    @media (width < 640px) {
-      position: static;
-      left: auto;
-    }
-  }
-}
-
-@utility skip-to-content {
-  /* Skip to main content link for keyboard users */
-  position: absolute;
-  left: -10000px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-
-  &:focus {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 50;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    padding: 0.5rem 1rem;
-    margin: 0.5rem;
-    border-radius: 0.375rem;
-    outline: none;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
-    border: 1px solid hsl(var(--border));
-  }
-}
-
-@layer base {
-  :root {
-    /* Font configuration */
-    --font-sans: var(--font-satoshi);
-
-    /* Core theme colors */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
-
-    /* Component colors */
-    --card: var(--background);
-    --card-foreground: var(--foreground);
-    --popover: var(--background);
-    --popover-foreground: var(--foreground);
-
-    /* Brand colors */
-    --primary: 24 100% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 95%;
-    --secondary-foreground: 0 0% 7%;
-
-    /* UI colors */
-    --muted: 240 4% 95%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 24 100% 97%;
-    --accent-foreground: 24 90% 40%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Border and input */
-    --border: 220 13% 91%;
-    --input: var(--border);
-    --ring: var(--primary);
-    --radius: 0.5rem;
-
-    /* Chart Colors - Grayscale */
-    --chart-1: 0 0% 20%;
-    --chart-2: 0 0% 35%;
-    --chart-3: 0 0% 50%;
-    --chart-4: 0 0% 65%;
-    --chart-5: 0 0% 80%;
-
-    /* Sidebar - Clean grayscale theme */
-    --sidebar-bg: var(--background);
-    --sidebar-fg: var(--foreground);
-    --sidebar-hover: 0 0% 95%;
-    --sidebar-active: 0 0% 90%;
-    --sidebar-border: var(--border);
-    --sidebar-icon: 0 0% 50%;
-    --sidebar-icon-active: var(--foreground);
-    --sidebar-muted: var(--muted-foreground);
-    --sidebar-item-height: 3rem;
-  }
-
-  .dark {
-    /* Core theme colors */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 100%;
-
-    /* Component colors inherit from core */
-    --card: var(--background);
-    --card-foreground: var(--foreground);
-    --popover: var(--background);
-    --popover-foreground: var(--foreground);
-
-    /* Brand colors */
-    --primary: 24 100% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 95%;
-    --secondary-foreground: 0 0% 7%;
-
-    /* UI colors */
-    --muted: 240 4% 95%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 24 100% 97%;
-    --accent-foreground: 24 90% 40%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Border and input */
-    --border: 220 13% 91%;
-    --input: var(--border);
-    --ring: 24 100% 50%;
-
-    /* Chart Colors - Inverted Grayscale */
-    --chart-1: 0 0% 100%;
-    --chart-2: 0 0% 85%;
-    --chart-3: 0 0% 70%;
-    --chart-4: 0 0% 55%;
-    --chart-5: 0 0% 40%;
-
-    /* Sidebar - Darker theme */
-    --sidebar-bg: 0 0% 7%;
-    --sidebar-fg: var(--foreground);
-    --sidebar-hover: 0 0% 95%;
-    --sidebar-active: 0 0% 90%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-icon: 0 0% 70%;
-    --sidebar-icon-active: 0 0% 100%;
-    --sidebar-muted: var(--muted-foreground);
-  }
-
-  * {
-    border-color: hsl(var(--border));
-    outline-color: hsl(var(--ring) / 0.5);
-  }
-
+  /* Base body styles */
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-}
-
-@layer utilities {
-  /* Update sidebar classes to use new consolidated variables */
-  .sidebar {
-    background-color: hsl(var(--sidebar-bg));
-    color: hsl(var(--sidebar-fg));
-    border-color: hsl(var(--sidebar-border));
+    overscroll-behavior-y: contain; /* Prevent pull-to-refresh on mobile */
+    background-color: var(--base-100);
+    color: var(--base-content);
   }
 
-  /* Add custom sidebar styles */
-  .sidebar-item {
-    transition-property: all;
-    transition-duration: 200ms;
-  }
-  .sidebar-item:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
-    background-color: hsl(var(--sidebar-hover));
+  /* Default focus styles */
+  :focus-visible {
+    outline: 2px solid hsl(var(--p));
+    outline-offset: 2px;
   }
 
-  .sidebar-item-active {
-    background-color: hsl(var(--sidebar-active));
-    color: hsl(var(--sidebar-fg));
-  }
-  .sidebar-item-active:focus-visible {
-    background-color: hsl(var(--sidebar-active));
-  }
-
-  .sidebar-item-icon {
-    color: hsl(var(--sidebar-icon));
-  }
-
-  .sidebar-item-icon-active {
-    color: hsl(var(--sidebar-icon-active));
-  }
-
-  .sidebar-toggle-button {
-    background-color: hsl(var(--sidebar-hover));
-    color: hsl(var(--sidebar-fg));
-    transition-property: all;
-    transition-duration: 200ms;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-  .sidebar-toggle-button:hover {
-    background-color: hsl(var(--sidebar-active));
-    color: hsl(var(--sidebar-fg));
-  }
-
-  /* Tooltip styles for sidebar */
-  .sidebar-tooltip {
-    z-index: 50;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
-    background-color: hsl(var(--popover));
-    color: hsl(var(--popover-foreground));
-    transition-property: opacity;
-    transition-duration: 200ms;
-  }
-  .dark .sidebar-tooltip {
-    background-color: hsl(var(--sidebar-bg));
-  }
-
-  /* Expanded sidebar menu item */
-  .sidebar-expanded-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+  /* Ensure proper base table styling */
+  table {
     width: 100%;
-    border-radius: 0.375rem;
-    transition-property: all;
-    transition-duration: 200ms;
-  }
-  .sidebar-expanded-item:hover {
-    background-color: hsl(var(--sidebar-hover));
+    border-collapse: collapse;
   }
 
-  .sidebar-expanded-item.active {
-    background-color: hsl(var(--sidebar-active));
-    color: hsl(var(--sidebar-active-text));
-  }
-
-  /* Collapsed sidebar styles */
-  .sidebar-collapsed {
-    width: 4rem;
-    transition-property: all;
-    transition-duration: 300ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .sidebar-expanded {
-    width: 16rem;
-    transition-property: all;
-    transition-duration: 300ms;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Hover menu for collapsed sidebar */
-  .sidebar-hover-menu {
-    @apply absolute left-16 rounded-md py-2 px-4 shadow-lg z-50;
-    @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
-    @apply opacity-0 pointer-events-none transition-opacity duration-200;
-    @apply focus-within:opacity-100 focus-within:pointer-events-auto;
-    @apply border border-border;
-  }
-
-  .sidebar-item:hover .sidebar-hover-menu,
-  .sidebar-item:focus-within .sidebar-hover-menu {
-    @apply opacity-100 pointer-events-auto;
-  }
-}
-
-@layer components {
-  .main-navbar {
-    @apply bg-[#1c2b36] text-white p-4;
-  }
-
-  .stats-card {
-    @apply bg-white rounded-lg shadow-md p-4 flex flex-col;
-  }
-
-  .stats-value {
-    @apply text-2xl font-bold;
-  }
-
-  .stats-value-success {
-    @apply text-success;
-  }
-
-  .stats-value-warning {
-    @apply text-warning;
-  }
-
-  .stats-value-error {
-    @apply text-error;
-  }
-
-  .stats-title {
-    @apply text-sm text-gray-500;
-  }
-}
-
-@layer utilities {
-  @keyframes collapsible-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-collapsible-content-height);
-    }
-  }
-
-  @keyframes collapsible-up {
-    from {
-      height: var(--radix-collapsible-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
-
-  /* Interactive elements accessibility */
+  /* Remove ugly button backgrounds on Safari */
   button,
-  a,
-  [role="button"],
-  [tabindex="0"] {
-    @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50;
-    @apply focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-    @apply dark:focus-visible:ring-offset-[hsl(var(--background))];
+  input[type="button"],
+  input[type="submit"] {
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
 
-/* Handling long texts and preventing overflow */
-.truncate-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.break-words {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Improve table responsiveness */
-table {
-  @apply w-full;
-}
-
-@media (max-width: 640px) {
-  .responsive-table {
-    display: block;
+/* Animation keyframes for compatibility with previous components */
+@keyframes accordion-down {
+  from {
+    height: 0;
   }
-
-  .responsive-table thead {
-    display: none;
-  }
-
-  .responsive-table tbody {
-    display: block;
-  }
-
-  .responsive-table tr {
-    @apply border-border bg-card/50;
-  }
-
-  .responsive-table td {
-    @apply border-border/50;
-  }
-
-  .responsive-table td::before {
-    @apply text-muted-foreground;
+  to {
+    height: var(--radix-accordion-content-height);
   }
 }
 
-/* Touch-friendly inputs */
-input,
-select,
-textarea,
-button {
-  @apply text-base; /* Larger touch targets */
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
 
-button,
-.button {
-  @apply min-h-10; /* Minimum height for touch targets */
+@keyframes collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+/* Animation utilities */
+.animate-accordion-down {
+  animation: accordion-down 0.2s ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 0.2s ease-out;
+}
+
+.animate-collapsible-down {
+  animation: collapsible-down 0.2s ease-out;
+}
+
+.animate-collapsible-up {
+  animation: collapsible-up 0.2s ease-out;
+}
+
+/* Sidebar specific styles */
+.sidebar-item {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.sidebar-item:hover {
+  background-color: var(--secondary);
+}
+
+.sidebar-item.active {
+  background-color: var(--accent);
+  color: var(--accent-content);
+}
+
+.sidebar-item.active .sidebar-icon {
+  color: var(--primary);
+}
+
+.sidebar-icon {
+  color: var(--neutral-content);
+  opacity: 0.7;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--neutral-content) / 0.2);
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--neutral-content) / 0.3);
+}
+
+/* Custom utility classes */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+/* Dashboard card styles */
+.dashboard-card {
+  background-color: var(--base-100);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Toast styles for compatibility */
+.toast-success {
+  background-color: var(--success);
+  color: var(--success-content);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.toast-error {
+  background-color: var(--error);
+  color: var(--error-content);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.toast-warning {
+  background-color: var(--warning);
+  color: var(--warning-content);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.toast-info {
+  background-color: var(--info);
+  color: var(--info-content);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Additional utility classes for text sizes */
+.text-lg {
+  font-size: 1.125rem;
+}
+.text-xl {
+  font-size: 1.25rem;
+}
+.text-2xl {
+  font-size: 1.5rem;
+}
+.text-3xl {
+  font-size: 1.875rem;
+}
+.text-4xl {
+  font-size: 2.25rem;
+}
+.text-5xl {
+  font-size: 3rem;
+}
+.text-6xl {
+  font-size: 3.75rem;
+}
+.text-7xl {
+  font-size: 4.5rem;
+}
+.text-8xl {
+  font-size: 6rem;
+}
+.text-9xl {
+  font-size: 8rem;
+}
+
+/* Button styles for compatibility */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-content);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: color-mix(in srgb, var(--primary) 90%, black);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: var(--secondary-content);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: color-mix(in srgb, var(--secondary) 90%, black);
 }
 
 /* Fix for iOS safari viewport issues */
@@ -684,20 +283,4 @@ body {
   height: 100%;
   position: relative;
   overscroll-behavior-y: none;
-}
-
-/* Prevent pull-to-refresh on mobile */
-body {
-  overscroll-behavior-y: contain;
-}
-
-/* Remove custom button styles */
-input,
-textarea {
-  @apply focus:outline-hidden focus:ring-2 focus:ring-ring/50;
-}
-
-html,
-body {
-  @apply h-full;
 }

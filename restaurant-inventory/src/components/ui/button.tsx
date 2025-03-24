@@ -6,22 +6,32 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
     | "default"
-    | "destructive"
-    | "outline"
+    | "primary"
     | "secondary"
+    | "accent"
+    | "info"
+    | "success"
+    | "warning"
+    | "error"
     | "ghost"
-    | "link";
-  size?: "default" | "sm" | "lg" | "icon";
+    | "link"
+    | "outline";
+  size?: "default" | "xs" | "sm" | "md" | "lg";
+  shape?: "default" | "circle" | "square";
   asChild?: boolean;
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
-      variant = "default",
+      variant = "primary",
       size = "default",
+      shape = "default",
       asChild = false,
+      loading = false,
+      children,
       ...props
     },
     ref
@@ -30,20 +40,33 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Map variants to DaisyUI classes
     const variantClasses = {
-      default: "btn-primary",
-      destructive: "btn-error",
-      outline: "btn-outline",
+      default: "",
+      primary: "btn-primary",
       secondary: "btn-secondary",
+      accent: "btn-accent",
+      info: "btn-info",
+      success: "btn-success",
+      warning: "btn-warning",
+      error: "btn-error",
       ghost: "btn-ghost",
       link: "btn-link",
+      outline: "btn-outline",
     };
 
     // Map sizes to DaisyUI classes
     const sizeClasses = {
       default: "",
+      xs: "btn-xs",
       sm: "btn-sm",
+      md: "btn-md",
       lg: "btn-lg",
-      icon: "btn-square",
+    };
+
+    // Map shapes to DaisyUI classes
+    const shapeClasses = {
+      default: "",
+      circle: "btn-circle",
+      square: "btn-square",
     };
 
     return (
@@ -52,11 +75,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "btn",
           variantClasses[variant],
           sizeClasses[size],
+          shapeClasses[shape],
+          loading && "loading",
           className
         )}
         ref={ref}
+        disabled={props.disabled || loading}
         {...props}
-      />
+      >
+        {!loading && children}
+      </Comp>
     );
   }
 );

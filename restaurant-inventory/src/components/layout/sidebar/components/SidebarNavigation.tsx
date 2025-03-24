@@ -39,7 +39,7 @@ export function SidebarNavigation({
 
   return (
     <TooltipProvider>
-      <nav className="px-2 py-1 space-y-1 overflow-y-auto max-h-full">
+      <nav className={cn("px-3 py-1 space-y-1.5 overflow-y-auto max-h-full", open ? "px-3" : "px-2")}>
         {navItems.map((item) => {
           if (hasChildren(item)) {
             const isExpanded = expandedSections[item.name] || false;
@@ -63,11 +63,11 @@ export function SidebarNavigation({
                   <PopoverTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center justify-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                        "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-500",
+                        "flex items-center justify-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                        "hover:bg-gray-100 hover:text-orange-500",
                         hasActiveChild
-                          ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
-                          : "text-gray-600 dark:text-gray-400",
+                          ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                          : "text-gray-700",
                         item.className
                       )}
                     >
@@ -79,11 +79,11 @@ export function SidebarNavigation({
                   <PopoverContent
                     side="right"
                     align="start"
-                    className="p-0 w-48 rounded-md border border-gray-200 dark:border-gray-800"
+                    className="p-0 w-48 rounded-md border border-gray-200 shadow-md"
                     onInteractOutside={() => setHoveredSection(null)}
                   >
-                    <div className="bg-white dark:bg-gray-900 py-1 rounded-md shadow-md">
-                      <div className="px-3 py-2 text-sm font-medium text-teal-500 border-b border-gray-200 dark:border-gray-800 mb-1">
+                    <div className="bg-white py-1 rounded-md">
+                      <div className="px-3 py-2 text-sm font-medium text-orange-500 border-b border-gray-200 mb-1">
                         {item.name}
                       </div>
                       {item.items.map((child) => {
@@ -99,8 +99,9 @@ export function SidebarNavigation({
                               className={cn(
                                 "flex items-center px-3 py-2 text-sm transition-colors",
                                 isActive
-                                  ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 font-medium"
-                                  : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  ? "text-orange-500 bg-orange-50/80 font-medium"
+                                  : "text-gray-700 hover:text-orange-500 hover:bg-gray-50",
+                                child.className
                               )}
                               onClick={() => setHoveredSection(null)}
                             >
@@ -125,35 +126,40 @@ export function SidebarNavigation({
                 <button
                   onClick={() => toggleSection(item.name)}
                   className={cn(
-                    "flex items-center w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-teal-500",
+                    "flex items-center justify-between w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    "hover:bg-gray-100 hover:text-orange-500",
                     hasActiveChild
-                      ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
-                      : "text-gray-600 dark:text-gray-400",
-                    !open && "justify-center"
+                      ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                      : "text-gray-700",
+                    item.className
                   )}
                 >
-                  {item.icon && (
-                    <item.icon
-                      className={cn("h-5 w-5 shrink-0", {
-                        "mr-2": open,
-                      })}
-                    />
-                  )}
-                  {open && (
-                    <>
-                      <span className="flex-1 text-left">{item.name}</span>
-                      <ChevronDownIcon
-                        className={cn("h-4 w-4 transition-transform", {
-                          "transform rotate-180": isExpanded,
+                  <div className="flex items-center">
+                    {item.icon && (
+                      <item.icon
+                        className={cn("h-5 w-5 shrink-0", {
+                          "mr-2.5": open,
                         })}
                       />
-                    </>
+                    )}
+                    {open && <span>{item.name}</span>}
+                  </div>
+                  {open && (
+                    <ChevronDownIcon
+                      className={cn("h-4 w-4 transition-transform", {
+                        "transform rotate-180": isExpanded,
+                      })}
+                    />
                   )}
                 </button>
 
                 {open && isExpanded && (
-                  <div className="mt-1 ml-4 space-y-1">
+                  <div
+                    className={cn(
+                      "pl-10 space-y-1 mt-1",
+                      !isExpanded && "hidden"
+                    )}
+                  >
                     {item.items.map((child) => {
                       if ("href" in child) {
                         const childHref =
@@ -165,14 +171,15 @@ export function SidebarNavigation({
                             key={child.name}
                             href={childHref}
                             className={cn(
-                              "flex items-center rounded-md px-3 py-2 text-sm transition-colors",
+                              "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
                               isActive
-                                ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 font-medium border-l-2 border-teal-500"
-                                : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                ? "text-orange-500 bg-orange-50/80 font-medium"
+                                : "text-gray-700 hover:text-orange-500 hover:bg-gray-50",
+                              child.className
                             )}
                           >
                             {child.icon && (
-                              <child.icon className="h-4 w-4 mr-2 shrink-0" />
+                              <child.icon className="h-4 w-4 mr-2.5 shrink-0" />
                             )}
                             {child.name}
                           </Link>
@@ -197,10 +204,11 @@ export function SidebarNavigation({
                   <Link
                     href={itemHref}
                     className={cn(
-                      "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                      "hover:bg-gray-100 hover:text-orange-500",
                       isActive
-                        ? "text-teal-500 bg-teal-50 dark:bg-teal-900/20 border-l-2 border-teal-500"
-                        : "text-gray-600 dark:text-gray-400 hover:text-teal-500 hover:bg-gray-100 dark:hover:bg-gray-800",
+                        ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                        : "text-gray-700",
                       !open && "justify-center",
                       item.className
                     )}
@@ -208,7 +216,7 @@ export function SidebarNavigation({
                     {item.icon && (
                       <item.icon
                         className={cn("h-5 w-5 shrink-0", {
-                          "mr-2": open,
+                          "mr-2.5": open,
                         })}
                       />
                     )}
@@ -216,7 +224,9 @@ export function SidebarNavigation({
                   </Link>
                 </TooltipTrigger>
                 {!open && (
-                  <TooltipContent side="right">{item.name}</TooltipContent>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.name}
+                  </TooltipContent>
                 )}
               </Tooltip>
             );

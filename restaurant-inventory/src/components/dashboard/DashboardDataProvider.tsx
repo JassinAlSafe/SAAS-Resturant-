@@ -2,7 +2,6 @@
 
 import { useEffect, ReactNode, useRef, useState, useCallback } from "react";
 import { useDashboard } from "@/lib/hooks/useDashboard";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { FiRefreshCw, FiAlertCircle } from "react-icons/fi";
 
@@ -100,28 +99,20 @@ export function DashboardDataProvider({
   if (error && hasRetried) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
-        <FiAlertCircle className="w-12 h-12 text-red-500" />
-        <h2 className="text-xl font-semibold text-gray-800">Failed to load dashboard data</h2>
-        <p className="text-gray-600 max-w-md">
+        <FiAlertCircle className="w-12 h-12 text-error" />
+        <h2 className="text-xl font-semibold text-base-content">Failed to load dashboard data</h2>
+        <p className="text-base-content/70 max-w-md">
           {error || "There was a problem loading your dashboard. Please try again."}
         </p>
         <Button 
           onClick={triggerRefresh} 
-          variant="outline" 
+          variant="error" 
           className="mt-4"
           disabled={isRetrying}
+          loading={isRetrying}
         >
-          {isRetrying ? (
-            <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              Retrying...
-            </>
-          ) : (
-            <>
-              <FiRefreshCw className="mr-2" />
-              Retry
-            </>
-          )}
+          {!isRetrying && <FiRefreshCw className="mr-2" />}
+          {isRetrying ? "Retrying..." : "Retry"}
         </Button>
       </div>
     );
@@ -131,8 +122,8 @@ export function DashboardDataProvider({
   if ((isLoading || isInitialLoad) && showLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <LoadingSpinner size="lg" />
-        <p className="text-gray-600">Loading dashboard data...</p>
+        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <p className="text-base-content/70">Loading dashboard data...</p>
       </div>
     );
   }
@@ -141,27 +132,24 @@ export function DashboardDataProvider({
   if (!hasData && !isLoading && !isInitialLoad) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
-        <h2 className="text-xl font-semibold text-gray-800">No dashboard data available</h2>
-        <p className="text-gray-600 max-w-md">
+        <div className="avatar placeholder">
+          <div className="bg-base-300 text-base-content rounded-full w-16">
+            <span className="text-2xl">?</span>
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold text-base-content">No dashboard data available</h2>
+        <p className="text-base-content/70 max-w-md">
           We couldn&apos;t find any data for your dashboard. This could be because your account is new or there&apos;s no activity yet.
         </p>
         <Button 
           onClick={triggerRefresh} 
-          variant="outline" 
+          variant="primary" 
           className="mt-4"
           disabled={isRetrying}
+          loading={isRetrying}
         >
-          {isRetrying ? (
-            <>
-              <LoadingSpinner size="sm" className="mr-2" />
-              Refreshing...
-            </>
-          ) : (
-            <>
-              <FiRefreshCw className="mr-2" />
-              Refresh
-            </>
-          )}
+          {!isRetrying && <FiRefreshCw className="mr-2" />}
+          {isRetrying ? "Refreshing..." : "Refresh"}
         </Button>
       </div>
     );
