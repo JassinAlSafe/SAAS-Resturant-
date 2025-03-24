@@ -7,8 +7,16 @@ import ShoppingListTable from "./components/ShoppingListTable";
 import ShoppingListHeader from "./components/ShoppingListHeader";
 import ShoppingListModals from "./components/modals";
 import { ShoppingListItem } from "@/lib/types";
-import { Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, ShoppingCart } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -124,15 +132,23 @@ function ShoppingListContent() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground font-medium">
+            Loading your shopping list...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <div className="rounded-full bg-red-50 p-3 dark:bg-red-900/20">
+          <ShoppingCart className="h-8 w-8 text-red-500" />
+        </div>
         <p className="text-lg font-medium text-destructive">
           Error loading shopping list
         </p>
@@ -144,20 +160,103 @@ function ShoppingListContent() {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-7xl space-y-8">
-      <div className="flex flex-col space-y-1.5 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Shopping List
-        </h1>
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl space-y-8">
+      <div className="flex flex-col space-y-2 mb-8">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Shopping List
+          </h1>
+        </div>
         <p className="text-muted-foreground">
           Manage your restaurant&apos;s shopping items and track purchases
         </p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          <Badge variant="outline" className="bg-background">
+            {itemsCount.total} Total Items
+          </Badge>
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+          >
+            {itemsCount.purchased} Purchased
+          </Badge>
+          {itemsCount.urgent > 0 && (
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
+            >
+              {itemsCount.urgent} Urgent
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 gap-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border shadow-sm bg-white hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-muted-foreground">
+                Total Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold">{itemsCount.total}</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  items
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {itemsCount.total - itemsCount.purchased} pending purchase
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border shadow-sm bg-white hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-muted-foreground">
+                Estimated Cost
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold">
+                  ${totalEstimatedCost.toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                For {filteredList.length} filtered items
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border shadow-sm bg-white hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-medium text-muted-foreground">
+                Categories
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold">{categories.length}</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  total
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {selectedCategory === "all"
+                  ? "All categories"
+                  : `Filtered by: ${selectedCategory}`}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Area */}
-        <div className="md:col-span-12 space-y-6">
-          <Card className="border shadow-xs bg-white">
+        <div className="space-y-6">
+          <Card className="border shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
             <CardContent className="p-4 sm:p-6">
               <ShoppingListHeader
                 onAddItem={() => setIsAddModalOpen(true)}
@@ -182,7 +281,17 @@ function ShoppingListContent() {
             </CardContent>
           </Card>
 
-          <Card className="border shadow-xs bg-white overflow-hidden">
+          <Card className="border shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-muted/30 py-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Shopping Items</CardTitle>
+                <CardDescription>
+                  {sortedList.length}{" "}
+                  {sortedList.length === 1 ? "item" : "items"} displayed
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <Separator />
             <CardContent className="p-0">
               <ShoppingListTable
                 items={sortedList}

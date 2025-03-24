@@ -1,39 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { ShoppingListItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { Edit, Loader2, Trash, Clock, ChevronDown } from "lucide-react";
+  Loader2,
+  Clock,
+  Plus,
+  ShoppingBag,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isToday, isYesterday, isThisWeek } from "date-fns";
+import { DataTable, Column } from "@/components/ui/data-table/data-table";
+import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Plus } from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ShoppingListTableProps {
   items: ShoppingListItem[];
@@ -55,379 +42,305 @@ export default function ShoppingListTable({
   onAddItem,
 }: ShoppingListTableProps) {
   const { formatCurrency } = useCurrency();
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
+
+  // Helper function to format dates in a more readable way
+  const formatAddedDate = (dateString: string) => {
+    const date = new Date(dateString);
+
+    if (isToday(date)) {
+      return "Today";
+    } else if (isYesterday(date)) {
+      return "Yesterday";
+    } else if (isThisWeek(date)) {
+      return format(date, "EEEE"); // Day name
+    } else {
+      return format(date, "MMM d, yyyy");
+    }
+  };
 
   // Define columns for the table
-  const columns: ColumnDef<ShoppingListItem>[] = [
+  const columns: Column<ShoppingListItem>[] = [
     {
       id: "status",
       header: "",
-      cell: ({ row }) => {
-        const item = row.original;
+      cell: (item) => {
         return (
-          <div className="flex items-center justify-center">
-            <div className="relative">
-              <div
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="flex items-center justify-center"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePurchased(item.id, !item.isPurchased);
+                  }}
+                >
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        "h-5 w-5 border-2 rounded-md flex items-center justify-center transition-all cursor-pointer hover:shadow-sm",
+                        item.isPurchased
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : item.isUrgent
+                          ? "border-red-400 bg-red-50/40"
+                          : "border-blue-300 bg-transparent hover:bg-blue-50/50"
+                      )}
+                    >
+                      {item.isPurchased && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M20 6L9 17L4 12"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                      <input
+                        type="checkbox"
+                        checked={item.isPurchased}
+                        onChange={() => {}} // Controlled by parent onClick
+                        disabled={isUpdating}
+                        className="sr-only"
+                        aria-label={`Mark ${item.name} as ${
+                          item.isPurchased ? "not purchased" : "purchased"
+                        }`}
+                      />
+                    </div>
+                    {isUpdating && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>
+                  Mark as {item.isPurchased ? "not purchased" : "purchased"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
+      sortable: false,
+    },
+    {
+      id: "name",
+      header: "Item Details",
+      accessorKey: "name",
+      cell: (item) => {
+        return (
+          <div className="flex flex-col py-2">
+            <div className="flex items-center">
+              <span
                 className={cn(
-                  "h-5 w-5 border-2 rounded-md flex items-center justify-center transition-colors",
-                  item.isPurchased
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-blue-300 bg-transparent"
+                  "text-sm font-medium",
+                  item.isUrgent &&
+                    !item.isPurchased &&
+                    "text-red-600 font-semibold",
+                  item.isPurchased && "text-muted-foreground line-through"
                 )}
               >
-                {item.isPurchased && (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M20 6L9 17L4 12"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                {item.name}
+              </span>
+
+              <div className="flex space-x-1 ml-2">
+                {item.isUrgent && !item.isPurchased && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Urgent
+                  </Badge>
                 )}
-                <input
-                  type="checkbox"
-                  checked={item.isPurchased}
-                  onChange={() => onTogglePurchased(item.id, !item.isPurchased)}
-                  disabled={isUpdating}
-                  className="sr-only"
-                  aria-label={`Mark ${item.name} as ${
-                    item.isPurchased ? "not purchased" : "purchased"
-                  }`}
-                />
+
+                {item.isPurchased && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-green-50 text-green-700 border-green-200"
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Purchased
+                  </Badge>
+                )}
+
+                {item.isAutoGenerated && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                  >
+                    Auto
+                  </Badge>
+                )}
               </div>
-              {isUpdating && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                </div>
+            </div>
+
+            {item.notes && (
+              <p className="text-xs text-slate-500 mt-1 max-w-md truncate">
+                {item.notes}
+              </p>
+            )}
+
+            <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
+              {item.addedAt && (
+                <span className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {formatAddedDate(item.addedAt)}
+                </span>
               )}
             </div>
           </div>
         );
       },
-      enableSorting: false,
+      sortable: true,
     },
     {
-      accessorKey: "name",
-      header: "Name",
-      cell: ({ row }) => {
-        const item = row.original;
-        return (
-          <div className="flex flex-col py-1">
-            <span
-              className={cn(
-                "text-sm font-medium",
-                item.isUrgent &&
-                  !item.isPurchased &&
-                  "text-red-600 font-semibold",
-                item.isPurchased && "text-muted-foreground line-through"
-              )}
-            >
-              {item.name}
-              {item.isUrgent && !item.isPurchased && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                  Urgent
-                </span>
-              )}
-            </span>
-            {item.addedAt && (
-              <div className="text-xs text-muted-foreground mt-1">
-                • Added {format(new Date(item.addedAt), "MMM d, yyyy")}
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
+      id: "quantity",
+      header: "Qty",
       accessorKey: "quantity",
-      header: () => <div className="text-left">Quantity</div>,
-      cell: ({ row }) => {
-        const item = row.original;
+      cell: (item) => {
         return (
           <div className="text-sm">
-            <span className="tabular-nums font-medium">{item.quantity}</span>
-            {item.unit && (
-              <span className="ml-1 text-slate-500">{item.unit}</span>
-            )}
+            <span
+              className={cn(
+                "px-2 py-1 rounded-md tabular-nums font-medium inline-flex",
+                item.isPurchased ? "bg-slate-100" : "bg-blue-50/50"
+              )}
+            >
+              {item.quantity}
+              {item.unit && (
+                <span className="ml-1 text-slate-500">{item.unit}</span>
+              )}
+            </span>
           </div>
         );
       },
+      sortable: true,
     },
     {
+      id: "category",
+      header: "Category",
       accessorKey: "category",
-      header: () => <div className="text-left">Category</div>,
-      cell: ({ row }) => {
+      cell: (item) => {
         const categoryColorMap: Record<string, string> = {
-          Pantry: "bg-amber-50 text-amber-700",
-          Dairy: "bg-blue-50 text-blue-700",
-          Produce: "bg-green-50 text-green-700",
-          Meat: "bg-red-50 text-red-700",
-          Bakery: "bg-yellow-50 text-yellow-700",
-          Seafood: "bg-cyan-50 text-cyan-700",
-          Other: "bg-purple-50 text-purple-700",
+          Pantry: "bg-amber-50 text-amber-700 border-amber-200",
+          Dairy: "bg-blue-50 text-blue-700 border-blue-200",
+          Produce: "bg-green-50 text-green-700 border-green-200",
+          Meat: "bg-red-50 text-red-700 border-red-200",
+          Bakery: "bg-yellow-50 text-yellow-700 border-yellow-200",
+          Seafood: "bg-cyan-50 text-cyan-700 border-cyan-200",
+          Other: "bg-purple-50 text-purple-700 border-purple-200",
         };
 
-        const category = row.original.category;
+        const category = item.category;
         const colorClass =
-          categoryColorMap[category] || "bg-slate-50 text-slate-700";
+          categoryColorMap[category] ||
+          "bg-slate-50 text-slate-700 border-slate-200";
 
         return (
           <div>
-            <span
+            <Badge
+              variant="outline"
               className={cn(
-                "inline-flex rounded-full px-2.5 py-1 text-xs font-medium",
-                colorClass
+                "inline-flex rounded-md text-xs font-medium",
+                colorClass,
+                item.isPurchased && "opacity-70"
               )}
             >
               {category || "Uncategorized"}
-            </span>
+            </Badge>
           </div>
         );
       },
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id));
-      },
+      sortable: true,
     },
     {
+      id: "estimatedCost",
+      header: "Est. Cost",
       accessorKey: "estimatedCost",
-      header: () => <div className="text-right">Est. Cost</div>,
-      cell: ({ row }) => {
+      cell: (item) => {
         return (
-          <div className="text-right tabular-nums text-sm font-medium">
-            {formatCurrency(row.original.estimatedCost || 0)}
+          <div
+            className={cn(
+              "text-right px-3 py-1 rounded-md tabular-nums text-sm font-medium inline-block",
+              item.isPurchased
+                ? "bg-slate-100 text-slate-500"
+                : "bg-green-50/50 text-green-700"
+            )}
+          >
+            {formatCurrency(item.estimatedCost || 0)}
           </div>
         );
       },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const item = row.original;
-        return (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEditItem(item)}
-              disabled={isDeleting || isUpdating}
-              className="h-8 w-8 rounded-md p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-            >
-              <Edit className="h-4 w-4" />
-              <span className="sr-only">Edit</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDeleteItem(item.id)}
-              disabled={isDeleting || isUpdating}
-              className="h-8 w-8 rounded-md p-0 text-slate-500 hover:text-red-600 hover:bg-red-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash className="h-4 w-4" />
-              )}
-              <span className="sr-only">Delete</span>
-            </Button>
-          </div>
-        );
-      },
-      enableSorting: false,
+      sortable: true,
     },
   ];
 
-  // Initialize the table
-  const table = useReactTable({
-    data: items,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
+  // Custom row styling based on item state
+  const getRowClassName = (item: ShoppingListItem) => {
+    return cn(
+      "hover:bg-slate-50/80 transition-colors",
+      item.isPurchased && "bg-slate-50/70",
+      item.isUrgent &&
+        !item.isPurchased &&
+        "bg-red-50/10 border-l-2 border-l-red-400"
+    );
+  };
 
+  // Handle item deletion with confirmation
+  const handleDeleteItem = (item: ShoppingListItem) => {
+    if (isDeleting) return;
+    if (window.confirm(`Are you sure you want to delete ${item.name}?`)) {
+      onDeleteItem(item.id);
+    }
+  };
+
+  // If there are no items, show empty state
   if (items.length === 0) {
     return (
-      <div className="flex h-72 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50 p-8 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50">
-          <Clock className="h-8 w-8 text-slate-400" />
+      <div className="flex h-80 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50 p-8 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50/70 shadow-sm">
+          <ShoppingBag className="h-10 w-10 text-slate-400" />
         </div>
-        <h3 className="mt-4 text-base font-medium text-slate-700">
-          No items found
+        <h3 className="mt-6 text-lg font-medium text-slate-700">
+          No items in your shopping list
         </h3>
-        <p className="mt-2 text-sm text-slate-500 max-w-sm">
-          Your shopping list is empty. Add items manually or generate a list
-          from your inventory.
+        <p className="mt-3 text-sm text-slate-500 max-w-md">
+          Your shopping list is empty. Add items manually or let us generate a
+          list based on your inventory levels.
         </p>
-        <Button
-          onClick={onAddItem}
-          variant="outline"
-          size="sm"
-          className="mt-4"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add First Item
-        </Button>
+        <div className="mt-6 flex space-x-3">
+          <Button onClick={onAddItem} variant="default" className="shadow-sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Item Manually
+          </Button>
+          <Button onClick={onAddItem} variant="outline" className="shadow-sm">
+            Generate Shopping List
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow
-                  key={headerGroup.id}
-                  className="bg-slate-50 hover:bg-slate-50 border-b border-slate-200"
-                >
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className="h-10 px-4 py-2 text-sm font-medium text-slate-600 first:pl-6 first:w-[50px] last:w-[90px]"
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className={cn(
-                      "border-b last:border-0",
-                      "hover:bg-slate-50/70",
-                      row.original.isPurchased && "bg-slate-50/40",
-                      row.original.isUrgent &&
-                        !row.original.isPurchased &&
-                        "bg-red-50/5"
-                    )}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={cn(
-                          "px-4 py-3 h-16",
-                          cell.column.id === "status" && "w-[50px] pl-6",
-                          cell.column.id === "actions" && "w-[90px]"
-                        )}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between px-2 py-2">
-        <div className="text-xs text-slate-500">
-          {table.getFilteredRowModel().rows.length} of {items.length} items
-        </div>
-        <div className="flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs font-normal border-slate-200 text-slate-700"
-              >
-                Columns <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize text-xs"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 rounded-l-md border-r-0 px-3 text-xs border-slate-200"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 rounded-r-md px-3 text-xs border-slate-200"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTable
+        data={items}
+        columns={columns}
+        keyField="id"
+        onEdit={onEditItem}
+        onDelete={handleDeleteItem}
+        rowClassName={getRowClassName}
+        emptyMessage="Your shopping list is empty."
+        className="bg-white rounded-md overflow-hidden border-separate border-spacing-0"
+      />
     </div>
   );
 }
