@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/lib/currency";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface SalesEntryFooterProps {
   total: number;
@@ -18,10 +19,17 @@ export function SalesEntryFooter({
   const { formatCurrency } = useCurrency();
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between px-8 py-5 border-t border-slate-200/80 bg-white sticky bottom-0 left-0 right-0 z-50 shadow-md">
-      <div className="flex items-center gap-4">
-        <div className="text-sm font-medium text-slate-500">Total Sales</div>
-        <div className="text-2xl font-bold text-slate-900">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: 0.1 }}
+      className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 sticky bottom-0 left-0 right-0 z-50 shadow-md"
+    >
+      <div className="flex items-center gap-4 mb-4 sm:mb-0">
+        <div className="text-sm font-medium text-muted-foreground">
+          Total Sales
+        </div>
+        <div className="text-2xl font-bold text-primary">
           {formatCurrency(total || 0)}
         </div>
       </div>
@@ -29,7 +37,7 @@ export function SalesEntryFooter({
       <Button
         type="submit"
         disabled={isDisabled || isSubmitting}
-        className="w-full sm:w-auto px-6 h-10 bg-blue-600 hover:bg-blue-700 transition-colors"
+        className="w-full sm:w-auto px-6 h-10 bg-primary hover:bg-primary/90 text-primary-foreground transition-colors"
         size="default"
         data-testid="submit-sales-entry"
       >
@@ -44,7 +52,10 @@ export function SalesEntryFooter({
             Save Sales
           </>
         )}
+        {!isSubmitting && !isDisabled && (
+          <ArrowRight className="ml-2 h-4 w-4 opacity-70" />
+        )}
       </Button>
-    </div>
+    </motion.div>
   );
 }

@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 import animate from "tailwindcss-animate";
+import daisyui from "daisyui";
 
 export default {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -10,24 +10,15 @@ export default {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   prefix: "",
+  customMedia: {
+    "--sm": "(width >= 640px)",
+    "--md": "(width >= 768px)",
+    "--lg": "(width >= 1024px)",
+    "--xl": "(width >= 1280px)",
+    "--2xl": "(width >= 1400px)",
+    "--xs": "(width >= 480px)",
+  },
   theme: {
-    container: {
-      center: true,
-      padding: {
-        DEFAULT: "1rem",
-        sm: "2rem",
-        lg: "4rem",
-        xl: "5rem",
-        "2xl": "6rem",
-      },
-      screens: {
-        sm: "640px",
-        md: "768px",
-        lg: "1024px",
-        xl: "1280px",
-        "2xl": "1400px",
-      },
-    },
     screens: {
       xs: "480px",
       sm: "640px",
@@ -36,68 +27,96 @@ export default {
       xl: "1280px",
       "2xl": "1400px",
     },
-    extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
+    spacing: {
+      0: "0",
+      1: "0.25rem",
+      2: "0.5rem",
+      3: "0.75rem",
+      4: "1rem",
+      5: "1.25rem",
+      6: "1.5rem",
+      // Add other spacing values as needed
+      18: "4.5rem",
+      112: "28rem",
+      128: "32rem",
+      144: "36rem",
+    },
+    borderRadius: {
+      none: "0",
+      sm: "calc(var(--radius-sm))",
+      DEFAULT: "calc(var(--radius-md))",
+      md: "calc(var(--radius-md))",
+      lg: "calc(var(--radius-lg))",
+      xl: "calc(var(--radius-lg) + 2px)",
+      full: "9999px",
+    },
+    fontFamily: {
+      sans: "var(--font-sans)",
+    },
+    keyframes: {
+      "accordion-down": {
+        from: { height: "0" },
+        to: { height: "var(--radix-accordion-content-height)" },
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: 0 },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: 0 },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-      },
-      spacing: {
-        18: "4.5rem",
-        112: "28rem",
-        128: "32rem",
-        144: "36rem",
+      "accordion-up": {
+        from: { height: "var(--radix-accordion-content-height)" },
+        to: { height: "0" },
       },
     },
+    animation: {
+      "accordion-down": "accordion-down 0.2s ease-out",
+      "accordion-up": "accordion-up 0.2s ease-out",
+    },
   },
-  plugins: [animate],
+  plugins: [animate, daisyui],
+  daisyui: {
+    themes: [
+      {
+        light: {
+          primary: "#ff8c00",
+          "primary-content": "#ffffff",
+          secondary: "#f2f2f2",
+          "secondary-content": "#111111",
+          accent: "#fff4e6",
+          "accent-content": "#dc7700",
+          neutral: "#111111",
+          "neutral-content": "#ffffff",
+          "base-100": "#ffffff",
+          "base-200": "#f9f9f9",
+          "base-300": "#f2f2f2",
+          "base-content": "#111111",
+          info: "#3abff8",
+          success: "#36d399",
+          warning: "#fbbd23",
+          error: "#f87272",
+          "--navbar-color": "#1c2b36",
+          "--navbar-text": "#ffffff",
+        },
+        dark: {
+          primary: "#ff8c00",
+          "primary-content": "#ffffff",
+          secondary: "#1c2b36",
+          "secondary-content": "#ffffff",
+          accent: "#383838",
+          "accent-content": "#ff8c00",
+          neutral: "#ffffff",
+          "neutral-content": "#111111",
+          "base-100": "#111111",
+          "base-200": "#1a1a1a",
+          "base-300": "#262626",
+          "base-content": "#ffffff",
+          info: "#3abff8",
+          success: "#36d399",
+          warning: "#fbbd23",
+          error: "#f87272",
+          "--navbar-color": "#1c2b36",
+          "--navbar-text": "#ffffff",
+        },
+      },
+    ],
+    darkTheme: "dark",
+    base: true,
+    styled: true,
+    utils: true,
+  },
 };

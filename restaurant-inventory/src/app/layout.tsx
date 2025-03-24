@@ -3,7 +3,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { lufga } from "@/lib/fonts";
+import { cabinetGrotesk, satoshi } from "@/lib/fonts";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "ShelfWise | Smart Inventory Management",
@@ -35,18 +36,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={cn(cabinetGrotesk.variable, satoshi.variable)}
+      suppressHydrationWarning
+    >
       <head />
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          lufga.variable
-        )}
-      >
-        <Providers>
-          {children}
-          <Sonner />
-        </Providers>
+      <body className="min-h-screen bg-base-100 font-sans antialiased">
+        <ThemeProvider>
+          <Providers>
+            {children}
+            <Sonner />
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

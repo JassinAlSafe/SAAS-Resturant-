@@ -30,21 +30,23 @@ export default function DashboardPage() {
   // If loading or not authenticated, show loading state
   if (isLoading || (!user && !session)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-16 w-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
-          <p className="mt-4 text-slate-500">Loading authentication state...</p>
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <div className="flex flex-col items-center">
+          <div className="skeleton w-16 h-16 rounded-full mb-4"></div>
+          <div className="skeleton h-4 w-32 rounded-md"></div>
+          <p className="mt-4 text-base-content/60">
+            Loading authentication state...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="min-h-screen bg-base-100">
       <div className="px-4 py-6 md:px-8 lg:px-12 max-w-7xl mx-auto space-y-6">
         <DashboardDataProvider autoRefresh={true}>
-          <DashboardContent 
+          <DashboardContent
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
           />
@@ -79,32 +81,32 @@ function DashboardContent({
     };
 
     fetchBusinessName();
-    
+
     // Update current time every minute
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Format the last updated time
   const formatLastUpdated = () => {
     if (!lastUpdated) return "Never";
-    
+
     const now = new Date();
     const updated = new Date(lastUpdated);
     const diffMs = now.getTime() - updated.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return "Just now";
     if (diffMins === 1) return "1 minute ago";
     if (diffMins < 60) return `${diffMins} minutes ago`;
-    
+
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours === 1) return "1 hour ago";
     if (diffHours < 24) return `${diffHours} hours ago`;
-    
+
     return updated.toLocaleString();
   };
 
@@ -112,23 +114,22 @@ function DashboardContent({
   if (error) {
     return (
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 text-center">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl p-8 mb-6 shadow-sm">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800/30 text-red-600 dark:text-red-400 mb-4">
-            <FiRefreshCw className="h-8 w-8" />
+        <div className="alert alert-error shadow-sm">
+          <div className="flex flex-col items-center">
+            <FiRefreshCw className="h-8 w-8 mb-4" />
+            <h2 className="text-2xl font-semibold mb-3">
+              Error Loading Dashboard Data
+            </h2>
+            <p className="mb-6 max-w-lg mx-auto">
+              {typeof error === "string"
+                ? error
+                : "We encountered an issue while loading your dashboard data. Please try refreshing."}
+            </p>
+            <Button onClick={() => refresh()} className="btn btn-error">
+              <FiRefreshCw className="mr-2 h-4 w-4" />
+              Refresh Dashboard
+            </Button>
           </div>
-          <h2 className="text-2xl font-semibold text-red-700 dark:text-red-400 mb-3">
-            Error Loading Dashboard Data
-          </h2>
-          <p className="text-red-600 dark:text-red-300 mb-6 max-w-lg mx-auto">
-            {typeof error === 'string' ? error : "We encountered an issue while loading your dashboard data. Please try refreshing."}
-          </p>
-          <Button 
-            onClick={() => refresh()} 
-            className="bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 dark:bg-red-800/40 dark:hover:bg-red-800/60 dark:text-red-300 dark:border-red-700/50"
-          >
-            <FiRefreshCw className="mr-2 h-4 w-4" />
-            Refresh Dashboard
-          </Button>
         </div>
       </div>
     );
@@ -139,21 +140,28 @@ function DashboardContent({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-6">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-base-content/60">
             <FiClock className="h-3.5 w-3.5" />
-            <span>{currentTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>
+              {currentTime.toLocaleDateString(undefined, {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="text-3xl font-bold tracking-tight text-base-content">
             Welcome to <span className="text-primary">{businessName}</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="text-base-content/60">
             Here&apos;s what&apos;s happening with your inventory today.
           </p>
           {lastUpdated && (
-            <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+            <div className="text-xs text-base-content/40 flex items-center gap-1.5">
               <span>Last updated: {formatLastUpdated()}</span>
-              <button 
-                onClick={() => refresh()} 
+              <button
+                onClick={() => refresh()}
                 className="inline-flex items-center text-primary hover:text-primary/80 transition-colors"
                 title="Refresh dashboard data"
               >
@@ -164,18 +172,18 @@ function DashboardContent({
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative w-full md:w-auto">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 h-4 w-4" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 h-4 w-4" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
+              className="input input-bordered pl-9 w-full"
             />
           </div>
-          <Button 
-            onClick={() => router.push('/settings')}
-            className="bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center gap-2 shadow-sm hover:shadow py-2.5"
+          <Button
+            onClick={() => router.push("/settings")}
+            className="btn btn-primary gap-2"
           >
             <FiSettings className="h-4 w-4" />
             <span>Settings</span>
@@ -186,32 +194,17 @@ function DashboardContent({
       {/* Main content */}
       <Tabs defaultValue="overview" className="space-y-4">
         <div className="flex justify-between items-center">
-          <TabsList className="bg-slate-100 p-0 h-auto shadow-none border-0 rounded-lg">
-            <TabsTrigger 
-              value="overview" 
-              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="inventory"
-              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-            >
-              Inventory
-            </TabsTrigger>
-            <TabsTrigger 
-              value="sales"
-              className="px-6 py-2.5 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600"
-            >
-              Sales
-            </TabsTrigger>
+          <TabsList variant="boxed">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="inventory">Inventory</TabsTrigger>
+            <TabsTrigger value="sales">Sales</TabsTrigger>
           </TabsList>
-          
-          <button 
-            onClick={() => refresh()} 
-            className="flex items-center text-slate-600 hover:text-primary text-sm"
+
+          <button
+            onClick={() => refresh()}
+            className="btn btn-ghost btn-sm gap-2"
           >
-            <FiRefreshCw className="h-4 w-4 mr-1" />
+            <FiRefreshCw className="h-4 w-4" />
             Refresh
           </button>
         </div>

@@ -1,42 +1,42 @@
-@import 'tailwindcss';
-
-@plugin 'tailwindcss-animate';
+@import "tailwindcss";
+@plugin "daisyui";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-lufga), system-ui, sans-serif;
+  --font-sans: var(--font-satoshi), system-ui, sans-serif;
+  --font-headline: var(--font-cabinet-grotesk), system-ui, sans-serif;
 
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
+  --color-border: 220 13% 91%;
+  --color-input: 220 13% 91%;
+  --color-ring: 24 100% 50%;
+  --color-background: 0 0% 100%;
+  --color-foreground: 0 0% 7%;
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary: 24 100% 50%;
+  --color-primary-foreground: 0 0% 100%;
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary: 240 4% 95%;
+  --color-secondary-foreground: 0 0% 7%;
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive: 0 84% 60%;
+  --color-destructive-foreground: 0 0% 100%;
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted: 240 4% 95%;
+  --color-muted-foreground: 240 4% 46%;
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent: 24 100% 97%;
+  --color-accent-foreground: 24 90% 40%;
 
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover: 0 0% 100%;
+  --color-popover-foreground: 0 0% 7%;
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card: 0 0% 100%;
+  --color-card-foreground: 0 0% 7%;
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-lg: 0.5rem;
+  --radius-md: 0.375rem;
+  --radius-sm: 0.25rem;
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -62,7 +62,7 @@
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
-  @media (width >= --theme(--breakpoint-sm)) {
+  @media (width >= 640px) {
     max-width: none;
   }
   @media (width >= 1400px) {
@@ -71,7 +71,8 @@
 }
 
 @theme {
-  --font-sans: var(--font-lufga);
+  --font-sans: var(--font-satoshi);
+  --font-headline: var(--font-cabinet-grotesk);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -84,6 +85,31 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  /* Direct font-family application to ensure they work */
+  :root {
+    --font-satoshi: "__satoshi_variable";
+    --font-cabinet-grotesk: "__cabinetGrotesk_variable";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-cabinet-grotesk), system-ui, sans-serif;
+  }
+
+  body,
+  p,
+  div,
+  span,
+  a,
+  button,
+  input {
+    font-family: var(--font-satoshi), system-ui, sans-serif;
+  }
+
   *,
   ::after,
   ::before,
@@ -148,81 +174,171 @@
 
 @utility flex-col-mobile {
   /* Flex utilities for better mobile layouts */
-  @apply flex-col sm:flex-row;
+  display: flex;
+  flex-direction: column;
+  @media (width >= 640px) {
+    flex-direction: row;
+  }
 }
 
 @utility flex-col-reverse-mobile {
-  @apply flex-col-reverse sm:flex-row;
+  display: flex;
+  flex-direction: column-reverse;
+  @media (width >= 640px) {
+    flex-direction: row;
+  }
 }
 
 @utility grid-responsive {
   /* Grid for responsive layouts */
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+  @media (width >= 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (width >= 1024px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  @media (width >= 1280px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @utility content-width {
   /* Content width constraint for readability */
-  @apply max-w-full sm:max-w-[540px] md:max-w-[720px] lg:max-w-[960px] xl:max-w-[1140px] mx-auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  @media (width >= 640px) {
+    max-width: 540px;
+  }
+  @media (width >= 768px) {
+    max-width: 720px;
+  }
+  @media (width >= 1024px) {
+    max-width: 960px;
+  }
+  @media (width >= 1280px) {
+    max-width: 1140px;
+  }
 }
 
 @utility text-mobile-body {
   /* Text size adjustments for mobile */
-  @apply text-sm sm:text-base;
+  font-size: 0.875rem;
+  @media (width >= 640px) {
+    font-size: 1rem;
+  }
 }
 
 @utility text-mobile-heading {
-  @apply text-xl sm:text-2xl md:text-3xl;
+  font-size: 1.25rem;
+  @media (width >= 640px) {
+    font-size: 1.5rem;
+  }
+  @media (width >= 768px) {
+    font-size: 1.875rem;
+  }
 }
 
 @utility text-mobile-subheading {
-  @apply text-lg sm:text-xl;
+  font-size: 1.125rem;
+  @media (width >= 640px) {
+    font-size: 1.25rem;
+  }
 }
 
 @utility p-mobile {
   /* Spacing adjustments for mobile */
-  @apply p-3 sm:p-4 md:p-6;
+  padding: 0.75rem;
+  @media (width >= 640px) {
+    padding: 1rem;
+  }
+  @media (width >= 768px) {
+    padding: 1.5rem;
+  }
 }
 
 @utility m-mobile {
-  @apply m-2 sm:m-4 md:m-6;
+  margin: 0.5rem;
+  @media (width >= 640px) {
+    margin: 1rem;
+  }
+  @media (width >= 768px) {
+    margin: 1.5rem;
+  }
 }
 
 @utility gap-mobile {
-  @apply gap-2 sm:gap-4 md:gap-6;
+  gap: 0.5rem;
+  @media (width >= 640px) {
+    gap: 1rem;
+  }
+  @media (width >= 768px) {
+    gap: 1.5rem;
+  }
 }
 
 @utility touch-target {
   /* Touch-friendly improvements */
-  @apply min-h-[44px] min-w-[44px]; /* iOS minimum touch target size */
+  min-height: 44px;
+  min-width: 44px;
 }
 
 @utility responsive-table {
   /* Improved mobile table accessibility */
   & td::before {
     content: attr(data-label);
-    @apply font-semibold text-left mr-2;
-    @apply sr-only sm:not-sr-only; /* Screen reader only on mobile */
+    font-weight: 600;
+    text-align: left;
+    margin-right: 0.5rem;
+    position: absolute;
+    left: -10000px;
+
+    @media (width < 640px) {
+      position: static;
+      left: auto;
+    }
   }
 }
 
 @utility skip-to-content {
   /* Skip to main content link for keyboard users */
-  @apply sr-only focus:not-sr-only;
-  @apply fixed top-0 left-0 z-50;
-  @apply bg-background text-foreground;
-  @apply px-4 py-2 m-2 rounded-md;
-  @apply focus:outline-hidden focus:ring-2 focus:ring-ring/50;
-  @apply border border-border;
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+
+  &:focus {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0.5rem 1rem;
+    margin: 0.5rem;
+    border-radius: 0.375rem;
+    outline: none;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
+    border: 1px solid hsl(var(--border));
+  }
 }
 
 @layer base {
   :root {
     /* Font configuration */
-    --font-sans: var(--font-lufga);
+    --font-sans: var(--font-satoshi);
 
     /* Core theme colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 7%;
 
     /* Component colors */
     --card: var(--background);
@@ -231,21 +347,21 @@
     --popover-foreground: var(--foreground);
 
     /* Brand colors */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 95%;
+    --secondary-foreground: 0 0% 7%;
 
     /* UI colors */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --muted: 240 4% 95%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 24 100% 97%;
+    --accent-foreground: 24 90% 40%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Border and input */
-    --border: 214.3 31.8% 91.4%;
+    --border: 220 13% 91%;
     --input: var(--border);
     --ring: var(--primary);
     --radius: 0.5rem;
@@ -271,8 +387,8 @@
 
   .dark {
     /* Core theme colors */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
 
     /* Component colors inherit from core */
     --card: var(--background);
@@ -281,23 +397,23 @@
     --popover-foreground: var(--foreground);
 
     /* Brand colors */
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 95%;
+    --secondary-foreground: 0 0% 7%;
 
     /* UI colors */
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: var(--secondary);
-    --accent-foreground: var(--secondary-foreground);
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --muted: 240 4% 95%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 24 100% 97%;
+    --accent-foreground: 24 90% 40%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Border and input */
-    --border: 217.2 32.6% 17.5%;
+    --border: 220 13% 91%;
     --input: var(--border);
-    --ring: 224.3 76.3% 48%;
+    --ring: 24 100% 50%;
 
     /* Chart Colors - Inverted Grayscale */
     --chart-1: 0 0% 100%;
@@ -307,82 +423,126 @@
     --chart-5: 0 0% 40%;
 
     /* Sidebar - Darker theme */
-    --sidebar-bg: 222 18% 7%;
+    --sidebar-bg: 0 0% 7%;
     --sidebar-fg: var(--foreground);
-    --sidebar-hover: 222 18% 10%;
-    --sidebar-active: 222 18% 13%;
-    --sidebar-border: 222 18% 12%;
+    --sidebar-hover: 0 0% 95%;
+    --sidebar-active: 0 0% 90%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-icon: 0 0% 70%;
     --sidebar-icon-active: 0 0% 100%;
     --sidebar-muted: var(--muted-foreground);
   }
 
   * {
-    @apply border-border outline-ring/50;
+    border-color: hsl(var(--border));
+    outline-color: hsl(var(--ring) / 0.5);
   }
 
   body {
-    @apply bg-background text-foreground antialiased min-h-screen;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
   /* Update sidebar classes to use new consolidated variables */
   .sidebar {
-    @apply bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))];
-    @apply border-[hsl(var(--sidebar-border))];
+    background-color: hsl(var(--sidebar-bg));
+    color: hsl(var(--sidebar-fg));
+    border-color: hsl(var(--sidebar-border));
   }
 
   /* Add custom sidebar styles */
   .sidebar-item {
-    @apply transition-all duration-200;
-    @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/50;
-    @apply focus-visible:bg-[hsl(var(--sidebar-hover))];
+    transition-property: all;
+    transition-duration: 200ms;
+  }
+  .sidebar-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
+    background-color: hsl(var(--sidebar-hover));
   }
 
   .sidebar-item-active {
-    @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-fg))];
-    @apply focus-visible:bg-[hsl(var(--sidebar-active))];
+    background-color: hsl(var(--sidebar-active));
+    color: hsl(var(--sidebar-fg));
+  }
+  .sidebar-item-active:focus-visible {
+    background-color: hsl(var(--sidebar-active));
   }
 
   .sidebar-item-icon {
-    @apply text-[hsl(var(--sidebar-icon))];
+    color: hsl(var(--sidebar-icon));
   }
 
   .sidebar-item-icon-active {
-    @apply text-[hsl(var(--sidebar-icon-active))];
+    color: hsl(var(--sidebar-icon-active));
   }
 
   .sidebar-toggle-button {
-    @apply bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-fg))];
-    @apply hover:bg-[hsl(var(--sidebar-active))] hover:text-[hsl(var(--sidebar-fg))];
-    @apply transition-all duration-200 shadow-xs;
+    background-color: hsl(var(--sidebar-hover));
+    color: hsl(var(--sidebar-fg));
+    transition-property: all;
+    transition-duration: 200ms;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  .sidebar-toggle-button:hover {
+    background-color: hsl(var(--sidebar-active));
+    color: hsl(var(--sidebar-fg));
   }
 
   /* Tooltip styles for sidebar */
   .sidebar-tooltip {
-    @apply z-50 px-4 py-2 rounded-md shadow-lg;
-    @apply bg-popover text-popover-foreground dark:bg-[hsl(var(--sidebar-bg))];
-    @apply transition-opacity duration-200;
+    z-index: 50;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    transition-property: opacity;
+    transition-duration: 200ms;
+  }
+  .dark .sidebar-tooltip {
+    background-color: hsl(var(--sidebar-bg));
   }
 
   /* Expanded sidebar menu item */
   .sidebar-expanded-item {
-    @apply flex items-center gap-3 px-4 py-3 w-full rounded-md transition-all duration-200;
-    @apply hover:bg-[hsl(var(--sidebar-hover))];
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    border-radius: 0.375rem;
+    transition-property: all;
+    transition-duration: 200ms;
+  }
+  .sidebar-expanded-item:hover {
+    background-color: hsl(var(--sidebar-hover));
   }
 
   .sidebar-expanded-item.active {
-    @apply bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-text))];
+    background-color: hsl(var(--sidebar-active));
+    color: hsl(var(--sidebar-active-text));
   }
 
   /* Collapsed sidebar styles */
   .sidebar-collapsed {
-    @apply w-16 transition-all duration-300 ease-in-out;
+    width: 4rem;
+    transition-property: all;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sidebar-expanded {
-    @apply w-64 transition-all duration-300 ease-in-out;
+    width: 16rem;
+    transition-property: all;
+    transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Hover menu for collapsed sidebar */
@@ -401,7 +561,33 @@
 }
 
 @layer components {
-  /* Other component styles can go here */
+  .main-navbar {
+    @apply bg-[#1c2b36] text-white p-4;
+  }
+
+  .stats-card {
+    @apply bg-white rounded-lg shadow-md p-4 flex flex-col;
+  }
+
+  .stats-value {
+    @apply text-2xl font-bold;
+  }
+
+  .stats-value-success {
+    @apply text-success;
+  }
+
+  .stats-value-warning {
+    @apply text-warning;
+  }
+
+  .stats-value-error {
+    @apply text-error;
+  }
+
+  .stats-title {
+    @apply text-sm text-gray-500;
+  }
 }
 
 @layer utilities {

@@ -6,30 +6,30 @@ import {
   FiAlertTriangle,
   FiTrendingUp,
   FiClock,
-  FiShoppingBag,
   FiBarChart2,
-  FiUsers,
-  FiArrowRight,
   FiActivity,
+  FiArrowRight,
   FiRefreshCw,
 } from "react-icons/fi";
 import { CiMoneyBill } from "react-icons/ci";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import StatCard from "@/components/StatCard";
 import SalesGrowthCard from "@/components/SalesGrowthCard";
 import ExpiryAlerts from "@/components/dashboard/ExpiryAlerts";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { CategoryIcon } from "./CategoryIcon";
-import { Alert } from "@/components/ui/alert";
-import { RefreshCw } from "lucide-react";
+import StatsSkeleton from "./StatsSkeleton";
+import type { CategoryStat as BackendCategoryStat } from "@/lib/types";
 
-// Define interfaces for our data types
+// Define local interface that extends the backend type with UI-specific properties
+interface UICategoryStat extends Partial<BackendCategoryStat> {
+  name: string;
+  percentage: number;
+  count: number;
+}
+
 interface RecentActivity {
   id: string;
-  type?: string;
   title?: string;
   description?: string;
   user?: string;
@@ -50,32 +50,47 @@ export function OverviewTab() {
     error,
     refresh,
     hasData,
-    currencySymbol = "$"
+    currencySymbol = "$",
   } = useDashboard();
 
   // Helper function for number formatting
   const formatNumber = (num: number | string): string => {
-    if (typeof num === 'string') {
+    if (typeof num === "string") {
       // If it's already a string, assume it's already formatted
-      return num.replace(/[^0-9.]/g, ''); // Remove any non-numeric characters except decimal
+      return num.replace(/[^0-9.]/g, ""); // Remove any non-numeric characters except decimal
     }
     return new Intl.NumberFormat().format(num);
   };
 
+  // Calculate percentage for category stats if needed
+  const enrichedCategoryStats: UICategoryStat[] = Array.isArray(categoryStats)
+    ? categoryStats.map((cat) => ({
+        ...cat,
+        percentage:
+          (cat as { percentage?: number }).percentage ||
+          Math.round(
+            (cat.count / Math.max(...categoryStats.map((c) => c.count))) * 100
+          ),
+      }))
+    : [];
+
   if (isLoading && !hasData) {
     return (
       <div className="space-y-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-36 rounded-xl bg-slate-100 animate-pulse"
-            />
-          ))}
-        </div>
+        <StatsSkeleton />
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="h-[400px] rounded-xl bg-slate-100 animate-pulse" />
-          <div className="h-[400px] rounded-xl bg-slate-100 animate-pulse" />
+          <div
+            key="sales-skeleton"
+            className="card bg-base-100 shadow-md h-[400px] animate-pulse"
+          >
+            <div className="skeleton h-full"></div>
+          </div>
+          <div
+            key="category-skeleton"
+            className="card bg-base-100 shadow-md h-[400px] animate-pulse"
+          >
+            <div className="skeleton h-full"></div>
+          </div>
         </div>
       </div>
     );
@@ -83,40 +98,59 @@ export function OverviewTab() {
 
   if (error) {
     return (
-      <div className="rounded-xl bg-red-50 border border-red-200 p-8 text-center">
-        <FiAlertTriangle className="mx-auto h-10 w-10 text-red-500 mb-4" />
-        <h3 className="text-lg font-medium text-red-800 mb-2">
-          Error Loading Dashboard
-        </h3>
-        <p className="text-red-600 max-w-md mx-auto">
-          {typeof error === 'string' ? error : "Failed to load dashboard data. Please try again."}
-        </p>
-        <Button 
-          onClick={() => refresh()} 
-          className="mt-4 bg-red-100 hover:bg-red-200 text-red-700 border-red-300"
-          size="sm"
-        >
-          <FiRefreshCw className="mr-2 h-4 w-4" />
-          Try Again
-        </Button>
+      <div className="alert alert-error shadow-lg">
+        <div>
+          <FiAlertTriangle className="h-6 w-6" />
+          <div>
+            <h3 className="font-bold">Error Loading Dashboard</h3>
+            <div className="text-xs">
+              {typeof error === "string"
+                ? error
+                : "Failed to load dashboard data. Please try again."}
+            </div>
+          </div>
+        </div>
+        <div className="flex-none">
+          <Button
+            onClick={() => refresh()}
+            size="sm"
+            variant="outline"
+            className="bg-base-100"
+          >
+            <FiRefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (!formattedStats) {
     return (
-      <div className="text-center p-8 rounded-xl bg-slate-50 border border-slate-200">
-        <FiPackage className="mx-auto h-10 w-10 text-slate-400 mb-4" />
-        <p className="text-slate-500 mb-4">No data available</p>
-        <Button onClick={() => refresh()} className="mt-2" size="sm">
-          <FiRefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+      <div className="card bg-base-100 shadow-md">
+        <div className="card-body items-center text-center">
+          <div className="avatar placeholder">
+            <div className="bg-base-300 text-base-content rounded-full w-16 h-16">
+              <FiPackage className="h-8 w-8" />
+            </div>
+          </div>
+          <h2 className="card-title">No Data Available</h2>
+          <p className="text-base-content/60">
+            There&apos;s no dashboard data to display at this time.
+          </p>
+          <div className="card-actions justify-center mt-4">
+            <Button onClick={() => refresh()} size="sm">
+              <FiRefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const { totalInventoryValue, lowStockItems, monthlySales, salesGrowth } = formattedStats;
+  const { totalInventoryValue, lowStockItems, monthlySales, salesGrowth } =
+    formattedStats;
   const salesGrowthValue = parseFloat(salesGrowth);
 
   return (
@@ -137,7 +171,9 @@ export function OverviewTab() {
           title="Low Stock Items"
           value={lowStockItems.toString()}
           icon={<FiAlertTriangle className="h-5 w-5" />}
-          variant={parseInt(lowStockItems.toString()) > 5 ? "warning" : "default"}
+          variant={
+            parseInt(lowStockItems.toString()) > 5 ? "warning" : "default"
+          }
           trend={
             parseInt(lowStockItems.toString()) > 0
               ? { value: 15, isPositive: false }
@@ -149,207 +185,203 @@ export function OverviewTab() {
           value={`${currencySymbol}${formatNumber(monthlySales)}`}
           icon={<CiMoneyBill className="h-5 w-5" />}
           variant="info"
+          trend={
+            parseFloat(monthlySales) > 0
+              ? { value: 8, isPositive: true }
+              : undefined
+          }
         />
         <StatCard
           title="Sales Growth"
-          value={`${salesGrowth}%`}
+          value={`${salesGrowthValue >= 0 ? "+" : ""}${salesGrowth}%`}
           icon={<FiTrendingUp className="h-5 w-5" />}
-          variant={salesGrowthValue >= 0 ? "success" : "warning"}
-          trend={{
-            value: salesGrowthValue,
-            isPositive: salesGrowthValue >= 0,
-          }}
+          variant={salesGrowthValue >= 0 ? "success" : "info"}
+          trend={
+            salesGrowthValue !== 0
+              ? {
+                  value: Math.abs(salesGrowthValue),
+                  isPositive: salesGrowthValue >= 0,
+                }
+              : undefined
+          }
         />
       </div>
 
-      {/* Charts and Analysis */}
-      <div className="grid gap-8 grid-cols-1">
-        <SalesGrowthCard 
-          title="Sales Growth"
-          dateRange="Last 30 days"
-          salesData={salesData}
-          growthPercent={salesGrowthValue}
-          viewAllLink="/reports/sales"
-          className="w-full"
+      {/* Main Content Area with Sales Growth and Category Distribution */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Sales Growth Chart */}
+        <SalesGrowthCard
+          data={salesData}
+          viewAllLink="/sales"
+          className="h-full"
         />
 
-        <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group h-full relative overflow-hidden">
-          {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
-          
-          <div className="p-5">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center">
-                <div className="bg-amber-100 text-amber-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
-                  <FiClock className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-slate-800">Expiry Alerts</p>
-                  <p className="text-xs text-slate-500">Items expiring soon</p>
-                </div>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                onClick={() => router.push('/inventory?filter=expiring-soon')}
-              >
-                View All
-                <FiArrowRight className="ml-1 h-4 w-4" />
-              </Button>
+        {/* Category Distribution */}
+        <div className="card bg-base-100 shadow-md h-full">
+          <div className="card-body">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="card-title text-lg">
+                <FiBarChart2 className="h-5 w-5 mr-2 text-primary" />
+                Category Distribution
+              </h2>
+              <span className="badge badge-primary badge-outline text-xs">
+                {categoryStats?.length || 0} Categories
+              </span>
             </div>
-            
-            <ExpiryAlerts />
-            
-            {/* Hover effect */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
-              <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Category Breakdown */}
-      <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
-        {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-blue-500"></div>
-        
-        <div className="p-5">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
-                <FiBarChart2 className="h-5 w-5" />
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={`category-skeleton-${i}`}
+                    className="skeleton h-12 w-full"
+                  ></div>
+                ))}
               </div>
-              <div>
-                <p className="text-base font-semibold text-slate-800">Inventory by Category</p>
-                <p className="text-xs text-slate-500">Distribution of your inventory</p>
-              </div>
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              onClick={() => router.push('/inventory')}
-            >
-              View Inventory
-              <FiArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-4">
-            {categoryStats && categoryStats.length > 0 ? (
-              categoryStats.map((category, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center p-4 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors"
-                  onClick={() => router.push(`/inventory?category=${encodeURIComponent(category.name)}`)}
-                  role="button"
-                >
-                  <div className="mr-3 bg-white p-2 rounded-full">
-                    <CategoryIcon categoryName={category.name} className="h-5 w-5 text-slate-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">{category.name}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-500">{category.count} items</p>
-                      <p className="text-xs font-medium text-slate-700">{currencySymbol}{formatNumber(category.count * 100)}</p>
-                    </div>
+            ) : !categoryStats?.length ? (
+              <div className="text-center py-6">
+                <div className="avatar placeholder mb-4">
+                  <div className="bg-base-300 text-base-content rounded-full w-12 h-12">
+                    <FiPackage className="h-6 w-6" />
                   </div>
                 </div>
-              ))
+                <p className="text-base-content/60">
+                  No category data available
+                </p>
+              </div>
             ) : (
-              <div className="col-span-full text-center p-8">
-                <p className="text-slate-500">No category data available</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Hover effect */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
-            <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="rounded-xl bg-white shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
-        {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-purple-500"></div>
-        
-        <div className="p-5">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              <div className="bg-purple-100 text-purple-600 p-3 rounded-full mr-3 transition-transform group-hover:scale-110 duration-300">
-                <FiActivity className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-base font-semibold text-slate-800">Recent Activity</p>
-                <p className="text-xs text-slate-500">Latest inventory changes</p>
-              </div>
-            </div>
-          </div>
-          
-          {recentActivity && recentActivity.length > 0 ? (
-            <div className="space-y-4">
-              {(recentActivity as RecentActivity[]).map((activity, index) => {
-                // Determine activity type based on action or description
-                const activityType = activity.action?.toLowerCase().includes('add') ? 'add' : 
-                                    activity.action?.toLowerCase().includes('remove') ? 'remove' : 'other';
-                
-                return (
-                  <div 
-                    key={activity.id || index} 
-                    className="flex items-start p-3 rounded-lg hover:bg-slate-50 transition-colors"
+              <div className="space-y-4">
+                {enrichedCategoryStats.map((category, index) => (
+                  <div
+                    key={
+                      category.id
+                        ? `category-${category.id}`
+                        : `category-${category.name}-${index}`
+                    }
+                    className="flex items-center p-3 border border-base-200 rounded-lg transition-all hover:bg-base-200/50"
                   >
-                    <div className={`p-2 rounded-full mr-3 ${
-                      activityType === 'add' ? 'bg-emerald-100 text-emerald-600' :
-                      activityType === 'remove' ? 'bg-rose-100 text-rose-600' :
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      {activityType === 'add' ? (
-                        <FiPackage className="h-4 w-4" />
-                      ) : activityType === 'remove' ? (
-                        <FiShoppingBag className="h-4 w-4" />
-                      ) : (
-                        <FiUsers className="h-4 w-4" />
-                      )}
+                    <div className="mr-3 bg-primary/10 text-primary p-2 rounded-full">
+                      <CategoryIcon category={category.name} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700">
-                        {activity.user ? `${activity.user} ` : ''}{activity.action || ''} {activity.item || ''}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-slate-500">
-                          {activity.timestamp ? new Date(activity.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }) : 'Recently'}
-                        </p>
-                        {activity.amount && (
-                          <Badge variant="outline" className="text-xs">
-                            {currencySymbol}{formatNumber(activity.amount)}
-                          </Badge>
-                        )}
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium truncate">
+                          {category.name}
+                        </span>
+                        <span className="text-sm font-semibold">
+                          {category.percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-base-200 rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full"
+                          style={{ width: `${category.percentage}%` }}
+                        ></div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            )}
+
+            <div className="card-actions justify-end mt-4">
+              <Button
+                variant="ghost"
+                className="text-primary"
+                onClick={() => router.push("/inventory/categories")}
+              >
+                View All Categories
+                <FiArrowRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
-          ) : (
-            <div className="text-center p-8">
-              <p className="text-slate-500">No recent activity</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Sections: Expiry Alerts and Recent Activity */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Expiry Alerts */}
+        <ExpiryAlerts />
+
+        {/* Recent Activity */}
+        <div className="card bg-base-100 shadow-md">
+          <div className="card-body">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="card-title text-lg">
+                <FiActivity className="h-5 w-5 mr-2 text-primary" />
+                Recent Activity
+              </h2>
             </div>
-          )}
-          
-          {/* Hover effect */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <div className="absolute inset-0 bg-slate-50 opacity-0 group-hover:opacity-30 transition-opacity"></div>
-            <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-white/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={`activity-skeleton-${i}`}
+                    className="skeleton h-12 w-full"
+                  ></div>
+                ))}
+              </div>
+            ) : !recentActivity?.length ? (
+              <div className="text-center py-6">
+                <div className="avatar placeholder mb-4">
+                  <div className="bg-base-300 text-base-content rounded-full w-12 h-12">
+                    <FiClock className="h-6 w-6" />
+                  </div>
+                </div>
+                <p className="text-base-content/60">No recent activity</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(recentActivity as RecentActivity[])?.map(
+                  (activity, index) => (
+                    <div
+                      key={
+                        activity.id
+                          ? `activity-${activity.id}`
+                          : `activity-index-${index}`
+                      }
+                      className="flex items-start p-3 border border-base-200 rounded-lg transition-all hover:bg-base-200/50"
+                    >
+                      <div className="mr-3 bg-info/10 text-info p-2 rounded-full">
+                        <FiClock className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {activity.title ||
+                            `${activity.action} ${activity.item}`}
+                        </p>
+                        <p className="text-xs text-base-content/60">
+                          {activity.description ||
+                            `${activity.user ? `by ${activity.user}` : ""} ${
+                              activity.timestamp
+                                ? `• ${activity.timestamp}`
+                                : ""
+                            }`}
+                        </p>
+                        {activity.amount && (
+                          <span className="inline-block mt-1 text-xs badge badge-primary badge-outline">
+                            {currencySymbol}
+                            {formatNumber(activity.amount)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            <div className="card-actions justify-end mt-4">
+              <Button
+                variant="ghost"
+                className="text-primary"
+                onClick={() => router.push("/activity")}
+              >
+                View All Activity
+                <FiArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
