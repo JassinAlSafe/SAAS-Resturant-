@@ -91,6 +91,7 @@ interface SalesPageProps {
 
 export default function SalesPage({
   onDataUpdate,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onViewHistory,
 }: SalesPageProps) {
   // onViewHistory is used in the parent component for tab navigation

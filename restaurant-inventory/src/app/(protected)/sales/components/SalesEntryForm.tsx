@@ -97,7 +97,10 @@ export default function SalesEntryForm({
   }, [onLoadPreviousDay]);
 
   return (
-    <form onSubmit={handleFormSubmit} className="w-full h-full flex flex-col">
+    <form
+      onSubmit={handleFormSubmit}
+      className="w-full h-full flex flex-col bg-white relative"
+    >
       <SalesEntryHeader
         selectedDate={selectedDate}
         onDateSelect={handleDateSelect}
@@ -109,29 +112,43 @@ export default function SalesEntryForm({
         hasPreviousDayTemplate={hasPreviousDayTemplate || false}
       />
 
-      <div className="grid grid-cols-12 gap-6 px-6 py-4 bg-background sticky top-0 z-10 border-b">
-        <div className="col-span-6 text-sm font-medium">Dish</div>
-        <div className="col-span-2 text-sm font-medium">Price</div>
-        <div className="col-span-2 text-sm font-medium">Quantity</div>
-        <div className="col-span-2 text-sm font-medium">Total</div>
+      <div className="grid grid-cols-12 gap-6 px-8 py-3 bg-slate-50 border-y border-slate-200 sticky top-[73px] z-10">
+        <div className="col-span-6 text-sm font-medium text-slate-600">
+          Dish
+        </div>
+        <div className="col-span-2 text-sm font-medium text-slate-600">
+          Price
+        </div>
+        <div className="col-span-2 text-sm font-medium text-slate-600">
+          Quantity
+        </div>
+        <div className="col-span-2 text-sm font-medium text-slate-600">
+          Total
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        <div className="divide-y">
-          {dishes.map((dish) => (
-            <SalesEntryRow
-              key={dish.id}
-              dish={dish}
-              quantity={salesEntries[dish.id] || 0}
-              onQuantityChange={onQuantityChange}
-              showInventoryImpact={showInventoryImpact}
-              inventoryImpact={calculateInventoryImpact(
-                dish.id,
-                salesEntries[dish.id] || 0
-              )}
-            />
-          ))}
-        </div>
+        {dishes.length === 0 ? (
+          <div className="px-8 py-12 text-center text-slate-500">
+            No menu items found. Add recipes to your menu to record sales.
+          </div>
+        ) : (
+          <div>
+            {dishes.map((dish) => (
+              <SalesEntryRow
+                key={dish.id}
+                dish={dish}
+                quantity={salesEntries[dish.id] || 0}
+                onQuantityChange={onQuantityChange}
+                showInventoryImpact={showInventoryImpact}
+                inventoryImpact={calculateInventoryImpact(
+                  dish.id,
+                  salesEntries[dish.id] || 0
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <SalesEntryFooter

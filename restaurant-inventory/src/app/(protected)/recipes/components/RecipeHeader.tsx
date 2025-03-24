@@ -17,7 +17,6 @@ interface RecipeHeaderProps {
   error?: string;
   onRetry?: () => void;
   retry?: () => void;
-  onAddClick?: () => void;
   showArchivedRecipes?: boolean;
   onToggleArchivedRecipes?: (show: boolean) => void;
 }
@@ -28,15 +27,11 @@ export default function RecipeHeader({
   error,
   onRetry,
   retry,
-  onAddClick,
   showArchivedRecipes = false,
   onToggleArchivedRecipes,
 }: RecipeHeaderProps) {
   // Use either onRetry or retry prop
   const handleRetry = onRetry || retry;
-
-  // Use either recipesCount or totalRecipes
-  const recipeCount = totalRecipes ?? recipesCount;
 
   return (
     <motion.div
@@ -52,6 +47,15 @@ export default function RecipeHeader({
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Manage your recipe catalog and view performance metrics
+            {(totalRecipes !== undefined || recipesCount > 0) && (
+              <span className="ml-1">
+                • {totalRecipes !== undefined ? totalRecipes : recipesCount}{" "}
+                {(totalRecipes !== undefined ? totalRecipes : recipesCount) ===
+                1
+                  ? "recipe"
+                  : "recipes"}
+              </span>
+            )}
           </p>
         </div>
 

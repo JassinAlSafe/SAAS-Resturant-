@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
+// import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -11,9 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DataTablePagination } from "./data-table-pagination";
-import { DataTableHeader } from "./data-table-header";
-import { DataTableActions } from "./data-table-actions";
+import { DataTablePagination } from "@/components/ui/data-table/data-table-pagination";
+import { DataTableHeader } from "@/components/ui/data-table/data-table-header";
+import { DataTableActions } from "@/components/ui/data-table/data-table-actions";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 export interface Column<T> {
@@ -173,7 +174,7 @@ export function DataTable<T>({
             <TableRow>
               {selectable && (
                 <TableHead className="w-12">
-                  <Checkbox
+                  <CustomCheckbox
                     checked={
                       paginatedData.length > 0 &&
                       paginatedData.every(
@@ -237,7 +238,7 @@ export function DataTable<T>({
                           className="w-12"
                           onClick={e => e.stopPropagation()}
                         >
-                          <Checkbox
+                          <CustomCheckbox
                             checked={selectedRows[id] || false}
                             onCheckedChange={() => toggleRowSelection(id)}
                             aria-label={`Select row ${index + 1}`}

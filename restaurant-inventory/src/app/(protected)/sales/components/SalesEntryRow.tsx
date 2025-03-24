@@ -2,9 +2,11 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
 import { InventoryImpactItem } from "../types";
+import { Minus, Plus } from "lucide-react";
 
 interface SalesEntryRowProps {
   dish: Dish;
@@ -24,17 +26,32 @@ export function SalesEntryRow({
   const { formatCurrency } = useCurrency();
   const dishTotal = dish.price * quantity;
 
+  const handleIncrement = () => {
+    onQuantityChange(dish.id, quantity + 1);
+  };
+
+  const handleDecrement = () => {
+    if (quantity > 0) {
+      onQuantityChange(dish.id, quantity - 1);
+    }
+  };
+
   return (
     <div
-      className="grid grid-cols-12 gap-6 items-center px-6 py-4 hover:bg-muted/30 transition-colors group"
+      className="grid grid-cols-12 gap-6 items-center px-8 py-4 hover:bg-slate-50/60 border-b border-slate-200/70 transition-colors"
       data-testid={`sales-entry-row-${dish.id}`}
     >
       <div className="col-span-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="font-medium text-sm md:text-base">{dish.name}</div>
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm md:text-base text-slate-900 truncate">
+              {dish.name}
+            </div>
             {dish.category && (
-              <Badge variant="outline" className="text-xs font-normal mt-1">
+              <Badge
+                variant="outline"
+                className="text-xs font-normal mt-1.5 text-slate-600 bg-slate-100/60 border-slate-200"
+              >
                 {dish.category}
               </Badge>
             )}
@@ -46,7 +63,7 @@ export function SalesEntryRow({
               <Badge
                 key={index}
                 variant={impact.quantityUsed > 0 ? "secondary" : "outline"}
-                className="text-xs font-normal"
+                className="text-xs font-normal px-1.5 py-0.5"
               >
                 {impact.name}: {impact.quantityUsed} {impact.unit}
               </Badge>
@@ -54,22 +71,48 @@ export function SalesEntryRow({
           </div>
         )}
       </div>
-      <div className="col-span-2 text-sm">{formatCurrency(dish.price)}</div>
-      <div className="col-span-2">
-        <Input
-          type="number"
-          min={0}
-          value={quantity || ""}
-          onChange={(e) => {
-            const newQuantity = parseInt(e.target.value) || 0;
-            onQuantityChange(dish.id, newQuantity);
-          }}
-          className="w-full h-9"
-          aria-label={`Quantity for ${dish.name}`}
-          role="spinbutton"
-        />
+      <div className="col-span-2 text-sm font-medium text-slate-800">
+        {formatCurrency(dish.price)}
       </div>
-      <div className="col-span-2 text-sm font-medium">
+      <div className="col-span-2">
+        <div className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleDecrement}
+            disabled={quantity === 0}
+            className="h-8 w-8 bg-white border-slate-200"
+          >
+            <Minus className="h-4 w-4 text-slate-500" />
+            <span className="sr-only">Decrease quantity</span>
+          </Button>
+
+          <Input
+            type="number"
+            min={0}
+            value={quantity || ""}
+            onChange={(e) => {
+              const newQuantity = parseInt(e.target.value) || 0;
+              onQuantityChange(dish.id, newQuantity);
+            }}
+            className="w-14 h-9 text-center border-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            aria-label={`Quantity for ${dish.name}`}
+          />
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleIncrement}
+            className="h-8 w-8 bg-white border-slate-200"
+          >
+            <Plus className="h-4 w-4 text-slate-500" />
+            <span className="sr-only">Increase quantity</span>
+          </Button>
+        </div>
+      </div>
+      <div className="col-span-2 text-sm font-medium text-slate-900">
         {formatCurrency(dishTotal)}
       </div>
     </div>
