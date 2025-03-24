@@ -27,7 +27,7 @@ export function AppHeader({
   setOpenMobile,
   user,
 }: AppHeaderProps) {
-  const [notificationCount, setNotificationCount] = React.useState(3);
+  const [notificationCount] = React.useState(3);
 
   return (
     <header className="sticky top-0 z-10 h-16 px-4 border-b border-border/40 flex items-center justify-between bg-background/80 backdrop-blur-xs">
@@ -39,9 +39,9 @@ export function AppHeader({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => setOpenMobile(!openMobile)}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-primary/10"
                 >
                   <MenuIcon className="h-5 w-5" />
                 </Button>
@@ -69,8 +69,8 @@ export function AppHeader({
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10 relative"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-primary/10 relative"
               >
                 <BellIcon className="h-5 w-5" />
                 {notificationCount > 0 && (
@@ -89,7 +89,9 @@ export function AppHeader({
           </Tooltip>
         </TooltipProvider>
 
-        <SidebarThemeToggle />
+        <div className="flex items-center justify-center">
+          <SidebarThemeToggle />
+        </div>
 
         {/* User greeting - only visible on larger screens */}
         <div className="hidden md:block">

@@ -40,7 +40,13 @@ export function SidebarNavigation({
   return (
     <TooltipProvider>
       <nav className={cn("px-3 py-1 space-y-1.5 overflow-y-auto max-h-full", open ? "px-3" : "px-2")}>
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
+          // Extract common classes but don't include item.className here
+          const commonButtonClasses = cn(
+            "flex items-center justify-between w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+            "hover:bg-gray-100 hover:text-orange-500"
+          );
+
           if (hasChildren(item)) {
             const isExpanded = expandedSections[item.name] || false;
             const hasActiveChild = item.items.some(
@@ -63,12 +69,11 @@ export function SidebarNavigation({
                   <PopoverTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center justify-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                        "hover:bg-gray-100 hover:text-orange-500",
+                        commonButtonClasses,
                         hasActiveChild
                           ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
                           : "text-gray-700",
-                        item.className
+                        item.className // Apply custom class separately
                       )}
                     >
                       {item.icon && (
@@ -126,12 +131,10 @@ export function SidebarNavigation({
                 <button
                   onClick={() => toggleSection(item.name)}
                   className={cn(
-                    "flex items-center justify-between w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                    "hover:bg-gray-100 hover:text-orange-500",
+                    commonButtonClasses,
                     hasActiveChild
                       ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                      : "text-gray-700",
-                    item.className
+                      : "text-gray-700"
                   )}
                 >
                   <div className="flex items-center">
@@ -198,37 +201,51 @@ export function SidebarNavigation({
             const itemHref = typeof item.href === "string" ? item.href : "#";
             const isActive = itemHref !== "#" && pathname.startsWith(itemHref);
 
+            // For collapsed sidebar
+            if (!open) {
+              return (
+                <Tooltip key={item.name}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={itemHref}
+                      className={cn(
+                        "flex items-center justify-center rounded-md p-2.5 text-sm font-medium transition-colors",
+                        isActive
+                          ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                          : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
+                        item.className
+                      )}
+                    >
+                      {item.icon && <item.icon className="h-5 w-5 shrink-0" />}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.name}</TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            // For expanded sidebar
             return (
-              <Tooltip key={item.name}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={itemHref}
-                    className={cn(
-                      "flex items-center w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                      "hover:bg-gray-100 hover:text-orange-500",
-                      isActive
-                        ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                        : "text-gray-700",
-                      !open && "justify-center",
-                      item.className
-                    )}
-                  >
-                    {item.icon && (
-                      <item.icon
-                        className={cn("h-5 w-5 shrink-0", {
-                          "mr-2.5": open,
-                        })}
-                      />
-                    )}
-                    {open && <span>{item.name}</span>}
-                  </Link>
-                </TooltipTrigger>
-                {!open && (
-                  <TooltipContent side="right" className="font-medium">
-                    {item.name}
-                  </TooltipContent>
+              <Link
+                key={item.name}
+                href={itemHref}
+                className={cn(
+                  "flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                    : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
+                  item.className
                 )}
-              </Tooltip>
+              >
+                {item.icon && (
+                  <item.icon
+                    className={cn("h-5 w-5 shrink-0", {
+                      "mr-2.5": open,
+                    })}
+                  />
+                )}
+                {open && item.name}
+              </Link>
             );
           }
 
