@@ -31,8 +31,8 @@ export function TableHeader({
         className={cn(
           "transition-colors",
           isActive
-            ? "text-foreground"
-            : "text-muted-foreground/0 group-hover:text-muted-foreground/50"
+            ? "text-base-content"
+            : "text-base-content/0 group-hover:text-base-content/50"
         )}
       >
         {isActive ? (

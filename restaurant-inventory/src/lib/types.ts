@@ -116,6 +116,8 @@ export type InventoryItem = {
   cost: number;                    // Required, defaults to 0
   cost_per_unit?: number;          // Frontend display alias (optional)
   reorder_level: number;           // Required, defaults to 0
+  minimum_stock_level?: number;
+  reorder_point?: number;
   max_stock?: number;              // Maximum stock level for inventory visualization
   supplier_id?: string;            // Optional
   location?: string;               // Optional

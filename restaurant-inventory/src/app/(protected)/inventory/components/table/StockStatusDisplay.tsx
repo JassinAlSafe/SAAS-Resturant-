@@ -5,8 +5,6 @@ import { InventoryItem } from "@/lib/types";
 import {
   formatUnit,
   getReorderLevel,
-  getStockStatusColor,
-  getStockStatusLetter,
   isLowStock,
   isOutOfStock,
 } from "./inventoryUtils";
@@ -32,12 +30,32 @@ export function StockStatusDisplay({
 }: StockStatusDisplayProps) {
   const itemIsLowStock = isLowStock(item);
   const itemIsOutOfStock = isOutOfStock(item);
-  const stockStatus = getStockStatusLetter(item);
-  const stockStatusColor = getStockStatusColor(item);
   const reorderLevel = getReorderLevel(item);
   
   // Calculate max stock as 3x reorder level if not specified
   const maxStock = item.max_stock || (reorderLevel * 3);
+
+  // Get stock status letter
+  const getStockStatusLetter = (item: InventoryItem): string => {
+    if (item.quantity === 0) return "C";
+    if (item.quantity <= (item.reorder_point || item.minimum_stock_level || 5))
+      return "B";
+    return "A";
+  };
+
+  // Get stock status color using DaisyUI classes
+  const getStockStatusColor = (item: InventoryItem): string => {
+    if (isOutOfStock(item)) {
+      return "text-error border-error/30 bg-error/10";
+    }
+    if (isLowStock(item)) {
+      return "text-warning border-warning/30 bg-warning/10";
+    }
+    return "text-success border-success/30 bg-success/10";
+  };
+
+  const stockStatus = getStockStatusLetter(item);
+  const stockStatusColor = getStockStatusColor(item);
 
   return (
     <div className={cn("flex", showProgressBar ? "flex-col items-center gap-2" : "justify-center")}>
@@ -64,7 +82,7 @@ export function StockStatusDisplay({
                   ? "Low Stock"
                   : "In Stock"}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-base-content/70">
                 {itemIsLowStock && !itemIsOutOfStock
                   ? `Below reorder level of ${reorderLevel} ${formatUnit(
                       reorderLevel,
@@ -104,6 +122,7 @@ export function StockStatusDisplay({
             minStock={0}
             maxStock={maxStock}
             size="sm"
+            showLabels={false}
           />
         </div>
       )}

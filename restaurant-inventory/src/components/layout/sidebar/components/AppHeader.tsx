@@ -30,7 +30,7 @@ export function AppHeader({
   const [notificationCount] = React.useState(3);
 
   return (
-    <header className="sticky top-0 z-10 h-16 px-4 border-b border-border/40 flex items-center justify-between bg-background/80 backdrop-blur-xs">
+    <header className="sticky top-0 z-10 h-16 px-4 border-b border-gray-200 flex items-center justify-between bg-background/80 backdrop-blur-xs">
       {/* Left side */}
       <div className="flex items-center gap-2">
         {isMobile && (

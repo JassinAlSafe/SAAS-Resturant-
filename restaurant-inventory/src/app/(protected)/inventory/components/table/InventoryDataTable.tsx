@@ -76,8 +76,8 @@ export function InventoryDataTable({
       {/* Table Container */}
       <div
         className={cn(
-          "rounded-lg border-t border-b border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-200 flex-1",
-          compactMode ? "bg-slate-50/50" : "bg-white dark:bg-slate-950"
+          "rounded-lg border-t border-b border-base-300 overflow-hidden transition-all duration-200 flex-1",
+          compactMode ? "bg-base-200/50" : "bg-base-100"
         )}
       >
         <div className="overflow-x-auto">
@@ -86,17 +86,17 @@ export function InventoryDataTable({
             <thead>
               <tr
                 className={cn(
-                  "border-b",
+                  "border-b border-base-300",
                   compactMode
-                    ? "bg-slate-100/80"
-                    : "bg-slate-50/80 dark:bg-slate-900/30"
+                    ? "bg-base-200/80"
+                    : "bg-base-100"
                 )}
               >
                 <th className="w-[40px] px-4 py-4 text-left">
                   <div className="flex items-center justify-center">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="checkbox checkbox-sm checkbox-primary"
                       checked={
                         selectedItems.length === items.length &&
                         items.length > 0
@@ -106,16 +106,16 @@ export function InventoryDataTable({
                   </div>
                 </th>
                 {!compactMode && (
-                  <th className="w-[60px] px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <th className="w-[60px] px-4 py-4 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">
                     #
                   </th>
                 )}
                 {!compactMode && (
-                  <th className="w-[120px] px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                  <th className="w-[120px] px-4 py-4 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider whitespace-nowrap">
                     SKU
                   </th>
                 )}
-                <th className="px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
+                <th className="px-4 py-4 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider cursor-pointer">
                   <TableHeader
                     label="Item"
                     field="name"
@@ -124,7 +124,7 @@ export function InventoryDataTable({
                     handleSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
+                <th className="px-4 py-4 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider cursor-pointer">
                   <TableHeader
                     label="Category"
                     field="category"
@@ -133,7 +133,7 @@ export function InventoryDataTable({
                     handleSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer whitespace-nowrap">
+                <th className="px-4 py-4 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider cursor-pointer whitespace-nowrap">
                   <TableHeader
                     label="Price"
                     field="cost_per_unit"
@@ -142,7 +142,7 @@ export function InventoryDataTable({
                     handleSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
+                <th className="px-4 py-4 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider cursor-pointer">
                   <TableHeader
                     label="Stock"
                     field="quantity"
@@ -151,10 +151,10 @@ export function InventoryDataTable({
                     handleSort={handleSort}
                   />
                 </th>
-                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-base-content/60 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-base-content/60 uppercase tracking-wider">
                   <span className="sr-only">Actions</span>
                 </th>
               </tr>
@@ -165,8 +165,8 @@ export function InventoryDataTable({
               className={cn(
                 "divide-y",
                 compactMode
-                  ? "divide-slate-100"
-                  : "divide-slate-200 dark:divide-slate-800"
+                  ? "divide-base-200"
+                  : "divide-base-300"
               )}
             >
               {currentItems.map((item, index) => (
@@ -192,71 +192,74 @@ export function InventoryDataTable({
 
       {/* Pagination Controls */}
       {items.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 py-3 text-sm text-base-content/60">
           <div className="flex-1">
             Showing {startIndex + 1} to {endIndex} of {items.length} items
             {selectedItems.length > 0 && ` (${selectedItems.length} selected)`}
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
+                size="sm"
                 onClick={goToFirstPage}
                 disabled={currentPage === 1}
+                className="h-8 w-8 p-0 flex items-center justify-center"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
+                size="sm"
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
+                className="h-8 w-8 p-0 flex items-center justify-center"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
 
-              <span className="px-3 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300">
-                {currentPage} / {totalPages}
-              </span>
+              <div className="flex items-center">
+                <span className="text-sm font-medium">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
 
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
+                size="sm"
                 onClick={goToNextPage}
                 disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0 flex items-center justify-center"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
+                size="sm"
                 onClick={goToLastPage}
                 disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0 flex items-center justify-center"
               >
                 <ChevronsRight className="h-4 w-4" />
               </Button>
-
-              <select
-                className="ml-2 h-8 rounded-md border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 px-2 text-xs text-slate-700 dark:text-slate-300"
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value={5}>5 per page</option>
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
             </div>
           )}
+
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">Items per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="select select-bordered select-sm h-8 min-h-8 text-sm"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
       )}
     </div>

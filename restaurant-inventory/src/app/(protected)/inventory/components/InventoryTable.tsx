@@ -51,8 +51,7 @@ export default function InventoryTable({
   // Calculate inventory statistics
   const inventoryStats = calculateInventoryStats(
     items,
-    selectedItems,
-    formatCurrency
+    selectedItems
   );
 
   // Calculate selected items value for passing to components
@@ -60,7 +59,7 @@ export default function InventoryTable({
     selectedItems.length > 0
       ? selectedItems.reduce((sum: number, id: string) => {
           const item = items.find((i) => i.id === id);
-          return sum + (item ? item.cost_per_unit * item.quantity : 0);
+          return sum + (item && item.cost_per_unit && item.quantity ? item.cost_per_unit * item.quantity : 0);
         }, 0)
       : 0;
 
@@ -74,11 +73,11 @@ export default function InventoryTable({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center py-16 bg-muted/10 rounded-lg border border-dashed border-muted"
+        className="text-center py-16 bg-base-100 rounded-lg border border-base-300"
       >
-        <Package className="mx-auto h-16 w-16 text-muted-foreground/50" />
+        <Package className="mx-auto h-16 w-16 text-base-content/50" />
         <h3 className="mt-6 text-xl font-medium">No items found</h3>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+        <p className="mt-2 text-sm text-base-content max-w-md mx-auto">
           No inventory items match your current filters. Try adjusting your
           search criteria or category selection.
         </p>
@@ -87,9 +86,9 @@ export default function InventoryTable({
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col space-y-4">
       {/* Main content area container with border */}
-      <div className="grid grid-cols-1 gap-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-xs p-6">
+      <div className="grid grid-cols-1 gap-8 rounded-lg border border-base-300 bg-base-100">
         {/* Section 1: Summary Statistics (Top Area) */}
         <section className="w-full">
           <motion.div
@@ -98,10 +97,10 @@ export default function InventoryTable({
             transition={{ duration: 0.4 }}
             className="mb-2 flex items-center justify-between"
           >
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            <h2 className="text-xl font-semibold text-base-content">
               Inventory Overview
             </h2>
-            <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+            <div className="text-sm text-base-content/60 flex items-center">
               <LayoutGrid className="h-4 w-4 mr-2" />
               <span>Showing data for {items.length} items</span>
             </div>
@@ -119,7 +118,7 @@ export default function InventoryTable({
         </section>
 
         {/* Divider */}
-        <div className="border-t border-slate-100 dark:border-slate-800 w-full my-1" />
+        <div className="border-t border-base-200 w-full my-1" />
 
         {/* Section 2: Data Table (Bottom Area) */}
         <section className="w-full">

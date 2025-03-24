@@ -130,7 +130,7 @@ export function BatchOperations({
             </Button>
             
             <Button
-              variant="destructive"
+              variant="error"
               size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
               className="text-xs"
@@ -226,7 +226,7 @@ export function BatchOperations({
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="error"
               onClick={handleDeleteConfirm}
               disabled={isProcessing}
             >

@@ -257,7 +257,7 @@ export default function Inventory() {
         setSortDirection("asc");
       }
     },
-    [sortField, sortDirection, setSortFieldTyped]
+    [sortField, sortDirection, setSortFieldTyped, setSortDirection]
   );
 
   // Fetch suppliers
@@ -645,8 +645,8 @@ export default function Inventory() {
             exit={{ opacity: 0 }}
             className="p-8"
           >
-            <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-lg border shadow-xs">
-              <div className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4">
+            <div className="text-center py-16 bg-base-100 rounded-lg border border-base-300 shadow-sm">
+              <div className="mx-auto h-16 w-16 text-base-content/30 mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"

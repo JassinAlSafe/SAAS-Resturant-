@@ -79,8 +79,8 @@ export function TableItem({
         className={cn(
           "transition-all duration-150 group",
           compactMode ? "h-10" : "",
-          isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/40",
-          isExpanded && !isSelected && "bg-muted/20"
+          isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-base-200/40",
+          isExpanded && !isSelected && "bg-base-200/20"
         )}
       >
         <td
@@ -92,7 +92,7 @@ export function TableItem({
           <div className="flex items-center justify-center">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+              className="checkbox checkbox-sm checkbox-primary"
               checked={isSelected}
               onChange={() => toggleItemSelection(item.id)}
             />
@@ -101,13 +101,13 @@ export function TableItem({
 
         {/* # and SKU columns only visible in standard view */}
         {!compactMode && (
-          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-muted-foreground">
+          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-base-content/60">
             {index + 1}
           </td>
         )}
 
         {!compactMode && (
-          <td className="px-4 py-3 whitespace-nowrap text-xs font-mono text-muted-foreground">
+          <td className="px-4 py-3 whitespace-nowrap text-xs font-mono text-base-content/60">
             {item.id.substring(0, 8)}
           </td>
         )}
@@ -120,7 +120,7 @@ export function TableItem({
         >
           <div className="flex items-center gap-3">
             {!compactMode && (
-              <div className="w-10 h-10 shrink-0 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden relative">
+              <div className="w-10 h-10 shrink-0 bg-base-200 rounded-md flex items-center justify-center overflow-hidden relative">
                 {(item as ExtendedInventoryItem).image_url ? (
                   <ProxyImage
                     src={(item as ExtendedInventoryItem).image_url!}
@@ -130,7 +130,7 @@ export function TableItem({
                     className="object-contain w-full h-full"
                   />
                 ) : (
-                  <ImageIcon className="h-5 w-5 text-muted-foreground/50" />
+                  <ImageIcon className="h-5 w-5 text-base-content/30" />
                 )}
               </div>
             )}
@@ -144,7 +144,7 @@ export function TableItem({
                 {item.name}
               </div>
               {!compactMode && item.description && (
-                <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                <div className="text-xs text-base-content/60 line-clamp-1 mt-0.5">
                   {item.description}
                 </div>
               )}
@@ -161,7 +161,7 @@ export function TableItem({
           <Badge
             variant="outline"
             className={cn(
-              "font-normal bg-muted/30",
+              "font-normal bg-base-200/50",
               compactMode ? "text-[10px] px-1 py-0" : "text-xs"
             )}
           >
@@ -193,17 +193,17 @@ export function TableItem({
               className={cn(
                 "font-medium",
                 compactMode ? "text-xs" : "text-sm",
-                itemIsOutOfStock && "text-red-600 dark:text-red-400",
+                itemIsOutOfStock && "text-error",
                 itemIsLowStock &&
                   !itemIsOutOfStock &&
-                  "text-amber-600 dark:text-amber-400"
+                  "text-warning"
               )}
             >
               {item.quantity}
             </span>
             <span
               className={cn(
-                "text-muted-foreground ml-1",
+                "text-base-content/60 ml-1",
                 compactMode ? "text-[10px]" : "text-xs"
               )}
             >
@@ -215,8 +215,8 @@ export function TableItem({
               <div className="hidden group-hover:flex ml-2 items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                  size="sm"
+                  className="h-6 w-6 rounded text-base-content/60 hover:text-base-content hover:bg-base-200"
                   onClick={() => handleQuickUpdate(false)}
                   disabled={item.quantity <= 0}
                 >
@@ -224,8 +224,8 @@ export function TableItem({
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                  size="sm"
+                  className="h-6 w-6 rounded text-base-content/60 hover:text-base-content hover:bg-base-200"
                   onClick={() => handleQuickUpdate(true)}
                 >
                   <Plus className="h-3 w-3" />
@@ -255,16 +255,16 @@ export function TableItem({
               <div className="flex space-x-1">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
+                  size="sm"
+                  className="h-6 w-6 rounded-full btn-ghost"
                   onClick={() => onEditClick(item)}
                 >
                   <Pencil className="h-3 w-3" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 rounded-full"
+                  size="sm"
+                  className="h-6 w-6 rounded-full btn-ghost"
                   onClick={() => toggleExpanded(item.id)}
                 >
                   {isExpanded ? (
@@ -281,8 +281,8 @@ export function TableItem({
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        size="sm"
+                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity btn-ghost"
                         onClick={() => onEditClick(item)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -299,10 +299,10 @@ export function TableItem({
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         className={cn(
-                          "h-8 w-8 rounded-full",
-                          isExpanded && "bg-muted/60"
+                          "h-8 w-8 rounded-full btn-ghost",
+                          isExpanded && "bg-base-200"
                         )}
                         onClick={() => toggleExpanded(item.id)}
                       >
@@ -328,7 +328,7 @@ export function TableItem({
 
       {/* Expanded row with additional details */}
       {isExpanded && (
-        <tr className="bg-muted/10 dark:bg-gray-900/10">
+        <tr className="bg-base-200/10">
           <td colSpan={9} className="p-0">
             <ExpandedItemContent item={item} formatCurrency={formatCurrency} />
           </td>
