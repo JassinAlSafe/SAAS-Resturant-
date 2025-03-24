@@ -58,8 +58,12 @@ export function SidebarHeader({
         )}
         {open && (
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-gray-900">{businessName}</span>
-            <span className="text-xs text-gray-500 mt-0.5">Restaurant Manager</span>
+            <span className="text-sm font-semibold text-gray-900">
+              {businessName}
+            </span>
+            <span className="text-xs text-gray-500 mt-0.5">
+              Restaurant Manager
+            </span>
           </div>
         )}
       </Link>

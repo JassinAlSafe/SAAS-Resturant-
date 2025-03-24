@@ -1,12 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PanelLeftCloseIcon,
-  PanelLeftIcon,
-} from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -26,31 +21,32 @@ export function SidebarCollapseButton({
   toggleSidebar,
 }: SidebarCollapseButtonProps) {
   return (
-    <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-50">
+    <div className="absolute -right-3 top-20 z-50">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={toggleSidebar}
               className={cn(
-                "h-10 w-10 rounded-full border border-border/40 bg-background shadow-md",
-                "hover:bg-primary/10 hover:text-primary hover:border-primary/30",
+                "h-7 w-7 p-0 rounded-full border-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md",
+                "hover:from-orange-600 hover:to-orange-700",
+                "active:scale-95",
                 "flex items-center justify-center transition-all duration-200"
               )}
             >
               {open ? (
-                <PanelLeftCloseIcon className="h-4 w-4" />
+                <ChevronLeftIcon className="h-3.5 w-3.5" />
               ) : (
-                <PanelLeftIcon className="h-4 w-4" />
+                <ChevronRightIcon className="h-3.5 w-3.5" />
               )}
               <span className="sr-only">
                 {open ? "Collapse sidebar" : "Expand sidebar"}
               </span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">
+          <TooltipContent side="right" className="text-xs font-medium">
             {open ? "Collapse sidebar" : "Expand sidebar"}
           </TooltipContent>
         </Tooltip>
