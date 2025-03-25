@@ -2,18 +2,20 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Trash, 
-  FileDown, 
-  Tag, 
-  Truck, 
+import {
+  Trash,
   ChevronDown,
   AlertTriangle,
   Check,
-  X
+  X,
+  FileText,
+  File,
+  FilePlus,
+  Download,
+  CheckSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -36,7 +38,7 @@ interface BatchOperationsProps {
   items: InventoryItem[];
   onClearSelection: () => void;
   onDeleteSelected: (itemIds: string[]) => Promise<void>;
-  onUpdateCategory: (itemIds: string[], category: string) => Promise<void>;
+  onUpdateCategory?: (itemIds: string[], category: string) => Promise<void>;
   onExportSelected: (itemIds: string[]) => void;
 }
 
@@ -45,17 +47,18 @@ export function BatchOperations({
   items,
   onClearSelection,
   onDeleteSelected,
-  onUpdateCategory,
   onExportSelected,
 }: BatchOperationsProps) {
   const { formatCurrency } = useCurrency();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [operationSuccess, setOperationSuccess] = useState<boolean | null>(null);
+  const [operationSuccess, setOperationSuccess] = useState<boolean | null>(
+    null
+  );
   const [operationMessage, setOperationMessage] = useState("");
 
   // Get the selected items data
-  const selectedItemsData = items.filter(item => 
+  const selectedItemsData = items.filter((item) =>
     selectedItems.includes(item.id)
   );
 
@@ -73,7 +76,8 @@ export function BatchOperations({
       setOperationMessage(`Successfully deleted ${selectedItems.length} items`);
       setIsDeleteDialogOpen(false);
       onClearSelection();
-    } catch (error) {
+    } catch (err) {
+      console.error("Error deleting items:", err);
       setOperationSuccess(false);
       setOperationMessage("Failed to delete items. Please try again.");
     } finally {
@@ -86,12 +90,13 @@ export function BatchOperations({
     }
   };
 
-  const handleExport = () => {
+  const handleExportAction = (type?: string) => {
     onExportSelected(selectedItems);
     setOperationSuccess(true);
-    setOperationMessage(`Exported ${selectedItems.length} items`);
-    
-    // Reset success message after 3 seconds
+    setOperationMessage(
+      type ? `Exported as ${type}` : `Exported ${selectedItems.length} items`
+    );
+
     setTimeout(() => {
       setOperationSuccess(null);
       setOperationMessage("");
@@ -101,136 +106,175 @@ export function BatchOperations({
   if (selectedItems.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 w-auto">
       <AnimatePresence>
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
+          initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800 p-4 flex items-center gap-4"
+          exit={{ y: 50, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="bg-white rounded-xl shadow-lg border border-gray-200 px-5 py-3.5 flex items-center gap-4 max-w-[95vw] w-auto"
+          style={{ minWidth: "420px" }}
         >
-          <div className="text-sm font-medium">
-            <span className="text-muted-foreground">Selected:</span>{" "}
-            <span className="font-bold">{selectedItems.length} items</span>
-            {totalValue > 0 && (
-              <span className="ml-2 text-muted-foreground">
-                (Total value: {formatCurrency(totalValue)})
-              </span>
-            )}
+          {/* Selection Info with Icon */}
+          <div className="flex items-center text-sm font-medium">
+            <div className="mr-3 bg-blue-100 text-blue-700 rounded-full p-1.5">
+              <CheckSquare className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center">
+                <span className="font-bold text-gray-900">
+                  {selectedItems.length}{" "}
+                  {selectedItems.length === 1 ? "item" : "items"}
+                </span>
+                <span className="mx-1.5 text-gray-400">•</span>
+                <span className="text-orange-600 font-medium">
+                  {formatCurrency(totalValue)}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                Selected for batch operations
+              </div>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          {/* Status Message - Animated appearance */}
+          <AnimatePresence>
+            {operationSuccess !== null && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                className={`text-xs flex items-center rounded-full px-3 py-1.5 ${
+                  operationSuccess
+                    ? "text-green-700 bg-green-50 border border-green-100"
+                    : "text-red-700 bg-red-50 border border-red-100"
+                }`}
+              >
+                {operationSuccess ? (
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
+                ) : (
+                  <X className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {operationMessage}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Spacer to push buttons to the right */}
+          <div className="flex-grow"></div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 text-sm bg-white border-gray-300 hover:bg-gray-50 text-gray-800 transition-colors"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                  <ChevronDown className="h-4 w-4 ml-2" strokeWidth={2} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-52 p-1.5" align="end">
+                <DropdownMenuItem
+                  className="flex items-center px-3 py-2 text-sm rounded-md cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleExportAction("CSV")}
+                >
+                  <FileText className="h-4 w-4 mr-2.5 text-blue-600" />
+                  <span>Export as CSV</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="flex items-center px-3 py-2 text-sm rounded-md cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleExportAction("JSON")}
+                >
+                  <File className="h-4 w-4 mr-2.5 text-green-600" />
+                  <span>Export as JSON</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  className="flex items-center px-3 py-2 text-sm rounded-md cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleExportAction("PDF")}
+                >
+                  <FilePlus className="h-4 w-4 mr-2.5 text-red-600" />
+                  <span>Export as PDF</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Delete Button */}
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="h-9 px-3 text-sm bg-red-600 hover:bg-red-700 text-white border-none"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+
+            {/* Clear Selection Button */}
             <Button
               variant="outline"
               size="sm"
               onClick={onClearSelection}
-              className="text-xs"
+              className="h-9 px-3 text-sm border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
             >
+              <X className="h-4 w-4 mr-2" />
               Clear
             </Button>
-            
-            <Button
-              variant="error"
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-xs"
-            >
-              <Trash className="h-3.5 w-3.5 mr-1" />
-              Delete
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              className="text-xs"
-            >
-              <FileDown className="h-3.5 w-3.5 mr-1" />
-              Export
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs">
-                  More Actions
-                  <ChevronDown className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Tag className="h-4 w-4 mr-2" />
-                  Update Category
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Truck className="h-4 w-4 mr-2" />
-                  Create Purchase Order
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Mark as Low Stock
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-          
-          {/* Success/Error Message */}
-          {operationSuccess !== null && (
-            <div 
-              className={`ml-2 text-sm flex items-center ${
-                operationSuccess ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {operationSuccess ? (
-                <Check className="h-4 w-4 mr-1" />
-              ) : (
-                <X className="h-4 w-4 mr-1" />
-              )}
-              {operationMessage}
-            </div>
-          )}
         </motion.div>
       </AnimatePresence>
-      
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete {selectedItems.length} items?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. This will permanently delete the selected inventory items.
+            <DialogTitle className="text-xl">
+              Delete {selectedItems.length} items
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 mt-1">
+              This action cannot be undone. These items will be permanently
+              removed from your inventory.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="max-h-40 overflow-y-auto">
-              <ul className="list-disc pl-5 space-y-1">
-                {selectedItemsData.slice(0, 5).map(item => (
-                  <li key={item.id} className="text-sm">
-                    {item.name} ({item.quantity} {item.unit})
-                  </li>
-                ))}
-                {selectedItemsData.length > 5 && (
-                  <li className="text-sm text-muted-foreground">
-                    ...and {selectedItemsData.length - 5} more items
-                  </li>
-                )}
-              </ul>
-            </div>
+
+          <div className="my-4 p-3.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm flex items-start">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+            <p>
+              Deleting these items will also remove all associated transaction
+              history and cannot be recovered.
+            </p>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="flex justify-end gap-2 mt-6">
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              className="border-gray-300"
               disabled={isProcessing}
             >
               Cancel
             </Button>
             <Button
-              variant="error"
+              variant="destructive"
               onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
               disabled={isProcessing}
             >
-              {isProcessing ? "Deleting..." : "Delete"}
+              {isProcessing ? (
+                <>
+                  <span className="animate-pulse mr-2">•••</span>
+                  Deleting
+                </>
+              ) : (
+                "Delete Items"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

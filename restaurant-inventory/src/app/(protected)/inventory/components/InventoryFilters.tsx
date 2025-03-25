@@ -104,7 +104,7 @@ export default function InventoryFilters({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-4">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Header */}
-        <h1 className="text-2xl font-bold tracking-tight mb-2 md:mb-0">
+        <h1 className="text-2xl font-bold tracking-tight mb-2 md:mb-0 text-gray-800">
           Inventory
         </h1>
 
@@ -116,15 +116,15 @@ export default function InventoryFilters({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="relative w-full md:w-[180px]">
-                    <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                    <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4" />
                     <Select
                       value={selectedCategory}
                       onValueChange={onCategoryChange}
                     >
-                      <SelectTrigger className="bg-white pl-9 h-10 border-gray-300 rounded-lg w-full">
+                      <SelectTrigger className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border border-gray-200 shadow-md rounded-lg">
                         <SelectItem value="all">All Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category} value={category}>
@@ -135,7 +135,7 @@ export default function InventoryFilters({
                     </Select>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
+                <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
                   <p>Filter by category</p>
                 </TooltipContent>
               </Tooltip>
@@ -143,12 +143,12 @@ export default function InventoryFilters({
 
             {/* Search */}
             <div className="relative grow w-full md:w-[220px]">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4" />
               <Input
                 placeholder="Quick Search"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-9 bg-white w-full h-10 border-gray-300 rounded-lg"
+                className="pl-9 bg-white w-full h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg"
               />
               <AnimatePresence>
                 {searchTerm && (
@@ -161,7 +161,7 @@ export default function InventoryFilters({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700 icon-button"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-orange-600 icon-button"
                       onClick={() => onSearchChange("")}
                     >
                       <FiX className="h-4 w-4" />
@@ -177,14 +177,14 @@ export default function InventoryFilters({
                 <TooltipTrigger asChild>
                   <Button
                     variant="default"
-                    className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white h-10 min-w-[40px] rounded-lg"
+                    className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white h-10 min-w-[40px] rounded-lg shadow-sm hover:shadow transition-all duration-200"
                     onClick={onAddClick}
                   >
                     <FiPlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Add product</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">
+                <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
                   <p>Add new inventory item</p>
                 </TooltipContent>
               </Tooltip>
@@ -201,17 +201,17 @@ export default function InventoryFilters({
                     <Button
                       variant={viewMode === "table" ? "default" : "ghost"}
                       size="sm"
-                      className={`h-10 w-10 rounded-none ${
+                      className={`h-10 w-10 rounded-none transition-colors duration-200 ${
                         viewMode === "table"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-700"
+                          ? "bg-orange-600 text-white"
+                          : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                       }`}
                       onClick={() => onViewModeChange("table")}
                     >
                       <FiList className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
                     <p>Table view</p>
                   </TooltipContent>
                 </Tooltip>
@@ -223,17 +223,17 @@ export default function InventoryFilters({
                     <Button
                       variant={viewMode === "cards" ? "default" : "ghost"}
                       size="sm"
-                      className={`h-10 w-10 rounded-none ${
+                      className={`h-10 w-10 rounded-none transition-colors duration-200 ${
                         viewMode === "cards"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-700"
+                          ? "bg-orange-600 text-white"
+                          : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                       }`}
                       onClick={() => onViewModeChange("cards")}
                     >
                       <FiGrid className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
                     <p>Card view</p>
                   </TooltipContent>
                 </Tooltip>
@@ -252,8 +252,8 @@ export default function InventoryFilters({
                       <Button
                         variant="outline"
                         className={cn(
-                          "gap-1 bg-white h-10 border-gray-300 rounded-lg",
-                          hasActiveFilters && "border-blue-300 text-blue-600"
+                          "gap-1 bg-white h-10 border-gray-300 hover:border-orange-300 rounded-lg transition-colors duration-200",
+                          hasActiveFilters && "border-orange-300 text-orange-600 bg-orange-50/50"
                         )}
                       >
                         <FiSliders className="h-4 w-4" />
@@ -261,7 +261,7 @@ export default function InventoryFilters({
                         {hasActiveFilters && (
                           <Badge
                             variant="secondary"
-                            className="ml-1 h-5 px-1.5 rounded-full bg-blue-100 text-blue-700"
+                            className="ml-1 h-5 px-1.5 rounded-full bg-orange-100 text-orange-700"
                           >
                             {(searchTerm ? 1 : 0) +
                               (selectedCategory !== "all" ? 1 : 0) +
@@ -271,7 +271,7 @@ export default function InventoryFilters({
                       </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom">
+                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
                     <p>Advanced filters</p>
                   </TooltipContent>
                 </Tooltip>
@@ -288,7 +288,7 @@ export default function InventoryFilters({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="h-8 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                         onClick={clearFilters}
                       >
                         Clear all
@@ -301,7 +301,7 @@ export default function InventoryFilters({
                     <div className="flex items-center justify-between">
                       <Label
                         htmlFor="show-low-stock"
-                        className="text-sm cursor-pointer"
+                        className="text-sm cursor-pointer text-gray-700"
                       >
                         Show low stock only
                       </Label>
@@ -309,7 +309,7 @@ export default function InventoryFilters({
                         id="show-low-stock"
                         checked={showLowStock}
                         onCheckedChange={onLowStockChange}
-                        className="data-[state=checked]:bg-blue-600"
+                        className="data-[state=checked]:bg-orange-600"
                       />
                     </div>
 
@@ -317,13 +317,13 @@ export default function InventoryFilters({
                     {(lowStockCount > 0 || outOfStockCount > 0) && (
                       <div className="text-xs text-gray-600 pt-1 space-y-1.5">
                         {lowStockCount > 0 && (
-                          <div className="flex items-center gap-1.5 mb-1 bg-amber-50 text-amber-700 p-2 rounded">
+                          <div className="flex items-center gap-1.5 mb-1 bg-amber-50 text-amber-700 p-2 rounded border border-amber-100">
                             <FiAlertTriangle className="h-3 w-3 text-amber-500" />
                             <span>{lowStockCount} items low on stock</span>
                           </div>
                         )}
                         {outOfStockCount > 0 && (
-                          <div className="flex items-center gap-1.5 bg-red-50 text-red-700 p-2 rounded">
+                          <div className="flex items-center gap-1.5 bg-red-50 text-red-700 p-2 rounded border border-red-100">
                             <FiAlertTriangle className="h-3 w-3 text-red-500" />
                             <span>{outOfStockCount} items out of stock</span>
                           </div>
@@ -337,7 +337,7 @@ export default function InventoryFilters({
                     <Label className="text-sm font-medium text-gray-900">
                       Sort by
                     </Label>
-                    <div className="grid grid-cols-1 gap-1 bg-gray-50 rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-1 gap-1 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
                       {[
                         { label: "Name", field: "name" },
                         { label: "Category", field: "category" },
@@ -349,19 +349,20 @@ export default function InventoryFilters({
                           variant="ghost"
                           size="sm"
                           className={cn(
-                            "justify-between h-9 px-3 rounded-none border-b border-gray-100 last:border-0 text-gray-700",
-                            sortField === option.field &&
-                              "bg-blue-50 text-blue-700 font-medium"
+                            "justify-between h-9 px-3 rounded-none",
+                            sortField === option.field
+                              ? "bg-orange-50 text-orange-700 font-medium"
+                              : "bg-transparent hover:bg-gray-100 text-gray-700"
                           )}
                           onClick={() => handleSortChange(option.field)}
                         >
-                          {option.label}
+                          <span>{option.label}</span>
                           {sortField === option.field && (
                             <span>
                               {sortDirection === "asc" ? (
-                                <FiChevronUp className="h-4 w-4" />
+                                <FiChevronUp className="h-4 w-4 text-orange-600" />
                               ) : (
-                                <FiChevronDown className="h-4 w-4" />
+                                <FiChevronDown className="h-4 w-4 text-orange-600" />
                               )}
                             </span>
                           )}
@@ -372,36 +373,6 @@ export default function InventoryFilters({
                 </div>
               </PopoverContent>
             </Popover>
-
-            {/* Reset Filters Button */}
-            <AnimatePresence>
-              {hasActiveFilters && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-10 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg icon-button"
-                          onClick={clearFilters}
-                        >
-                          <FiRefreshCw className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p>Reset all filters</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -410,83 +381,76 @@ export default function InventoryFilters({
       <AnimatePresence>
         {hasActiveFilters && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-wrap gap-2 mt-4"
+            className="mt-4 pt-3 border-t border-gray-200"
           >
-            {searchTerm && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Badge
-                  variant="secondary"
-                  className="gap-1 pl-2 pr-1 py-1.5 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-full"
-                >
-                  <FiSearch className="h-3 w-3 mr-1" />
-                  Search: {searchTerm}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 ml-1 text-gray-500 hover:text-gray-700 icon-button"
-                    onClick={() => onSearchChange("")}
-                  >
-                    <FiX className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              </motion.div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-gray-500">Active filters:</span>
 
-            {selectedCategory !== "all" && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2, delay: 0.05 }}
-              >
+              {selectedCategory !== "all" && (
                 <Badge
-                  variant="secondary"
-                  className="gap-1 pl-2 pr-1 py-1.5 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-full"
+                  variant="outline"
+                  className="bg-orange-50 text-orange-700 border-orange-200 flex items-center gap-1 pl-2 h-6"
                 >
-                  <FiTag className="h-3 w-3 mr-1" />
-                  Category: {selectedCategory}
+                  <span>Category: {selectedCategory}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-4 w-4 ml-1 text-gray-500 hover:text-gray-700 icon-button"
                     onClick={() => onCategoryChange("all")}
+                    className="h-4 w-4 p-0 ml-1 text-orange-500 hover:text-orange-700 hover:bg-transparent rounded-full"
                   >
                     <FiX className="h-3 w-3" />
                   </Button>
                 </Badge>
-              </motion.div>
-            )}
+              )}
 
-            {showLowStock && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2, delay: 0.1 }}
-              >
+              {searchTerm && (
                 <Badge
-                  variant="secondary"
-                  className="gap-1 pl-2 pr-1 py-1.5 bg-gray-100 text-gray-800 hover:bg-gray-200 rounded-full"
+                  variant="outline"
+                  className="bg-orange-50 text-orange-700 border-orange-200 flex items-center gap-1 pl-2 h-6"
                 >
-                  <FiAlertTriangle className="h-3 w-3 mr-1" />
-                  Low Stock Only
+                  <span>Search: {searchTerm}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-4 w-4 ml-1 text-gray-500 hover:text-gray-700 icon-button"
-                    onClick={() => onLowStockChange(false)}
+                    onClick={() => onSearchChange("")}
+                    className="h-4 w-4 p-0 ml-1 text-orange-500 hover:text-orange-700 hover:bg-transparent rounded-full"
                   >
                     <FiX className="h-3 w-3" />
                   </Button>
                 </Badge>
-              </motion.div>
-            )}
+              )}
+
+              {showLowStock && (
+                <Badge
+                  variant="outline"
+                  className="bg-orange-50 text-orange-700 border-orange-200 flex items-center gap-1 pl-2 h-6"
+                >
+                  <span>Low stock only</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onLowStockChange(false)}
+                    className="h-4 w-4 p-0 ml-1 text-orange-500 hover:text-orange-700 hover:bg-transparent rounded-full"
+                  >
+                    <FiX className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-6 px-2 ml-auto flex items-center gap-1"
+              >
+                <FiRefreshCw className="h-3 w-3" />
+                Reset all
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

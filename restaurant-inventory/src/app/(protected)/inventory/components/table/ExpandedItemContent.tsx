@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { InventoryItem } from "@/types/inventory";
+import { InventoryItem } from "@/lib/types";
 
 interface ExpandedItemContentProps {
   item: InventoryItem;
@@ -59,234 +59,181 @@ export function ExpandedItemContent({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="py-4 px-6 bg-slate-50 dark:bg-slate-900/30 border-b dark:border-b-slate-800"
+      className="py-4 px-6 bg-orange-50 border-b border-gray-200"
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Basic info with image */}
-        <Card className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <Card className="p-4 border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="h-48 w-48 relative rounded-md overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 mx-auto md:mx-0">
-              {item.imageUrl ? (
+            <div className="h-48 w-48 relative rounded-md overflow-hidden border border-gray-200 shrink-0 mx-auto md:mx-0">
+              {item.image_url ? (
                 <Image
-                  src={item.imageUrl}
+                  src={item.image_url}
                   alt={item.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 200px"
                   className="object-cover"
                 />
               ) : (
-                <div className="h-full w-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                <div className="h-full w-full bg-gray-100 flex items-center justify-center text-gray-400">
                   No image
                 </div>
               )}
             </div>
             <div className="space-y-3 flex-1">
               <div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="text-sm text-gray-500 font-medium">
                   Item ID
                 </div>
-                <div className="font-medium">{item.id}</div>
+                <div className="font-medium text-gray-700">{item.id}</div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="text-sm text-gray-500 font-medium">
                   Category
                 </div>
-                <div className="font-medium">{item.category}</div>
+                <div className="font-medium text-gray-700">
+                  <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                    {item.category}
+                  </Badge>
+                </div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="text-sm text-gray-500 font-medium">
                   Supplier
                 </div>
-                <div className="font-medium">
-                  {item.supplier || "Not specified"}
+                <div className="font-medium text-gray-700">
+                  {item.supplier_id ? `Supplier #${item.supplier_id}` : "Not specified"}
                 </div>
               </div>
 
               <div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="text-sm text-gray-500 font-medium">
                   Location
                 </div>
-                <div className="font-medium">
-                  {item.storageLocation || "Not specified"}
+                <div className="font-medium text-gray-700">
+                  {item.location || "Not specified"}
                 </div>
-              </div>
-
-              <div className="pt-2">
-                <Badge
-                  variant={item.isActive ? "default" : "outline"}
-                  className="text-xs"
-                >
-                  {item.isActive ? "Active" : "Inactive"}
-                </Badge>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Middle column - Stock & pricing data */}
-        <Card className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        {/* Middle column - Stock info */}
+        <Card className="p-4 border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+            <GanttChartSquare className="h-5 w-5 text-orange-600" />
+            Stock Information
+          </h3>
+
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold flex items-center">
-                <GanttChartSquare size={16} className="mr-2 text-blue-600" />
-                Stock Status
-              </h3>
-              <Badge
-                variant={item.currentStock > 0 ? "default" : "destructive"}
-                className="text-xs"
+            <div>
+              <div className="flex justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Current Stock</span>
+                <span className="text-sm font-bold text-gray-800">
+                  {item.quantity} {item.unit}
+                </span>
+              </div>
+              <Progress
+                value={getStockStatusPercentage(
+                  item.quantity,
+                  item.max_stock || 100
+                )}
+                className="h-2 bg-gray-200"
+                indicatorClassName={getStockStatusColor(
+                  item.quantity,
+                  item.reorder_point || 0,
+                  item.max_stock || 100
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                <div className="text-xs text-gray-500 mb-1">Reorder Level</div>
+                <div className="font-semibold text-orange-700">
+                  {item.reorder_point || 0} {item.unit}
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                <div className="text-xs text-gray-500 mb-1">Max Stock</div>
+                <div className="font-semibold text-green-700">
+                  {item.max_stock || "Not set"} {item.max_stock ? item.unit : ""}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Cost per Unit</span>
+                <span className="text-sm font-bold text-gray-800">
+                  {formatCurrency(item.cost_per_unit || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-gray-700">Total Value</span>
+                <span className="text-sm font-bold text-orange-600">
+                  {formatCurrency((item.cost_per_unit || 0) * item.quantity)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Right column - Usage history */}
+        <Card className="p-4 border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow duration-200 rounded-lg">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-orange-600" />
+            Usage History
+          </h3>
+
+          <div className="h-40 flex items-end justify-between gap-1 mb-1 px-2">
+            {mockUsageData.map((day, i) => (
+              <div
+                key={i}
+                className="relative flex flex-col items-center group"
               >
-                {item.currentStock > 0 ? "In Stock" : "Out of Stock"}
-              </Badge>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Current Stock:</span>
-                <span className="font-medium">
-                  {item.currentStock} {item.unit}
-                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="w-8 bg-orange-500 hover:bg-orange-600 rounded-t transition-all duration-200"
+                        style={{
+                          height: `${(day.amount / 7) * 100}%`,
+                          minHeight: "10%",
+                        }}
+                      ></div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-white border border-gray-200 shadow-md text-gray-800">
+                      <div className="text-xs font-medium">{day.date}</div>
+                      <div className="text-sm font-bold">
+                        {day.amount} {item.unit} used
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Reorder Point:</span>
-                <span className="font-medium">
-                  {item.reorderPoint} {item.unit}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Target Stock:</span>
-                <span className="font-medium">
-                  {item.targetStock} {item.unit}
-                </span>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-xs text-slate-500 mb-1 flex justify-between">
-                  <span>Stock Level</span>
-                  <span>
-                    {getStockStatusPercentage(
-                      item.currentStock,
-                      item.targetStock
-                    )}
-                    %
-                  </span>
-                </div>
-                <Progress
-                  value={getStockStatusPercentage(
-                    item.currentStock,
-                    item.targetStock
-                  )}
-                  className="h-2"
-                  indicatorClassName={getStockStatusColor(
-                    item.currentStock,
-                    item.reorderPoint,
-                    item.targetStock
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <div className="space-y-3 mt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Unit Cost:</span>
-                  <span className="font-medium">
-                    {formatCurrency(item.unitCost)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Total Value:</span>
-                  <span className="font-medium">
-                    {formatCurrency(item.unitCost * item.currentStock)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Last Updated:</span>
-                  <span className="font-medium">
-                    {new Date(item.updatedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
-        </Card>
-
-        {/* Right column - Usage & ordering */}
-        <Card className="p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold flex items-center">
-                <BarChart3 size={16} className="mr-2 text-indigo-600" />
-                Usage History
-              </h3>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <History size={14} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View full history</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            <div className="h-[100px] flex items-end justify-between gap-1">
-              {mockUsageData.map((day, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center flex-1 space-y-1"
-                >
-                  <div
-                    className="w-full bg-blue-500/80 rounded-t"
-                    style={{
-                      height: `${Math.max((day.amount / 7) * 100, 10)}%`,
-                    }}
-                  />
-                  <span className="text-xs text-slate-500">{day.date}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <div className="space-y-3 mt-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Average Usage:</span>
-                  <span className="font-medium">
-                    {(
-                      mockUsageData.reduce((acc, day) => acc + day.amount, 0) /
-                      mockUsageData.length
-                    ).toFixed(1)}{" "}
-                    {item.unit}/day
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Estimated Days Left:</span>
-                  <span className="font-medium">
-                    {Math.round(
-                      item.currentStock /
-                        (mockUsageData.reduce(
-                          (acc, day) => acc + day.amount,
-                          0
-                        ) /
-                          mockUsageData.length)
-                    )}{" "}
-                    days
-                  </span>
-                </div>
-
-                <div className="pt-2">
-                  <Button size="sm" className="w-full mt-2">
-                    {item.currentStock <= item.reorderPoint
-                      ? "Order Now"
-                      : "Create Order"}
-                  </Button>
-                </div>
+          <div className="flex justify-between px-2 mt-1">
+            {mockUsageData.map((day, i) => (
+              <div key={i} className="text-xs text-gray-500 w-8 text-center">
+                {day.date.split(" ")[1]}
               </div>
-            </div>
+            ))}
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center justify-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              View Full History
+            </Button>
           </div>
         </Card>
       </div>

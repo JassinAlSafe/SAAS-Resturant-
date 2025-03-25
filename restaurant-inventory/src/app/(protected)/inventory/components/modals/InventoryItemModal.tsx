@@ -39,6 +39,7 @@ import { motion } from "framer-motion";
 import { useCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Image from "next/image";
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
@@ -237,10 +238,10 @@ export default function InventoryItemModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="p-6 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white border border-gray-200 shadow-lg rounded-lg">
+        <DialogHeader className="p-6 border-b bg-gradient-to-r from-orange-50 to-orange-100">
           <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-800">
               {item ? (
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
@@ -248,7 +249,7 @@ export default function InventoryItemModal({
                   className="flex items-center"
                 >
                   <span className="mr-2">Edit</span>
-                  <span className="text-primary">{item.name}</span>
+                  <span className="text-orange-600">{item.name}</span>
                 </motion.div>
               ) : (
                 <motion.div
@@ -259,7 +260,7 @@ export default function InventoryItemModal({
                 </motion.div>
               )}
               {quickMode && (
-                <Badge variant="secondary" className="ml-2 gap-1 text-xs">
+                <Badge variant="secondary" className="ml-2 gap-1 text-xs bg-orange-100 text-orange-700 border border-orange-200">
                   <FiZap className="h-3 w-3" />
                   Quick Mode
                 </Badge>
@@ -273,7 +274,7 @@ export default function InventoryItemModal({
                       variant={quickMode ? "outline" : "secondary"}
                       size="sm"
                       onClick={toggleMode}
-                      className="gap-1.5"
+                      className={`gap-1.5 ${quickMode ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200'}`}
                     >
                       {quickMode ? (
                         <>
@@ -288,14 +289,14 @@ export default function InventoryItemModal({
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="bg-white border border-gray-200 text-gray-700 shadow-md">
                     {quickMode ? "Show all available fields" : "Show only essential fields"}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
           </div>
-          <DialogDescription className="mt-1">
+          <DialogDescription className="mt-1 text-gray-600">
             {item
               ? "Update the details of this inventory item"
               : "Add a new item to your inventory"}
@@ -307,8 +308,8 @@ export default function InventoryItemModal({
             // Quick Mode Layout - Single column with only essential fields
             <div className="space-y-5 max-w-xl mx-auto">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium">
-                  Item Name*
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                  Item Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -317,7 +318,9 @@ export default function InventoryItemModal({
                   onChange={handleChange}
                   placeholder="Enter item name"
                   required
-                  className={`mt-1.5 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                    errors.name ? "border-red-500" : ""
+                  }`}
                 />
                 {errors.name && (
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -326,8 +329,8 @@ export default function InventoryItemModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="quantity" className="text-sm font-medium">
-                    Quantity*
+                  <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
+                    Quantity <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="quantity"
@@ -338,27 +341,41 @@ export default function InventoryItemModal({
                     value={formData.quantity}
                     onChange={handleNumberChange}
                     required
-                    className="mt-1.5"
+                    className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                      errors.quantity ? "border-red-500" : ""
+                    }`}
                   />
+                  {errors.quantity && (
+                    <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
+                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="unit" className="text-sm font-medium">
-                    Unit*
+                  <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
+                    Unit <span className="text-red-500">*</span>
                   </Label>
                   <Select
+                    name="unit"
                     value={formData.unit}
                     onValueChange={(value) =>
                       handleChange({ name: "unit", value })
                     }
                   >
-                    <SelectTrigger id="unit" className={`mt-1.5 ${errors.unit ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
-                      <SelectValue placeholder="Select unit" />
+                    <SelectTrigger 
+                      className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                        errors.unit ? "border-red-500" : ""
+                      }`}
+                    >
+                      <SelectValue placeholder="Select a unit" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {commonUnits.map((unitOption) => (
-                        <SelectItem key={unitOption} value={unitOption}>
-                          {unitOption}
+                    <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
+                      {commonUnits.map((unit) => (
+                        <SelectItem
+                          key={unit}
+                          value={unit}
+                          className="hover:bg-orange-50"
+                        >
+                          {unit}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -370,21 +387,31 @@ export default function InventoryItemModal({
               </div>
 
               <div>
-                <Label className="text-sm font-medium">Category*</Label>
+                <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                  Category <span className="text-red-500">*</span>
+                </Label>
                 <Select
+                  name="category"
                   value={formData.category}
                   onValueChange={(value) =>
                     handleChange({ name: "category", value })
                   }
-                  required
                 >
-                  <SelectTrigger className={`mt-1.5 ${errors.category ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
-                    <SelectValue placeholder="Select category" />
+                  <SelectTrigger 
+                    className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                      errors.category ? "border-red-500" : ""
+                    }`}
+                  >
+                    <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {allCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                  <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
+                    {allCategories.map((category) => (
+                      <SelectItem
+                        key={category}
+                        value={category}
+                        className="hover:bg-orange-50"
+                      >
+                        {category}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -427,7 +454,7 @@ export default function InventoryItemModal({
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
                   <div>
-                    <Label htmlFor="name" className="text-sm font-medium">
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
                       Item Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -437,7 +464,9 @@ export default function InventoryItemModal({
                       onChange={handleChange}
                       placeholder="Enter item name"
                       required
-                      className={`mt-1.5 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                      className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                        errors.name ? "border-red-500" : ""
+                      }`}
                     />
                     {errors.name && (
                       <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -445,23 +474,31 @@ export default function InventoryItemModal({
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium">
+                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
                       Category <span className="text-red-500">*</span>
                     </Label>
                     <Select
+                      name="category"
                       value={formData.category}
                       onValueChange={(value) =>
                         handleChange({ name: "category", value })
                       }
-                      required
                     >
-                      <SelectTrigger className={`mt-1.5 ${errors.category ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
-                        <SelectValue placeholder="Select category" />
+                      <SelectTrigger 
+                        className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                          errors.category ? "border-red-500" : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {allCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
+                      <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
+                        {allCategories.map((category) => (
+                          <SelectItem
+                            key={category}
+                            value={category}
+                            className="hover:bg-orange-50"
+                          >
+                            {category}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -473,7 +510,7 @@ export default function InventoryItemModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="quantity" className="text-sm font-medium">
+                      <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
                         Quantity <span className="text-red-500">*</span>
                       </Label>
                       <Input
@@ -485,7 +522,9 @@ export default function InventoryItemModal({
                         value={formData.quantity}
                         onChange={handleNumberChange}
                         required
-                        className={`mt-1.5 ${errors.quantity ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                        className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                          errors.quantity ? "border-red-500" : ""
+                        }`}
                       />
                       {errors.quantity && (
                         <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
@@ -493,22 +532,31 @@ export default function InventoryItemModal({
                     </div>
 
                     <div>
-                      <Label htmlFor="unit" className="text-sm font-medium">
+                      <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
                         Unit <span className="text-red-500">*</span>
                       </Label>
                       <Select
+                        name="unit"
                         value={formData.unit}
                         onValueChange={(value) =>
                           handleChange({ name: "unit", value })
                         }
                       >
-                        <SelectTrigger id="unit" className={`mt-1.5 ${errors.unit ? 'border-red-500 focus-visible:ring-red-500' : ''}`}>
-                          <SelectValue placeholder="Select unit" />
+                        <SelectTrigger 
+                          className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                            errors.unit ? "border-red-500" : ""
+                          }`}
+                        >
+                          <SelectValue placeholder="Select a unit" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {commonUnits.map((unitOption) => (
-                            <SelectItem key={unitOption} value={unitOption}>
-                              {unitOption}
+                        <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
+                          {commonUnits.map((unit) => (
+                            <SelectItem
+                              key={unit}
+                              value={unit}
+                              className="hover:bg-orange-50"
+                            >
+                              {unit}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -522,7 +570,7 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="description"
-                      className="text-sm font-medium"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Description
                     </Label>
@@ -532,7 +580,7 @@ export default function InventoryItemModal({
                       value={formData.description}
                       onChange={handleChange}
                       placeholder="Enter item description"
-                      className="min-h-[100px] mt-1.5"
+                      className="min-h-[100px] border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
                 </div>
@@ -552,13 +600,13 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="costPerUnit"
-                      className="text-sm font-medium"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Cost Per Unit <span className="text-red-500">*</span>
                     </Label>
-                    <div className="relative mt-1.5">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                        <FiDollarSign className="h-4 w-4" />
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiDollarSign className="h-4 w-4 text-gray-400" />
                       </div>
                       <Input
                         id="costPerUnit"
@@ -569,7 +617,9 @@ export default function InventoryItemModal({
                         value={formData.cost}
                         onChange={handleNumberChange}
                         required
-                        className="pl-8"
+                        className={`pl-8 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
+                          errors.cost ? "border-red-500" : ""
+                        }`}
                       />
                     </div>
                     {item && (
@@ -582,7 +632,7 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="reorderPoint"
-                      className="text-sm font-medium"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Reorder Level
                     </Label>
@@ -594,7 +644,7 @@ export default function InventoryItemModal({
                       step="1"
                       value={formData.reorder_level}
                       onChange={handleNumberChange}
-                      className="mt-1.5"
+                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                     <p className="text-xs text-muted-foreground mt-1 flex items-center">
                       <FiAlertCircle className="h-3 w-3 mr-1 text-amber-500" />
@@ -605,7 +655,7 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="maxStock"
-                      className="text-sm font-medium"
+                      className="text-sm font-medium text-gray-700"
                     >
                       Maximum Stock Level
                     </Label>
@@ -617,7 +667,7 @@ export default function InventoryItemModal({
                       step="1"
                       value={formData.max_stock}
                       onChange={handleNumberChange}
-                      className="mt-1.5"
+                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Used for inventory level visualization (optional)
@@ -640,7 +690,7 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="location"
-                      className="text-sm font-medium flex items-center gap-1.5"
+                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
                     >
                       <FiMapPin className="h-4 w-4 text-muted-foreground" />
                       Location
@@ -651,7 +701,7 @@ export default function InventoryItemModal({
                       value={formData.location}
                       onChange={handleChange}
                       placeholder="Storage location"
-                      className="mt-1.5"
+                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
 
@@ -659,21 +709,24 @@ export default function InventoryItemModal({
                     <div>
                       <Label
                         htmlFor="supplierId"
-                        className="text-sm font-medium flex items-center gap-1.5"
+                        className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
                       >
                         <FiTruck className="h-4 w-4 text-muted-foreground" />
                         Supplier
                       </Label>
                       <Select
+                        name="supplier_id"
                         value={formData.supplier_id}
                         onValueChange={(value) =>
                           handleChange({ name: "supplier_id", value })
                         }
                       >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue placeholder="Select supplier" />
+                        <SelectTrigger 
+                          className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+                        >
+                          <SelectValue placeholder="Select a supplier" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
                           <SelectItem value="">None</SelectItem>
                           {suppliers.map((supplier) => (
                             <SelectItem key={supplier.id} value={supplier.id}>
@@ -688,7 +741,7 @@ export default function InventoryItemModal({
                   <div>
                     <Label
                       htmlFor="expiryDate"
-                      className="text-sm font-medium flex items-center gap-1.5"
+                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
                     >
                       <FiCalendar className="h-4 w-4 text-muted-foreground" />
                       Expiry Date
@@ -699,14 +752,14 @@ export default function InventoryItemModal({
                       type="date"
                       value={formData.expiry_date}
                       onChange={handleChange}
-                      className="mt-1.5"
+                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                   </div>
 
                   <div>
                     <Label
                       htmlFor="imageUrl"
-                      className="text-sm font-medium flex items-center gap-1.5"
+                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
                     >
                       <FiImage className="h-4 w-4 text-muted-foreground" />
                       Product Image URL
@@ -717,17 +770,16 @@ export default function InventoryItemModal({
                       value={formData.image_url}
                       onChange={handleChange}
                       placeholder="Enter image URL"
-                      className="mt-1.5"
+                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                     />
                     {formData.image_url && (
                       <div className="mt-2 rounded-md overflow-hidden border border-slate-200 dark:border-slate-800 h-16 w-16">
-                        <img 
-                          src={formData.image_url} 
-                          alt="Product preview" 
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/EEE/999?text=No+Image';
-                          }}
+                        <Image
+                          src={formData.image_url}
+                          alt={formData.name}
+                          width={64}
+                          height={64}
+                          className="object-cover w-full h-full"
                         />
                       </div>
                     )}

@@ -1,21 +1,20 @@
 "use client";
 
-import React from "react";
-import { InventoryItem } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  ChevronRight,
-  ImageIcon,
-  Pencil,
-  Plus,
-  Minus,
-} from "lucide-react";
-import { ProxyImage } from "@/components/ui/proxy-image";
+import React, { useState } from "react";
+import { MoreHorizontal, Minus, Plus, ImageIcon, ChevronDown, ChevronRight, Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { InventoryItem } from "@/lib/types";
+import { ProxyImage } from "@/components/ui/proxy-image";
 import { formatUnit, isLowStock, isOutOfStock } from "./inventoryUtils";
-import { StockStatusDisplay } from "./StockStatusDisplay";
 import {
   Tooltip,
   TooltipContent,
@@ -32,29 +31,27 @@ interface ExtendedInventoryItem extends InventoryItem {
 
 interface TableItemProps {
   item: InventoryItem;
-  index: number;
   isExpanded: boolean;
   isSelected: boolean;
   compactMode: boolean;
   onEditClick: (item: InventoryItem) => void;
   onDeleteClick: (item: InventoryItem) => void;
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
-  toggleItemSelection: (itemId: string) => void;
-  toggleExpanded: (itemId: string) => void;
+  onToggleSelect: () => void;
+  onToggleExpand: () => void;
   formatCurrency: (value: number) => string;
 }
 
 export function TableItem({
   item,
-  index,
   isExpanded,
   isSelected,
   compactMode,
   onEditClick,
-  // onDeleteClick,
+  onDeleteClick,
   onUpdateQuantity,
-  toggleItemSelection,
-  toggleExpanded,
+  onToggleSelect,
+  onToggleExpand,
   formatCurrency,
 }: TableItemProps) {
   const itemIsLowStock = isLowStock(item);
@@ -77,10 +74,10 @@ export function TableItem({
     <React.Fragment>
       <tr
         className={cn(
-          "transition-all duration-150 group",
+          "transition-all duration-150 group border-b border-gray-100",
           compactMode ? "h-10" : "",
-          isSelected ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-base-200/40",
-          isExpanded && !isSelected && "bg-base-200/20"
+          isSelected ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50",
+          isExpanded && !isSelected && "bg-gray-50"
         )}
       >
         <td
@@ -92,9 +89,9 @@ export function TableItem({
           <div className="flex items-center justify-center">
             <input
               type="checkbox"
-              className="checkbox checkbox-sm checkbox-primary"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               checked={isSelected}
-              onChange={() => toggleItemSelection(item.id)}
+              onChange={onToggleSelect}
             />
           </div>
         </td>
@@ -102,16 +99,11 @@ export function TableItem({
         {/* # and SKU columns only visible in standard view */}
         {!compactMode && (
           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-base-content/60">
-            {index + 1}
-          </td>
-        )}
-
-        {!compactMode && (
-          <td className="px-4 py-3 whitespace-nowrap text-xs font-mono text-base-content/60">
             {item.id.substring(0, 8)}
           </td>
         )}
 
+        {/* Name column */}
         <td
           className={cn(
             "whitespace-nowrap",
@@ -152,6 +144,7 @@ export function TableItem({
           </div>
         </td>
 
+        {/* Category column */}
         <td
           className={cn(
             "whitespace-nowrap",
@@ -169,19 +162,7 @@ export function TableItem({
           </Badge>
         </td>
 
-        <td
-          className={cn(
-            "whitespace-nowrap text-right",
-            compactMode ? "px-3 py-1" : "px-4 py-3"
-          )}
-        >
-          <span
-            className={cn("font-medium", compactMode ? "text-xs" : "text-sm")}
-          >
-            {formatCurrency(item.cost_per_unit || 0)}
-          </span>
-        </td>
-
+        {/* Quantity column */}
         <td
           className={cn(
             "whitespace-nowrap text-right",
@@ -235,13 +216,44 @@ export function TableItem({
           </div>
         </td>
 
+        {/* Unit column */}
         <td
           className={cn(
-            "whitespace-nowrap text-center",
+            "whitespace-nowrap",
             compactMode ? "px-3 py-1" : "px-4 py-3"
           )}
         >
-          <StockStatusDisplay item={item} compactMode={compactMode} />
+          <span className={cn("text-sm text-gray-600", compactMode ? "text-xs" : "text-sm")}>
+            {item.unit}
+          </span>
+        </td>
+
+        {/* Cost column */}
+        <td
+          className={cn(
+            "whitespace-nowrap text-right",
+            compactMode ? "px-3 py-1" : "px-4 py-3"
+          )}
+        >
+          <span
+            className={cn("font-medium", compactMode ? "text-xs" : "text-sm")}
+          >
+            {formatCurrency(item.cost_per_unit || 0)}
+          </span>
+        </td>
+
+        {/* Total Value column */}
+        <td
+          className={cn(
+            "whitespace-nowrap text-right",
+            compactMode ? "px-3 py-1" : "px-4 py-3"
+          )}
+        >
+          <span
+            className={cn("font-medium", compactMode ? "text-xs" : "text-sm")}
+          >
+            {formatCurrency((item.cost_per_unit || 0) * item.quantity)}
+          </span>
         </td>
 
         <td
@@ -256,7 +268,7 @@ export function TableItem({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 rounded-full btn-ghost"
+                  className="h-6 w-6 rounded-full btn-ghost hover:bg-orange-50 hover:text-orange-600"
                   onClick={() => onEditClick(item)}
                 >
                   <Pencil className="h-3 w-3" />
@@ -264,8 +276,16 @@ export function TableItem({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 rounded-full btn-ghost"
-                  onClick={() => toggleExpanded(item.id)}
+                  className="h-6 w-6 rounded-full btn-ghost hover:bg-red-50 hover:text-red-600"
+                  onClick={() => onDeleteClick(item)}
+                >
+                  <Trash className="h-3 w-3 text-red-500" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 rounded-full btn-ghost hover:bg-orange-50 hover:text-orange-600"
+                  onClick={onToggleExpand}
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-3 w-3" />
@@ -282,10 +302,10 @@ export function TableItem({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity btn-ghost"
+                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity btn-ghost hover:bg-orange-50 hover:text-orange-600"
                         onClick={() => onEditClick(item)}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5 text-gray-500" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="left">
@@ -300,11 +320,29 @@ export function TableItem({
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity btn-ghost hover:bg-red-50 hover:text-red-600"
+                        onClick={() => onDeleteClick(item)}
+                      >
+                        <Trash className="h-3.5 w-3.5 text-red-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>Delete item</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className={cn(
-                          "h-8 w-8 rounded-full btn-ghost",
-                          isExpanded && "bg-base-200"
+                          "h-8 w-8 rounded-full",
+                          isExpanded ? "bg-orange-100 text-orange-600" : "opacity-0 group-hover:opacity-100 hover:bg-orange-50 hover:text-orange-600"
                         )}
-                        onClick={() => toggleExpanded(item.id)}
+                        onClick={onToggleExpand}
                       >
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />

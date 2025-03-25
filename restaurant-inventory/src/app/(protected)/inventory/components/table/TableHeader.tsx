@@ -9,7 +9,8 @@ interface TableHeaderProps {
   field: string;
   sortField: string;
   sortDirection: "asc" | "desc";
-  handleSort: (field: string) => void;
+  onSort: (field: string) => void;
+  className?: string;
 }
 
 export function TableHeader({
@@ -17,34 +18,40 @@ export function TableHeader({
   field,
   sortField,
   sortDirection,
-  handleSort,
+  onSort,
+  className,
 }: TableHeaderProps) {
   const isActive = sortField === field;
 
   return (
-    <div
-      className="flex items-center gap-1 cursor-pointer group"
-      onClick={() => handleSort(field)}
+    <th 
+      className={cn(
+        "text-left cursor-pointer",
+        className
+      )}
+      onClick={() => onSort(field)}
     >
-      {label}
-      <span
-        className={cn(
-          "transition-colors",
-          isActive
-            ? "text-base-content"
-            : "text-base-content/0 group-hover:text-base-content/50"
-        )}
-      >
-        {isActive ? (
-          sortDirection === "asc" ? (
-            <ChevronUp className="h-4 w-4" />
+      <div className="flex items-center gap-1 group">
+        {label}
+        <span
+          className={cn(
+            "transition-colors",
+            isActive
+              ? "text-gray-700"
+              : "text-gray-300 group-hover:text-gray-400"
+          )}
+        >
+          {isActive ? (
+            sortDirection === "asc" ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )
           ) : (
-            <ChevronDown className="h-4 w-4" />
-          )
-        ) : (
-          <ArrowUpDown className="h-3 w-3 opacity-50" />
-        )}
-      </span>
-    </div>
+            <ArrowUpDown className="h-3 w-3" />
+          )}
+        </span>
+      </div>
+    </th>
   );
 }

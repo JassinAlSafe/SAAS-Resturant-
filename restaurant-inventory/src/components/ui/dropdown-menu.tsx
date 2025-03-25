@@ -69,11 +69,17 @@ interface DropdownMenuContentProps {
 const DropdownMenuContent = React.forwardRef<
   HTMLUListElement,
   DropdownMenuContentProps & React.HTMLAttributes<HTMLUListElement>
->(({ children, className, ...props }, ref) => {
+>(({ children, className, sideOffset, ...props }, ref) => {
+  // Apply sideOffset using inline style if provided
+  const style = sideOffset !== undefined 
+    ? { marginTop: `${sideOffset}px`, ...props.style } 
+    : props.style;
+
   return (
     <ul
       ref={ref}
       tabIndex={0}
+      style={style}
       className={cn(
         "dropdown-content menu p-2 shadow-md bg-base-100 rounded-box z-[1] min-w-[8rem]",
         className

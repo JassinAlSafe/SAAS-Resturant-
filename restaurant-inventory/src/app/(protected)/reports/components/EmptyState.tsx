@@ -18,16 +18,19 @@ export function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <Card className="flex flex-col items-center justify-center p-8 text-center">
-      <div className="p-3 bg-primary/10 rounded-xl mb-4">
-        <FileBarChart2 className="h-8 w-8 text-primary" />
+    <Card className="flex flex-col items-center justify-center p-8 text-center border border-gray-200 shadow-sm rounded-xl bg-white">
+      <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl mb-5 shadow-sm border border-orange-200">
+        <FileBarChart2 className="h-10 w-10 text-orange-500" />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-sm text-muted-foreground mt-2 mb-4 max-w-sm">
+      <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+      <p className="text-sm text-gray-500 mt-2 mb-6 max-w-sm">
         {description}
       </p>
       {onAction && (
-        <Button variant="outline" onClick={onAction}>
+        <Button 
+          onClick={onAction}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow transition-all duration-200"
+        >
           {actionLabel}
         </Button>
       )}

@@ -56,7 +56,7 @@ export function InventoryStats({
           value={totalItems.toString()}
           icon={<FiPackage className="h-5 w-5" />}
           description="Items in inventory"
-          color="blue"
+          color="orange"
           trend={{
             value: 0,
             isPositive: true
@@ -131,7 +131,7 @@ interface StatCardProps {
   value: string;
   icon: React.ReactNode;
   description: string;
-  color: "blue" | "green" | "yellow" | "red";
+  color: "blue" | "green" | "yellow" | "red" | "orange";
   showAlert?: boolean;
   trend?: {
     value: number;
@@ -148,103 +148,106 @@ function StatCard({
   showAlert = false,
   trend,
 }: StatCardProps) {
-  // Map color to variant styles using DaisyUI classes
+  // Map color to variant styles using modern color palette
   const colorVariants = {
+    orange: {
+      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+      accentColor: "bg-gradient-to-r from-orange-500 to-orange-600",
+      titleColor: "text-gray-500",
+      valueColor: "text-orange-600",
+      alertBg: "bg-orange-50",
+    },
     blue: {
-      iconBg: "bg-primary/10",
-      iconColor: "text-primary",
-      trendUp: "text-success",
-      trendDown: "text-error",
-      accentColor: "bg-primary",
-      titleColor: "text-base-content/60",
-      valueColor: "text-primary",
-      alertBg: "bg-primary/10",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+      accentColor: "bg-gradient-to-r from-blue-500 to-blue-600",
+      titleColor: "text-gray-500",
+      valueColor: "text-blue-600",
+      alertBg: "bg-blue-50",
     },
     green: {
-      iconBg: "bg-success/10",
-      iconColor: "text-success",
-      trendUp: "text-success",
-      trendDown: "text-error",
-      accentColor: "bg-success",
-      titleColor: "text-base-content/60",
-      valueColor: "text-success",
-      alertBg: "bg-success/10",
+      iconBg: "bg-green-100",
+      iconColor: "text-green-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+      accentColor: "bg-gradient-to-r from-green-500 to-green-600",
+      titleColor: "text-gray-500",
+      valueColor: "text-green-600",
+      alertBg: "bg-green-50",
     },
     yellow: {
-      iconBg: "bg-warning/10",
-      iconColor: "text-warning",
-      trendUp: "text-success",
-      trendDown: "text-warning",
-      accentColor: "bg-warning",
-      titleColor: "text-base-content/60",
-      valueColor: "text-warning",
-      alertBg: "bg-warning/10",
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600",
+      trendUp: "text-green-600",
+      trendDown: "text-amber-600",
+      accentColor: "bg-gradient-to-r from-amber-500 to-amber-600",
+      titleColor: "text-gray-500",
+      valueColor: "text-amber-600",
+      alertBg: "bg-amber-50",
     },
     red: {
-      iconBg: "bg-error/10",
-      iconColor: "text-error",
-      trendUp: "text-success",
-      trendDown: "text-error",
-      accentColor: "bg-error",
-      titleColor: "text-base-content/60",
-      valueColor: "text-error",
-      alertBg: "bg-error/10",
+      iconBg: "bg-red-100",
+      iconColor: "text-red-600",
+      trendUp: "text-green-600",
+      trendDown: "text-red-600",
+      accentColor: "bg-gradient-to-r from-red-500 to-red-600",
+      titleColor: "text-gray-500",
+      valueColor: "text-red-600",
+      alertBg: "bg-red-50",
     },
   };
 
   const styles = colorVariants[color];
 
   return (
-    <div className="relative h-full overflow-hidden rounded-xl bg-base-100 shadow-md hover:shadow-lg transition-all duration-300 group">
+    <div className="relative h-full overflow-hidden rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group">
       {/* Top accent bar */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.accentColor}`}></div>
-      
-      <div className="p-5 h-full flex flex-col">
-        <div className="flex justify-between items-start mb-3">
-          <div className={`${styles.iconBg} ${styles.iconColor} p-3 rounded-full transition-transform group-hover:scale-110 duration-300`}>
-            {icon}
+
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className={`text-sm font-medium ${styles.titleColor} mb-1`}>{title}</h3>
+            <p className={`text-2xl font-bold ${styles.valueColor}`}>{value}</p>
           </div>
+          <div className={`p-3 rounded-full ${styles.iconBg} shadow-sm`}>
+            <div className={styles.iconColor}>{icon}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-500">{description}</p>
+          
           {trend && (
-            <div
-              className={`flex items-center text-sm font-medium ${
+            <div className="flex items-center">
+              <span className={`text-xs font-medium ${
                 trend.isPositive ? styles.trendUp : styles.trendDown
-              }`}
-            >
-              {trend.isPositive ? (
-                <FiTrendingUp className="mr-1 h-4 w-4" />
-              ) : (
-                <FiTrendingDown className="mr-1 h-4 w-4" />
+              }`}>
+                {trend.value > 0 ? `${trend.value}%` : ''}
+              </span>
+              {trend.value > 0 && (
+                trend.isPositive ? (
+                  <FiTrendingUp className={`ml-1 h-3 w-3 ${styles.trendUp}`} />
+                ) : (
+                  <FiTrendingDown className={`ml-1 h-3 w-3 ${styles.trendDown}`} />
+                )
               )}
-              {Math.abs(trend.value)}%
             </div>
           )}
         </div>
-        <div className="space-y-1 flex-1">
-          <p className={`text-sm font-medium ${styles.titleColor}`}>{title}</p>
-          <p className={`text-2xl font-bold ${styles.valueColor} group-hover:scale-105 transition-transform duration-300`}>
-            {value}
-          </p>
-          <p className="text-xs text-base-content/40 mt-1">{description}</p>
-        </div>
-        
+
+        {/* Alert indicator */}
         {showAlert && (
-          <div className="mt-4 pt-3 border-t border-base-300">
-            <div className={`mt-1 h-1.5 rounded-full overflow-hidden ${styles.alertBg}`}>
-              <motion.div
-                className={`h-full ${styles.accentColor}`}
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            </div>
+          <div className={`mt-3 py-1.5 px-2.5 rounded-md ${styles.alertBg} flex items-center text-xs border border-${color}-200`}>
+            <FiAlertTriangle className={`h-3.5 w-3.5 mr-1.5 ${styles.iconColor}`} />
+            <span className={`${styles.iconColor} font-medium`}>Requires attention</span>
           </div>
         )}
-        
-        {/* Hover effect */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          <div className="absolute inset-0 bg-base-200 opacity-0 group-hover:opacity-30 transition-opacity"></div>
-          <div className="absolute inset-[-100%] top-0 bg-gradient-to-r from-transparent via-base-100/50 to-transparent transform -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-        </div>
       </div>
     </div>
   );
