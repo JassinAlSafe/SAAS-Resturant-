@@ -67,13 +67,25 @@ export function Modal({
   position = "middle",
   hideCloseIcon = false,
 }: ModalProps) {
+  // Handle ESC key press
+  React.useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (isOpen && e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscapeKey);
+    return () => window.removeEventListener('keydown', handleEscapeKey);
+  }, [isOpen, onClose]);
+
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
       size={size}
       position={position}
-      className={cn("p-0 bg-white overflow-hidden", className)}
+      className={cn("p-0 bg-white overflow-hidden rounded-lg", className)}
     >
       {!hideCloseIcon && (
         <button
@@ -87,7 +99,11 @@ export function Modal({
 
       <div className="px-6 pt-6 pb-2">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          {typeof title === 'string' ? (
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          ) : (
+            title
+          )}
           {description && (
             <p className="text-base text-gray-600 mt-2">{description}</p>
           )}

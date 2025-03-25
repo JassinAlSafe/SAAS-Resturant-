@@ -13,17 +13,14 @@ const activeTimers = new Set<string>();
 type DbIngredient = {
     id: string;
     name: string;
-    description: string | null;
     category: string;
     quantity: number;
     unit: string;
     cost: number;
-
-    minimum_stock_level: number | null;
     reorder_level: number | null;
-    reorder_point: number | null;
+    
+    // Fields that exist in the database
     supplier_id: string | null;
-    location: string | null;
     expiry_date: string | null;
     image_url: string | null;
     created_at: string;
@@ -152,7 +149,9 @@ const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
     return {
         id: data.id,
         name: data.name,
-        description: data.description || undefined,
+        // Fields that don't exist in the database are set to defaults
+        description: '',
+        location: '',
         category: data.category,
         quantity: data.quantity,
         unit: data.unit,
@@ -160,7 +159,6 @@ const mapDbToInventoryItem = (data: DbIngredient): InventoryItem => {
         cost_per_unit: data.cost,
         reorder_level: data.reorder_level || 0,
         supplier_id: data.supplier_id || undefined,
-        location: data.location || undefined,
         expiry_date: data.expiry_date || undefined,
         image_url: data.image_url || undefined,
         created_at: data.created_at,
@@ -425,9 +423,9 @@ export const inventoryService = {
                 unit: item.unit,
                 cost: item.cost || 0,
                 reorder_level: reorderLevel,
-                supplier_id: item.supplier_id || null,
+                supplier_id: item.supplier_id && item.supplier_id !== '' ? item.supplier_id : null,
                 image_url: item.image_url || null,
-                expiry_date: item.expiry_date || null,
+                expiry_date: item.expiry_date && item.expiry_date !== '' ? item.expiry_date : null,
                 business_profile_id: businessProfileId,
                 created_at: now,
                 updated_at: now
@@ -482,16 +480,59 @@ export const inventoryService = {
                 throw new Error("No business profile found");
             }
 
+            // Create a clean copy of updates to modify
+            const cleanUpdates: Partial<InventoryFormData & Record<string, unknown>> = { ...updates };
+            
+            // Remove fields that don't exist in the database
+            const fieldsToRemove = ['description', 'location'];
+            fieldsToRemove.forEach(field => {
+                if (field in cleanUpdates) {
+                    delete cleanUpdates[field as keyof typeof cleanUpdates];
+                    console.log(`Removed ${field} field as it does not exist in the database schema`);
+                }
+            });
+
+            // Handle date fields - remove empty strings as they're invalid for date fields
+            if (cleanUpdates.expiry_date === '') {
+                delete cleanUpdates.expiry_date;
+                console.log('Removed empty expiry_date to prevent date format errors');
+            }
+            
+            // Handle UUID fields - convert empty strings to null
+            if (cleanUpdates.supplier_id === '') {
+                cleanUpdates.supplier_id = null as unknown as string;
+                console.log('Converted empty supplier_id to null to prevent UUID format errors');
+            }
+
+            console.log('Sending updates to database:', cleanUpdates);
+
             const { data, error } = await supabase
                 .from('ingredients')
-                .update(updates)
+                .update(cleanUpdates)
                 .eq('id', id)
                 .eq('business_profile_id', businessProfileId)
                 .select()
                 .single();
 
-            if (error) throw error;
-            return mapDbToInventoryItem(data);
+            if (error) {
+                console.error('Database error when updating item:', error);
+                throw error;
+            }
+            
+            // When mapping back to our InventoryItem interface, we need to handle fields
+            // that don't exist in the database
+            const mappedItem = mapDbToInventoryItem(data);
+            
+            // Preserve fields from the original updates since they're not stored in the DB
+            if (updates.description !== undefined) {
+                mappedItem.description = updates.description;
+            }
+            
+            if (updates.location !== undefined) {
+                mappedItem.location = updates.location;
+            }
+            
+            return mappedItem;
         } catch (error) {
             console.error('Error updating inventory item:', error);
             throw error;
@@ -515,17 +556,48 @@ export const inventoryService = {
                 throw new Error("No business profile found");
             }
 
+            // First, check if there are any references in the ingredient_alerts table
+            const { data: alertsData, error: alertsError } = await supabase
+                .from('ingredient_alerts')
+                .select('id')
+                .eq('ingredient_id', id)
+                .limit(1);
+
+            if (alertsError) {
+                console.error('Error checking ingredient alerts:', alertsError);
+                throw alertsError;
+            }
+
+            // If there are alerts referencing this ingredient, delete them first
+            if (alertsData && alertsData.length > 0) {
+                console.log('Deleting related ingredient alerts first');
+                const { error: deleteAlertsError } = await supabase
+                    .from('ingredient_alerts')
+                    .delete()
+                    .eq('ingredient_id', id);
+
+                if (deleteAlertsError) {
+                    console.error('Error deleting related alerts:', deleteAlertsError);
+                    throw deleteAlertsError;
+                }
+            }
+
+            // Now delete the ingredient
             const { error } = await supabase
                 .from('ingredients')
                 .delete()
                 .eq('id', id)
                 .eq('business_profile_id', businessProfileId);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error deleting ingredient:', error);
+                throw error;
+            }
+            
             return true;
         } catch (error) {
             console.error('Error deleting inventory item:', error);
-            return false;
+            throw error;
         }
     },
 

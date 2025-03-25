@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { Modal, ModalFooter } from "@/components/ui/modal/modal";
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -28,42 +28,37 @@ export default function DeleteConfirmationDialog({
     onConfirm();
   };
 
-  // Using daisy UI modal
+  const modalTitle = (
+    <div className="flex items-center gap-2 text-gray-900">
+      <AlertTriangle className="h-5 w-5 text-orange-500" />
+      <h3 className="text-xl font-semibold">Confirm Deletion</h3>
+    </div>
+  );
+
   return (
-    <dialog
-      id="delete_confirmation_dialog"
-      className={`modal ${isOpen ? "modal-open" : ""}`}
+    <Modal
+      isOpen={isOpen}
       onClose={onClose}
+      title={modalTitle}
+      description={`Are you sure you want to delete "${itemName}"? This action cannot be undone.`}
+      size="sm"
+      className="min-h-[220px] w-full"
+      footer={
+        <ModalFooter
+          onClose={onClose}
+          onConfirm={handleConfirm}
+          closeLabel="Cancel"
+          confirmLabel="Delete"
+          confirmVariant="error"
+        />
+      }
     >
-      <div className="modal-box bg-white max-w-md">
-        <div className="flex items-center gap-2 text-orange-500 mb-2">
-          <AlertTriangle className="h-5 w-5" />
-          <h3 className="text-xl font-semibold text-gray-900">
-            Confirm Deletion
-          </h3>
-        </div>
-        <p className="text-gray-600 py-4">
-          Are you sure you want to delete &quot;{itemName}&quot;? This action
-          cannot be undone.
-        </p>
-        <div className="modal-action flex justify-end mt-4">
-          <Button
-            onClick={onClose}
-            className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            className="bg-orange-500 hover:bg-orange-600 text-white border-0"
-          >
-            Delete
-          </Button>
+      {/* Modal requires children, even if empty */}
+      <div className="min-h-[60px] flex items-center justify-center">
+        <div className="text-gray-500 text-sm">
+          This will permanently remove the item from your inventory.
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onClose}>
-        <button>close</button>
-      </form>
-    </dialog>
+    </Modal>
   );
 }

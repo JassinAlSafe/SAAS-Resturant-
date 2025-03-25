@@ -137,8 +137,7 @@ export const useInventoryStore = create<InventoryState>()(
 
                     // Filter out undefined or null values
                     Object.keys(cleanUpdates).forEach(key => {
-                        if (cleanUpdates[key as keyof typeof cleanUpdates] === undefined ||
-                            cleanUpdates[key as keyof typeof cleanUpdates] === null) {
+                        if (cleanUpdates[key as keyof typeof cleanUpdates] === undefined) {
                             delete cleanUpdates[key as keyof typeof cleanUpdates];
                         }
                     });
@@ -161,9 +160,26 @@ export const useInventoryStore = create<InventoryState>()(
                     return updatedItem;
                 } catch (error) {
                     console.error('Error updating inventory item:', error);
+                    
+                    // Create a user-friendly error message
+                    let errorMessage = 'Failed to update item';
+                    
+                    if (error instanceof Error) {
+                        // Check for specific database errors
+                        if (error.message.includes('description')) {
+                            errorMessage = 'Error with description field. Please try a different value.';
+                        } else if (error.message.includes('foreign key constraint')) {
+                            errorMessage = 'This item is referenced by other records and cannot be updated.';
+                        } else {
+                            errorMessage = `Error: ${error.message}`;
+                        }
+                    }
+                    
                     set({
                         isSubmitting: false,
-                        error: error instanceof Error ? error : new Error('Failed to update item')
+                        error: error instanceof Error ? 
+                            new Error(errorMessage) : 
+                            new Error('Failed to update item')
                     });
                     return null;
                 }
@@ -189,9 +205,25 @@ export const useInventoryStore = create<InventoryState>()(
                     return success;
                 } catch (error) {
                     console.error('Error deleting inventory item:', error);
+                    
+                    // Create a user-friendly error message
+                    let errorMessage = 'Failed to delete item';
+                    
+                    if (error instanceof Error) {
+                        // Check for specific database errors
+                        if (error.message.includes('foreign key constraint') || 
+                            error.message.includes('ingredient_alerts')) {
+                            errorMessage = 'This item is referenced by alerts or other records. Attempting to remove these references first.';
+                        } else {
+                            errorMessage = `Error: ${error.message}`;
+                        }
+                    }
+                    
                     set({
                         isSubmitting: false,
-                        error: error instanceof Error ? error : new Error('Failed to delete item')
+                        error: error instanceof Error ? 
+                            new Error(errorMessage) : 
+                            new Error('Failed to delete item')
                     });
                     return false;
                 }
