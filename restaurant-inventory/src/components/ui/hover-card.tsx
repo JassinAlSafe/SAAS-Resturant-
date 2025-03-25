@@ -1,29 +1,118 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+export interface HoverCardProps {
+  children: React.ReactNode;
+}
 
-const HoverCard = HoverCardPrimitive.Root
+export interface HoverCardTriggerProps {
+  children: React.ReactNode;
+  asChild?: boolean;
+}
 
-const HoverCardTrigger = HoverCardPrimitive.Trigger
+export interface HoverCardContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {
+  className?: string;
+  align?: "start" | "center" | "end" | "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
+  width?: string;
+}
+
+/**
+ * HoverCard component that uses DaisyUI tooltip
+ * Provides similar functionality to Radix UI's HoverCard
+ */
+const HoverCard = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & HoverCardProps
+>(({ children, className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={cn("relative group", className)} {...props}>
+      {children}
+    </div>
+  );
+});
+
+HoverCard.displayName = "HoverCard";
+
+const HoverCardTrigger = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & HoverCardTriggerProps
+>(({ className, children, asChild = false, ...props }, ref) => {
+  if (asChild) {
+    // If asChild is true, we just wrap the children in a span with hover functionality
+    return (
+      <span ref={ref} className={cn("cursor-pointer", className)} {...props}>
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <div ref={ref} className={cn("cursor-pointer", className)} {...props}>
+      {children}
+    </div>
+  );
+});
+
+HoverCardTrigger.displayName = "HoverCardTrigger";
 
 const HoverCardContent = React.forwardRef<
-  React.ElementRef<typeof HoverCardPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <HoverCardPrimitive.Content
-    ref={ref}
-    align={align}
-    sideOffset={sideOffset}
-    className={cn(
-      "z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-      className
-    )}
-    {...props}
-  />
-))
-HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
+  HTMLDivElement,
+  HoverCardContentProps
+>(
+  (
+    {
+      className,
+      align = "bottom",
+      sideOffset = 8,
+      width = "w-64",
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    // Get DaisyUI tooltip position classes
+    const getPositionClass = () => {
+      switch (align) {
+        case "top":
+          return `bottom-full mb-${sideOffset / 2}`;
+        case "bottom":
+          return `top-full mt-${sideOffset / 2}`;
+        case "left":
+        case "start":
+          return `right-full mr-${sideOffset / 2}`;
+        case "right":
+        case "end":
+          return `left-full ml-${sideOffset / 2}`;
+        default:
+          return `top-full mt-${sideOffset / 2}`;
+      }
+    };
 
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          // Base styles
+          "absolute z-50 rounded-md border bg-white p-4 shadow-lg",
+          // Positioning
+          getPositionClass(),
+          width,
+          // Animation
+          "invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+HoverCardContent.displayName = "HoverCardContent";
+
+export { HoverCard, HoverCardTrigger, HoverCardContent };

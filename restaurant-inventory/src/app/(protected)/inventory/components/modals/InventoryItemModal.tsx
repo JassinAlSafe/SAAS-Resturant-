@@ -1,14 +1,26 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { COMMON_CATEGORIES } from "@/lib/constants";
-import { FiInfo, FiPackage, FiDollarSign, FiBox } from "react-icons/fi";
+import {
+  FiInfo,
+  FiPackage,
+  FiDollarSign,
+  FiBox,
+  FiImage,
+  FiMapPin,
+  FiCalendar,
+  FiTruck,
+  FiAlertCircle,
+} from "react-icons/fi";
+import { cn } from "@/lib/utils";
+import { Modal } from "@/components/ui/modal/modal";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { BaseModal } from "@/components/ui/modal/base-modal";
+import { Select } from "@/components/ui/select";
+import Image from "next/image";
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
@@ -32,33 +44,6 @@ interface InventoryItemModalProps {
   userRole?: "admin" | "manager" | "staff";
 }
 
-// Section component for modal content organization
-const ModalSection: React.FC<{
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-  className?: string;
-  divider?: boolean;
-}> = ({ title, icon, children, className, divider = false }) => {
-  return (
-    <div
-      className={cn(
-        "space-y-4",
-        divider && "border-b border-gray-100 pb-6 mb-6",
-        className
-      )}
-    >
-      {title && (
-        <div className="flex items-center gap-2.5 text-gray-900">
-          {icon && <div className="text-gray-500">{icon}</div>}
-          <h3 className="text-lg font-semibold">{title}</h3>
-        </div>
-      )}
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-};
-
 const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
   isOpen,
   onClose,
@@ -67,8 +52,10 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
   item,
   customCategories = [],
   suppliers,
-  userRole,
 }) => {
+  // Modal focus trap ref
+  const modalRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState<InventoryFormData>({
     name: "",
     category: "",
@@ -86,6 +73,7 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
     Partial<Record<keyof InventoryFormData, string>>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
 
   // Reset form when modal opens/closes or item changes
   useEffect(() => {
@@ -105,11 +93,71 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
       });
       setErrors({});
       setIsSubmitting(false);
+      setActiveTab("basic");
     }
   }, [isOpen, item]);
 
-  // Common units for inventory items
-  const commonUnits = ["pcs", "kg", "g", "l", "ml", "box", "pack"];
+  // Focus trap implementation for accessibility
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modalElement = modalRef.current;
+    const focusableElements = modalElement.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[
+      focusableElements.length - 1
+    ] as HTMLElement;
+
+    // Focus first element when modal opens
+    setTimeout(() => {
+      firstElement.focus();
+    }, 100);
+
+    const handleTabKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    const handleEscapeKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleTabKeyPress);
+    document.addEventListener("keydown", handleEscapeKeyPress);
+
+    return () => {
+      document.removeEventListener("keydown", handleTabKeyPress);
+      document.removeEventListener("keydown", handleEscapeKeyPress);
+    };
+  }, [isOpen, onClose]);
+
+  // Common units for inventory items with friendly names
+  const commonUnits = [
+    { value: "pcs", label: "Pieces" },
+    { value: "kg", label: "Kilograms" },
+    { value: "g", label: "Grams" },
+    { value: "l", label: "Liters" },
+    { value: "ml", label: "Milliliters" },
+    { value: "box", label: "Boxes" },
+    { value: "pack", label: "Packs" },
+    { value: "cans", label: "Cans" },
+    { value: "bottles", label: "Bottles" },
+    { value: "bags", label: "Bags" },
+  ];
 
   // All available categories
   const allCategories = useMemo(() => {
@@ -184,7 +232,17 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      // If there are errors, switch to the first tab that has errors
+      if (errors.name || errors.category) {
+        setActiveTab("basic");
+      } else if (errors.cost || errors.unit) {
+        setActiveTab("cost");
+      } else if (errors.quantity || errors.reorder_level) {
+        setActiveTab("stock");
+      }
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -199,56 +257,17 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, item, onSave, onUpdate, onClose, validateForm]);
+  }, [formData, item, onSave, onUpdate, onClose, validateForm, errors]);
 
-  // Log modal state changes for debugging
-  useEffect(() => {
-    console.log("Modal state changed:", { isOpen });
-  }, [isOpen]);
-
-  return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      position="middle"
-      size="xl"
-      className="p-0 overflow-hidden"
-    >
-      {/* Close button X */}
-      <button
-        className="btn btn-sm btn-circle absolute right-4 top-4 text-gray-500 hover:text-gray-900 hover:bg-gray-100 z-10"
-        onClick={onClose}
-      >
-        ✕
-      </button>
-
-      {/* Modal Header */}
-      <div className="px-6 pt-6 pb-2">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <FiPackage className="text-primary h-6 w-6" />
-            {item ? (
-              <span>
-                Edit <span className="text-primary">{item.name}</span>
-              </span>
-            ) : (
-              "Add New Item"
-            )}
-          </div>
-          <p className="text-base text-gray-600 mt-2">
-            {item
-              ? "Update the details of this inventory item"
-              : "Add a new item to your inventory"}
-          </p>
-        </div>
-
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          {/* Basic Information */}
-          <ModalSection title="Basic Information" icon={<FiInfo />} divider>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Item Name <span className="text-error">*</span>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "basic":
+        return (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium">
+                  Item Name <span className="text-error ml-1">*</span>
                 </label>
                 <Input
                   type="text"
@@ -256,26 +275,27 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter item name"
-                  variant={errors.name ? "error" : undefined}
+                  className={cn(errors.name && "input-error")}
                 />
                 {errors.name && (
-                  <p className="text-xs text-error">{errors.name}</p>
+                  <div className="mt-1.5 flex items-center text-error text-sm">
+                    <FiAlertCircle className="mr-1 h-4 w-4" />
+                    {errors.name}
+                  </div>
                 )}
-              </div>
+              </fieldset>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Category <span className="text-error">*</span>
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium">
+                  Category <span className="text-error ml-1">*</span>
                 </label>
-                <select
-                  className={cn(
-                    "select w-full",
-                    errors.category ? "select-error" : "select-bordered"
-                  )}
+                <Select
+                  variant="primary"
                   value={formData.category}
                   onChange={(e) =>
                     handleChange({ name: "category", value: e.target.value })
                   }
+                  className={cn(errors.category && "select-error")}
                 >
                   <option value="" disabled>
                     Select category
@@ -285,29 +305,69 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
                       {category}
                     </option>
                   ))}
-                </select>
+                </Select>
                 {errors.category && (
-                  <p className="text-xs text-error">{errors.category}</p>
+                  <div className="mt-1.5 flex items-center text-error text-sm">
+                    <FiAlertCircle className="mr-1 h-4 w-4" />
+                    {errors.category}
+                  </div>
                 )}
-              </div>
+              </fieldset>
             </div>
-          </ModalSection>
 
-          {/* Cost and Unit Information */}
-          <ModalSection
-            title="Cost & Unit Information"
-            icon={<FiDollarSign />}
-            divider
-          >
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Cost Per Unit <span className="text-error">*</span>
-                </label>
-                <div className="join w-full">
-                  <span className="join-item inline-flex items-center px-3 border border-base-300 bg-base-200 text-base-content text-sm">
-                    $
+            <fieldset className="fieldset w-full">
+              <label className="label font-medium flex items-center">
+                <FiImage className="mr-2 h-4 w-4" /> Image URL
+              </label>
+              <Input
+                type="text"
+                name="image_url"
+                value={formData.image_url || ""}
+                onChange={handleChange}
+                placeholder="https://example.com/image.jpg"
+                className="input w-full"
+              />
+              <span className="text-xs text-gray-500 mt-1 block">
+                Enter a URL for an image of this item
+              </span>
+
+              {formData.image_url && (
+                <div className="mt-3 p-3 bg-base-200 rounded-lg flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white rounded-md border border-base-300 flex items-center justify-center overflow-hidden relative">
+                    <Image
+                      src={
+                        formData.image_url ||
+                        "https://placehold.co/100x100/e9e9e9/959595?text=No+Image"
+                      }
+                      alt="Item preview"
+                      fill
+                      sizes="64px"
+                      className="object-contain"
+                      onError={() => {
+                        // Do nothing - fallback handled by src
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm text-base-content/70">
+                    Image preview
                   </span>
+                </div>
+              )}
+            </fieldset>
+          </div>
+        );
+
+      case "cost":
+        return (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiDollarSign className="mr-2 h-4 w-4" />
+                  Cost Per Unit <span className="text-error ml-1">*</span>
+                </label>
+                <label className="input-group">
+                  <span className="bg-base-300">$</span>
                   <Input
                     type="number"
                     name="cost"
@@ -315,51 +375,57 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
                     step="0.01"
                     value={formData.cost}
                     onChange={handleNumberChange}
-                    className="join-item rounded-l-none w-full"
-                    variant={errors.cost ? "error" : undefined}
+                    className={cn(errors.cost && "input-error")}
                   />
-                </div>
-                {errors.cost && (
-                  <p className="text-xs text-error">{errors.cost}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Unit <span className="text-error">*</span>
                 </label>
-                <select
-                  className={cn(
-                    "select w-full",
-                    errors.unit ? "select-error" : "select-bordered"
-                  )}
+                {errors.cost && (
+                  <div className="mt-1.5 flex items-center text-error text-sm">
+                    <FiAlertCircle className="mr-1 h-4 w-4" />
+                    {errors.cost}
+                  </div>
+                )}
+              </fieldset>
+
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  Unit <span className="text-error ml-1">*</span>
+                </label>
+                <Select
+                  variant="primary"
                   value={formData.unit}
                   onChange={(e) =>
                     handleChange({ name: "unit", value: e.target.value })
                   }
+                  className={cn(errors.unit && "select-error")}
                 >
                   <option value="" disabled>
                     Select unit
                   </option>
                   {commonUnits.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit}
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label} ({unit.value})
                     </option>
                   ))}
-                </select>
+                </Select>
                 {errors.unit && (
-                  <p className="text-xs text-error">{errors.unit}</p>
+                  <div className="mt-1.5 flex items-center text-error text-sm">
+                    <FiAlertCircle className="mr-1 h-4 w-4" />
+                    {errors.unit}
+                  </div>
                 )}
-              </div>
+              </fieldset>
             </div>
-          </ModalSection>
+          </div>
+        );
 
-          {/* Stock Management */}
-          <ModalSection title="Stock Management" icon={<FiBox />} divider>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Quantity <span className="text-error">*</span>
+      case "stock":
+        return (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiBox className="mr-2 h-4 w-4" />
+                  Quantity <span className="text-error ml-1">*</span>
                 </label>
                 <Input
                   type="number"
@@ -367,135 +433,203 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
                   min="0"
                   value={formData.quantity}
                   onChange={handleNumberChange}
-                  variant={errors.quantity ? "error" : undefined}
+                  className={cn(errors.quantity && "input-error")}
                 />
                 {errors.quantity && (
-                  <p className="text-xs text-error">{errors.quantity}</p>
+                  <div className="mt-1.5 flex items-center text-error text-sm">
+                    <FiAlertCircle className="mr-1 h-4 w-4" />
+                    {errors.quantity}
+                  </div>
                 )}
-              </div>
+              </fieldset>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Reorder Level</label>
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiAlertCircle className="mr-2 h-4 w-4" /> Reorder Level
+                </label>
                 <Input
                   type="number"
                   name="reorder_level"
                   min="0"
                   value={formData.reorder_level}
                   onChange={handleNumberChange}
+                  className="input w-full"
                 />
-                <p className="text-xs text-base-content/70">
+                <span className="text-xs text-gray-500 mt-1 block">
                   Minimum quantity before reorder alert
-                </p>
-              </div>
+                </span>
+              </fieldset>
             </div>
-          </ModalSection>
+          </div>
+        );
 
-          {/* Additional Details */}
-          <ModalSection title="Additional Details" icon={<FiInfo />}>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Textarea
-                  name="description"
-                  value={formData.description}
+      case "details":
+        return (
+          <div className="space-y-5">
+            <fieldset className="fieldset w-full">
+              <label className="label font-medium flex items-center">
+                <FiInfo className="mr-2 h-4 w-4" /> Description
+              </label>
+              <Textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Enter item description..."
+                className="textarea h-24"
+              />
+            </fieldset>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiMapPin className="mr-2 h-4 w-4" /> Storage Location
+                </label>
+                <Input
+                  type="text"
+                  name="location"
+                  value={formData.location}
                   onChange={handleChange}
-                  placeholder="Enter item description..."
-                  className="h-24"
+                  placeholder="e.g., Kitchen Storage A"
+                  className="input w-full"
                 />
-              </div>
+              </fieldset>
 
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Storage Location
-                  </label>
-                  <Input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="e.g., Kitchen Storage A"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Expiry Date</label>
-                  <Input
-                    type="date"
-                    name="expiry_date"
-                    value={formData.expiry_date}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              {suppliers && suppliers.length > 0 && (
-                <div className="space-y-2 mt-4">
-                  <label className="text-sm font-medium">Supplier</label>
-                  <select
-                    className="select w-full select-bordered"
-                    name="supplier_id"
-                    value={formData.supplier_id || ""}
-                    onChange={(e) =>
-                      handleChange({
-                        name: "supplier_id",
-                        value: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">No supplier</option>
-                    {suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-base-content/70">
-                    Select the supplier for this item
-                  </p>
-                </div>
-              )}
-
-              {/* Additional image URL field (visible only for admin/manager) */}
-              {(userRole === "admin" || userRole === "manager") && (
-                <div className="space-y-2 mt-4">
-                  <label className="text-sm font-medium">Image URL</label>
-                  <Input
-                    type="text"
-                    name="image_url"
-                    value={formData.image_url || ""}
-                    onChange={handleChange}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                  <p className="text-xs text-base-content/70">
-                    Enter a URL for an image of this item
-                  </p>
-                </div>
-              )}
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiCalendar className="mr-2 h-4 w-4" /> Expiry Date
+                </label>
+                <Input
+                  type="date"
+                  name="expiry_date"
+                  value={formData.expiry_date}
+                  onChange={handleChange}
+                  className="input w-full"
+                />
+              </fieldset>
             </div>
-          </ModalSection>
-        </form>
-      </div>
 
-      {/* Modal Footer */}
-      <div className="px-6 py-4 mt-4 bg-gray-50 border-t border-gray-100 modal-action justify-end">
-        <Button
-          variant="outline"
-          onClick={onClose}
-          className="h-10 px-4 border-gray-300 text-gray-700 hover:bg-gray-50"
-        >
+            {suppliers && suppliers.length > 0 && (
+              <fieldset className="fieldset w-full">
+                <label className="label font-medium flex items-center">
+                  <FiTruck className="mr-2 h-4 w-4" /> Supplier
+                </label>
+                <Select
+                  variant="primary"
+                  value={formData.supplier_id || ""}
+                  onChange={(e) =>
+                    handleChange({ name: "supplier_id", value: e.target.value })
+                  }
+                  className="select w-full"
+                >
+                  <option value="">No supplier</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </Select>
+                <span className="text-xs text-gray-500 mt-1 block">
+                  Select the supplier for this item
+                </span>
+              </fieldset>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const tabIcons = {
+    basic: <FiInfo className="h-4 w-4" />,
+    cost: <FiDollarSign className="h-4 w-4" />,
+    stock: <FiBox className="h-4 w-4" />,
+    details: <FiInfo className="h-4 w-4" />,
+  };
+
+  const tabLabels = {
+    basic: "Basic Info",
+    cost: "Cost & Unit",
+    stock: "Stock",
+    details: "Details",
+  };
+
+  const modalTitle = (
+    <div className="flex items-center gap-2">
+      <FiPackage className="text-primary h-6 w-6" />
+      <h3 className="text-xl font-bold">
+        {item ? `Edit ${item.name}` : "Add New Item"}
+      </h3>
+    </div>
+  );
+
+  const modalDescription = item
+    ? "Update the details of this inventory item"
+    : "Add a new item to your inventory";
+
+  const modalFooter = (
+    <div className="flex justify-between w-full items-center">
+      <span className="text-xs text-base-content/70 flex items-center">
+        <span className="text-error mr-1">*</span> Required fields
+      </span>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
         <Button
           variant="primary"
           onClick={handleSubmit}
+          disabled={isSubmitting}
           loading={isSubmitting}
-          className="h-10 px-4"
         >
-          {isSubmitting ? "Processing..." : item ? "Update Item" : "Add Item"}
+          {item ? "Update Item" : "Add Item"}
         </Button>
       </div>
-    </BaseModal>
+    </div>
+  );
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
+      description={modalDescription}
+      footer={modalFooter}
+      size="xl"
+    >
+      <div className="px-6" ref={modalRef}>
+        {/* Improved tab navigation with better active state */}
+        <div className="tabs tabs-boxed bg-base-200 p-1 rounded-lg">
+          {Object.entries(tabLabels).map(([key, label]) => (
+            <button
+              key={key}
+              className={cn(
+                "tab gap-2 transition-all duration-200 flex-1",
+                activeTab === key
+                  ? "tab-active bg-primary text-primary-content font-medium"
+                  : "hover:bg-base-300"
+              )}
+              onClick={() => setActiveTab(key)}
+              aria-selected={activeTab === key}
+              role="tab"
+            >
+              {tabIcons[key as keyof typeof tabIcons]}
+              <span className="hidden sm:inline">{label}</span>
+              <span className="sm:hidden">
+                {tabIcons[key as keyof typeof tabIcons]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          {renderTabContent()}
+        </form>
+      </div>
+    </Modal>
   );
 };
 

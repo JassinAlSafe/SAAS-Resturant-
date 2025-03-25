@@ -71,9 +71,10 @@ const DropdownMenuContent = React.forwardRef<
   DropdownMenuContentProps & React.HTMLAttributes<HTMLUListElement>
 >(({ children, className, sideOffset, ...props }, ref) => {
   // Apply sideOffset using inline style if provided
-  const style = sideOffset !== undefined 
-    ? { marginTop: `${sideOffset}px`, ...props.style } 
-    : props.style;
+  const style =
+    sideOffset !== undefined
+      ? { marginTop: `${sideOffset}px`, ...props.style }
+      : props.style;
 
   return (
     <ul
@@ -97,24 +98,34 @@ interface DropdownMenuItemProps {
   className?: string;
   inset?: boolean;
   disabled?: boolean;
+  active?: boolean;
   onClick?: (event: React.MouseEvent<HTMLLIElement>) => void;
 }
 
 const DropdownMenuItem = React.forwardRef<
   HTMLLIElement,
   DropdownMenuItemProps & React.HTMLAttributes<HTMLLIElement>
->(({ children, className, inset, disabled, onClick, ...props }, ref) => {
-  return (
-    <li
-      ref={ref}
-      className={cn(disabled && "opacity-50 pointer-events-none", className)}
-      onClick={disabled ? undefined : onClick}
-      {...props}
-    >
-      <a className={cn(inset && "pl-8")}>{children}</a>
-    </li>
-  );
-});
+>(
+  (
+    { children, className, inset, disabled, active, onClick, ...props },
+    ref
+  ) => {
+    return (
+      <li
+        ref={ref}
+        className={cn(
+          disabled && "opacity-50 pointer-events-none",
+          active && "menu-active",
+          className
+        )}
+        onClick={disabled ? undefined : onClick}
+        {...props}
+      >
+        <a className={cn(inset && "pl-8")}>{children}</a>
+      </li>
+    );
+  }
+);
 DropdownMenuItem.displayName = "DropdownMenuItem";
 
 interface DropdownMenuLabelProps {

@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -109,17 +103,18 @@ export default function InventoryFilters({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="relative w-full md:w-[180px]">
-                    <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4" />
+                    <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4 z-10" />
                     <Select
+                      variant="primary"
                       value={selectedCategory}
-                      onValueChange={(value) => {
+                      onChange={(e) => {
                         try {
                           console.log(
-                            "Select onValueChange called with:",
-                            value
+                            "Select onChange called with:",
+                            e.target.value
                           );
                           if (typeof onCategoryChange === "function") {
-                            onCategoryChange(value);
+                            onCategoryChange(e.target.value);
                           } else {
                             console.error(
                               "onCategoryChange is not a function",
@@ -130,18 +125,14 @@ export default function InventoryFilters({
                           console.error("Error in category select:", error);
                         }
                       }}
+                      className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full"
                     >
-                      <SelectTrigger className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full">
-                        <SelectValue placeholder="All Categories" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-gray-200 shadow-md rounded-lg">
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                      <option value="all">All Categories</option>
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
                     </Select>
                   </div>
                 </TooltipTrigger>

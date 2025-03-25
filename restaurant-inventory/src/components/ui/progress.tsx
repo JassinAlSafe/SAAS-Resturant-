@@ -1,33 +1,54 @@
 "use client";
 
 import * as React from "react";
-import * as ProgressPrimitive from "@radix-ui/react-progress";
-
 import { cn } from "@/lib/utils";
 
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
-    indicatorClassName?: string;
+export interface ProgressProps
+  extends React.HTMLAttributes<HTMLProgressElement> {
+  /**
+   * The value of the progress bar (between 0 and 100)
+   */
+  value?: number;
+  /**
+   * The color variant of the progress bar
+   */
+  variant?:
+    | "neutral"
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "info"
+    | "success"
+    | "warning"
+    | "error";
+  /**
+   * The maximum value of the progress (defaults to 100)
+   */
+  max?: number;
+}
+
+/**
+ * Progress component using DaisyUI styling
+ */
+const Progress = React.forwardRef<HTMLProgressElement, ProgressProps>(
+  ({ className, value, variant, max = 100, ...props }, ref) => {
+    return (
+      <progress
+        ref={ref}
+        className={cn(
+          "progress",
+          // Add variant if provided
+          variant && `progress-${variant}`,
+          className
+        )}
+        value={value}
+        max={max}
+        {...props}
+      />
+    );
   }
->(({ className, value, indicatorClassName, ...props }, ref) => (
-  <ProgressPrimitive.Root
-    ref={ref}
-    className={cn(
-      "relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800",
-      className
-    )}
-    {...props}
-  >
-    <ProgressPrimitive.Indicator
-      className={cn(
-        "h-full w-full flex-1 bg-slate-900 transition-all dark:bg-slate-50",
-        indicatorClassName
-      )}
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-    />
-  </ProgressPrimitive.Root>
-));
-Progress.displayName = ProgressPrimitive.Root.displayName;
+);
+
+Progress.displayName = "Progress";
 
 export { Progress };

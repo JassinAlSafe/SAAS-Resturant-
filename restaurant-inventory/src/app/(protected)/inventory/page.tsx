@@ -1,32 +1,21 @@
 "use client";
 
 /**
- * REFACTORING ROADMAP
+ * Inventory Management Page
  *
- * This file should be split into smaller components and hooks:
- *
- * 1. Hooks:
- *   - useInventoryFilters.ts: Extract filter/sort/search logic
- *   - useInventoryModals.ts: Extract modal state and handlers
- *   - useInventoryBatchOperations.ts: Extract batch operation logic
- *
- * 2. Components:
- *   - InventoryContent.tsx: Main inventory content display (table/cards view)
- *   - InventoryEmptyState.tsx: Empty state component
- *   - InventoryDebugControls.tsx: Debug controls (temporary)
- *
- * 3. Utility Functions:
- *   - inventoryUtils.ts: Group items, calculate values, format data
- *
- * This will reduce the page component to ~100 lines that compose these elements.
+ * This page displays and manages the inventory items for a restaurant.
+ * It includes features for:
+ * - Viewing items in table or card view
+ * - Filtering and sorting inventory
+ * - Adding, editing and deleting items
+ * - Batch operations on multiple items
+ * - Quick quantity updates
  */
 
 import { useState, useEffect, useMemo } from "react";
 import InventoryHeader from "./components/InventoryHeader";
 import { InventoryStats } from "./components/InventoryStats";
-import InventoryFilters, {
-  InventoryFiltersWrapper,
-} from "./components/InventoryFilters";
+import { InventoryFiltersWrapper } from "./components/InventoryFilters";
 import InventoryLoading from "./components/InventoryLoading";
 import { InventoryModals } from "./components/modals";
 import { InventoryContent } from "./components/InventoryContent";
@@ -44,13 +33,8 @@ import {
   groupInventoryItems,
   isGroupLowStock,
   isGroupOutOfStock,
-  calculateInventoryValue,
 } from "./utils/inventoryUtils";
-import {
-  GroupedInventoryItem,
-  InventoryItem,
-  InventoryFormData,
-} from "./types";
+import { InventoryFormData } from "./types";
 
 export default function Inventory() {
   const { formatCurrency } = useCurrency();
@@ -84,7 +68,6 @@ export default function Inventory() {
 
   // Group inventory items
   const groupedItems = useMemo(() => {
-    console.log("Inventory items:", items);
     return groupInventoryItems(items);
   }, [items]);
 
@@ -123,8 +106,9 @@ export default function Inventory() {
     (itemData) => addInventoryItem(itemData as InventoryFormData),
     (id, item) => updateInventoryItem(id, item as InventoryFormData),
     async (id, name) => {
-      const result = await deleteInventoryItem(id, name);
-      return result;
+      await deleteInventoryItem(id, name);
+      // Return void to match the expected type
+      return;
     }
   );
 
@@ -137,16 +121,6 @@ export default function Inventory() {
     closeEditModal();
     closeDeleteModal();
   }, [mounted, closeAddModal, closeEditModal, closeDeleteModal]);
-
-  // Handle modal state changes
-  useEffect(() => {
-    console.log("Modal states:", {
-      isAddModalOpen,
-      isEditModalOpen,
-      isDeleteModalOpen,
-      currentItem,
-    });
-  }, [isAddModalOpen, isEditModalOpen, isDeleteModalOpen, currentItem]);
 
   // Set up batch operations
   const {
@@ -169,16 +143,9 @@ export default function Inventory() {
   // Calculate inventory value on client side only to avoid hydration mismatch
   const totalInventoryValue = useMemo(() => {
     if (!mounted) return 0;
-    return calculateInventoryValue(items);
+    // Calculate total value based on items, not grouped items
+    return items.reduce((total, item) => total + item.cost * item.quantity, 0);
   }, [items, mounted]);
-
-  // Debug inventory stats
-  console.log("Inventory stats computed:", {
-    totalItems: groupedItems?.length || 0,
-    lowStockCount,
-    outOfStockCount,
-    totalInventoryValue,
-  });
 
   // Handler for quick quantity updates
   const handleQuickQuantityUpdate = async (
@@ -190,8 +157,9 @@ export default function Inventory() {
 
     try {
       await updateInventoryItem(itemId, { quantity: newQuantity });
-    } catch (error) {
-      console.error("Error updating quantity:", error);
+    } catch (error: unknown) {
+      // In a real app, handle this error with a notification or error state
+      console.error("Failed to update quantity:", error);
     }
   };
 
@@ -208,8 +176,9 @@ export default function Inventory() {
         setIsLoadingSuppliers(true);
         const supplierData = await supplierService.getSuppliers();
         setSuppliers(supplierData);
-      } catch (error) {
-        console.error("Error fetching suppliers:", error);
+      } catch (error: unknown) {
+        // In a real app, handle this error with a notification or error state
+        console.error("Failed to fetch suppliers:", error);
       } finally {
         setIsLoadingSuppliers(false);
       }
@@ -239,16 +208,6 @@ export default function Inventory() {
         isSubscribed={isSubscribed}
       />
 
-      {/* Debug Controls (temporary) */}
-      <InventoryDebugControls
-        isAddModalOpen={isAddModalOpen}
-        isDeleteModalOpen={isDeleteModalOpen}
-        currentItem={currentItem}
-        setIsAddModalOpen={openAddModal}
-        openDeleteModal={openDeleteModal}
-        closeDeleteModal={closeDeleteModal}
-        items={items}
-      />
 
       {/* Stats */}
       <InventoryStats
@@ -261,30 +220,19 @@ export default function Inventory() {
       {/* Filters */}
       <InventoryFiltersWrapper
         searchTerm={searchQuery}
-        onSearchChange={(value: string) => {
-          console.log("Search change called with:", value);
-          if (typeof setSearchQuery === "function") {
-            setSearchQuery(value);
-          }
-        }}
+        onSearchChange={setSearchQuery}
         selectedCategory={categoryFilter}
-        onCategoryChange={(category: string) => {
-          console.log("Category change called with:", category);
-          if (typeof setCategoryFilter === "function") {
-            setCategoryFilter(category);
-          }
-        }}
+        onCategoryChange={setCategoryFilter}
         categories={categories}
         sortField={sortField}
-        setSortField={(field: string) => setSortField(field as any)}
+        setSortField={(field: string) => {
+          // Use type assertion since we know the field names match
+          setSortField(field as typeof sortField);
+        }}
         sortDirection={sortDirection}
         setSortDirection={setSortDirection}
         showLowStock={showLowStockOnly}
-        onLowStockChange={(value: boolean) => {
-          if (typeof setShowLowStockOnly === "function") {
-            setShowLowStockOnly(value);
-          }
-        }}
+        onLowStockChange={setShowLowStockOnly}
         lowStockCount={lowStockCount}
         outOfStockCount={outOfStockCount}
         viewMode={viewMode}

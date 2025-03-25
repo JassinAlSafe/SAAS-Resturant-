@@ -9,7 +9,6 @@ import { InventoryContentProps } from "../types";
 import { convertToDisplayItems } from "../utils/inventoryUtils";
 
 export function InventoryContent({
-  items,
   groupedItems,
   filteredGroupedItems,
   sortedFilteredItems,
@@ -23,31 +22,21 @@ export function InventoryContent({
   formatCurrency,
   openAddModal,
 }: InventoryContentProps & { openAddModal: () => void }) {
-  // Add debug log to see the values
-  console.log("InventoryContent rendering with:", {
-    items: items?.length,
-    groupedItems: groupedItems?.length,
-    filteredGroupedItems: filteredGroupedItems?.length,
-    sortedFilteredItems: sortedFilteredItems?.length,
-    viewMode,
-  });
-
-  // Handle the case where filteredGroupedItems or sortedFilteredItems is undefined
-  const hasItems =
+  // Determine if we have items to display
+  const hasItems = Boolean(
     (filteredGroupedItems && filteredGroupedItems.length > 0) ||
-    (sortedFilteredItems && sortedFilteredItems.length > 0);
+      (sortedFilteredItems && sortedFilteredItems.length > 0)
+  );
+
+  // Items to display in the table or cards view
   const itemsToDisplay = sortedFilteredItems || [];
 
   // Track if we have actual data but it was filtered out
-  const hasFilters = sortedFilteredItems?.length !== groupedItems?.length;
+  const hasFilters = Boolean(
+    groupedItems?.length && sortedFilteredItems?.length !== groupedItems?.length
+  );
 
-  console.log("Rendering decision:", {
-    hasItems,
-    hasFilters,
-    groupedItemsLength: groupedItems?.length,
-    sortedFilteredItemsLength: sortedFilteredItems?.length,
-  });
-
+  // Show empty state if no items to display
   if (!hasItems) {
     return (
       <InventoryEmptyState

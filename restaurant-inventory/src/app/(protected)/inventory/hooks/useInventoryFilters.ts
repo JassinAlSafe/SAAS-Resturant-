@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { InventoryItem } from "@/lib/types";
 import { GroupedInventoryItem } from "../types";
 
+/**
+ * Custom hook for filtering and sorting inventory items
+ * 
+ * Provides state and functions for:
+ * - Category filtering
+ * - Text search
+ * - Sorting by field and direction
+ * - Low stock filtering
+ * - Computed filtered and sorted items
+ */
 export function useInventoryFilters(groupedItems: GroupedInventoryItem[]) {
-  console.log("useInventoryFilters called with groupedItems:", groupedItems?.length);
-
   // Filter state
   const [categoryFilter, setCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -16,36 +24,8 @@ export function useInventoryFilters(groupedItems: GroupedInventoryItem[]) {
 
   // Rename to updateCategoryFilter to avoid naming conflicts with React's setState pattern
   const updateCategoryFilter = useCallback((category: string) => {
-    console.log("⭐ updateCategoryFilter called with:", category, {
-      currentCategory: categoryFilter,
-      setCategory: typeof setCategory
-    });
-
-    try {
-      setCategory(category);
-      console.log("✅ Category was set to:", category);
-    } catch (error) {
-      console.error("❌ Error setting category:", error);
-    }
-  }, [categoryFilter]);
-
-  // Log the types of the functions we're returning
-  useEffect(() => {
-    console.log("useInventoryFilters hook state:", {
-      categoryFilter,
-      searchQuery,
-      sortField,
-      sortDirection,
-      showLowStockOnly,
-      updateCategoryFilter: typeof updateCategoryFilter,
-      setCategory: typeof setCategory,
-      setSearchQuery: typeof setSearchQuery,
-      setSortField: typeof setSortField,
-      setSortDirection: typeof setSortDirection,
-      setShowLowStockOnly: typeof setShowLowStockOnly
-    });
-  }, [categoryFilter, searchQuery, sortField, sortDirection, showLowStockOnly,
-    updateCategoryFilter, setSearchQuery, setSortField, setSortDirection, setShowLowStockOnly]);
+    setCategory(category);
+  }, []);
 
   // Filter grouped items based on search query, selected category, and low stock filter
   const filteredGroupedItems = useMemo(() => {
@@ -91,7 +71,7 @@ export function useInventoryFilters(groupedItems: GroupedInventoryItem[]) {
     const result = [...filteredGroupedItems];
 
     // Apply sorting
-    const sortedResult = result.sort((a, b) => {
+    return result.sort((a, b) => {
       const aValue = a[sortField as keyof GroupedInventoryItem];
       const bValue = b[sortField as keyof GroupedInventoryItem];
 
@@ -115,21 +95,21 @@ export function useInventoryFilters(groupedItems: GroupedInventoryItem[]) {
         ? aStr.localeCompare(bStr)
         : bStr.localeCompare(aStr);
     });
-
-    console.log("sortedFilteredItems computed:", {
-      filteredGroupedItems: filteredGroupedItems?.length,
-      sortedResult: sortedResult?.length,
-      sortField,
-      sortDirection
-    });
-
-    return sortedResult;
   }, [filteredGroupedItems, sortField, sortDirection]);
 
+  // Reset filters function from the .tsx version
+  const resetFilters = () => {
+    setSearchQuery("");
+    setCategory("all");
+    setSortField("name");
+    setSortDirection("asc");
+    setShowLowStockOnly(false);
+  };
+
   return {
+    // Filter state and setters
     categoryFilter,
     setCategoryFilter: updateCategoryFilter,
-    setCategory,
     searchQuery,
     setSearchQuery,
     sortField,
@@ -138,7 +118,18 @@ export function useInventoryFilters(groupedItems: GroupedInventoryItem[]) {
     setSortDirection,
     showLowStockOnly,
     setShowLowStockOnly,
+
+    // Results
     filteredGroupedItems,
     sortedFilteredItems,
+
+    // Additional utilities
+    resetFilters,
+    hasActiveFilters:
+      searchQuery !== "" ||
+      categoryFilter !== "all" ||
+      sortField !== "name" ||
+      sortDirection !== "asc" ||
+      showLowStockOnly,
   };
 } 

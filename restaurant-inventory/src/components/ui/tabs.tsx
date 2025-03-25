@@ -16,7 +16,7 @@ const TabsList = React.forwardRef<
   const variantClasses = {
     default: "tabs",
     bordered: "tabs tabs-bordered",
-    lifted: "tabs tabs-lifted",
+    lifted: "tabs tabs-lift",
     boxed: "tabs tabs-boxed",
   };
 
