@@ -58,17 +58,28 @@ async function getBusinessProfileId() {
     // Check if we have a valid cached value
     const now = Date.now();
     if (cachedBusinessProfileId && now < cacheExpiry) {
-        console.log('Using cached business profile ID');
+        console.log('Using cached business profile ID:', cachedBusinessProfileId);
         safeEndTimer(timerLabel);
         return cachedBusinessProfileId;
     }
 
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        console.log('Fetching current user...');
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+            console.error('Auth error:', userError);
+            safeEndTimer(timerLabel);
+            throw new Error(`Authentication error: ${userError.message}`);
+        }
+
         if (!user) {
+            console.error('No authenticated user found');
             safeEndTimer(timerLabel);
             throw new Error("Not authenticated");
         }
+
+        console.log('User found, fetching business profile...', user.id);
 
         // First try to get from business_profile_users table
         const { data: businessProfileData, error: profileError } = await supabase
@@ -77,7 +88,12 @@ async function getBusinessProfileId() {
             .eq('user_id', user.id)
             .single();
 
+        if (profileError) {
+            console.log('Error getting business profile from business_profile_users:', profileError);
+        }
+
         if (!profileError && businessProfileData) {
+            console.log('Found business profile from business_profile_users:', businessProfileData);
             // Cache the result
             cachedBusinessProfileId = businessProfileData.business_profile_id;
             cacheExpiry = now + CACHE_DURATION;
@@ -86,6 +102,7 @@ async function getBusinessProfileId() {
         }
 
         // If that fails, try direct query to business_profiles
+        console.log('Trying direct query to business_profiles');
         const { data: businessProfiles, error: profilesError } = await supabase
             .from('business_profiles')
             .select('id')
@@ -93,7 +110,12 @@ async function getBusinessProfileId() {
             .order('created_at', { ascending: false })
             .limit(1);
 
+        if (profilesError) {
+            console.error('Error getting business profiles:', profilesError);
+        }
+
         if (!profilesError && businessProfiles && businessProfiles.length > 0) {
+            console.log('Found business profile from direct query:', businessProfiles[0]);
             // Cache the result
             cachedBusinessProfileId = businessProfiles[0].id;
             cacheExpiry = now + CACHE_DURATION;
@@ -103,10 +125,24 @@ async function getBusinessProfileId() {
 
         console.warn('No business profile found for user');
         safeEndTimer(timerLabel);
+
+        // For development only: return a fallback ID to avoid breaking the app
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Using fallback business profile ID for development');
+            return 'fallback-business-id';
+        }
+
         return null;
     } catch (error) {
         console.error('Error in getBusinessProfileId:', error);
         safeEndTimer(timerLabel);
+
+        // For development only: return a fallback ID to avoid breaking the app
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Using fallback business profile ID for development due to error');
+            return 'fallback-business-id';
+        }
+
         return null;
     }
 }
@@ -138,19 +174,42 @@ export const inventoryService = {
      */
     async getItems(): Promise<InventoryItem[]> {
         try {
+            console.log('getItems: Starting retrieval...');
+
             // Check if supabase client is properly initialized
             if (!supabase) {
-                console.error('Supabase client is not initialized');
+                console.error('getItems: Supabase client is not initialized');
+
+                // For development, provide mock data
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('getItems: Returning mock data for development');
+                    const mockItems = this.getMockItems();
+                    console.log(`getItems: Returned ${mockItems.length} mock items`);
+                    return mockItems;
+                }
+
                 return [];
             }
 
             // Get the business profile ID
             const businessProfileId = await getBusinessProfileId();
+            console.log('getItems: Retrieved business profile ID:', businessProfileId);
+
             if (!businessProfileId) {
-                console.error('No business profile found');
+                console.error('getItems: No business profile found');
+
+                // For development, provide mock data
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('getItems: Returning mock data for development');
+                    const mockItems = this.getMockItems();
+                    console.log(`getItems: Returned ${mockItems.length} mock items`);
+                    return mockItems;
+                }
+
                 return [];
             }
 
+            console.log('getItems: Querying database...');
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('*')
@@ -158,15 +217,101 @@ export const inventoryService = {
                 .order('name');
 
             if (error) {
-                console.error('Error fetching inventory items:', error);
+                console.error('getItems: Error fetching inventory items:', error);
                 throw error;
             }
 
-            return data.map(mapDbToInventoryItem);
+            console.log(`getItems: Successfully retrieved ${data.length} items`);
+            const mappedItems = data.map(mapDbToInventoryItem);
+            console.log('getItems: First few items:', mappedItems.slice(0, 3));
+
+            return mappedItems;
         } catch (error) {
-            console.error('Error in getItems:', error);
+            console.error('getItems: Error:', error);
+
+            // For development, provide mock data
+            if (process.env.NODE_ENV === 'development') {
+                console.log('getItems: Returning mock data for development due to error');
+                const mockItems = this.getMockItems();
+                console.log(`getItems: Returned ${mockItems.length} mock items`);
+                return mockItems;
+            }
+
             return [];
         }
+    },
+
+    /**
+     * Provide mock data for development
+     */
+    getMockItems(): InventoryItem[] {
+        return [
+            {
+                id: 'mock-item-1',
+                name: 'Flour',
+                description: 'All-purpose flour',
+                category: 'Dry Goods',
+                quantity: 10,
+                unit: 'kg',
+                cost: 2.5,
+                cost_per_unit: 2.5,
+                reorder_level: 5,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            },
+            {
+                id: 'mock-item-2',
+                name: 'Sugar',
+                description: 'White granulated sugar',
+                category: 'Dry Goods',
+                quantity: 15,
+                unit: 'kg',
+                cost: 3.0,
+                cost_per_unit: 3.0,
+                reorder_level: 7,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            },
+            {
+                id: 'mock-item-3',
+                name: 'Milk',
+                description: 'Fresh whole milk',
+                category: 'Dairy',
+                quantity: 20,
+                unit: 'liter',
+                cost: 1.8,
+                cost_per_unit: 1.8,
+                reorder_level: 10,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            },
+            {
+                id: 'mock-item-4',
+                name: 'Eggs',
+                description: 'Large free-range eggs',
+                category: 'Dairy',
+                quantity: 30,
+                unit: 'dozen',
+                cost: 4.5,
+                cost_per_unit: 4.5,
+                reorder_level: 5,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            },
+            {
+                id: 'mock-item-5',
+                name: 'Olive Oil',
+                description: 'Extra virgin olive oil',
+                category: 'Oils & Vinegars',
+                quantity: 8,
+                unit: 'liter',
+                cost: 9.0,
+                cost_per_unit: 9.0,
+                reorder_level: 3,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }
+        ];
     },
 
     /**
@@ -175,19 +320,19 @@ export const inventoryService = {
     async getItem(id: string): Promise<InventoryItem | null> {
         try {
             const businessProfileId = await getBusinessProfileId();
-            
+
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('*')
                 .eq('id', id)
                 .eq('business_profile_id', businessProfileId)
                 .single();
-                
+
             if (error) {
                 console.error('Error fetching inventory item:', error);
                 return null;
             }
-            
+
             return data ? mapDbToInventoryItem(data as DbIngredient) : null;
         } catch (error) {
             console.error('Error in getItem:', error);
@@ -241,7 +386,7 @@ export const inventoryService = {
     /**
      * Add a new inventory item
      */
-    async addItem(item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<InventoryItem | null> {
+    async addItem(item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>): Promise<InventoryItem | null> {
         const addItemTimer = 'addItem';
         safeStartTimer(addItemTimer);
         try {
@@ -389,19 +534,38 @@ export const inventoryService = {
      */
     async getCategories(): Promise<string[]> {
         try {
+            console.log('getCategories: Starting retrieval...');
+
             // Check if supabase client is properly initialized
             if (!supabase) {
-                console.error('Supabase client is not initialized');
+                console.error('getCategories: Supabase client is not initialized');
+
+                // For development, provide mock categories
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('getCategories: Returning mock categories for development');
+                    return ['Dry Goods', 'Dairy', 'Produce', 'Meat', 'Seafood', 'Oils & Vinegars', 'Spices'];
+                }
+
                 return [];
             }
 
             // Get the business profile ID
             const businessProfileId = await getBusinessProfileId();
+            console.log('getCategories: Retrieved business profile ID:', businessProfileId);
+
             if (!businessProfileId) {
-                console.error('No business profile found');
+                console.error('getCategories: No business profile found');
+
+                // For development, provide mock categories
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('getCategories: Returning mock categories for development');
+                    return ['Dry Goods', 'Dairy', 'Produce', 'Meat', 'Seafood', 'Oils & Vinegars', 'Spices'];
+                }
+
                 return [];
             }
 
+            console.log('getCategories: Querying database...');
             const { data, error } = await supabase
                 .from('ingredients')
                 .select('category')
@@ -409,22 +573,31 @@ export const inventoryService = {
                 .order('category');
 
             if (error) {
-                console.error('Error fetching categories:', error);
+                console.error('getCategories: Error fetching categories:', error);
                 throw error;
             }
 
             // Extract unique categories
-            const categories = [...new Set(data.map((item: { category: string }) => item.category))];
+            const categories = [...new Set(data.map(item => item.category))];
+            console.log(`getCategories: Successfully retrieved ${categories.length} categories:`, categories);
+
             return categories;
         } catch (error) {
-            console.error('Error in getCategories:', error);
+            console.error('getCategories: Error:', error);
+
+            // For development, provide mock categories
+            if (process.env.NODE_ENV === 'development') {
+                console.log('getCategories: Returning mock categories for development due to error');
+                return ['Dry Goods', 'Dairy', 'Produce', 'Meat', 'Seafood', 'Oils & Vinegars', 'Spices'];
+            }
+
             return [];
         }
     },
 
     // Alias methods for backward compatibility
     getIngredients: function () { return this.getItems(); },
-    addIngredient: function (data: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>) { return this.addItem(data); },
+    addIngredient: function (data: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>) { return this.addItem(data); },
     updateIngredient: function (id: string, data: Partial<InventoryFormData>) { return this.updateItem(id, data); },
     deleteIngredient: function (id: string) { return this.deleteItem(id); }
 };

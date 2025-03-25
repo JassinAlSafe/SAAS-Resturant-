@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { BaseModal } from "@/components/ui/modal/base-modal";
 
 export type DeleteConfirmationDialogProps = {
   isOpen: boolean;
@@ -40,31 +32,31 @@ export default function DeleteConfirmationDialog({
      This action cannot be undone.`;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description ? (
-              description
-            ) : (
-              <>
-                This will permanently delete the {itemType}{" "}
-                <strong>{itemName}</strong>. This action cannot be undone.
-              </>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+    <BaseModal isOpen={isOpen} onClose={onClose} size="sm" position="middle">
+      <div className="p-6">
+        <h3 className="text-lg font-bold mb-2">{dialogTitle}</h3>
+
+        {description ? (
+          <p className="py-4 text-sm text-gray-600">{description}</p>
+        ) : (
+          <p className="py-4 text-sm text-gray-600">
+            This will permanently delete the {itemType}{" "}
+            <strong>{itemName}</strong>. This action cannot be undone.
+          </p>
+        )}
+
+        <div className="modal-action flex justify-end mt-6">
+          <Button variant="outline" onClick={onClose} className="mr-2">
+            Cancel
+          </Button>
+          <Button
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
             Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </div>
+      </div>
+    </BaseModal>
   );
 }

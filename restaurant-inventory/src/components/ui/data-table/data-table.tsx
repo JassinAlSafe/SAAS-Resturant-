@@ -42,6 +42,12 @@ export interface DataTableProps<T> {
   className?: string;
   emptyMessage?: string;
   rowClassName?: (item: T) => string;
+  tableHeaderClassName?: string;
+  tableCellClassName?: string;
+  tableBodyClassName?: string;
+  checkboxClassName?: string;
+  paginationClassName?: string;
+  actionButtonsClassName?: string;
 }
 
 export function DataTable<T>({
@@ -61,18 +67,24 @@ export function DataTable<T>({
   className,
   emptyMessage = "No data available",
   rowClassName,
+  tableHeaderClassName,
+  tableCellClassName,
+  tableBodyClassName,
+  checkboxClassName,
+  paginationClassName,
+  actionButtonsClassName,
 }: DataTableProps<T>) {
   // State for sorting
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  
+
   // State for pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   // State for expanded rows
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  
+
   // State for selected rows
   const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
 
@@ -95,7 +107,7 @@ export function DataTable<T>({
       const bValue = b[sortField as keyof T];
 
       if (aValue === bValue) return 0;
-      
+
       // Handle null or undefined values
       if (aValue == null) return sortDirection === "asc" ? -1 : 1;
       if (bValue == null) return sortDirection === "asc" ? 1 : -1;
@@ -122,9 +134,9 @@ export function DataTable<T>({
 
   // Toggle row expansion
   const toggleRowExpansion = (id: string) => {
-    setExpandedRows(prev => ({
+    setExpandedRows((prev) => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: !prev[id],
     }));
   };
 
@@ -132,13 +144,13 @@ export function DataTable<T>({
   const toggleRowSelection = (id: string) => {
     const newSelectedRows = {
       ...selectedRows,
-      [id]: !selectedRows[id]
+      [id]: !selectedRows[id],
     };
     setSelectedRows(newSelectedRows);
-    
+
     if (onSelectionChange) {
       const selectedItems = data.filter(
-        item => newSelectedRows[String(item[keyField])]
+        (item) => newSelectedRows[String(item[keyField])]
       );
       onSelectionChange(selectedItems);
     }
@@ -147,20 +159,20 @@ export function DataTable<T>({
   // Toggle all rows selection
   const toggleAllRows = () => {
     const allSelected = paginatedData.every(
-      item => selectedRows[String(item[keyField])]
+      (item) => selectedRows[String(item[keyField])]
     );
-    
+
     const newSelectedRows = { ...selectedRows };
-    
-    paginatedData.forEach(item => {
+
+    paginatedData.forEach((item) => {
       newSelectedRows[String(item[keyField])] = !allSelected;
     });
-    
+
     setSelectedRows(newSelectedRows);
-    
+
     if (onSelectionChange) {
       const selectedItems = data.filter(
-        item => newSelectedRows[String(item[keyField])]
+        (item) => newSelectedRows[String(item[keyField])]
       );
       onSelectionChange(selectedItems);
     }
@@ -170,7 +182,7 @@ export function DataTable<T>({
     <div className={cn("space-y-4", className)}>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className={tableHeaderClassName}>
             <TableRow>
               {selectable && (
                 <TableHead className="w-12">
@@ -178,16 +190,17 @@ export function DataTable<T>({
                     checked={
                       paginatedData.length > 0 &&
                       paginatedData.every(
-                        item => selectedRows[String(item[keyField])]
+                        (item) => selectedRows[String(item[keyField])]
                       )
                     }
                     onCheckedChange={toggleAllRows}
                     aria-label="Select all"
+                    className={checkboxClassName}
                   />
                 </TableHead>
               )}
               {expandable && <TableHead className="w-12" />}
-              {columns.map(column => (
+              {columns.map((column) => (
                 <TableHead key={column.id}>
                   <DataTableHeader
                     label={column.header}
@@ -200,11 +213,11 @@ export function DataTable<T>({
                 </TableHead>
               ))}
               {(onEdit || onDelete || onDuplicate || onArchive) && (
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead className="w-[80px]">Actions</TableHead>
               )}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className={tableBodyClassName}>
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -212,7 +225,7 @@ export function DataTable<T>({
                     columns.length +
                     (selectable ? 1 : 0) +
                     (expandable ? 1 : 0) +
-                    ((onEdit || onDelete || onDuplicate || onArchive) ? 1 : 0)
+                    (onEdit || onDelete || onDuplicate || onArchive ? 1 : 0)
                   }
                   className="h-24 text-center"
                 >
@@ -220,48 +233,53 @@ export function DataTable<T>({
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedData.map((item, index) => {
-                const id = String(item[keyField]);
-                const isExpanded = expandedRows[id] || false;
-                
+              paginatedData.map((item) => {
+                const rowKey = String(item[keyField]);
+                const isExpanded = expandedRows[rowKey];
+                const isSelected = selectedRows[rowKey];
+
                 return (
-                  <React.Fragment key={id}>
+                  <React.Fragment key={rowKey}>
                     <TableRow
                       className={cn(
-                        "group hover:bg-slate-50 dark:hover:bg-slate-900/50",
-                        rowClassName && rowClassName(item)
+                        rowClassName?.(item),
+                        onRowClick && "cursor-pointer"
                       )}
-                      onClick={onRowClick ? () => onRowClick(item) : undefined}
+                      onClick={() => onRowClick?.(item)}
                     >
                       {selectable && (
-                        <TableCell
-                          className="w-12"
-                          onClick={e => e.stopPropagation()}
-                        >
+                        <TableCell className={cn("w-12", tableCellClassName)}>
                           <CustomCheckbox
-                            checked={selectedRows[id] || false}
-                            onCheckedChange={() => toggleRowSelection(id)}
-                            aria-label={`Select row ${index + 1}`}
+                            checked={isSelected}
+                            onCheckedChange={() => toggleRowSelection(rowKey)}
+                            aria-label="Select row"
+                            onClick={(e) => e.stopPropagation()}
+                            className={checkboxClassName}
                           />
                         </TableCell>
                       )}
                       {expandable && (
-                        <TableCell
-                          className="w-12 cursor-pointer"
-                          onClick={e => {
-                            e.stopPropagation();
-                            toggleRowExpansion(id);
-                          }}
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
+                        <TableCell className={cn("w-12", tableCellClassName)}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRowExpansion(rowKey);
+                            }}
+                            className="p-1"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
                         </TableCell>
                       )}
-                      {columns.map(column => (
-                        <TableCell key={column.id}>
+                      {columns.map((column) => (
+                        <TableCell
+                          key={column.id}
+                          className={tableCellClassName}
+                        >
                           {column.cell
                             ? column.cell(item)
                             : column.accessorKey
@@ -270,30 +288,38 @@ export function DataTable<T>({
                         </TableCell>
                       ))}
                       {(onEdit || onDelete || onDuplicate || onArchive) && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100">
-                            <DataTableActions
-                              item={item}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onDuplicate={onDuplicate}
-                              onArchive={onArchive}
-                              isArchived={isArchived}
-                            />
-                          </div>
+                        <TableCell
+                          className={cn("text-right", tableCellClassName)}
+                        >
+                          <DataTableActions
+                            onEdit={onEdit ? () => onEdit(item) : undefined}
+                            onDelete={
+                              onDelete ? () => onDelete(item) : undefined
+                            }
+                            onDuplicate={
+                              onDuplicate ? () => onDuplicate(item) : undefined
+                            }
+                            onArchive={
+                              onArchive ? () => onArchive(item) : undefined
+                            }
+                            isArchived={isArchived}
+                            className={actionButtonsClassName}
+                          />
                         </TableCell>
                       )}
                     </TableRow>
                     {expandable && isExpanded && expandedContent && (
-                      <TableRow className="bg-slate-50/50 dark:bg-slate-900/20">
+                      <TableRow>
                         <TableCell
                           colSpan={
                             columns.length +
                             (selectable ? 1 : 0) +
-                            1 + // Expansion column
-                            ((onEdit || onDelete || onDuplicate || onArchive) ? 1 : 0)
+                            (expandable ? 1 : 0) +
+                            (onEdit || onDelete || onDuplicate || onArchive
+                              ? 1
+                              : 0)
                           }
-                          className="p-4"
+                          className={tableCellClassName}
                         >
                           {expandedContent(item)}
                         </TableCell>
@@ -306,13 +332,16 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination
-        currentPage={currentPage}
-        totalItems={sortedData.length}
-        pageSize={itemsPerPage}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={setItemsPerPage}
-      />
+      {data.length > 0 && (
+        <DataTablePagination
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          totalItems={sortedData.length}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+          className={paginationClassName}
+        />
+      )}
     </div>
   );
 }

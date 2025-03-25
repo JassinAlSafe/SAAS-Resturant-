@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -89,13 +89,6 @@ export default function InventoryFilters({
     }
   };
 
-  // Clear all filters
-  const clearFilters = () => {
-    onSearchChange("");
-    onCategoryChange("all");
-    onLowStockChange(false);
-  };
-
   // Check if any filters are active
   const hasActiveFilters =
     searchTerm !== "" || selectedCategory !== "all" || showLowStock;
@@ -119,7 +112,24 @@ export default function InventoryFilters({
                     <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4" />
                     <Select
                       value={selectedCategory}
-                      onValueChange={onCategoryChange}
+                      onValueChange={(value) => {
+                        try {
+                          console.log(
+                            "Select onValueChange called with:",
+                            value
+                          );
+                          if (typeof onCategoryChange === "function") {
+                            onCategoryChange(value);
+                          } else {
+                            console.error(
+                              "onCategoryChange is not a function",
+                              onCategoryChange
+                            );
+                          }
+                        } catch (error) {
+                          console.error("Error in category select:", error);
+                        }
+                      }}
                     >
                       <SelectTrigger className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full">
                         <SelectValue placeholder="All Categories" />
@@ -135,7 +145,10 @@ export default function InventoryFilters({
                     </Select>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
+                <TooltipContent
+                  side="bottom"
+                  className="bg-white border border-gray-200 shadow-md text-gray-800"
+                >
                   <p>Filter by category</p>
                 </TooltipContent>
               </Tooltip>
@@ -147,7 +160,20 @@ export default function InventoryFilters({
               <Input
                 placeholder="Quick Search"
                 value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    if (typeof onSearchChange === "function") {
+                      onSearchChange(e.target.value);
+                    } else {
+                      console.error(
+                        "onSearchChange is not a function",
+                        onSearchChange
+                      );
+                    }
+                  } catch (error) {
+                    console.error("Error in search input change:", error);
+                  }
+                }}
                 className="pl-9 bg-white w-full h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg"
               />
               <AnimatePresence>
@@ -184,7 +210,10 @@ export default function InventoryFilters({
                     <span className="hidden sm:inline">Add product</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
+                <TooltipContent
+                  side="bottom"
+                  className="bg-white border border-gray-200 shadow-md text-gray-800"
+                >
                   <p>Add new inventory item</p>
                 </TooltipContent>
               </Tooltip>
@@ -211,7 +240,10 @@ export default function InventoryFilters({
                       <FiList className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-white border border-gray-200 shadow-md text-gray-800"
+                  >
                     <p>Table view</p>
                   </TooltipContent>
                 </Tooltip>
@@ -233,7 +265,10 @@ export default function InventoryFilters({
                       <FiGrid className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-white border border-gray-200 shadow-md text-gray-800"
+                  >
                     <p>Card view</p>
                   </TooltipContent>
                 </Tooltip>
@@ -253,7 +288,8 @@ export default function InventoryFilters({
                         variant="outline"
                         className={cn(
                           "gap-1 bg-white h-10 border-gray-300 hover:border-orange-300 rounded-lg transition-colors duration-200",
-                          hasActiveFilters && "border-orange-300 text-orange-600 bg-orange-50/50"
+                          hasActiveFilters &&
+                            "border-orange-300 text-orange-600 bg-orange-50/50"
                         )}
                       >
                         <FiSliders className="h-4 w-4" />
@@ -271,7 +307,10 @@ export default function InventoryFilters({
                       </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-white border border-gray-200 shadow-md text-gray-800">
+                  <TooltipContent
+                    side="bottom"
+                    className="bg-white border border-gray-200 shadow-md text-gray-800"
+                  >
                     <p>Advanced filters</p>
                   </TooltipContent>
                 </Tooltip>
@@ -289,7 +328,43 @@ export default function InventoryFilters({
                         variant="ghost"
                         size="sm"
                         className="h-8 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                        onClick={clearFilters}
+                        onClick={() => {
+                          console.log("Clear all filters button clicked");
+                          // Clear search first
+                          try {
+                            if (typeof onSearchChange === "function") {
+                              onSearchChange("");
+                            }
+                          } catch (e) {
+                            console.error("Error clearing search", e);
+                          }
+
+                          // Use setTimeout to help avoid React batch update issues
+                          setTimeout(() => {
+                            try {
+                              if (typeof onCategoryChange === "function") {
+                                console.log("Clearing category filter");
+                                onCategoryChange("all");
+                              }
+                            } catch (e) {
+                              console.error("Error clearing category", e);
+                            }
+                          }, 10);
+
+                          // Last filter with another small delay
+                          setTimeout(() => {
+                            try {
+                              if (typeof onLowStockChange === "function") {
+                                onLowStockChange(false);
+                              }
+                            } catch (e) {
+                              console.error(
+                                "Error clearing low stock filter",
+                                e
+                              );
+                            }
+                          }, 20);
+                        }}
                       >
                         Clear all
                       </Button>
@@ -308,7 +383,20 @@ export default function InventoryFilters({
                       <Switch
                         id="show-low-stock"
                         checked={showLowStock}
-                        onCheckedChange={onLowStockChange}
+                        onCheckedChange={(checked) => {
+                          try {
+                            if (typeof onLowStockChange === "function") {
+                              onLowStockChange(checked);
+                            } else {
+                              console.error(
+                                "onLowStockChange is not a function",
+                                onLowStockChange
+                              );
+                            }
+                          } catch (error) {
+                            console.error("Error in low stock switch:", error);
+                          }
+                        }}
                         className="data-[state=checked]:bg-orange-600"
                       />
                     </div>
@@ -399,7 +487,20 @@ export default function InventoryFilters({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onCategoryChange("all")}
+                    onClick={() => {
+                      try {
+                        if (typeof onCategoryChange === "function") {
+                          onCategoryChange("all");
+                        } else {
+                          console.error(
+                            "onCategoryChange is not a function",
+                            onCategoryChange
+                          );
+                        }
+                      } catch (error) {
+                        console.error("Error in category reset button:", error);
+                      }
+                    }}
                     className="h-4 w-4 p-0 ml-1 text-orange-500 hover:text-orange-700 hover:bg-transparent rounded-full"
                   >
                     <FiX className="h-3 w-3" />
@@ -444,7 +545,40 @@ export default function InventoryFilters({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearFilters}
+                onClick={() => {
+                  console.log("Reset all filters button clicked");
+                  // Clear search first
+                  try {
+                    if (typeof onSearchChange === "function") {
+                      onSearchChange("");
+                    }
+                  } catch (e) {
+                    console.error("Error clearing search", e);
+                  }
+
+                  // Use setTimeout to help avoid React batch update issues
+                  setTimeout(() => {
+                    try {
+                      if (typeof onCategoryChange === "function") {
+                        console.log("Clearing category filter");
+                        onCategoryChange("all");
+                      }
+                    } catch (e) {
+                      console.error("Error clearing category", e);
+                    }
+                  }, 10);
+
+                  // Last filter with another small delay
+                  setTimeout(() => {
+                    try {
+                      if (typeof onLowStockChange === "function") {
+                        onLowStockChange(false);
+                      }
+                    } catch (e) {
+                      console.error("Error clearing low stock filter", e);
+                    }
+                  }, 20);
+                }}
                 className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-6 px-2 ml-auto flex items-center gap-1"
               >
                 <FiRefreshCw className="h-3 w-3" />
@@ -455,5 +589,69 @@ export default function InventoryFilters({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export function InventoryFiltersWrapper(props: InventoryFiltersProps) {
+  // Create our own internal state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showLowStock, setShowLowStock] = useState(false);
+
+  // Update parent when our state changes
+  useEffect(() => {
+    if (typeof props.onSearchChange === "function") {
+      props.onSearchChange(searchTerm);
+    }
+  }, [searchTerm, props.onSearchChange]);
+
+  useEffect(() => {
+    if (typeof props.onCategoryChange === "function") {
+      props.onCategoryChange(selectedCategory);
+    }
+  }, [selectedCategory, props.onCategoryChange]);
+
+  useEffect(() => {
+    if (typeof props.onLowStockChange === "function") {
+      props.onLowStockChange(showLowStock);
+    }
+  }, [showLowStock, props.onLowStockChange]);
+
+  // Sync our state with props when props change
+  useEffect(() => {
+    if (props.searchTerm !== undefined && props.searchTerm !== searchTerm) {
+      setSearchTerm(props.searchTerm);
+    }
+  }, [props.searchTerm]);
+
+  useEffect(() => {
+    if (
+      props.selectedCategory !== undefined &&
+      props.selectedCategory !== selectedCategory
+    ) {
+      setSelectedCategory(props.selectedCategory);
+    }
+  }, [props.selectedCategory]);
+
+  useEffect(() => {
+    if (
+      props.showLowStock !== undefined &&
+      props.showLowStock !== showLowStock
+    ) {
+      setShowLowStock(props.showLowStock);
+    }
+  }, [props.showLowStock]);
+
+  // Pass modified props to the actual component
+  return (
+    <InventoryFilters
+      {...props}
+      searchTerm={searchTerm}
+      onSearchChange={setSearchTerm}
+      selectedCategory={selectedCategory}
+      onCategoryChange={setSelectedCategory}
+      showLowStock={showLowStock}
+      onLowStockChange={setShowLowStock}
+    />
   );
 }

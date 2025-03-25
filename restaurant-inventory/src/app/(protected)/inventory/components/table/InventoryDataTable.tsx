@@ -1,267 +1,376 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { InventoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { TableHeader } from "./TableHeader";
-import { TableItem } from "./TableItem";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ImageIcon, Pencil, Trash } from "lucide-react";
+import { ProxyImage } from "@/components/ui/proxy-image";
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
-import { Package } from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface InventoryDataTableProps {
   items: InventoryItem[];
-  compactMode: boolean;
   selectedItems: string[];
-  expandedItems: Record<string, boolean>;
   onEditClick: (item: InventoryItem) => void;
   onDeleteClick: (item: InventoryItem) => void;
-  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void;
   toggleItemSelection: (itemId: string) => void;
   toggleAllItems: () => void;
-  toggleExpanded: (itemId: string) => void;
   formatCurrency: (value: number) => string;
-  sortField?: string;
-  sortDirection?: "asc" | "desc";
-  handleSort?: (field: string) => void;
+}
+
+// Extended InventoryItem type to include possible image_url
+interface ExtendedInventoryItem extends InventoryItem {
+  image_url?: string;
 }
 
 export function InventoryDataTable({
   items,
-  compactMode,
   selectedItems,
-  expandedItems,
   onEditClick,
   onDeleteClick,
   onUpdateQuantity,
   toggleItemSelection,
   toggleAllItems,
-  toggleExpanded,
   formatCurrency,
-  sortField = "name",
-  sortDirection = "asc",
-  handleSort = () => {},
 }: InventoryDataTableProps) {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Category filter state
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Reset to first page when items change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [items.length, sortField, sortDirection]);
+  // Remove selectedIds state and use selectedItems from props instead
+  const selectedIdsMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    selectedItems.forEach((id) => (map[id] = true));
+    return map;
+  }, [selectedItems]);
 
-  // Calculate pagination values
-  const totalPages = Math.ceil(items.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, items.length);
-  const currentItems = items.slice(startIndex, endIndex);
-
-  // Page navigation functions
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  // Format product ID to be more user-friendly
+  const formatProductId = (id: string) => {
+    return `${id.substring(0, 4)}-${id.substring(4, 8)}`;
   };
 
-  const goToFirstPage = () => goToPage(1);
-  const goToPreviousPage = () => goToPage(currentPage - 1);
-  const goToNextPage = () => goToPage(currentPage + 1);
-  const goToLastPage = () => goToPage(totalPages);
+  // Filter items by category if needed
+  const filteredItems = activeCategory
+    ? items.filter((item) => item.category === activeCategory)
+    : items;
+
+  // Extract unique categories for quick filters
+  const categories = [...new Set(items.map((item) => item.category))].sort();
+
+  // Handle selection change
+  const handleSelectionChange = (itemId: string) => {
+    toggleItemSelection(itemId);
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Table Container */}
-      <div
-        className={cn(
-          "rounded-lg border border-gray-200 overflow-hidden transition-all duration-200 flex-1 shadow-sm",
-          compactMode ? "bg-gray-50" : "bg-white"
-        )}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            {/* Table Header */}
-            <thead>
-              <tr
-                className={cn(
-                  "border-b border-gray-200",
-                  compactMode
-                    ? "bg-gray-50"
-                    : "bg-white"
-                )}
+    <div className="flex flex-col h-full space-y-6">
+      {/* Category Filter Buttons */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-gray-500 mr-2 flex items-center">
+            Filter by:
+          </span>
+          <Button
+            variant={activeCategory === null ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveCategory(null)}
+            className="text-xs"
+          >
+            All Categories
+            <Badge className="ml-2 bg-white text-gray-800" variant="outline">
+              {items.length}
+            </Badge>
+          </Button>
+          {categories.map((category) => {
+            const categoryCount = items.filter(
+              (item) => item.category === category
+            ).length;
+
+            return (
+              <Button
+                key={category}
+                variant={activeCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveCategory(category)}
+                className="text-xs"
               >
-                <th className="w-[40px] px-4 py-3 text-left">
+                {category}
+                <Badge
+                  className="ml-2 bg-white text-gray-800"
+                  variant="outline"
+                >
+                  {categoryCount}
+                </Badge>
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Traditional Table Approach */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        {/* Table Info Header */}
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-500">
+            Showing {filteredItems.length} unique products
+            {filteredItems.length < items.length && (
+              <> (from {items.length} total entries)</>
+            )}
+            . Similar items have been grouped together.
+          </div>
+        </div>
+
+        {/* The Table */}
+        <div className="overflow-x-auto">
+          <table className="table w-full">
+            <thead>
+              <tr className="bg-gray-50 text-gray-600">
+                <th className="w-12 p-3">
                   <div className="flex items-center justify-center">
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={
-                        selectedItems.length === items.length &&
-                        items.length > 0
-                      }
                       onChange={toggleAllItems}
+                      checked={
+                        filteredItems.length > 0 &&
+                        filteredItems.every((item) => selectedIdsMap[item.id])
+                      }
                     />
                   </div>
                 </th>
-                <TableHeader
-                  label="Name"
-                  field="name"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <TableHeader
-                  label="Category"
-                  field="category"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <TableHeader
-                  label="Quantity"
-                  field="quantity"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <TableHeader
-                  label="Unit"
-                  field="unit"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <TableHeader
-                  label="Cost"
-                  field="cost_per_unit"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <TableHeader
-                  label="Total Value"
-                  field="total_value"
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                />
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Quantity
+                </th>
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Unit Type
+                </th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
+                  Cost
+                </th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
+                  Total Value
+                </th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((item) => (
-                <TableItem
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedItems.includes(item.id)}
-                  isExpanded={!!expandedItems[item.id]}
-                  onToggleSelect={() => toggleItemSelection(item.id)}
-                  onToggleExpand={() => toggleExpanded(item.id)}
-                  onEditClick={() => onEditClick(item)}
-                  onDeleteClick={() => onDeleteClick(item)}
-                  onUpdateQuantity={onUpdateQuantity}
-                  formatCurrency={formatCurrency}
-                  compactMode={compactMode}
-                />
-              ))}
-              {items.length === 0 && (
+              {filteredItems.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-gray-500 bg-white"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="bg-gray-100 p-3 rounded-full">
-                        <Package className="h-6 w-6 text-gray-400" />
-                      </div>
-                      <p className="text-sm font-medium">No inventory items found</p>
-                      <p className="text-xs text-gray-400">
-                        Try adjusting your filters or add new items
-                      </p>
+                  <td colSpan={9} className="text-center py-8">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <ImageIcon className="h-10 w-10 text-gray-400" />
+                      <p className="text-gray-500">No inventory items found</p>
                     </div>
                   </td>
                 </tr>
+              ) : (
+                filteredItems.map((item) => {
+                  const extendedItem = item as ExtendedInventoryItem;
+                  const totalValue = item.quantity * (item.cost_per_unit || 0);
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className={cn(
+                        "group border-b border-gray-200 hover:bg-gray-50/80",
+                        (item.cost_per_unit || 0) === 0 && "bg-gray-50/70",
+                        item.quantity < 0 && "bg-red-50/50"
+                      )}
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={!!selectedIdsMap[item.id]}
+                            onChange={() => handleSelectionChange(item.id)}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="font-mono text-xs text-gray-500">
+                                {formatProductId(item.id)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-xs">Full ID: {item.id}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
+                            {extendedItem.image_url ? (
+                              <div className="w-full h-full">
+                                <ProxyImage
+                                  src={extendedItem.image_url}
+                                  alt={item.name}
+                                  width={40}
+                                  height={40}
+                                  className="object-contain w-full h-full"
+                                />
+                              </div>
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <ImageIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.name}
+                            {item.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {item.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-gray-600">{item.category}</span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">
+                            {item.quantity}
+                          </span>
+                          <div className="hidden group-hover:flex items-center space-x-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(
+                                  item.id,
+                                  Math.max(0, item.quantity - 1)
+                                );
+                              }}
+                            >
+                              <span className="sr-only">Decrease</span>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                              >
+                                <path d="M5 12h14" />
+                              </svg>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(item.id, item.quantity + 1);
+                              }}
+                            >
+                              <span className="sr-only">Increase</span>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                              >
+                                <path d="M5 12h14" />
+                                <path d="M12 5v14" />
+                              </svg>
+                            </Button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 bg-gray-50 text-gray-600"
+                        >
+                          {item.unit}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-right">
+                        <span className="font-medium">
+                          {(item.cost_per_unit || 0) === 0
+                            ? "—"
+                            : formatCurrency(item.cost_per_unit || 0)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <span
+                          className={cn(
+                            "font-medium",
+                            totalValue === 0 && "text-gray-400",
+                            totalValue < 0 && "text-red-600",
+                            totalValue > 1000 && "text-green-600"
+                          )}
+                        >
+                          {totalValue === 0 ? "—" : formatCurrency(totalValue)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center justify-center gap-1 text-gray-600 hover:text-gray-900"
+                            onClick={() => onEditClick(item)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span>Edit</span>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center justify-center gap-1 text-red-600 hover:text-red-800"
+                            onClick={() => onDeleteClick(item)}
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span>Delete</span>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
-
-      {/* Pagination Controls */}
-      {items.length > 0 && (
-        <div className="flex items-center justify-between mt-4 px-2">
-          <div className="text-xs text-gray-500">
-            Showing {startIndex + 1} to {endIndex} of {items.length} items
-          </div>
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToFirstPage}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0 border-gray-200 text-gray-500"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0 border-gray-200 text-gray-500"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <span className="px-2 text-sm text-gray-600 font-medium">
-              {currentPage} / {totalPages}
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0 border-gray-200 text-gray-500"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToLastPage}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0 border-gray-200 text-gray-500"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-500">Items per page:</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white text-gray-700"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

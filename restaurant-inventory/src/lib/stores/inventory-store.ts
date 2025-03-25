@@ -63,10 +63,14 @@ export const useInventoryStore = create<InventoryState>()(
                 set({ isLoading: true, error: null });
 
                 try {
+                    console.log("Fetching inventory items and categories...");
                     const [items, categories] = await Promise.all([
                         inventoryService.getItems(),
                         inventoryService.getCategories()
                     ]);
+
+                    console.log("Fetched inventory items:", items);
+                    console.log("Fetched inventory categories:", categories);
 
                     set({
                         items,

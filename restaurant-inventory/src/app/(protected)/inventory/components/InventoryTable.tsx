@@ -10,14 +10,14 @@ import { Package, LayoutGrid } from "lucide-react";
 import { InventoryControls } from "./table/InventoryControls";
 import { InventoryStatsDashboard } from "./table/InventoryStatsDashboard";
 import { InventoryDataTable } from "./table/InventoryDataTable";
-import { useInventoryTableState } from "./table/useInventoryTableState";
+import { useInventoryTableState } from "../hooks/useInventoryTableState";
 import { calculateInventoryStats } from "./table/inventoryUtils";
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEditClick: (item: InventoryItem) => void;
   onDeleteClick: (item: InventoryItem) => void;
-  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void;
 }
 
 export default function InventoryTable({
@@ -29,37 +29,33 @@ export default function InventoryTable({
   const { formatCurrency } = useCurrency();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Use the custom hook for managing all table state
+  // Use only what we need from the custom hook
   const {
     compactMode,
     setCompactMode,
-    sortField,
-    sortDirection,
     sortConfig,
     setSortField,
     setSortDirection,
     selectedItems,
     setSelectedItems,
-    expandedItems,
-    toggleExpanded,
-    handleSort,
     toggleItemSelection,
-    toggleAllItems,
     sortedItems,
   } = useInventoryTableState(items);
 
   // Calculate inventory statistics
-  const inventoryStats = calculateInventoryStats(
-    items,
-    selectedItems
-  );
+  const inventoryStats = calculateInventoryStats(items, selectedItems);
 
   // Calculate selected items value for passing to components
   const selectedItemsValue =
     selectedItems.length > 0
       ? selectedItems.reduce((sum: number, id: string) => {
           const item = items.find((i) => i.id === id);
-          return sum + (item && item.cost_per_unit && item.quantity ? item.cost_per_unit * item.quantity : 0);
+          return (
+            sum +
+            (item && item.cost_per_unit && item.quantity
+              ? item.cost_per_unit * item.quantity
+              : 0)
+          );
         }, 0)
       : 0;
 
@@ -88,7 +84,7 @@ export default function InventoryTable({
   return (
     <div className="w-full h-full flex flex-col space-y-4">
       {/* Main content area container with border */}
-      <div className="grid grid-cols-1 gap-8 rounded-lg border border-base-300 bg-base-100">
+      <div className="grid grid-cols-1 gap-8 rounded-lg border border-gray-200 bg-white p-6">
         {/* Section 1: Summary Statistics (Top Area) */}
         <section className="w-full">
           <motion.div
@@ -97,10 +93,10 @@ export default function InventoryTable({
             transition={{ duration: 0.4 }}
             className="mb-2 flex items-center justify-between"
           >
-            <h2 className="text-xl font-semibold text-base-content">
+            <h2 className="text-xl font-semibold text-gray-800">
               Inventory Overview
             </h2>
-            <div className="text-sm text-base-content/60 flex items-center">
+            <div className="text-sm text-gray-500 flex items-center">
               <LayoutGrid className="h-4 w-4 mr-2" />
               <span>Showing data for {items.length} items</span>
             </div>
@@ -118,7 +114,7 @@ export default function InventoryTable({
         </section>
 
         {/* Divider */}
-        <div className="border-t border-base-200 w-full my-1" />
+        <div className="border-t border-gray-200 w-full my-1" />
 
         {/* Section 2: Data Table (Bottom Area) */}
         <section className="w-full">
@@ -149,7 +145,7 @@ export default function InventoryTable({
               />
             </motion.div>
 
-            {/* Full-width Table */}
+            {/* Full-width Table with traditional styling */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -158,19 +154,19 @@ export default function InventoryTable({
             >
               <InventoryDataTable
                 items={sortedItems}
-                compactMode={compactMode}
                 selectedItems={selectedItems}
-                expandedItems={expandedItems}
                 onEditClick={onEditClick}
                 onDeleteClick={onDeleteClick}
                 onUpdateQuantity={onUpdateQuantity}
                 toggleItemSelection={toggleItemSelection}
-                toggleAllItems={toggleAllItems}
-                toggleExpanded={toggleExpanded}
+                toggleAllItems={() => {
+                  if (selectedItems.length === sortedItems.length) {
+                    setSelectedItems([]);
+                  } else {
+                    setSelectedItems(sortedItems.map((item) => item.id));
+                  }
+                }}
                 formatCurrency={formatCurrency}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                handleSort={handleSort}
               />
             </motion.div>
           </div>

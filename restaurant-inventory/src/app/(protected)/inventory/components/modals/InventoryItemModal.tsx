@@ -1,45 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { COMMON_CATEGORIES } from "@/lib/constants";
-import {
-  FiImage,
-  FiZap,
-  FiMinimize2,
-  FiMaximize2,
-  FiDollarSign,
-  FiPackage,
-  FiInfo,
-  FiMapPin,
-  FiTruck,
-  FiCalendar,
-  FiAlertCircle,
-} from "react-icons/fi";
-import { motion } from "framer-motion";
-import { useCurrency } from "@/lib/currency";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import Image from "next/image";
+import { FiInfo, FiPackage, FiDollarSign, FiBox } from "react-icons/fi";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { BaseModal } from "@/components/ui/modal/base-modal";
 
 // Interface for form data that includes both snake_case and camelCase properties
 interface InventoryFormData
@@ -49,6 +18,7 @@ interface InventoryFormData
   > {
   expiryDate?: string;
   image_url?: string;
+  supplier_id?: string;
 }
 
 interface InventoryItemModalProps {
@@ -62,99 +32,105 @@ interface InventoryItemModalProps {
   userRole?: "admin" | "manager" | "staff";
 }
 
-export default function InventoryItemModal({
+// Section component for modal content organization
+const ModalSection: React.FC<{
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  divider?: boolean;
+}> = ({ title, icon, children, className, divider = false }) => {
+  return (
+    <div
+      className={cn(
+        "space-y-4",
+        divider && "border-b border-gray-100 pb-6 mb-6",
+        className
+      )}
+    >
+      {title && (
+        <div className="flex items-center gap-2.5 text-gray-900">
+          {icon && <div className="text-gray-500">{icon}</div>}
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+      )}
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+};
+
+const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
   isOpen,
   onClose,
   onSave,
   onUpdate,
   item,
   customCategories = [],
-  suppliers = [],
-  userRole = "staff",
-}: InventoryItemModalProps) {
-  // Memoize the initial form data to avoid recalculation on every render
-  const initialFormData = useMemo(() => {
-    return {
-      name: item?.name || "",
-      description: item?.description || "",
-      category: item?.category || "",
-      quantity: item?.quantity || 0,
-      unit: item?.unit || "units",
-      cost: item?.cost || 0,
-      reorder_level: item?.reorder_level || 0,
-      max_stock: item?.max_stock || 0,
-      supplier_id: item?.supplier_id || "",
-      location: item?.location || "",
-      expiry_date: item?.expiry_date || "",
-      image_url: item?.image_url || "",
-    };
-  }, [item]);
+  suppliers,
+  userRole,
+}) => {
+  const [formData, setFormData] = useState<InventoryFormData>({
+    name: "",
+    category: "",
+    quantity: 0,
+    unit: "",
+    cost: 0,
+    reorder_level: 0,
+    description: "",
+    location: "",
+    expiry_date: "",
+    supplier_id: "",
+  });
 
-  const [formData, setFormData] = useState<InventoryFormData>(initialFormData);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof InventoryFormData, string>>
+  >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [quickMode, setQuickMode] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const { formatCurrency } = useCurrency();
 
   // Reset form when modal opens/closes or item changes
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialFormData);
+      setFormData({
+        name: item?.name || "",
+        category: item?.category || "",
+        quantity: item?.quantity || 0,
+        unit: item?.unit || "",
+        cost: item?.cost || 0,
+        reorder_level: item?.reorder_level || 0,
+        description: item?.description || "",
+        location: item?.location || "",
+        expiry_date: item?.expiry_date || "",
+        image_url: item?.image_url || "",
+        supplier_id: item?.supplier_id || "",
+      });
       setErrors({});
       setIsSubmitting(false);
     }
-  }, [isOpen, initialFormData]);
+  }, [isOpen, item]);
 
   // Common units for inventory items
-  const commonUnits = [
-    "units",
-    "kg",
-    "g",
-    "lb",
-    "oz",
-    "l",
-    "ml",
-    "gal",
-    "qt",
-    "pt",
-    "fl oz",
-    "ea",
-    "box",
-    "case",
-    "pack",
-    "bottle",
-    "jar",
-    "can",
-    "bag",
-    "dozen",
-  ];
+  const commonUnits = ["pcs", "kg", "g", "l", "ml", "box", "pack"];
 
-  // Combine custom categories with common categories
+  // All available categories
   const allCategories = useMemo(() => {
-    const uniqueCategories = new Set([
-      ...customCategories,
-      ...COMMON_CATEGORIES,
-    ]);
-    return Array.from(uniqueCategories);
+    return [...new Set([...COMMON_CATEGORIES, ...(customCategories || [])])];
   }, [customCategories]);
 
-  // Handle form input changes
+  // Handle form field changes
   const handleChange = useCallback(
     (
       e:
-        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | React.ChangeEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+          >
         | { name: string; value: string | number }
     ) => {
-      // Handle both event objects and direct value objects
       const { name, value } = "target" in e ? e.target : e;
-      
       setFormData((prev) => ({ ...prev, [name]: value }));
-      
-      // Clear error for this field if it exists
-      if (errors[name]) {
+      if (errors[name as keyof InventoryFormData]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
-          delete newErrors[name];
+          delete newErrors[name as keyof InventoryFormData];
           return newErrors;
         });
       }
@@ -162,670 +138,365 @@ export default function InventoryItemModal({
     [errors]
   );
 
-  // Handle number input changes
+  // Handle numeric input changes
   const handleNumberChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
-      const numValue = parseFloat(value);
-      handleChange({
-        name,
-        value: isNaN(numValue) ? 0 : numValue,
-      });
+      const numValue = value === "" ? 0 : parseFloat(value);
+      setFormData((prev) => ({ ...prev, [name]: numValue }));
+      if (errors[name as keyof InventoryFormData]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name as keyof InventoryFormData];
+          return newErrors;
+        });
+      }
     },
-    [handleChange]
+    [errors]
   );
-
-  // Toggle between quick and full mode
-  const toggleMode = useCallback(() => {
-    setQuickMode((prev) => !prev);
-  }, []);
 
   // Validate form before submission
   const validateForm = useCallback(() => {
-    const newErrors: Record<string, string> = {};
-    
-    // Required fields validation
+    const newErrors: Partial<Record<keyof InventoryFormData, string>> = {};
+
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     }
-    
     if (!formData.category) {
       newErrors.category = "Category is required";
     }
-    
-    if (formData.quantity < 0) {
-      newErrors.quantity = "Quantity cannot be negative";
-    }
-    
     if (!formData.unit) {
       newErrors.unit = "Unit is required";
     }
-    
+    if (formData.quantity < 0) {
+      newErrors.quantity = "Quantity cannot be negative";
+    }
     if (formData.cost < 0) {
       newErrors.cost = "Cost cannot be negative";
     }
-    
+    if (formData.reorder_level < 0) {
+      newErrors.reorder_level = "Reorder level cannot be negative";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
   // Handle form submission
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      
-      if (!validateForm()) {
-        return;
+  const handleSubmit = useCallback(async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      if (item) {
+        await onUpdate?.(formData);
+      } else {
+        await onSave(formData);
       }
-      
-      setIsSubmitting(true);
-      
-      try {
-        if (item && onUpdate) {
-          await onUpdate(formData);
-        } else {
-          await onSave(formData);
-        }
-        onClose();
-      } catch (error) {
-        console.error("Error saving inventory item:", error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [formData, item, onClose, onSave, onUpdate, validateForm]
-  );
+      onClose();
+    } catch (error) {
+      console.error("Error saving inventory item:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [formData, item, onSave, onUpdate, onClose, validateForm]);
+
+  // Log modal state changes for debugging
+  useEffect(() => {
+    console.log("Modal state changed:", { isOpen });
+  }, [isOpen]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white border border-gray-200 shadow-lg rounded-lg">
-        <DialogHeader className="p-6 border-b bg-gradient-to-r from-orange-50 to-orange-100">
-          <div className="flex justify-between items-center">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-gray-800">
-              {item ? (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center"
-                >
-                  <span className="mr-2">Edit</span>
-                  <span className="text-orange-600">{item.name}</span>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  Add Inventory Item
-                </motion.div>
-              )}
-              {quickMode && (
-                <Badge variant="secondary" className="ml-2 gap-1 text-xs bg-orange-100 text-orange-700 border border-orange-200">
-                  <FiZap className="h-3 w-3" />
-                  Quick Mode
-                </Badge>
-              )}
-            </DialogTitle>
-            {userRole === "admin" || userRole === "manager" && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={quickMode ? "outline" : "secondary"}
-                      size="sm"
-                      onClick={toggleMode}
-                      className={`gap-1.5 ${quickMode ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' : 'bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200'}`}
-                    >
-                      {quickMode ? (
-                        <>
-                          <FiMaximize2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Show All Fields</span>
-                        </>
-                      ) : (
-                        <>
-                          <FiMinimize2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Quick Mode</span>
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-white border border-gray-200 text-gray-700 shadow-md">
-                    {quickMode ? "Show all available fields" : "Show only essential fields"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      position="middle"
+      size="xl"
+      className="p-0 overflow-hidden"
+    >
+      {/* Close button X */}
+      <button
+        className="btn btn-sm btn-circle absolute right-4 top-4 text-gray-500 hover:text-gray-900 hover:bg-gray-100 z-10"
+        onClick={onClose}
+      >
+        ✕
+      </button>
+
+      {/* Modal Header */}
+      <div className="px-6 pt-6 pb-2">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <FiPackage className="text-primary h-6 w-6" />
+            {item ? (
+              <span>
+                Edit <span className="text-primary">{item.name}</span>
+              </span>
+            ) : (
+              "Add New Item"
             )}
           </div>
-          <DialogDescription className="mt-1 text-gray-600">
+          <p className="text-base text-gray-600 mt-2">
             {item
               ? "Update the details of this inventory item"
               : "Add a new item to your inventory"}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          {quickMode ? (
-            // Quick Mode Layout - Single column with only essential fields
-            <div className="space-y-5 max-w-xl mx-auto">
-              <div>
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                  Item Name <span className="text-red-500">*</span>
-                </Label>
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+          {/* Basic Information */}
+          <ModalSection title="Basic Information" icon={<FiInfo />} divider>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Item Name <span className="text-error">*</span>
+                </label>
                 <Input
-                  id="name"
+                  type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter item name"
-                  required
-                  className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                    errors.name ? "border-red-500" : ""
-                  }`}
+                  variant={errors.name ? "error" : undefined}
                 />
                 {errors.name && (
-                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                  <p className="text-xs text-error">{errors.name}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
-                    Quantity <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.quantity}
-                    onChange={handleNumberChange}
-                    required
-                    className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                      errors.quantity ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.quantity && (
-                    <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Category <span className="text-error">*</span>
+                </label>
+                <select
+                  className={cn(
+                    "select w-full",
+                    errors.category ? "select-error" : "select-bordered"
                   )}
-                </div>
-
-                <div>
-                  <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
-                    Unit <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    name="unit"
-                    value={formData.unit}
-                    onValueChange={(value) =>
-                      handleChange({ name: "unit", value })
-                    }
-                  >
-                    <SelectTrigger 
-                      className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                        errors.unit ? "border-red-500" : ""
-                      }`}
-                    >
-                      <SelectValue placeholder="Select a unit" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
-                      {commonUnits.map((unit) => (
-                        <SelectItem
-                          key={unit}
-                          value={unit}
-                          className="hover:bg-orange-50"
-                        >
-                          {unit}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.unit && (
-                    <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  name="category"
                   value={formData.category}
-                  onValueChange={(value) =>
-                    handleChange({ name: "category", value })
+                  onChange={(e) =>
+                    handleChange({ name: "category", value: e.target.value })
                   }
                 >
-                  <SelectTrigger 
-                    className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                      errors.category ? "border-red-500" : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
-                    {allCategories.map((category) => (
-                      <SelectItem
-                        key={category}
-                        value={category}
-                        className="hover:bg-orange-50"
-                      >
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value="" disabled>
+                    Select category
+                  </option>
+                  {allCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
                 {errors.category && (
-                  <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                  <p className="text-xs text-error">{errors.category}</p>
+                )}
+              </div>
+            </div>
+          </ModalSection>
+
+          {/* Cost and Unit Information */}
+          <ModalSection
+            title="Cost & Unit Information"
+            icon={<FiDollarSign />}
+            divider
+          >
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Cost Per Unit <span className="text-error">*</span>
+                </label>
+                <div className="join w-full">
+                  <span className="join-item inline-flex items-center px-3 border border-base-300 bg-base-200 text-base-content text-sm">
+                    $
+                  </span>
+                  <Input
+                    type="number"
+                    name="cost"
+                    min="0"
+                    step="0.01"
+                    value={formData.cost}
+                    onChange={handleNumberChange}
+                    className="join-item rounded-l-none w-full"
+                    variant={errors.cost ? "error" : undefined}
+                  />
+                </div>
+                {errors.cost && (
+                  <p className="text-xs text-error">{errors.cost}</p>
                 )}
               </div>
 
-              <motion.div 
-                className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-100 dark:border-blue-800"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <p className="text-sm text-blue-600 dark:text-blue-300 flex items-center">
-                  <FiZap className="mr-2 h-4 w-4" />
-                  <span className="font-medium">Quick Mode Active</span>
-                </p>
-                <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
-                  You&apos;re using quick mode which includes only essential
-                  fields.
-                  {userRole === "admin" || userRole === "manager" &&
-                    " Toggle to full mode to add details like cost, reorder level, images, and supplier info."}
-                </p>
-              </motion.div>
-            </div>
-          ) : (
-            // Full Mode Layout - Organized with clear sections
-            <div className="space-y-8">
-              {/* Basic Information Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiPackage className="mr-2 h-4 w-4 text-primary" />
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div>
-                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                      Item Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Enter item name"
-                      required
-                      className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                        errors.name ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.name && (
-                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-                      Category <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      name="category"
-                      value={formData.category}
-                      onValueChange={(value) =>
-                        handleChange({ name: "category", value })
-                      }
-                    >
-                      <SelectTrigger 
-                        className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                          errors.category ? "border-red-500" : ""
-                        }`}
-                      >
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
-                        {allCategories.map((category) => (
-                          <SelectItem
-                            key={category}
-                            value={category}
-                            className="hover:bg-orange-50"
-                          >
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.category && (
-                      <p className="text-red-500 text-xs mt-1">{errors.category}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
-                        Quantity <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="quantity"
-                        name="quantity"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.quantity}
-                        onChange={handleNumberChange}
-                        required
-                        className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                          errors.quantity ? "border-red-500" : ""
-                        }`}
-                      />
-                      {errors.quantity && (
-                        <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
-                        Unit <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        name="unit"
-                        value={formData.unit}
-                        onValueChange={(value) =>
-                          handleChange({ name: "unit", value })
-                        }
-                      >
-                        <SelectTrigger 
-                          className={`border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                            errors.unit ? "border-red-500" : ""
-                          }`}
-                        >
-                          <SelectValue placeholder="Select a unit" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
-                          {commonUnits.map((unit) => (
-                            <SelectItem
-                              key={unit}
-                              value={unit}
-                              className="hover:bg-orange-50"
-                            >
-                              {unit}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.unit && (
-                        <p className="text-red-500 text-xs mt-1">{errors.unit}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="description"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Description
-                    </Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Enter item description"
-                      className="min-h-[100px] border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Inventory Management Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiDollarSign className="mr-2 h-4 w-4 text-primary" />
-                  Inventory Management
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div>
-                    <Label
-                      htmlFor="costPerUnit"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Cost Per Unit <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FiDollarSign className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <Input
-                        id="costPerUnit"
-                        name="cost"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.cost}
-                        onChange={handleNumberChange}
-                        required
-                        className={`pl-8 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500 ${
-                          errors.cost ? "border-red-500" : ""
-                        }`}
-                      />
-                    </div>
-                    {item && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Total value: {formatCurrency(formData.cost * formData.quantity)}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="reorderPoint"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Reorder Level
-                    </Label>
-                    <Input
-                      id="reorderPoint"
-                      name="reorder_level"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.reorder_level}
-                      onChange={handleNumberChange}
-                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                      <FiAlertCircle className="h-3 w-3 mr-1 text-amber-500" />
-                      The quantity at which you&apos;ll be alerted to reorder this item
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="maxStock"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Maximum Stock Level
-                    </Label>
-                    <Input
-                      id="maxStock"
-                      name="max_stock"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.max_stock}
-                      onChange={handleNumberChange}
-                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Used for inventory level visualization (optional)
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Additional Details Section */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-              >
-                <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center">
-                  <FiInfo className="mr-2 h-4 w-4 text-primary" />
-                  Additional Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div>
-                    <Label
-                      htmlFor="location"
-                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
-                    >
-                      <FiMapPin className="h-4 w-4 text-muted-foreground" />
-                      Location
-                    </Label>
-                    <Input
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      placeholder="Storage location"
-                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-
-                  {suppliers && suppliers.length > 0 && (
-                    <div>
-                      <Label
-                        htmlFor="supplierId"
-                        className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
-                      >
-                        <FiTruck className="h-4 w-4 text-muted-foreground" />
-                        Supplier
-                      </Label>
-                      <Select
-                        name="supplier_id"
-                        value={formData.supplier_id}
-                        onValueChange={(value) =>
-                          handleChange({ name: "supplier_id", value })
-                        }
-                      >
-                        <SelectTrigger 
-                          className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                        >
-                          <SelectValue placeholder="Select a supplier" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-80 overflow-y-auto bg-white border border-gray-200 shadow-lg rounded-md">
-                          <SelectItem value="">None</SelectItem>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Unit <span className="text-error">*</span>
+                </label>
+                <select
+                  className={cn(
+                    "select w-full",
+                    errors.unit ? "select-error" : "select-bordered"
                   )}
-
-                  <div>
-                    <Label
-                      htmlFor="expiryDate"
-                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
-                    >
-                      <FiCalendar className="h-4 w-4 text-muted-foreground" />
-                      Expiry Date
-                    </Label>
-                    <Input
-                      id="expiryDate"
-                      name="expiry_date"
-                      type="date"
-                      value={formData.expiry_date}
-                      onChange={handleChange}
-                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="imageUrl"
-                      className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
-                    >
-                      <FiImage className="h-4 w-4 text-muted-foreground" />
-                      Product Image URL
-                    </Label>
-                    <Input
-                      id="imageUrl"
-                      name="image_url"
-                      value={formData.image_url}
-                      onChange={handleChange}
-                      placeholder="Enter image URL"
-                      className="border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
-                    />
-                    {formData.image_url && (
-                      <div className="mt-2 rounded-md overflow-hidden border border-slate-200 dark:border-slate-800 h-16 w-16">
-                        <Image
-                          src={formData.image_url}
-                          alt={formData.name}
-                          width={64}
-                          height={64}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+                  value={formData.unit}
+                  onChange={(e) =>
+                    handleChange({ name: "unit", value: e.target.value })
+                  }
+                >
+                  <option value="" disabled>
+                    Select unit
+                  </option>
+                  {commonUnits.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+                {errors.unit && (
+                  <p className="text-xs text-error">{errors.unit}</p>
+                )}
+              </div>
             </div>
-          )}
+          </ModalSection>
 
-          <DialogFooter className="mt-8 pt-4 border-t flex items-center justify-between">
-            <div>
-              {item && (
-                <div className="text-xs text-muted-foreground">
-                  Last updated: {new Date(item.updated_at).toLocaleString()}
+          {/* Stock Management */}
+          <ModalSection title="Stock Management" icon={<FiBox />} divider>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Quantity <span className="text-error">*</span>
+                </label>
+                <Input
+                  type="number"
+                  name="quantity"
+                  min="0"
+                  value={formData.quantity}
+                  onChange={handleNumberChange}
+                  variant={errors.quantity ? "error" : undefined}
+                />
+                {errors.quantity && (
+                  <p className="text-xs text-error">{errors.quantity}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reorder Level</label>
+                <Input
+                  type="number"
+                  name="reorder_level"
+                  min="0"
+                  value={formData.reorder_level}
+                  onChange={handleNumberChange}
+                />
+                <p className="text-xs text-base-content/70">
+                  Minimum quantity before reorder alert
+                </p>
+              </div>
+            </div>
+          </ModalSection>
+
+          {/* Additional Details */}
+          <ModalSection title="Additional Details" icon={<FiInfo />}>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Description</label>
+                <Textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter item description..."
+                  className="h-24"
+                />
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Storage Location
+                  </label>
+                  <Input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g., Kitchen Storage A"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Expiry Date</label>
+                  <Input
+                    type="date"
+                    name="expiry_date"
+                    value={formData.expiry_date}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              {suppliers && suppliers.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <label className="text-sm font-medium">Supplier</label>
+                  <select
+                    className="select w-full select-bordered"
+                    name="supplier_id"
+                    value={formData.supplier_id || ""}
+                    onChange={(e) =>
+                      handleChange({
+                        name: "supplier_id",
+                        value: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">No supplier</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-base-content/70">
+                    Select the supplier for this item
+                  </p>
+                </div>
+              )}
+
+              {/* Additional image URL field (visible only for admin/manager) */}
+              {(userRole === "admin" || userRole === "manager") && (
+                <div className="space-y-2 mt-4">
+                  <label className="text-sm font-medium">Image URL</label>
+                  <Input
+                    type="text"
+                    name="image_url"
+                    value={formData.image_url || ""}
+                    onChange={handleChange}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <p className="text-xs text-base-content/70">
+                    Enter a URL for an image of this item
+                  </p>
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                className="px-6" 
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {item ? "Saving..." : "Adding..."}
-                  </div>
-                ) : (
-                  item ? "Save Changes" : "Add Item"
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
+          </ModalSection>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Modal Footer */}
+      <div className="px-6 py-4 mt-4 bg-gray-50 border-t border-gray-100 modal-action justify-end">
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="h-10 px-4 border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleSubmit}
+          loading={isSubmitting}
+          className="h-10 px-4"
+        >
+          {isSubmitting ? "Processing..." : item ? "Update Item" : "Add Item"}
+        </Button>
+      </div>
+    </BaseModal>
   );
-}
+};
+
+export default InventoryItemModal;

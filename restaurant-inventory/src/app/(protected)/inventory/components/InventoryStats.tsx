@@ -16,7 +16,7 @@ interface InventoryStatsProps {
   totalItems: number;
   lowStockItems: number;
   outOfStockItems: number;
-  totalValue: number;
+  totalValue: number | string;
 }
 
 export function InventoryStats({
@@ -59,7 +59,7 @@ export function InventoryStats({
           color="orange"
           trend={{
             value: 0,
-            isPositive: true
+            isPositive: true,
           }}
         />
       </motion.div>
@@ -79,7 +79,7 @@ export function InventoryStats({
           showAlert={lowStockItems > 0}
           trend={{
             value: lowStockPercentage,
-            isPositive: false
+            isPositive: false,
           }}
         />
       </motion.div>
@@ -99,7 +99,7 @@ export function InventoryStats({
           showAlert={outOfStockItems > 0}
           trend={{
             value: outOfStockPercentage,
-            isPositive: false
+            isPositive: false,
           }}
         />
       </motion.div>
@@ -118,7 +118,7 @@ export function InventoryStats({
           color="green"
           trend={{
             value: 0,
-            isPositive: true
+            isPositive: true,
           }}
         />
       </motion.div>
@@ -207,12 +207,16 @@ function StatCard({
   return (
     <div className="relative h-full overflow-hidden rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group">
       {/* Top accent bar */}
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${styles.accentColor}`}></div>
+      <div
+        className={`absolute top-0 left-0 right-0 h-1.5 ${styles.accentColor}`}
+      ></div>
 
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className={`text-sm font-medium ${styles.titleColor} mb-1`}>{title}</h3>
+            <h3 className={`text-sm font-medium ${styles.titleColor} mb-1`}>
+              {title}
+            </h3>
             <p className={`text-2xl font-bold ${styles.valueColor}`}>{value}</p>
           </div>
           <div className={`p-3 rounded-full ${styles.iconBg} shadow-sm`}>
@@ -222,30 +226,39 @@ function StatCard({
 
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">{description}</p>
-          
+
           {trend && (
             <div className="flex items-center">
-              <span className={`text-xs font-medium ${
-                trend.isPositive ? styles.trendUp : styles.trendDown
-              }`}>
-                {trend.value > 0 ? `${trend.value}%` : ''}
+              <span
+                className={`text-xs font-medium ${
+                  trend.isPositive ? styles.trendUp : styles.trendDown
+                }`}
+              >
+                {trend.value > 0 ? `${trend.value}%` : ""}
               </span>
-              {trend.value > 0 && (
-                trend.isPositive ? (
+              {trend.value > 0 &&
+                (trend.isPositive ? (
                   <FiTrendingUp className={`ml-1 h-3 w-3 ${styles.trendUp}`} />
                 ) : (
-                  <FiTrendingDown className={`ml-1 h-3 w-3 ${styles.trendDown}`} />
-                )
-              )}
+                  <FiTrendingDown
+                    className={`ml-1 h-3 w-3 ${styles.trendDown}`}
+                  />
+                ))}
             </div>
           )}
         </div>
 
         {/* Alert indicator */}
         {showAlert && (
-          <div className={`mt-3 py-1.5 px-2.5 rounded-md ${styles.alertBg} flex items-center text-xs border border-${color}-200`}>
-            <FiAlertTriangle className={`h-3.5 w-3.5 mr-1.5 ${styles.iconColor}`} />
-            <span className={`${styles.iconColor} font-medium`}>Requires attention</span>
+          <div
+            className={`mt-3 py-1.5 px-2.5 rounded-md ${styles.alertBg} flex items-center text-xs border border-${color}-200`}
+          >
+            <FiAlertTriangle
+              className={`h-3.5 w-3.5 mr-1.5 ${styles.iconColor}`}
+            />
+            <span className={`${styles.iconColor} font-medium`}>
+              Requires attention
+            </span>
           </div>
         )}
       </div>

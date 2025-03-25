@@ -1,4 +1,4 @@
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, GroupedInventoryItem } from "@/lib/types";
 
 // Helper function to pluralize units correctly
 export const formatUnit = (quantity: number, unit: string): string => {
@@ -85,10 +85,9 @@ export const calculateCostPerUnit = (item: InventoryItem): number => {
 };
 
 // Calculate total inventory value
-export const calculateInventoryValue = (items: InventoryItem[]): number => {
+export const calculateInventoryValue = (items: GroupedInventoryItem[]): number => {
     return items.reduce((total, item) => {
-        const itemValue = item.quantity * (item.cost_per_unit || 0);
-        return total + itemValue;
+        return total + item.totalQuantity * item.cost;
     }, 0);
 };
 
@@ -99,7 +98,10 @@ export const calculateInventoryStats = (
 ) => {
     return {
         totalItems: items.length,
-        totalValue: calculateInventoryValue(items),
+        totalValue: items.reduce((total, item) => {
+            const itemValue = item.quantity * (item.cost_per_unit || 0);
+            return total + itemValue;
+        }, 0),
         lowStockItems: items.filter((item) => isLowStock(item)).length,
         outOfStockItems: items.filter((item) => isOutOfStock(item)).length,
         inStockItems: items.filter(

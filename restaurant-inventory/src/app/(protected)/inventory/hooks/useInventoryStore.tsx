@@ -3,6 +3,8 @@ import { useInventoryStore } from "@/lib/stores/inventory-store";
 import { InventoryItem, InventoryFormData } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useInventorySubscription } from "@/lib/hooks/useInventorySubscription";
+import { inventoryService } from "@/lib/services/inventory-service";
+import { v4 as uuidv4 } from "uuid";
 
 export const useInventoryManager = () => {
   const toast = useToast();
@@ -28,7 +30,6 @@ export const useInventoryManager = () => {
 
   // Extract actions
   const fetchInventory = useInventoryStore((state) => state.fetchInventory);
-  const addItem = useInventoryStore((state) => state.addItem);
   const updateItem = useInventoryStore((state) => state.updateItem);
   const deleteItem = useInventoryStore((state) => state.deleteItem);
   const setSelectedItem = useInventoryStore((state) => state.setSelectedItem);
@@ -50,12 +51,16 @@ export const useInventoryManager = () => {
   const getLowStockItems = useInventoryStore((state) => state.getLowStockItems);
 
   // Callback to handle real-time inventory updates
-  const handleItemsChanged = useCallback((updatedItems: InventoryItem[]) => {
-    if (updatedItems && updatedItems.length > 0) {
-      // Update the store with new items
-      useInventoryStore.setState({ items: updatedItems });
-    }
-  }, []);
+  const handleItemsChanged = useCallback(
+    (updatedItems: InventoryItem[]) => {
+      if (updatedItems && updatedItems.length > 0) {
+        console.log("Received updated inventory items:", updatedItems);
+        // Update the store with new items - ensure we're using the proper setter function
+        fetchInventory();
+      }
+    },
+    [fetchInventory]
+  );
 
   // Use the subscription hook for real-time updates
   const { isSubscriptionLoading, subscriptionError, isSubscribed } =
@@ -64,33 +69,63 @@ export const useInventoryManager = () => {
     });
 
   // Enhance addItem with toast notification
-  const handleAddItem = useCallback(
-    async (
-      itemData: Omit<InventoryItem, "id" | "created_at" | "updated_at">
-    ) => {
-      try {
-        const result = await addItem(itemData);
+  const handleAddItem = async (itemData: InventoryFormData) => {
+    const tempId = uuidv4();
 
-        if (result) {
-          toast.toast({
-            title: "Item Added",
-            description: `${result.name} has been added to your inventory.`,
-            variant: "default",
-          });
-        }
+    try {
+      // Add optimistic update
+      const optimisticItem = {
+        id: tempId,
+        ...itemData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-        return result;
-      } catch (error) {
-        toast.toast({
-          title: "Error",
-          description: "Failed to add inventory item.",
-          variant: "destructive",
-        });
-        return null;
+      useInventoryStore.setState((state) => ({
+        items: [...state.items, optimisticItem],
+      }));
+
+      // Make API call
+      const response = await inventoryService.addItem({
+        ...itemData,
+        reorder_level: itemData.reorder_level ?? 0,
+      });
+
+      if (!response) {
+        throw new Error("Failed to add item");
       }
-    },
-    [addItem, toast]
-  );
+
+      // Update with actual data from server
+      useInventoryStore.setState((state) => ({
+        items: state.items.map((item) =>
+          item.id === tempId ? response : item
+        ),
+      }));
+
+      toast.toast({
+        title: "Item Added",
+        description: `${response.name} has been added to your inventory.`,
+        variant: "default",
+      });
+
+      return response;
+    } catch (error) {
+      console.error("Error adding item:", error);
+
+      // Remove optimistic update on error
+      useInventoryStore.setState((state) => ({
+        items: state.items.filter((item) => item.id !== tempId),
+      }));
+
+      toast.toast({
+        title: "Error",
+        description: "Failed to add inventory item.",
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
 
   // Enhance updateItem with toast notification
   const handleUpdateItem = useCallback(
@@ -98,16 +133,19 @@ export const useInventoryManager = () => {
       try {
         const result = await updateItem(id, updates);
 
-        if (result) {
-          toast.toast({
-            title: "Item Updated",
-            description: `${result.name} has been updated.`,
-            variant: "default",
-          });
+        if (!result) {
+          throw new Error("Failed to update item");
         }
 
+        toast.toast({
+          title: "Item Updated",
+          description: `${result.name} has been updated.`,
+          variant: "default",
+        });
+
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
+        console.error("Error updating item:", error);
         toast.toast({
           title: "Error",
           description: "Failed to update inventory item.",
@@ -125,16 +163,19 @@ export const useInventoryManager = () => {
       try {
         const result = await deleteItem(id);
 
-        if (result) {
-          toast.toast({
-            title: "Item Deleted",
-            description: `${itemName} has been removed from your inventory.`,
-            variant: "default",
-          });
+        if (!result) {
+          throw new Error("Failed to delete item");
         }
 
+        toast.toast({
+          title: "Item Deleted",
+          description: `${itemName} has been removed from your inventory.`,
+          variant: "default",
+        });
+
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
+        console.error("Error deleting item:", error);
         toast.toast({
           title: "Error",
           description: "Failed to delete inventory item.",

@@ -1,5 +1,6 @@
-import InventoryItemModal from "../modals/InventoryItemModal";
-import DeleteConfirmationDialog from "@/components/inventory/DeleteConfirmationDialog";
+import { useEffect } from "react";
+import InventoryItemModal from "./InventoryItemModal";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import { InventoryItem, Supplier } from "@/lib/types";
 
 // Interface for form data that includes both snake_case and camelCase properties
@@ -25,9 +26,9 @@ type InventoryModalsProps = {
 };
 
 export function InventoryModals({
-  isModalOpen,
+  isModalOpen = false,
   selectedItem,
-  isDeleteDialogOpen,
+  isDeleteDialogOpen = false,
   itemToDelete,
   onCloseModal,
   onCloseDeleteDialog,
@@ -38,6 +39,13 @@ export function InventoryModals({
   suppliers = [],
   userRole = "staff",
 }: InventoryModalsProps) {
+  // Add debugging logs
+  useEffect(() => {
+    console.log("InventoryModals - isModalOpen:", isModalOpen);
+    console.log("InventoryModals - isDeleteDialogOpen:", isDeleteDialogOpen);
+    console.log("InventoryModals - itemToDelete:", itemToDelete);
+  }, [isModalOpen, isDeleteDialogOpen, itemToDelete]);
+
   return (
     <>
       <InventoryItemModal
@@ -52,11 +60,11 @@ export function InventoryModals({
       />
 
       <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
+        isOpen={!!isDeleteDialogOpen}
         onClose={onCloseDeleteDialog}
         onConfirm={onDeleteItem}
-        itemName={itemToDelete?.name || ""}
-        itemType="item"
+        itemName={itemToDelete?.name || "this item"}
+        itemType="inventory item"
       />
     </>
   );
