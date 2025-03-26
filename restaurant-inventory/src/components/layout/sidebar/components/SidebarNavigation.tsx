@@ -7,12 +7,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NavItem } from "../types";
 import { hasChildren } from "../types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
@@ -38,131 +33,61 @@ export function SidebarNavigation({
   );
 
   return (
-    <TooltipProvider>
-      <nav className={cn("px-3 py-1 space-y-1.5 overflow-y-auto max-h-full", open ? "px-3" : "px-2")}>
-        {navItems.map((item, index) => {
-          // Extract common classes but don't include item.className here
-          const commonButtonClasses = cn(
-            "flex items-center justify-between w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-            "hover:bg-gray-100 hover:text-orange-500"
+    <nav
+      className={cn(
+        "px-3 py-1 space-y-1.5 overflow-y-auto max-h-full",
+        open ? "px-3" : "px-2"
+      )}
+    >
+      {navItems.map((item, index) => {
+        // Extract common classes but don't include item.className here
+        const commonButtonClasses = cn(
+          "flex items-center justify-between w-full rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+          "hover:bg-gray-100 hover:text-orange-500"
+        );
+
+        if (hasChildren(item)) {
+          const isExpanded = expandedSections[item.name] || false;
+          const hasActiveChild = item.items.some(
+            (child) =>
+              "href" in child &&
+              typeof child.href === "string" &&
+              pathname.startsWith(child.href)
           );
 
-          if (hasChildren(item)) {
-            const isExpanded = expandedSections[item.name] || false;
-            const hasActiveChild = item.items.some(
-              (child) =>
-                "href" in child &&
-                typeof child.href === "string" &&
-                pathname.startsWith(child.href)
-            );
-
-            // For collapsed sidebar with hover functionality
-            if (!open) {
-              return (
-                <Popover
-                  key={item.name}
-                  open={hoveredSection === item.name}
-                  onOpenChange={(isOpen) => {
-                    setHoveredSection(isOpen ? item.name : null);
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <button
-                      className={cn(
-                        commonButtonClasses,
-                        hasActiveChild
-                          ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                          : "text-gray-700",
-                        item.className // Apply custom class separately
-                      )}
-                    >
-                      {item.icon && (
-                        <item.icon className="h-5 w-5 shrink-0" />
-                      )}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="right"
-                    align="start"
-                    className="p-0 w-48 rounded-md border border-gray-200 shadow-md"
-                    onInteractOutside={() => setHoveredSection(null)}
-                  >
-                    <div className="bg-white py-1 rounded-md">
-                      <div className="px-3 py-2 text-sm font-medium text-orange-500 border-b border-gray-200 mb-1">
-                        {item.name}
-                      </div>
-                      {item.items.map((child) => {
-                        if ("href" in child) {
-                          const childHref =
-                            typeof child.href === "string" ? child.href : "#";
-                          const isActive =
-                            childHref !== "#" && pathname.startsWith(childHref);
-                          return (
-                            <Link
-                              key={child.name}
-                              href={childHref}
-                              className={cn(
-                                "flex items-center px-3 py-2 text-sm transition-colors",
-                                isActive
-                                  ? "text-orange-500 bg-orange-50/80 font-medium"
-                                  : "text-gray-700 hover:text-orange-500 hover:bg-gray-50",
-                                child.className
-                              )}
-                              onClick={() => setHoveredSection(null)}
-                            >
-                              {child.icon && (
-                                <child.icon className="h-4 w-4 mr-2 shrink-0" />
-                              )}
-                              {child.name}
-                            </Link>
-                          );
-                        }
-                        return null;
-                      })}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              );
-            }
-
-            // For expanded sidebar
+          // For collapsed sidebar with hover functionality
+          if (!open) {
             return (
-              <div key={item.name} className={item.className}>
-                <button
-                  onClick={() => toggleSection(item.name)}
-                  className={cn(
-                    commonButtonClasses,
-                    hasActiveChild
-                      ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                      : "text-gray-700"
-                  )}
-                >
-                  <div className="flex items-center">
-                    {item.icon && (
-                      <item.icon
-                        className={cn("h-5 w-5 shrink-0", {
-                          "mr-2.5": open,
-                        })}
-                      />
-                    )}
-                    {open && <span>{item.name}</span>}
-                  </div>
-                  {open && (
-                    <ChevronDownIcon
-                      className={cn("h-4 w-4 transition-transform", {
-                        "transform rotate-180": isExpanded,
-                      })}
-                    />
-                  )}
-                </button>
-
-                {open && isExpanded && (
-                  <div
+              <Popover
+                key={item.name}
+                open={hoveredSection === item.name}
+                onOpenChange={(isOpen) => {
+                  setHoveredSection(isOpen ? item.name : null);
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <button
                     className={cn(
-                      "pl-10 space-y-1 mt-1",
-                      !isExpanded && "hidden"
+                      commonButtonClasses,
+                      hasActiveChild
+                        ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                        : "text-gray-700",
+                      item.className // Apply custom class separately
                     )}
                   >
+                    {item.icon && <item.icon className="h-5 w-5 shrink-0" />}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  side="right"
+                  align="start"
+                  className="p-0 w-48 rounded-md border border-gray-200 shadow-md"
+                  onInteractOutside={() => setHoveredSection(null)}
+                >
+                  <div className="bg-white py-1 rounded-md">
+                    <div className="px-3 py-2 text-sm font-medium text-orange-500 border-b border-gray-200 mb-1">
+                      {item.name}
+                    </div>
                     {item.items.map((child) => {
                       if ("href" in child) {
                         const childHref =
@@ -174,15 +99,16 @@ export function SidebarNavigation({
                             key={child.name}
                             href={childHref}
                             className={cn(
-                              "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
+                              "flex items-center px-3 py-2 text-sm transition-colors",
                               isActive
                                 ? "text-orange-500 bg-orange-50/80 font-medium"
                                 : "text-gray-700 hover:text-orange-500 hover:bg-gray-50",
                               child.className
                             )}
+                            onClick={() => setHoveredSection(null)}
                           >
                             {child.icon && (
-                              <child.icon className="h-4 w-4 mr-2.5 shrink-0" />
+                              <child.icon className="h-4 w-4 mr-2 shrink-0" />
                             )}
                             {child.name}
                           </Link>
@@ -191,67 +117,133 @@ export function SidebarNavigation({
                       return null;
                     })}
                   </div>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
             );
           }
 
-          // Single item
-          if ("href" in item) {
-            const itemHref = typeof item.href === "string" ? item.href : "#";
-            const isActive = itemHref !== "#" && pathname.startsWith(itemHref);
-
-            // For collapsed sidebar
-            if (!open) {
-              return (
-                <Tooltip key={item.name}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={itemHref}
-                      className={cn(
-                        "flex items-center justify-center rounded-md p-2.5 text-sm font-medium transition-colors",
-                        isActive
-                          ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                          : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
-                        item.className
-                      )}
-                    >
-                      {item.icon && <item.icon className="h-5 w-5 shrink-0" />}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.name}</TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            // For expanded sidebar
-            return (
-              <Link
-                key={item.name}
-                href={itemHref}
+          // For expanded sidebar
+          return (
+            <div key={item.name} className={item.className}>
+              <button
+                onClick={() => toggleSection(item.name)}
                 className={cn(
-                  "flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
+                  commonButtonClasses,
+                  hasActiveChild
                     ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
-                    : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
-                  item.className
+                    : "text-gray-700"
                 )}
               >
-                {item.icon && (
-                  <item.icon
-                    className={cn("h-5 w-5 shrink-0", {
-                      "mr-2.5": open,
+                <div className="flex items-center">
+                  {item.icon && (
+                    <item.icon
+                      className={cn("h-5 w-5 shrink-0", {
+                        "mr-2.5": open,
+                      })}
+                    />
+                  )}
+                  {open && <span>{item.name}</span>}
+                </div>
+                {open && (
+                  <ChevronDownIcon
+                    className={cn("h-4 w-4 transition-transform", {
+                      "transform rotate-180": isExpanded,
                     })}
                   />
                 )}
-                {open && item.name}
-              </Link>
+              </button>
+
+              {open && isExpanded && (
+                <div
+                  className={cn(
+                    "pl-10 space-y-1 mt-1",
+                    !isExpanded && "hidden"
+                  )}
+                >
+                  {item.items.map((child) => {
+                    if ("href" in child) {
+                      const childHref =
+                        typeof child.href === "string" ? child.href : "#";
+                      const isActive =
+                        childHref !== "#" && pathname.startsWith(childHref);
+                      return (
+                        <Link
+                          key={child.name}
+                          href={childHref}
+                          className={cn(
+                            "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
+                            isActive
+                              ? "text-orange-500 bg-orange-50/80 font-medium"
+                              : "text-gray-700 hover:text-orange-500 hover:bg-gray-50",
+                            child.className
+                          )}
+                        >
+                          {child.icon && (
+                            <child.icon className="h-4 w-4 mr-2.5 shrink-0" />
+                          )}
+                          {child.name}
+                        </Link>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        if ("href" in item) {
+          const itemHref = typeof item.href === "string" ? item.href : "#";
+          const isActive = itemHref !== "#" && pathname.startsWith(itemHref);
+
+          // For collapsed sidebar
+          if (!open) {
+            return (
+              <Tooltip key={item.name} content={item.name} position="right">
+                <Link
+                  href={itemHref}
+                  className={cn(
+                    "flex items-center justify-center rounded-md p-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                      : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
+                    item.className
+                  )}
+                >
+                  {item.icon && <item.icon className="h-5 w-5 shrink-0" />}
+                </Link>
+              </Tooltip>
             );
           }
 
-          return null;
-        })}
-      </nav>
-    </TooltipProvider>
+          // For expanded sidebar
+          return (
+            <Link
+              key={item.name}
+              href={itemHref}
+              className={cn(
+                "flex items-center rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                isActive
+                  ? "text-orange-500 bg-orange-50/80 border-l-2 border-orange-500"
+                  : "text-gray-700 hover:text-orange-500 hover:bg-gray-100",
+                item.className
+              )}
+            >
+              {item.icon && (
+                <item.icon
+                  className={cn("h-5 w-5 shrink-0", {
+                    "mr-2.5": open,
+                  })}
+                />
+              )}
+              {open && item.name}
+            </Link>
+          );
+        }
+
+        return null;
+      })}
+    </nav>
   );
 }

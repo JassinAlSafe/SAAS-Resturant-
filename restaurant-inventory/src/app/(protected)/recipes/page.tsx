@@ -13,7 +13,7 @@ import { RecipeModals } from "./components/modals/RecipeModals";
 import RecipeFilterDialog from "./components/modals/RecipeFilterDialog";
 import { Dish } from "@/lib/types";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { FiSearch } from "react-icons/fi";
 
 interface FilterCriteria {
   categories: string[];
@@ -53,11 +53,7 @@ export default function RecipesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Add state for sorting
-  const [sortField, setSortField] = useState<"name" | "price" | "popularity" | "category">("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
-  // Add state for filter dialog and criteria
+  // State for filter dialog and criteria
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     categories: [],
@@ -116,28 +112,9 @@ export default function RecipesPage() {
     );
   });
 
-  // Sort the filtered recipes
+  // Sort the filtered recipes based on name
   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortField) {
-      case "name":
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case "price":
-        comparison = a.price - b.price;
-        break;
-      case "category":
-        comparison = (a.category || "").localeCompare(b.category || "");
-        break;
-      case "popularity":
-        const aPopularity = a.popularity || 0;
-        const bPopularity = b.popularity || 0;
-        comparison = aPopularity - bPopularity;
-        break;
-    }
-    
-    return sortDirection === "asc" ? comparison : -comparison;
+    return a.name.localeCompare(b.name);
   });
 
   // Handle toggling archived recipes view
@@ -244,190 +221,117 @@ export default function RecipesPage() {
     }
   };
 
-  // Handle sorting recipes
-  const handleSort = () => {
-    // Toggle sort direction if clicking on the same field
-    if (sortField === "name") {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-      // Cycle through sort fields
-      setSortField("price");
-    } else if (sortField === "price") {
-      setSortDirection("asc");
-      setSortField("category");
-    } else if (sortField === "category") {
-      setSortDirection("asc");
-      setSortField("popularity");
-    } else {
-      setSortDirection("asc");
-      setSortField("name");
-    }
-    
-    toast.success(`Sorted by ${sortField} (${sortDirection === "asc" ? "A-Z" : "Z-A"})`);
-  };
-
-  // Handle filter dialog
+  // Handle filter dialog open
   const handleFilterClick = () => {
     setIsFilterDialogOpen(true);
   };
 
+  // Handle filter apply
   const handleFilterApply = (criteria: FilterCriteria) => {
     setFilterCriteria(criteria);
-    const hasActiveFilters =
-      criteria.categories.length > 0 ||
-      criteria.allergens.length > 0 ||
-      criteria.minPrice !== undefined ||
-      criteria.maxPrice !== undefined ||
-      criteria.minFoodCost !== undefined ||
-      criteria.maxFoodCost !== undefined;
-
-    if (hasActiveFilters) {
-      toast.success("Filters applied successfully");
-    }
+    setIsFilterDialogOpen(false);
   };
 
-  // Update the category filter click handler
-  const handleCategoryFilterClick = () => {
-    setIsFilterDialogOpen(true);
+  // Handle filter clear
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setFilterCriteria({
+      categories: [],
+      allergens: [],
+    });
   };
 
-  // Loading state
-  if (isLoading) {
-    return <RecipeLoading />;
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="w-full py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <RecipeHeader
-            error={error || ""}
-            retry={fetchRecipesAndIngredientsMemoized}
-            totalRecipes={recipes.length}
-            showArchivedRecipes={showArchivedRecipes}
-            onToggleArchivedRecipes={handleToggleArchivedRecipes}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state
-  if (recipes.length === 0) {
-    return (
-      <motion.div 
-        className="w-full py-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <RecipeHeader
-            totalRecipes={0}
-            showArchivedRecipes={showArchivedRecipes}
-            onToggleArchivedRecipes={handleToggleArchivedRecipes}
-          />
-          <RecipeActions
-            onAddClick={recipeModals.openAddModal}
-            onCategoryFilterClick={handleCategoryFilterClick}
-            recipes={sortedRecipes}
-          />
-        </div>
-
-        <EmptyRecipes onAddClick={recipeModals.openAddModal} />
-
-        {/* Recipe modals */}
-        <RecipeModals
-          ingredients={ingredients}
-          onAddRecipe={handleAddRecipe}
-          onEditRecipe={handleEditRecipe}
-          onDeleteRecipe={handleDeleteRecipe}
-          onArchiveRecipe={handleArchiveRecipe}
-          onBulkDeleteRecipes={() => {}}
-          onBulkArchiveRecipes={() => {}}
-          isProcessing={isProcessing}
-          {...recipeModals}
-        />
-      </motion.div>
-    );
-  }
-
-  // Main view with recipes
   return (
-    <motion.div 
-      className="w-full py-6 space-y-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <RecipeHeader
-          totalRecipes={recipes.length}
-          error={error || ""}
-          retry={fetchRecipesAndIngredientsMemoized}
-          showArchivedRecipes={showArchivedRecipes}
-          onToggleArchivedRecipes={handleToggleArchivedRecipes}
-        />
-        <RecipeActions
-          onAddClick={recipeModals.openAddModal}
-          onCategoryFilterClick={handleCategoryFilterClick}
-          recipes={sortedRecipes}
-        />
-      </div>
-
-      <RecipeSearch
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterClick={handleFilterClick}
+    <div className="bg-white min-h-screen px-6 py-8">
+      <RecipeHeader
+        recipesCount={sortedRecipes.length}
+        totalRecipes={sortedRecipes.length}
+        error={error}
+        onRetry={fetchRecipesAndIngredientsMemoized}
         showArchivedRecipes={showArchivedRecipes}
         onToggleArchivedRecipes={handleToggleArchivedRecipes}
-        onSort={handleSort}
-        sortField={sortField}
-        sortDirection={sortDirection}
       />
 
-      <RecipeTableNew
-        recipes={sortedRecipes}
-        showArchivedRecipes={showArchivedRecipes}
-        onEdit={recipeModals.openEditModal}
-        onDelete={recipeModals.openDeleteModal}
-        onDuplicate={(recipe) => {
-          const duplicate = {
-            ...recipe,
-            id: crypto.randomUUID(),
-            name: `${recipe.name} (Copy)`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          handleAddRecipe(duplicate);
-        }}
-        onArchive={(recipe) =>
-          recipe.isArchived
-            ? handleUnarchiveRecipe(recipe)
-            : handleArchiveRecipe(recipe.id)
-        }
-      />
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <RecipeSearch
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onFilterClick={handleFilterClick}
+            filterActive={
+              filterCriteria.categories.length > 0 ||
+              filterCriteria.allergens.length > 0 ||
+              filterCriteria.minPrice !== undefined ||
+              filterCriteria.maxPrice !== undefined ||
+              filterCriteria.minFoodCost !== undefined ||
+              filterCriteria.maxFoodCost !== undefined
+            }
+          />
+          <RecipeActions
+            showArchivedRecipes={showArchivedRecipes}
+            onAddRecipe={recipeModals.openAddModal}
+          />
+        </div>
+      </div>
 
-      {/* Recipe modals */}
+      {isLoading ? (
+        <RecipeLoading />
+      ) : recipes.length === 0 ? (
+        <EmptyRecipes
+          showArchivedRecipes={showArchivedRecipes}
+          onAddRecipe={recipeModals.openAddModal}
+        />
+      ) : sortedRecipes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-16">
+          <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mb-4">
+            <FiSearch className="w-8 h-8 text-orange-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            No recipes found
+          </h3>
+          <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+            {showArchivedRecipes
+              ? "No archived recipes match your search criteria."
+              : "No recipes match your search criteria."}
+          </p>
+          <button
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors duration-200"
+            onClick={handleClearFilters}
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <RecipeTableNew
+          recipes={sortedRecipes}
+          showArchivedRecipes={showArchivedRecipes}
+          onEdit={recipeModals.openEditModal}
+          onDelete={recipeModals.openDeleteModal}
+          onArchive={handleUnarchiveRecipe}
+          onRowClick={recipeModals.openViewIngredientsModal}
+        />
+      )}
+
+      {/* Recipe Modals */}
       <RecipeModals
         ingredients={ingredients}
+        isProcessing={isProcessing}
         onAddRecipe={handleAddRecipe}
         onEditRecipe={handleEditRecipe}
         onDeleteRecipe={handleDeleteRecipe}
         onArchiveRecipe={handleArchiveRecipe}
-        onBulkDeleteRecipes={() => {}}
-        onBulkArchiveRecipes={() => {}}
-        isProcessing={isProcessing}
+        onBulkDeleteRecipes={() => console.log("Bulk delete not implemented")}
+        onBulkArchiveRecipes={() => console.log("Bulk archive not implemented")}
         {...recipeModals}
       />
 
-      {/* Filter dialog */}
+      {/* Filter Dialog */}
       <RecipeFilterDialog
         isOpen={isFilterDialogOpen}
         onClose={() => setIsFilterDialogOpen(false)}
-        recipes={recipes}
         onFilter={handleFilterApply}
+        recipes={recipes}
       />
-    </motion.div>
+    </div>
   );
 }

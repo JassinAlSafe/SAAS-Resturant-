@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Pencil, Trash } from "lucide-react";
 import { ProxyImage } from "@/components/ui/proxy-image";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
 
 interface InventoryDataTableProps {
   items: InventoryItem[];
@@ -23,6 +26,9 @@ interface InventoryDataTableProps {
   toggleItemSelection: (itemId: string) => void;
   toggleAllItems: () => void;
   formatCurrency: (value: number) => string;
+  isMobile?: boolean;
+  renderSortIndicator?: (column: string) => React.ReactNode;
+  handleHeaderClick?: (column: string) => void;
 }
 
 // Extended InventoryItem type to include possible image_url
@@ -39,6 +45,9 @@ export function InventoryDataTable({
   toggleItemSelection,
   toggleAllItems,
   formatCurrency,
+  isMobile,
+  renderSortIndicator,
+  handleHeaderClick,
 }: InventoryDataTableProps) {
   // Category filter state
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -128,10 +137,10 @@ export function InventoryDataTable({
 
         {/* The Table */}
         <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr className="bg-gray-50 text-gray-600">
-                <th className="w-12 p-3">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 text-gray-600">
+                <TableHead className="w-12 p-3">
                   <div className="flex items-center justify-center">
                     <input
                       type="checkbox"
@@ -141,84 +150,111 @@ export function InventoryDataTable({
                         filteredItems.length > 0 &&
                         filteredItems.every((item) => selectedIdsMap[item.id])
                       }
+                      aria-label="Select all items"
                     />
                   </div>
-                </th>
-                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="p-3 text-left text-xs font-medium uppercase tracking-wider">
                   ID
-                </th>
-                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Quantity
-                </th>
-                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("name")}
+                >
+                  <div className="flex items-center">
+                    Name
+                    {renderSortIndicator?.("name")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("category")}
+                >
+                  <div className="flex items-center">
+                    Category
+                    {renderSortIndicator?.("category")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("quantity")}
+                >
+                  <div className="flex items-center">
+                    Quantity
+                    {renderSortIndicator?.("quantity")}
+                  </div>
+                </TableHead>
+                <TableHead className="p-3 text-left text-xs font-medium uppercase tracking-wider">
                   Unit Type
-                </th>
-                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
-                  Cost
-                </th>
-                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
-                  Total Value
-                </th>
-                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider">
+                </TableHead>
+                <TableHead
+                  className="p-3 text-right text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("cost")}
+                >
+                  <div className="flex items-center justify-end">
+                    Cost
+                    {renderSortIndicator?.("cost")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-right text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("value")}
+                >
+                  <div className="flex items-center justify-end">
+                    Total Value
+                    {renderSortIndicator?.("value")}
+                  </div>
+                </TableHead>
+                <TableHead className="p-3 text-right text-xs font-medium uppercase tracking-wider">
                   Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-center py-8">
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <ImageIcon className="h-10 w-10 text-gray-400" />
                       <p className="text-gray-500">No inventory items found</p>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 filteredItems.map((item) => {
                   const extendedItem = item as ExtendedInventoryItem;
                   const totalValue = item.quantity * (item.cost_per_unit || 0);
+                  const isLowStock = item.quantity <= (item.reorder_level || 0);
 
                   return (
-                    <tr
+                    <TableRow
                       key={item.id}
                       className={cn(
                         "group border-b border-gray-200 hover:bg-gray-50/80",
                         (item.cost_per_unit || 0) === 0 && "bg-gray-50/70",
-                        item.quantity < 0 && "bg-red-50/50"
+                        item.quantity < 0 && "bg-red-50/50",
+                        isLowStock && "bg-amber-50/50"
                       )}
                     >
-                      <td className="p-3">
+                      <TableCell className="p-3">
                         <div className="flex items-center justify-center">
                           <input
                             type="checkbox"
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             checked={!!selectedIdsMap[item.id]}
                             onChange={() => handleSelectionChange(item.id)}
+                            aria-label={`Select ${item.name}`}
                           />
                         </div>
-                      </td>
-                      <td className="p-3">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="font-mono text-xs text-gray-500">
-                                {formatProductId(item.id)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">Full ID: {item.id}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <Tooltip content={`Product ID: ${item.id}`}>
+                          <span className="text-xs font-mono text-gray-500">
+                            {formatProductId(item.id)}
+                          </span>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="p-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
                             {extendedItem.image_url ? (
@@ -246,11 +282,11 @@ export function InventoryDataTable({
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="p-3">
                         <span className="text-gray-600">{item.category}</span>
-                      </td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="p-3">
                         <div className="flex items-center space-x-2">
                           <span className="font-medium text-gray-900">
                             {item.quantity}
@@ -312,23 +348,23 @@ export function InventoryDataTable({
                             </Button>
                           </div>
                         </div>
-                      </td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="p-3">
                         <Badge
                           variant="outline"
                           className="text-xs px-2 py-0.5 bg-gray-50 text-gray-600"
                         >
                           {item.unit}
                         </Badge>
-                      </td>
-                      <td className="p-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
                         <span className="font-medium">
                           {(item.cost_per_unit || 0) === 0
                             ? "—"
                             : formatCurrency(item.cost_per_unit || 0)}
                         </span>
-                      </td>
-                      <td className="p-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
                         <span
                           className={cn(
                             "font-medium",
@@ -339,8 +375,8 @@ export function InventoryDataTable({
                         >
                           {totalValue === 0 ? "—" : formatCurrency(totalValue)}
                         </span>
-                      </td>
-                      <td className="p-3 text-right">
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
                         <div className="flex justify-end space-x-2">
                           <Button
                             variant="ghost"
@@ -362,13 +398,13 @@ export function InventoryDataTable({
                             <span>Delete</span>
                           </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>

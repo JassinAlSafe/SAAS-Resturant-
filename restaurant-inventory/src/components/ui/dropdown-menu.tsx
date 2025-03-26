@@ -7,12 +7,13 @@ interface DropdownMenuProps {
   children: React.ReactNode;
   className?: string;
   align?: "start" | "center" | "end";
+  hover?: boolean;
 }
 
 const DropdownMenu = React.forwardRef<
   HTMLDivElement,
   DropdownMenuProps & React.HTMLAttributes<HTMLDivElement>
->(({ children, className, align = "start", ...props }, ref) => {
+>(({ children, className, align = "start", hover = false, ...props }, ref) => {
   // Set alignment class based on the align prop
   const alignmentClass =
     align === "center"
@@ -24,7 +25,12 @@ const DropdownMenu = React.forwardRef<
   return (
     <div
       ref={ref}
-      className={cn("dropdown", alignmentClass, className)}
+      className={cn(
+        "dropdown",
+        alignmentClass,
+        hover && "dropdown-hover",
+        className
+      )}
       {...props}
     >
       {children}
@@ -82,7 +88,7 @@ const DropdownMenuContent = React.forwardRef<
       tabIndex={0}
       style={style}
       className={cn(
-        "dropdown-content menu p-2 shadow-md bg-base-100 rounded-box z-[1] min-w-[8rem]",
+        "dropdown-content z-[1] menu menu-sm bg-base-100 rounded-box shadow-lg p-2 w-56",
         className
       )}
       {...props}
@@ -113,15 +119,11 @@ const DropdownMenuItem = React.forwardRef<
     return (
       <li
         ref={ref}
-        className={cn(
-          disabled && "opacity-50 pointer-events-none",
-          active && "menu-active",
-          className
-        )}
+        className={cn(disabled && "disabled", className)}
         onClick={disabled ? undefined : onClick}
         {...props}
       >
-        <a className={cn(inset && "pl-8")}>{children}</a>
+        <a className={cn(inset && "pl-8", active && "active")}>{children}</a>
       </li>
     );
   }
@@ -141,7 +143,7 @@ const DropdownMenuLabel = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "px-2 py-1.5 text-sm font-semibold text-base-content",
+      "menu-title text-xs font-medium text-base-content/60 px-2 py-1.5",
       inset && "pl-8",
       className
     )}
@@ -172,7 +174,10 @@ const DropdownMenuShortcut = ({
 }: DropdownMenuShortcutProps & React.HTMLAttributes<HTMLSpanElement>) => {
   return (
     <span
-      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+      className={cn(
+        "ml-auto text-xs text-base-content/40 tracking-widest",
+        className
+      )}
       {...props}
     />
   );

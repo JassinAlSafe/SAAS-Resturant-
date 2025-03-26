@@ -14,12 +14,7 @@ import { useBusinessProfile } from "@/lib/business-profile-context";
 import { useMediaQueries } from "@/hooks/use-media-query";
 import { navItems } from "./nav-items"; // Import navItems directly
 import { useUser } from "@/hooks/use-user";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import Link from "next/link";
 
 // Custom hook for sidebar state management
@@ -129,16 +124,11 @@ export function Sidebar({ children }: SidebarProps) {
             {/* Settings Icon */}
             {!open && (
               <div className="flex justify-center mb-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link href="/settings">
-                        <SettingsIcon className="h-5 w-5 text-gray-600 hover:text-gray-900" />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Settings</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip content="Settings" position="right">
+                  <Link href="/settings">
+                    <SettingsIcon className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                  </Link>
+                </Tooltip>
               </div>
             )}
 
@@ -156,25 +146,18 @@ export function Sidebar({ children }: SidebarProps) {
       {isMobile && (
         <>
           {/* Mobile Menu Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="fixed top-4 left-4 z-40">
-                  <Button
-                    variant="ghost"
-                    size="md"
-                    onClick={() => setOpenMobile(!openMobile)}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                  >
-                    <MenuIcon className="h-5 w-5" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                Open Menu
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip content="Open Menu" position="right">
+            <div className="fixed top-4 left-4 z-40">
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={() => setOpenMobile(!openMobile)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
+              >
+                <MenuIcon className="h-5 w-5" />
+              </Button>
+            </div>
+          </Tooltip>
 
           {/* Mobile Sidebar Component */}
           <MobileSidebar

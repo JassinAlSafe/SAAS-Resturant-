@@ -47,13 +47,13 @@ export default function ShoppingListSummary({
   const getPhaseColor = () => {
     switch (shoppingPhase) {
       case "complete":
-        return "text-green-600 bg-green-50";
+        return "text-success bg-success/10";
       case "in-progress":
-        return "text-orange-500 bg-orange-50";
+        return "text-warning bg-warning/10";
       case "planning":
-        return "text-blue-600 bg-blue-50";
+        return "text-primary bg-primary/10";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-base-content/60 bg-base-200";
     }
   };
 
@@ -83,11 +83,13 @@ export default function ShoppingListSummary({
       <motion.div
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 300 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+        className="card bg-white shadow-sm border border-gray-100"
       >
-        <div className="p-5">
+        <div className="card-body p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">Shopping Phase</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Shopping Phase
+            </h2>
             <div className={cn("p-2 rounded-full", getPhaseColor())}>
               <PhaseIcon className="w-5 h-5" />
             </div>
@@ -95,10 +97,10 @@ export default function ShoppingListSummary({
           <div className="mt-2">
             <p
               className={cn("text-2xl font-bold capitalize", {
-                "text-green-600": shoppingPhase === "complete",
-                "text-orange-500": shoppingPhase === "in-progress",
-                "text-blue-600": shoppingPhase === "planning",
-                "text-gray-700": shoppingPhase === "empty",
+                "text-success": shoppingPhase === "complete",
+                "text-warning": shoppingPhase === "in-progress",
+                "text-primary": shoppingPhase === "planning",
+                "text-gray-500": shoppingPhase === "empty",
               })}
             >
               {shoppingPhase === "in-progress" ? "In Progress" : shoppingPhase}
@@ -114,8 +116,8 @@ export default function ShoppingListSummary({
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 1, delay: 0.2 }}
                   className={cn("h-full rounded-full", {
-                    "bg-green-500": progress === 100,
-                    "bg-orange-500": progress > 0 && progress < 100,
+                    "bg-success": progress === 100,
+                    "bg-warning": progress > 0 && progress < 100,
                     "bg-gray-300": progress === 0,
                   })}
                 />
@@ -129,26 +131,28 @@ export default function ShoppingListSummary({
       <motion.div
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 300 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+        className="card bg-white shadow-sm border border-gray-100"
       >
-        <div className="p-5">
+        <div className="card-body p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">Total Items</h2>
-            <div className="p-2 rounded-full bg-orange-50 text-orange-500">
+            <h2 className="text-lg font-semibold text-gray-900">Total Items</h2>
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
               <ShoppingBag className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-3xl font-bold text-black">{itemsCount.total}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {itemsCount.total}
+            </p>
             <div className="flex justify-between mt-1 text-sm">
               <span className="text-gray-600">Purchased:</span>
-              <span className="font-medium text-black">
+              <span className="font-medium text-gray-900">
                 {itemsCount.purchased}
               </span>
             </div>
             <div className="flex justify-between mt-1 text-sm">
               <span className="text-gray-600">Pending:</span>
-              <span className="font-medium text-black">
+              <span className="font-medium text-gray-900">
                 {itemsCount.total - itemsCount.purchased}
               </span>
             </div>
@@ -160,17 +164,19 @@ export default function ShoppingListSummary({
       <motion.div
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 300 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+        className="card bg-white shadow-sm border border-gray-100"
       >
-        <div className="p-5">
+        <div className="card-body p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">Estimated Cost</h2>
-            <div className="p-2 rounded-full bg-green-50 text-green-600">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Estimated Cost
+            </h2>
+            <div className="p-2 rounded-full bg-primary/10 text-primary">
               <CircleDollarSign className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-3xl font-bold text-orange-500">
+            <p className="text-3xl font-bold text-primary">
               {formatCurrency(totalEstimatedCost)}
             </p>
             <div className="mt-4">
@@ -183,7 +189,7 @@ export default function ShoppingListSummary({
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 1, delay: 0.2 }}
-                  className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full"
                 />
               </div>
             </div>
@@ -195,22 +201,22 @@ export default function ShoppingListSummary({
       <motion.div
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 300 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden"
+        className="card bg-white shadow-sm border border-gray-100"
       >
-        <div className="p-5">
+        <div className="card-body p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">Urgent Items</h2>
-            <div className="p-2 rounded-full bg-red-50 text-red-600">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Urgent Items
+            </h2>
+            <div className="p-2 rounded-full bg-error/10 text-error">
               <AlertCircle className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-2">
-            <p className="text-3xl font-bold text-red-600">
-              {itemsCount.urgent}
-            </p>
+            <p className="text-3xl font-bold text-error">{itemsCount.urgent}</p>
             <div className="flex justify-between mt-1 text-sm">
               <span className="text-gray-600">Percentage:</span>
-              <span className="font-medium text-black">
+              <span className="font-medium text-gray-900">
                 {urgentPercentage}%
               </span>
             </div>
@@ -221,7 +227,7 @@ export default function ShoppingListSummary({
                   initial={{ width: 0 }}
                   animate={{ width: `${urgentPercentage}%` }}
                   transition={{ duration: 1, delay: 0.2 }}
-                  className="h-full bg-red-500 rounded-full"
+                  className="h-full bg-error rounded-full"
                 />
               </div>
             </div>

@@ -58,3 +58,6 @@ export default function ShoppingListModals({
     </>
   );
 }
+
+export { default as AddItemModal } from "./AddItemModal";
+export { default as ShoppingListForm } from "./ShoppingListForm";

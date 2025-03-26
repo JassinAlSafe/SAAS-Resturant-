@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Smartphone, Tablet, Monitor, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useReducedMotion } from "@/components/ui/accessibility-helpers";
+import { announceToScreen } from "@/components/ui/accessibility-helpers";
 
 export default function ResponsiveHelpers() {
   const [isMobile, setIsMobile] = useState(false);
@@ -9,13 +12,22 @@ export default function ResponsiveHelpers() {
   const [showTips, setShowTips] = useState(false);
   const [dismissedTips, setDismissedTips] = useState<string[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Detect device type
   useEffect(() => {
     setIsMounted(true);
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 640);
-      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+      const newIsMobile = window.innerWidth < 640;
+      const newIsTablet = window.innerWidth >= 640 && window.innerWidth < 1024;
+
+      // Only update state if there's a change to prevent unnecessary rerenders
+      if (newIsMobile !== isMobile) {
+        setIsMobile(newIsMobile);
+      }
+      if (newIsTablet !== isTablet) {
+        setIsTablet(newIsTablet);
+      }
     };
 
     handleResize();
@@ -52,6 +64,9 @@ export default function ResponsiveHelpers() {
       JSON.stringify(updatedDismissedTips)
     );
     setShowTips(false);
+
+    // Announce to screen readers that the tip has been dismissed
+    announceToScreen("Tip dismissed");
   };
 
   // Get device-specific tip content
@@ -59,7 +74,7 @@ export default function ResponsiveHelpers() {
     if (isMobile) {
       return {
         id: "mobile-tip",
-        icon: <Smartphone className="h-5 w-5" />,
+        icon: <Smartphone className="h-5 w-5" aria-hidden="true" />,
         title: "Mobile Tips",
         content:
           "Use landscape mode for a better view of your shopping list. Swipe horizontally to see all columns in tables.",
@@ -67,7 +82,7 @@ export default function ResponsiveHelpers() {
     } else if (isTablet) {
       return {
         id: "tablet-tip",
-        icon: <Tablet className="h-5 w-5" />,
+        icon: <Tablet className="h-5 w-5" aria-hidden="true" />,
         title: "Tablet Tips",
         content:
           "Double tap on items for quick actions. The shopping wizard is optimized for your tablet screen.",
@@ -75,7 +90,7 @@ export default function ResponsiveHelpers() {
     } else {
       return {
         id: "desktop-tip",
-        icon: <Monitor className="h-5 w-5" />,
+        icon: <Monitor className="h-5 w-5" aria-hidden="true" />,
         title: "Desktop Tips",
         content:
           "Use keyboard shortcuts for faster navigation. Press Alt+A to access accessibility options.",
@@ -85,14 +100,18 @@ export default function ResponsiveHelpers() {
 
   // Apply device-specific optimizations
   useEffect(() => {
+    if (!isMounted) return;
+
     if (isMobile) {
       // Optimize UI for mobile
       document.documentElement.classList.add("mobile-optimized");
       document.documentElement.classList.remove("tablet-optimized");
+      announceToScreen("Mobile view activated");
     } else if (isTablet) {
       // Optimize UI for tablet
       document.documentElement.classList.add("tablet-optimized");
       document.documentElement.classList.remove("mobile-optimized");
+      announceToScreen("Tablet view activated");
     } else {
       // Optimize for desktop (reset)
       document.documentElement.classList.remove("mobile-optimized");
@@ -104,30 +123,56 @@ export default function ResponsiveHelpers() {
       document.documentElement.classList.remove("mobile-optimized");
       document.documentElement.classList.remove("tablet-optimized");
     };
-  }, [isMobile, isTablet]);
+  }, [isMobile, isTablet, isMounted]);
 
   const tipInfo = getTipContent();
 
   if (!showTips || !isMounted) return null;
 
+  // Animation variants for toast
+  const toastVariants = prefersReducedMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: -20 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -20 },
+      };
+
   return (
-    <div className="toast toast-top toast-end z-40">
-      <div className="alert alert-info">
-        <div className="flex gap-2">
-          {tipInfo.icon}
-          <div>
-            <h3 className="font-bold text-sm">{tipInfo.title}</h3>
-            <div className="text-xs">{tipInfo.content}</div>
-          </div>
-        </div>
-        <button
-          onClick={() => dismissTip(tipInfo.id)}
-          className="btn btn-sm btn-ghost"
-          aria-label={`Dismiss ${tipInfo.title}`}
+    <AnimatePresence>
+      {showTips && (
+        <motion.div
+          className="toast toast-top toast-end z-40"
+          variants={toastVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.3 }}
+          role="status"
+          aria-live="polite"
         >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
+          <div className="alert alert-info">
+            <div className="flex gap-2">
+              {tipInfo.icon}
+              <div>
+                <h3 className="font-bold text-sm">{tipInfo.title}</h3>
+                <div className="text-xs">{tipInfo.content}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => dismissTip(tipInfo.id)}
+              className="btn btn-sm btn-ghost"
+              aria-label={`Dismiss ${tipInfo.title}`}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { CustomCheckbox } from "@/components/ui/custom-checkbox";
-// import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -180,12 +179,12 @@ export function DataTable<T>({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="rounded-md border">
+      <div className="rounded-lg border border-neutral-100 overflow-hidden">
         <Table>
-          <TableHeader className={cn("bg-gray-50", tableHeaderClassName)}>
-            <TableRow>
+          <TableHeader className={cn("bg-neutral-50", tableHeaderClassName)}>
+            <TableRow className="border-b border-neutral-100">
               {selectable && (
-                <TableHead className="w-12">
+                <TableHead className="w-12 py-3">
                   <CustomCheckbox
                     checked={
                       paginatedData.length > 0 &&
@@ -199,9 +198,12 @@ export function DataTable<T>({
                   />
                 </TableHead>
               )}
-              {expandable && <TableHead className="w-12" />}
+              {expandable && <TableHead className="w-12 py-3" />}
               {columns.map((column) => (
-                <TableHead key={column.id}>
+                <TableHead
+                  key={column.id}
+                  className="py-3 px-4 text-neutral-600 text-xs uppercase font-medium tracking-wider"
+                >
                   <DataTableHeader
                     label={column.header}
                     field={column.id}
@@ -209,16 +211,20 @@ export function DataTable<T>({
                     sortField={sortField}
                     sortDirection={sortDirection}
                     handleSort={handleSort}
-                    className={cn("text-left", "py-4", "pl-4")}
+                    className="text-left"
                   />
                 </TableHead>
               ))}
               {(onEdit || onDelete || onDuplicate || onArchive) && (
-                <TableHead className="w-[80px]">Actions</TableHead>
+                <TableHead className="w-[80px] py-3 px-4 text-neutral-600 text-xs uppercase font-medium tracking-wider">
+                  Actions
+                </TableHead>
               )}
             </TableRow>
           </TableHeader>
-          <TableBody className={cn("divide-y", "divide-gray-100", tableBodyClassName)}>
+          <TableBody
+            className={cn("divide-y divide-neutral-100", tableBodyClassName)}
+          >
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -228,7 +234,7 @@ export function DataTable<T>({
                     (expandable ? 1 : 0) +
                     (onEdit || onDelete || onDuplicate || onArchive ? 1 : 0)
                   }
-                  className="h-24 text-center"
+                  className="h-24 text-center text-neutral-500"
                 >
                   {emptyMessage}
                 </TableCell>
@@ -243,13 +249,16 @@ export function DataTable<T>({
                   <React.Fragment key={rowKey}>
                     <TableRow
                       className={cn(
-                        rowClassName?.(item),
-                        onRowClick && "cursor-pointer"
+                        "hover:bg-neutral-50 border-b border-neutral-100 transition-colors",
+                        onRowClick && "cursor-pointer",
+                        rowClassName?.(item)
                       )}
                       onClick={() => onRowClick?.(item)}
                     >
                       {selectable && (
-                        <TableCell className={cn("w-12", tableCellClassName)}>
+                        <TableCell
+                          className={cn("w-12 py-4", tableCellClassName)}
+                        >
                           <CustomCheckbox
                             checked={isSelected}
                             onCheckedChange={() => toggleRowSelection(rowKey)}
@@ -260,13 +269,15 @@ export function DataTable<T>({
                         </TableCell>
                       )}
                       {expandable && (
-                        <TableCell className={cn("w-12", tableCellClassName)}>
+                        <TableCell
+                          className={cn("w-12 py-4", tableCellClassName)}
+                        >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleRowExpansion(rowKey);
                             }}
-                            className="p-1"
+                            className="p-1.5 text-neutral-500 hover:bg-neutral-100 rounded-md transition-colors"
                           >
                             {isExpanded ? (
                               <ChevronDown className="h-4 w-4" />
@@ -279,7 +290,10 @@ export function DataTable<T>({
                       {columns.map((column) => (
                         <TableCell
                           key={column.id}
-                          className={cn("py-4", "pl-4", tableCellClassName)}
+                          className={cn(
+                            "py-4 px-4 text-neutral-800",
+                            tableCellClassName
+                          )}
                         >
                           {column.cell
                             ? column.cell(item)
@@ -290,14 +304,23 @@ export function DataTable<T>({
                       ))}
                       {(onEdit || onDelete || onDuplicate || onArchive) && (
                         <TableCell
-                          className={cn("text-right", "py-4", "pr-4", tableCellClassName)}
+                          className={cn(
+                            "text-right py-4 px-4",
+                            tableCellClassName
+                          )}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {/* Create wrapper functions to handle passing the item to the action handlers */}
                           <DataTableActions
                             onEdit={onEdit ? () => onEdit(item) : undefined}
-                            onDelete={onDelete ? () => onDelete(item) : undefined}
-                            onDuplicate={onDuplicate ? () => onDuplicate(item) : undefined}
-                            onArchive={onArchive ? () => onArchive(item) : undefined}
+                            onDelete={
+                              onDelete ? () => onDelete(item) : undefined
+                            }
+                            onDuplicate={
+                              onDuplicate ? () => onDuplicate(item) : undefined
+                            }
+                            onArchive={
+                              onArchive ? () => onArchive(item) : undefined
+                            }
                             isArchived={isArchived}
                             className={actionButtonsClassName}
                           />
@@ -305,7 +328,7 @@ export function DataTable<T>({
                       )}
                     </TableRow>
                     {expandable && isExpanded && expandedContent && (
-                      <TableRow>
+                      <TableRow className="border-b border-neutral-100">
                         <TableCell
                           colSpan={
                             columns.length +
@@ -315,7 +338,10 @@ export function DataTable<T>({
                               ? 1
                               : 0)
                           }
-                          className={cn("p-4", "bg-gray-50", tableCellClassName)}
+                          className={cn(
+                            "p-0 bg-neutral-50",
+                            tableCellClassName
+                          )}
                         >
                           {expandedContent(item)}
                         </TableCell>
@@ -335,7 +361,7 @@ export function DataTable<T>({
           totalItems={sortedData.length}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
-          className={cn("mt-4", paginationClassName)}
+          className={cn("mt-2", paginationClassName)}
         />
       )}
     </div>

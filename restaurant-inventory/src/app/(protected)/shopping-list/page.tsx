@@ -4,9 +4,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useShoppingList } from "./hooks/useShoppingList";
-import ShoppingListModals from "./components/modals";
-import ShoppingListCharts from "./components/ShoppingListCharts";
-import AccessibilityHelpers from "./components/AccessibilityHelpers";
 import { ShoppingListItem } from "@/lib/types";
 import {
   Undo,
@@ -15,32 +12,26 @@ import {
   AlertTriangle,
   ListFilter,
   BarChart3,
+  ShoppingCart,
+  EyeOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { announcer } from "./components/ScreenReaderAnnouncer";
 import { toast } from "./utils/toast";
-import ShoppingListSummary from "./components/ShoppingListSummary";
-import EmptyShoppingList from "./components/EmptyShoppingList";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-// Import our new components
-import SearchFilterBar from "./components/SearchFilterBar";
-import BatchActionsBar from "./components/BatchActionsBar";
-import EnhancedShoppingListTable from "./components/EnhancedShoppingListTable";
+// Import our components using the new struct
+import {
+  BatchActionsBar,
+  EnhancedShoppingListTable,
+  ShoppingListCharts,
+  EmptyShoppingList,
+  ShoppingListSummary,
+  AccessibilityHelpers,
+} from "./components";
+import { ModernFilterBar } from "./components/filters";
+import { AddItemModal } from "./components/modals";
+
+// Import announcer from accessibility
+import { announcer } from "./components/accessibility/helpers";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -203,7 +194,7 @@ function ShoppingListContent() {
           <span>Item deleted</span>
           <button
             onClick={handleUndoLastAction}
-            className="flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+            className="flex items-center gap-1 px-2 py-1 text-sm bg-base-200 rounded hover:bg-base-300"
           >
             <Undo className="h-3 w-3" />
             Undo
@@ -250,7 +241,7 @@ function ShoppingListContent() {
           </span>
           <button
             onClick={handleUndoLastAction}
-            className="flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+            className="flex items-center gap-1 px-2 py-1 text-sm bg-base-200 rounded hover:bg-base-300"
           >
             <Undo className="h-3 w-3" />
             Undo
@@ -423,14 +414,14 @@ function ShoppingListContent() {
     setSelectedItems([]);
   }, [searchTerm, selectedCategory, showPurchased]);
 
+  const [isShoppingMode, setIsShoppingMode] = useState(false);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 border-t-2 border-b-2 border-blue-600 rounded-full animate-spin"></div>
-          <p className="text-lg font-medium text-gray-700">
-            Loading shopping list...
-          </p>
+          <div className="loading loading-spinner loading-md text-primary"></div>
+          <p className="text-lg font-medium">Loading shopping list...</p>
         </div>
       </div>
     );
@@ -439,26 +430,23 @@ function ShoppingListContent() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="w-full max-w-md">
-          <CardHeader className="bg-red-50">
-            <CardTitle className="text-red-600 flex items-center gap-2">
+        <div className="card w-full max-w-md bg-base-100 shadow-sm">
+          <div className="card-body bg-error bg-opacity-10">
+            <h2 className="card-title text-error flex items-center gap-2">
               <AlertTriangle className="h-6 w-6" />
               Error Loading Shopping List
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-4">
+            </h2>
             <p>{error.message || "Please try again later"}</p>
-          </CardContent>
-          <CardFooter>
-            <Button
-              variant="outline"
-              onClick={() => window.location.reload()}
-              className="w-full"
-            >
-              Try Again
-            </Button>
-          </CardFooter>
-        </Card>
+            <div className="card-actions justify-end mt-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="btn btn-outline w-full"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -478,72 +466,82 @@ function ShoppingListContent() {
       {/* Header Section with Main Actions */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Shopping List</h2>
-          <p className="text-gray-500 mt-1">
+          <h2 className="text-3xl font-bold">Shopping List</h2>
+          <p className="text-base-content/60 mt-1">
             Manage your shopping items efficiently
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleAddItem}
-                  size="default"
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add Item
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Add a new item to your shopping list
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div
+            className="tooltip"
+            data-tip="Add a new item to your shopping list"
+          >
+            <button onClick={handleAddItem} className="btn btn-primary">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Item
+            </button>
+          </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleGenerateList}
-                  variant="outline"
-                  size="default"
-                  disabled={isGeneratingList}
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 mr-2 ${
-                      isGeneratingList ? "animate-spin" : ""
-                    }`}
-                  />
-                  {isGeneratingList ? "Generating..." : "Generate List"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Auto-generate a shopping list based on your history
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div
+            className="tooltip"
+            data-tip="Auto-generate a shopping list based on your history"
+          >
+            <button
+              onClick={handleGenerateList}
+              className="btn btn-outline"
+              disabled={isGeneratingList}
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${
+                  isGeneratingList ? "animate-spin" : ""
+                }`}
+              />
+              {isGeneratingList ? "Generating..." : "Generate List"}
+            </button>
+          </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={toggleAnalytics}
-                  variant="ghost"
-                  size="default"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  {showAnalytics ? "Hide Analytics" : "Show Analytics"}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {showAnalytics ? "Hide" : "View"} shopping analytics and
-                insights
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div
+            className="tooltip"
+            data-tip={`${
+              showAnalytics ? "Hide" : "View"
+            } shopping analytics and insights`}
+          >
+            <button onClick={toggleAnalytics} className="btn btn-ghost">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {showAnalytics ? "Hide Analytics" : "Show Analytics"}
+            </button>
+          </div>
+
+          <div
+            className="tooltip"
+            data-tip={
+              isShoppingMode
+                ? "Return to normal view"
+                : "Switch to a simplified view for when you're actively shopping"
+            }
+          >
+            <button
+              onClick={() => setIsShoppingMode(!isShoppingMode)}
+              className={`btn btn-outline ${
+                isShoppingMode
+                  ? "bg-success/10 text-success border-success/20"
+                  : ""
+              }`}
+            >
+              {isShoppingMode ? (
+                <>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Exit Shopping Mode
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Shopping Mode
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -559,8 +557,8 @@ function ShoppingListContent() {
         shoppingPhase={shoppingPhase}
       />
 
-      {/* Search and Filter Bar */}
-      <SearchFilterBar
+      {/* Modern Filter Bar */}
+      {/* <ModernFilterBar
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         selectedCategory={selectedCategory}
@@ -569,29 +567,27 @@ function ShoppingListContent() {
         onShowPurchasedChange={setShowPurchased}
         categories={categories}
         sortBy={sortBy}
-        onSortChange={setSortBy}
+        onSortByChange={setSortBy}
         sortDirection={sortDirection}
         onSortDirectionChange={setSortDirection}
-        onClearFilters={clearFilters}
-      />
+      /> */}
 
       {/* Main Shopping List */}
-      <Card className="shadow-sm relative">
-        <CardHeader className="pb-0">
+      <div className="card bg-base-100 shadow-sm relative">
+        <div className="card-body pb-0">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Shopping Items</CardTitle>
-              <CardDescription>
+              <h2 className="card-title">Shopping Items</h2>
+              <p className="text-base-content/60">
                 {filteredList.length === 0
                   ? "No items match your current filters"
                   : `Showing ${filteredList.length} item${
                       filteredList.length === 1 ? "" : "s"
                     }`}
-              </CardDescription>
+              </p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {shoppingList.length === 0 ? (
             <EmptyShoppingList
               onAddClick={handleAddItem}
@@ -599,16 +595,14 @@ function ShoppingListContent() {
             />
           ) : filteredList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <ListFilter className="h-12 w-12 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-700">
-                No matching items
-              </h3>
-              <p className="text-gray-500 max-w-md mt-2">
+              <ListFilter className="h-12 w-12 text-base-content/20 mb-4" />
+              <h3 className="text-lg font-medium">No matching items</h3>
+              <p className="text-base-content/60 max-w-md mt-2">
                 Try changing your search terms or filters to see more items
               </p>
-              <Button variant="outline" onClick={clearFilters} className="mt-4">
+              <button className="btn btn-outline mt-4" onClick={clearFilters}>
                 Clear All Filters
-              </Button>
+              </button>
             </div>
           ) : (
             <EnhancedShoppingListTable
@@ -625,10 +619,11 @@ function ShoppingListContent() {
               isUpdating={isUpdatingItem || isMarkingAsPurchased}
               selectedItems={selectedItems}
               setSelectedItems={setSelectedItems}
+              isShoppingMode={isShoppingMode}
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Analytics Section (Conditionally Shown) */}
       <AnimatePresence>
@@ -640,22 +635,23 @@ function ShoppingListContent() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <span>Shopping Analytics</span>
-                  <Button variant="ghost" size="sm" onClick={toggleAnalytics}>
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body">
+                <div className="flex justify-between items-center">
+                  <h2 className="card-title">Shopping Analytics</h2>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={toggleAnalytics}
+                  >
                     Hide
-                  </Button>
-                </CardTitle>
-                <CardDescription>
+                  </button>
+                </div>
+                <p className="text-base-content/60">
                   Insights and trends from your shopping habits
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </p>
                 <ShoppingListCharts items={shoppingList} />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -677,37 +673,47 @@ function ShoppingListContent() {
       </AnimatePresence>
 
       {/* Modals */}
-      <ShoppingListModals
-        isAddModalOpen={isAddModalOpen}
-        isEditModalOpen={isEditModalOpen}
-        selectedItem={selectedItem}
-        onCloseAddModal={() => setIsAddModalOpen(false)}
-        onCloseEditModal={() => setIsEditModalOpen(false)}
-        onAdd={async (item) => {
-          // Use a type assertion to ensure the item is of the expected type
-          await addItem(
-            item as Omit<
-              ShoppingListItem,
-              "id" | "addedAt" | "purchasedAt" | "userId" | "businessProfileId"
-            >
-          );
-        }}
-        onUpdate={async (updates) => {
-          if (selectedItem) {
-            await updateItem({ id: selectedItem.id, updates });
-          }
-        }}
-        categories={categories}
-        isSubmitting={isAddingItem || isUpdatingItem}
-      />
+      <>
+        {/* Add Item Modal */}
+        <AddItemModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onAddItem={async (item) => {
+            await addItem(
+              item as Omit<
+                ShoppingListItem,
+                | "id"
+                | "addedAt"
+                | "purchasedAt"
+                | "userId"
+                | "businessProfileId"
+              >
+            );
+          }}
+          categories={categories}
+          isAddingItem={isAddingItem}
+        />
+
+        {/* Edit Item Modal */}
+        {selectedItem && (
+          <AddItemModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onAddItem={async (updates) => {
+              await updateItem({ id: selectedItem.id, updates });
+            }}
+            categories={categories}
+            isAddingItem={isUpdatingItem}
+            initialData={selectedItem}
+          />
+        )}
+      </>
 
       {/* Accessibility Helpers (Keep at the bottom) */}
       <AccessibilityHelpers
         items={sortedList}
         onItemSelect={handleEditItem}
-        onItemPurchase={(params: { id: string; isPurchased: boolean }) => {
-          return markAsPurchased(params).then(() => {});
-        }}
+        onItemPurchase={markAsPurchased}
       />
     </motion.div>
   );

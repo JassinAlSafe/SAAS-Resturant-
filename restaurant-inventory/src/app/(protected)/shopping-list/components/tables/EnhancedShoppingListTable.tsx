@@ -45,6 +45,7 @@ interface EnhancedShoppingListTableProps {
   isUpdating: boolean;
   selectedItems: ShoppingListItem[];
   setSelectedItems: (items: ShoppingListItem[]) => void;
+  isShoppingMode?: boolean;
 }
 
 export default function EnhancedShoppingListTable({
@@ -61,6 +62,7 @@ export default function EnhancedShoppingListTable({
   isUpdating,
   selectedItems,
   setSelectedItems,
+  isShoppingMode,
 }: EnhancedShoppingListTableProps) {
   const { formatCurrency } = useCurrency();
   const [isMobile, setIsMobile] = useState(false);

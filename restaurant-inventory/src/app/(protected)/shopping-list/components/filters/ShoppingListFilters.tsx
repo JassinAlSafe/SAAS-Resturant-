@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, Search, Tag, X } from "lucide-react";
+import {
+  Filter,
+  Search,
+  Tag,
+  X,
+  CheckSquare,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface ShoppingListFiltersProps {
   searchTerm: string;
@@ -49,67 +57,66 @@ export default function ShoppingListFilters({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-black flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-600" />
+    <div className="card bg-base-100 shadow-sm">
+      <div className="card-body p-4">
+        <div className="flex justify-between items-center">
+          <h3 className="card-title text-base flex items-center gap-2">
+            <Filter className="h-4 w-4 text-primary" />
             Filters
             {hasActiveFilters && (
-              <div className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">
-                Active
-              </div>
+              <div className="badge badge-primary badge-sm">Active</div>
             )}
           </h3>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+            className="btn btn-sm btn-ghost btn-square"
           >
-            {isOpen ? "−" : "+"}
+            {isOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </button>
         </div>
 
         {isOpen && (
-          <div className="space-y-4">
+          <div className="space-y-4 mt-2">
             {/* Search Input */}
             <div className="w-full">
-              <div className="flex w-full">
-                <div className="bg-gray-50 flex items-center justify-center px-3 rounded-l-md border border-r-0 border-gray-200">
-                  <Search className="h-4 w-4 text-gray-500" />
+              <div className="join w-full">
+                <div className="join-item bg-base-200 flex items-center justify-center px-3 border border-base-300">
+                  <Search className="h-4 w-4 text-base-content/60" />
                 </div>
                 <input
                   type="text"
                   placeholder="Search items..."
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="flex-grow px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="join-item input input-bordered flex-grow focus:outline-primary"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => onSearchChange("")}
-                    className="px-3 flex items-center justify-center bg-gray-50 border border-l-0 border-gray-200 rounded-r-md text-gray-500 hover:text-gray-700"
+                    className="join-item btn btn-ghost border border-base-300"
                   >
                     <X className="h-4 w-4" />
                   </button>
-                )}
-                {!searchTerm && (
-                  <div className="px-3 flex items-center justify-center bg-gray-50 border border-l-0 border-gray-200 rounded-r-md text-gray-300">
-                    <X className="h-4 w-4 invisible" />
-                  </div>
                 )}
               </div>
             </div>
 
             {/* Category Selector */}
             <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                <Tag className="h-4 w-4" />
-                Category
+              <label className="label">
+                <span className="label-text flex items-center gap-1">
+                  <Tag className="h-4 w-4" />
+                  Category
+                </span>
               </label>
               <select
                 value={selectedCategory}
                 onChange={(e) => onCategoryChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="select select-bordered w-full"
               >
                 <option value="all">All Categories</option>
                 {sortedGroups.map((letter) => (
@@ -127,11 +134,9 @@ export default function ShoppingListFilters({
             {/* Category Quick Select */}
             <div className="flex flex-wrap gap-2">
               <span
-                className={`px-2 py-1 text-xs rounded-full cursor-pointer transition-colors ${
-                  selectedCategory === "all"
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`badge ${
+                  selectedCategory === "all" ? "badge-primary" : "badge-outline"
+                } cursor-pointer`}
                 onClick={() => onCategoryChange("all")}
               >
                 All
@@ -139,18 +144,18 @@ export default function ShoppingListFilters({
               {categories.slice(0, 6).map((category) => (
                 <span
                   key={category}
-                  className={`px-2 py-1 text-xs rounded-full cursor-pointer transition-colors ${
+                  className={`badge ${
                     selectedCategory === category
-                      ? "bg-orange-500 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                      ? "badge-primary"
+                      : "badge-outline"
+                  } cursor-pointer`}
                   onClick={() => onCategoryChange(category)}
                 >
                   {category}
                 </span>
               ))}
               {categories.length > 6 && (
-                <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500">
+                <span className="badge badge-ghost text-base-content/60">
                   +{categories.length - 6} more
                 </span>
               )}
@@ -158,34 +163,14 @@ export default function ShoppingListFilters({
 
             {/* Show Purchased Checkbox */}
             <div className="w-full">
-              <label className="flex items-center cursor-pointer gap-2">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={showPurchased}
-                    onChange={() => onShowPurchasedChange(!showPurchased)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-4 h-4 border ${
-                      showPurchased
-                        ? "bg-orange-500 border-orange-500"
-                        : "bg-white border-gray-300"
-                    } rounded transition-colors`}
-                  >
-                    {showPurchased && (
-                      <svg
-                        className="w-4 h-4 text-white fill-current"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                <span className="text-sm text-gray-700">
-                  Show purchased items
-                </span>
+              <label className="cursor-pointer label justify-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={showPurchased}
+                  onChange={() => onShowPurchasedChange(!showPurchased)}
+                  className="checkbox checkbox-primary checkbox-sm"
+                />
+                <span className="label-text">Show purchased items</span>
               </label>
             </div>
 
@@ -193,9 +178,9 @@ export default function ShoppingListFilters({
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="w-full py-2 px-4 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                className="btn btn-outline btn-sm w-full gap-2"
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4" />
                 Clear all filters
               </button>
             )}

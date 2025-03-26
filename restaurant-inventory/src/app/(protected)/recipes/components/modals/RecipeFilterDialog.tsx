@@ -1,20 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Dish } from "@/lib/types";
 import { FiX, FiFilter } from "react-icons/fi";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dish } from "@/lib/types";
 
 interface FilterCriteria {
   categories: string[];
@@ -123,48 +111,50 @@ export default function RecipeFilterDialog({
     });
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[85vh] p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <div className="flex items-center gap-2">
-            <FiFilter className="h-5 w-5 text-gray-500" />
-            <DialogTitle className="text-xl">Filter Recipes</DialogTitle>
-          </div>
-          <DialogDescription className="text-gray-500 mt-1.5">
-            Filter recipes by category, allergens, price, and food cost.
-          </DialogDescription>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        <ScrollArea className="px-6 py-4">
+  return (
+    <dialog open={isOpen} className="modal modal-bottom sm:modal-middle">
+      <div className="modal-box max-h-[85vh] p-0">
+        <div className="p-6 pb-4 border-b">
+          <div className="flex items-center gap-2">
+            <FiFilter className="h-5 w-5 text-base-content/70" />
+            <h3 className="text-xl font-semibold">Filter Recipes</h3>
+          </div>
+          <p className="text-base-content/70 mt-1.5">
+            Filter recipes by category, allergens, price, and food cost.
+          </p>
+        </div>
+
+        <div
+          className="overflow-y-auto px-6 py-4"
+          style={{ maxHeight: "60vh" }}
+        >
           <div className="space-y-6">
             {/* Categories */}
             <div className="space-y-3">
               <div>
-                <Label className="text-sm font-semibold text-gray-900">
-                  Categories
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <label className="text-sm font-semibold">Categories</label>
+                <p className="text-sm text-base-content/70 mt-0.5">
                   Select one or more categories to filter recipes
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {uniqueCategories.map((category) => (
-                  <Badge
+                  <button
                     key={category}
-                    variant={
-                      filters.categories.includes(category)
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer transition-colors hover:bg-gray-100"
                     onClick={() => toggleCategory(category)}
+                    className={`badge ${
+                      filters.categories.includes(category)
+                        ? "badge-primary"
+                        : "badge-outline"
+                    } cursor-pointer`}
                   >
                     {category}
                     {filters.categories.includes(category) && (
                       <FiX className="ml-1 h-3 w-3" />
                     )}
-                  </Badge>
+                  </button>
                 ))}
               </div>
             </div>
@@ -172,30 +162,27 @@ export default function RecipeFilterDialog({
             {/* Allergens */}
             <div className="space-y-3">
               <div>
-                <Label className="text-sm font-semibold text-gray-900">
-                  Allergens
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <label className="text-sm font-semibold">Allergens</label>
+                <p className="text-sm text-base-content/70 mt-0.5">
                   Filter recipes containing specific allergens
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {uniqueAllergens.map((allergen) => (
-                  <Badge
+                  <button
                     key={allergen}
-                    variant={
-                      filters.allergens.includes(allergen)
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer transition-colors hover:bg-gray-100"
                     onClick={() => toggleAllergen(allergen)}
+                    className={`badge ${
+                      filters.allergens.includes(allergen)
+                        ? "badge-secondary"
+                        : "badge-outline"
+                    } cursor-pointer`}
                   >
                     {allergen}
                     {filters.allergens.includes(allergen) && (
                       <FiX className="ml-1 h-3 w-3" />
                     )}
-                  </Badge>
+                  </button>
                 ))}
               </div>
             </div>
@@ -203,90 +190,118 @@ export default function RecipeFilterDialog({
             {/* Price Range */}
             <div className="space-y-3">
               <div>
-                <Label className="text-sm font-semibold text-gray-900">
-                  Price Range
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Filter recipes by their selling price
+                <label className="text-sm font-semibold">Price Range</label>
+                <p className="text-sm text-base-content/70 mt-0.5">
+                  Filter recipes by their price
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice || ""}
-                  onChange={(e) =>
-                    handleNumberChange("minPrice", e.target.value)
-                  }
-                  className="w-24"
-                />
-                <span className="text-gray-500">to</span>
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice || ""}
-                  onChange={(e) =>
-                    handleNumberChange("maxPrice", e.target.value)
-                  }
-                  className="w-24"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Min Price</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="input input-bordered w-full"
+                    value={filters.minPrice || ""}
+                    onChange={(e) =>
+                      handleNumberChange("minPrice", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Max Price</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="100.00"
+                    min="0"
+                    step="0.01"
+                    className="input input-bordered w-full"
+                    value={filters.maxPrice || ""}
+                    onChange={(e) =>
+                      handleNumberChange("maxPrice", e.target.value)
+                    }
+                  />
+                </div>
               </div>
             </div>
 
             {/* Food Cost Range */}
             <div className="space-y-3">
               <div>
-                <Label className="text-sm font-semibold text-gray-900">
-                  Food Cost Range
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <label className="text-sm font-semibold">Food Cost Range</label>
+                <p className="text-sm text-base-content/70 mt-0.5">
                   Filter recipes by their food cost
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minFoodCost || ""}
-                  onChange={(e) =>
-                    handleNumberChange("minFoodCost", e.target.value)
-                  }
-                  className="w-24"
-                />
-                <span className="text-gray-500">to</span>
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxFoodCost || ""}
-                  onChange={(e) =>
-                    handleNumberChange("maxFoodCost", e.target.value)
-                  }
-                  className="w-24"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Min Food Cost</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="input input-bordered w-full"
+                    value={filters.minFoodCost || ""}
+                    onChange={(e) =>
+                      handleNumberChange("minFoodCost", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Max Food Cost</span>
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="100.00"
+                    min="0"
+                    step="0.01"
+                    className="input input-bordered w-full"
+                    value={filters.maxFoodCost || ""}
+                    onChange={(e) =>
+                      handleNumberChange("maxFoodCost", e.target.value)
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="flex justify-between items-center p-4 border-t bg-gray-50">
-          <Button
-            variant="ghost"
+        <div className="border-t p-6 flex justify-between">
+          <button
             onClick={handleClearFilters}
-            className="text-gray-500"
+            className="btn btn-outline"
             disabled={!hasActiveFilters}
           >
             Clear Filters
-          </Button>
+          </button>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <button onClick={onClose} className="btn btn-ghost">
               Cancel
-            </Button>
-            <Button onClick={handleApplyFilters} disabled={!hasActiveFilters}>
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              className="btn btn-primary"
+              disabled={!hasActiveFilters}
+            >
               Apply Filters
-            </Button>
+            </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button>close</button>
+      </form>
+    </dialog>
   );
 }

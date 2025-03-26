@@ -3,7 +3,7 @@
 import React, { useState, ReactNode, createContext, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { announcer } from "../components/ScreenReaderAnnouncer";
+import { announcer } from "../components/accessibility/helpers";
 
 // Define toast types
 export type ToastType = "success" | "error" | "info" | "warning";

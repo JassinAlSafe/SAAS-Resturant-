@@ -26,12 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface InventoryFiltersProps {
@@ -99,51 +94,41 @@ export default function InventoryFilters({
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto">
             {/* Category Filter */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="relative w-full md:w-[180px]">
-                    <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4 z-10" />
-                    <Select
-                      variant="primary"
-                      value={selectedCategory}
-                      onChange={(e) => {
-                        try {
-                          console.log(
-                            "Select onChange called with:",
-                            e.target.value
-                          );
-                          if (typeof onCategoryChange === "function") {
-                            onCategoryChange(e.target.value);
-                          } else {
-                            console.error(
-                              "onCategoryChange is not a function",
-                              onCategoryChange
-                            );
-                          }
-                        } catch (error) {
-                          console.error("Error in category select:", error);
-                        }
-                      }}
-                      className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full"
-                    >
-                      <option value="all">All Categories</option>
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  className="bg-white border border-gray-200 shadow-md text-gray-800"
+            <Tooltip content="Filter by category">
+              <div className="relative w-full md:w-[180px]">
+                <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 h-4 w-4 z-10" />
+                <Select
+                  variant="primary"
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    try {
+                      console.log(
+                        "Select onChange called with:",
+                        e.target.value
+                      );
+                      if (typeof onCategoryChange === "function") {
+                        onCategoryChange(e.target.value);
+                      } else {
+                        console.error(
+                          "onCategoryChange is not a function",
+                          onCategoryChange
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error in category select:", error);
+                    }
+                  }}
+                  className="bg-white pl-9 h-10 border-gray-300 hover:border-orange-300 focus:border-orange-500 focus:ring-orange-500/20 rounded-lg w-full"
                 >
-                  <p>Filter by category</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                  <option value="all">All Categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </Tooltip>
 
             {/* Search */}
             <div className="relative grow w-full md:w-[220px]">
@@ -189,81 +174,51 @@ export default function InventoryFilters({
             </div>
 
             {/* Add Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white h-10 min-w-[40px] rounded-lg shadow-sm hover:shadow transition-all duration-200"
-                    onClick={onAddClick}
-                  >
-                    <FiPlus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Add product</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="bottom"
-                  className="bg-white border border-gray-200 shadow-md text-gray-800"
-                >
-                  <p>Add new inventory item</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip content="Add new inventory item">
+              <Button
+                variant="default"
+                className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white h-10 min-w-[40px] rounded-lg shadow-sm hover:shadow transition-all duration-200"
+                onClick={onAddClick}
+              >
+                <FiPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add product</span>
+              </Button>
+            </Tooltip>
           </div>
 
           {/* Right Controls */}
           <div className="flex items-center gap-2 ml-auto">
             {/* View Toggle */}
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={viewMode === "table" ? "default" : "ghost"}
-                      size="sm"
-                      className={`h-10 w-10 rounded-none transition-colors duration-200 ${
-                        viewMode === "table"
-                          ? "bg-orange-600 text-white"
-                          : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                      }`}
-                      onClick={() => onViewModeChange("table")}
-                    >
-                      <FiList className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    className="bg-white border border-gray-200 shadow-md text-gray-800"
-                  >
-                    <p>Table view</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip content="Table view">
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="sm"
+                  className={`h-10 w-10 rounded-none transition-colors duration-200 ${
+                    viewMode === "table"
+                      ? "bg-orange-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                  }`}
+                  onClick={() => onViewModeChange("table")}
+                >
+                  <FiList className="h-4 w-4" />
+                </Button>
+              </Tooltip>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={viewMode === "cards" ? "default" : "ghost"}
-                      size="sm"
-                      className={`h-10 w-10 rounded-none transition-colors duration-200 ${
-                        viewMode === "cards"
-                          ? "bg-orange-600 text-white"
-                          : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
-                      }`}
-                      onClick={() => onViewModeChange("cards")}
-                    >
-                      <FiGrid className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    className="bg-white border border-gray-200 shadow-md text-gray-800"
-                  >
-                    <p>Card view</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip content="Card view">
+                <Button
+                  variant={viewMode === "cards" ? "default" : "ghost"}
+                  size="sm"
+                  className={`h-10 w-10 rounded-none transition-colors duration-200 ${
+                    viewMode === "cards"
+                      ? "bg-orange-600 text-white"
+                      : "bg-white text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                  }`}
+                  onClick={() => onViewModeChange("cards")}
+                >
+                  <FiGrid className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             </div>
 
             {/* Advanced Filters */}
@@ -271,41 +226,31 @@ export default function InventoryFilters({
               open={isAdvancedFiltersOpen}
               onOpenChange={setIsAdvancedFiltersOpen}
             >
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "gap-1 bg-white h-10 border-gray-300 hover:border-orange-300 rounded-lg transition-colors duration-200",
-                          hasActiveFilters &&
-                            "border-orange-300 text-orange-600 bg-orange-50/50"
-                        )}
-                      >
-                        <FiSliders className="h-4 w-4" />
-                        <span className="hidden sm:inline">Filters</span>
-                        {hasActiveFilters && (
-                          <Badge
-                            variant="secondary"
-                            className="ml-1 h-5 px-1.5 rounded-full bg-orange-100 text-orange-700"
-                          >
-                            {(searchTerm ? 1 : 0) +
-                              (selectedCategory !== "all" ? 1 : 0) +
-                              (showLowStock ? 1 : 0)}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="bottom"
-                    className="bg-white border border-gray-200 shadow-md text-gray-800"
+              <Tooltip content="Advanced filters">
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "gap-1 bg-white h-10 border-gray-300 hover:border-orange-300 rounded-lg transition-colors duration-200",
+                      hasActiveFilters &&
+                        "border-orange-300 text-orange-600 bg-orange-50/50"
+                    )}
                   >
-                    <p>Advanced filters</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    <FiSliders className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filters</span>
+                    {hasActiveFilters && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-1 h-5 px-1.5 rounded-full bg-orange-100 text-orange-700"
+                      >
+                        {(searchTerm ? 1 : 0) +
+                          (selectedCategory !== "all" ? 1 : 0) +
+                          (showLowStock ? 1 : 0)}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+              </Tooltip>
 
               {/* Advanced Filters Popover Content */}
               <PopoverContent className="w-[280px] p-4 shadow-lg border border-gray-200 rounded-lg">
@@ -372,23 +317,10 @@ export default function InventoryFilters({
                         Show low stock only
                       </Label>
                       <Switch
-                        id="show-low-stock"
+                        id="low-stock-toggle"
                         checked={showLowStock}
-                        onCheckedChange={(checked) => {
-                          try {
-                            if (typeof onLowStockChange === "function") {
-                              onLowStockChange(checked);
-                            } else {
-                              console.error(
-                                "onLowStockChange is not a function",
-                                onLowStockChange
-                              );
-                            }
-                          } catch (error) {
-                            console.error("Error in low stock switch:", error);
-                          }
-                        }}
-                        className="data-[state=checked]:bg-orange-600"
+                        onChange={(e) => onLowStockChange(e.target.checked)}
+                        className="toggle toggle-primary"
                       />
                     </div>
 

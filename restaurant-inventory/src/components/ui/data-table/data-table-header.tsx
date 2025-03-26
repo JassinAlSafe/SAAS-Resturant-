@@ -39,8 +39,8 @@ export function DataTableHeader({
         className={cn(
           "transition-colors",
           isActive
-            ? "text-primary"
-            : "text-gray-400/0 group-hover:text-gray-400/50"
+            ? "text-orange-500"
+            : "text-neutral-300 group-hover:text-neutral-400"
         )}
       >
         {isActive ? (
@@ -50,7 +50,7 @@ export function DataTableHeader({
             <ChevronDown className="h-4 w-4" />
           )
         ) : (
-          <ArrowUpDown className="h-3 w-3 opacity-50" />
+          <ArrowUpDown className="h-3 w-3" />
         )}
       </span>
     </div>
