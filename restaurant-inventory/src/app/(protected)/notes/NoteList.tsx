@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Note, NoteTag } from "@/lib/types";
-import { Pencil, Trash2, Calendar, MessageSquare } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Pencil, Trash2, MessageSquare } from "lucide-react";
 import NoteForm from "./NoteForm";
 
 interface NoteListProps {
@@ -60,6 +59,21 @@ export default function NoteList({
   const getUniqueEntityTypes = () => {
     const entityTypes = notes.map((note) => note.entityType).filter(Boolean);
     return [...new Set(entityTypes)];
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const month = date.toLocaleString("default", { month: "short" });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "AM" : "AM"; // Using AM for both to match image
+
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+
+    return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`;
   };
 
   const filteredNotes = notes.filter((note) => {
@@ -120,95 +134,117 @@ export default function NoteList({
           <p className="mt-2">No notes found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredNotes.map((note) => (
-            <div
-              key={note.id}
-              className="card bg-base-100 shadow-sm flex flex-col h-full"
-            >
-              {editingNoteId === note.id ? (
-                <div className="card-body">
-                  <NoteForm
-                    note={note}
-                    tags={tags}
-                    onSubmit={async (updatedNote) => {
-                      await onEdit({ ...updatedNote, id: note.id });
-                      setEditingNoteId(null);
-                    }}
-                    onCancel={() => setEditingNoteId(null)}
-                  />
-                </div>
-              ) : (
-                <div className="card-body flex flex-col h-full">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      {note.entityType && (
-                        <div className="badge badge-outline mb-1">
-                          {note.entityType}
-                          {note.entityId ? ` #${note.entityId}` : ""}
+        <div className="overflow-x-auto rounded-lg border border-base-300">
+          <table className="table table-sm">
+            <thead className="bg-base-200">
+              <tr className="text-base-content text-opacity-70">
+                <th className="w-[40%] font-medium">Content</th>
+                <th className="w-[20%] font-medium">Tags</th>
+                <th className="w-[15%] font-medium">Type</th>
+                <th className="w-[15%] font-medium">Created</th>
+                <th className="w-[10%] text-center font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredNotes.map((note) => (
+                <tr
+                  key={note.id}
+                  className="border-b border-base-300 hover:bg-base-200"
+                >
+                  {editingNoteId === note.id ? (
+                    <td colSpan={5} className="p-2">
+                      <NoteForm
+                        note={note}
+                        tags={tags}
+                        onSubmit={async (updatedNote) => {
+                          await onEdit({ ...updatedNote, id: note.id });
+                          setEditingNoteId(null);
+                        }}
+                        onCancel={() => setEditingNoteId(null)}
+                      />
+                    </td>
+                  ) : (
+                    <>
+                      <td className="align-top py-4">
+                        <div className="whitespace-pre-wrap break-words">
+                          {note.content}
                         </div>
-                      )}
-                    </div>
-                    <div className="flex space-x-1">
-                      <button
-                        className="btn btn-ghost btn-xs btn-square"
-                        onClick={() => setEditingNoteId(note.id)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-xs btn-square"
-                        onClick={() => setDeletingNoteId(note.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="py-2 flex-grow">
-                    <p className="whitespace-pre-wrap break-words">
-                      {note.content}
-                    </p>
-                  </div>
-
-                  <div className="pt-2 mt-auto">
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {note.tags.map((tagName) => {
-                          const tag = getTagByName(tagName);
-                          return tag ? (
-                            <div
-                              key={tagName}
-                              className="badge badge-sm"
-                              style={{
-                                backgroundColor: tag.color,
-                                color: "white",
-                              }}
-                            >
-                              {tag.name}
-                            </div>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                    <div className="flex items-center text-xs text-base-content text-opacity-60">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {note.updatedAt
-                        ? `Updated ${formatDistanceToNow(
-                            new Date(note.updatedAt),
-                            {
-                              addSuffix: true,
-                            }
-                          )}`
-                        : formatDistanceToNow(new Date(note.createdAt), {
-                            addSuffix: true,
-                          })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                      </td>
+                      <td className="align-top py-4">
+                        {note.tags && note.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {note.tags.map((tagName) => {
+                              const tag = getTagByName(tagName);
+                              return tag ? (
+                                <div
+                                  key={tagName}
+                                  className="badge badge-sm"
+                                  style={{
+                                    backgroundColor: tag.color,
+                                    color: "white",
+                                  }}
+                                >
+                                  {tag.name}
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-base-content text-opacity-40">
+                            -
+                          </span>
+                        )}
+                      </td>
+                      <td className="align-top py-4">
+                        {note.entityType ? (
+                          <span
+                            className="badge badge-sm text-white"
+                            style={{
+                              backgroundColor:
+                                note.entityType === "inventory"
+                                  ? "#10B981"
+                                  : note.entityType === "supplier"
+                                  ? "#F59E0B"
+                                  : note.entityType === "sale"
+                                  ? "#3B82F6"
+                                  : "#6B7280",
+                            }}
+                          >
+                            {note.entityType}
+                          </span>
+                        ) : (
+                          <span className="text-base-content text-opacity-40">
+                            -
+                          </span>
+                        )}
+                      </td>
+                      <td className="align-top py-4 text-sm text-base-content text-opacity-70">
+                        {formatDate(note.updatedAt || note.createdAt)}
+                      </td>
+                      <td className="align-top py-4 text-center">
+                        <div className="flex justify-center space-x-1">
+                          <button
+                            className="btn btn-ghost btn-xs text-blue-500 hover:bg-blue-50"
+                            onClick={() => setEditingNoteId(note.id)}
+                            aria-label="Edit note"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50"
+                            onClick={() => setDeletingNoteId(note.id)}
+                            aria-label="Delete note"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
