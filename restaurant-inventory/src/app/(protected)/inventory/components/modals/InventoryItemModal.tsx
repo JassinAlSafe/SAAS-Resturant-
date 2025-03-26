@@ -259,7 +259,7 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({
     switch (activeTab) {
       case "basic":
         return (
-          <div className="space-y-5">
+          <div className="space-y-5 bg-white rounded-lg p-5">
             <div className="grid grid-cols-1 gap-5">
               <fieldset className="w-full">
                 <label className="text-sm font-medium text-gray-700 mb-1 inline-block">

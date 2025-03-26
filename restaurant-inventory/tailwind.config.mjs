@@ -2,7 +2,7 @@
 import animate from "tailwindcss-animate";
 import daisyui from "daisyui";
 
-export default {
+const config = {
   content: [
     "./pages/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -51,7 +51,8 @@ export default {
       full: "9999px",
     },
     fontFamily: {
-      sans: "var(--font-sans)",
+      sans: ["var(--font-satoshi)"],
+      heading: ["var(--font-cabinet-grotesk)"],
     },
     keyframes: {
       "accordion-down": {
@@ -72,51 +73,66 @@ export default {
   daisyui: {
     themes: [
       {
-        light: {
-          primary: "#ff8c00",
-          "primary-content": "#ffffff",
-          secondary: "#f2f2f2",
-          "secondary-content": "#111111",
-          accent: "#fff4e6",
-          "accent-content": "#dc7700",
-          neutral: "#111111",
+        // Light theme with white background, black text, orange highlights
+        bumblebee: {
+          primary: "#ff8c00", // Standout orange
+          "primary-content": "#ffffff", // Text on orange
+          secondary: "#f5f5f5", // Subtle off-white
+          "secondary-content": "#1f1f1f", // Dark text on secondary
+          accent: "#3b82f6", // Optional accent (blue)
+          "accent-content": "#ffffff",
+          neutral: "#3d4451",
           "neutral-content": "#ffffff",
-          "base-100": "#ffffff",
-          "base-200": "#f9f9f9",
-          "base-300": "#f2f2f2",
-          "base-content": "#111111",
+          "base-100": "#ffffff", // White background
+          "base-200": "#f5f5f5", // Slightly off-white
+          "base-300": "#eaeaea", // Light gray
+          "base-content": "#1f1f1f", // Near-black text
           info: "#3abff8",
           success: "#36d399",
           warning: "#fbbd23",
           error: "#f87272",
-          "--navbar-color": "#1c2b36",
-          "--navbar-text": "#ffffff",
-        },
-        dark: {
-          primary: "#ff8c00",
-          "primary-content": "#ffffff",
-          secondary: "#1c2b36",
-          "secondary-content": "#ffffff",
-          accent: "#383838",
-          "accent-content": "#ff8c00",
-          neutral: "#ffffff",
-          "neutral-content": "#111111",
-          "base-100": "#111111",
-          "base-200": "#1a1a1a",
-          "base-300": "#262626",
-          "base-content": "#ffffff",
-          info: "#3abff8",
-          success: "#36d399",
-          warning: "#fbbd23",
-          error: "#f87272",
-          "--navbar-color": "#1c2b36",
-          "--navbar-text": "#ffffff",
+          // Additional DaisyUI theming tokens
+          "--rounded-box": "0.5rem",
+          "--rounded-btn": "0.375rem",
+          "--rounded-badge": "1.9rem",
+          "--animation-btn": "0.25s",
+          "--animation-input": "0.2s",
+          "--btn-focus-scale": "0.98",
+          "--border-btn": "1px",
+          "--tab-radius": "0.375rem",
         },
       },
-    ],
-    darkTheme: "dark",
-    base: true,
-    styled: true,
-    utils: true,
-  },
-};
+      {
+          // Dark theme variant
+          dark: {
+            primary: "#ff8c00",
+            "primary-content": "#ffffff",
+            secondary: "#1c2b36",
+            "secondary-content": "#ffffff",
+            accent: "#383838",
+            "accent-content": "#ff8c00",
+            neutral: "#ffffff",
+            "neutral-content": "#111111",
+            "base-100": "#111111",
+            "base-200": "#1a1a1a",
+            "base-300": "#262626",
+            "base-content": "#ffffff",
+            info: "#3abff8",
+            success: "#36d399",
+            warning: "#fbbd23",
+            error: "#f87272",
+            "--navbar-color": "#1c2b36",
+            "--navbar-text": "#ffffff",
+          },
+        },
+      ],
+      darkTheme: "dark",
+      base: true,
+      styled: true,
+      utils: true,
+    },
+  };
+  
+  export default config;
+
+export default config;

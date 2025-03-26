@@ -23,12 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
 interface ExecutiveDashboardProps {
@@ -83,19 +78,12 @@ export function ExecutiveDashboard({
           </p>
         </div>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <ClipboardList className="h-4 w-4" />
-                <span>Generate Report</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-xs">Coming soon: Export dashboard as PDF</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip content="Coming soon: Export dashboard as PDF">
+          <Button variant="outline" className="gap-2">
+            <ClipboardList className="h-4 w-4" />
+            <span>Generate Report</span>
+          </Button>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -159,14 +147,13 @@ export function ExecutiveDashboard({
                           </div>
                           <Progress
                             value={calculateRisk(item.depleted, item.warning)}
-                            className="h-2"
-                            indicatorClassName={
+                            className={`h-2 ${
                               item.depleted
                                 ? "bg-red-600"
                                 : item.warning
                                 ? "bg-amber-500"
                                 : "bg-amber-400"
-                            }
+                            }`}
                           />
                         </div>
                         <Link
@@ -256,30 +243,20 @@ export function ExecutiveDashboard({
                           </div>
                           <Progress
                             value={calculatePopularity(index)}
-                            className="h-2"
-                            indicatorClassName={
+                            className={`h-2 ${
                               index === 0 ? "bg-primary" : "bg-blue-400"
-                            }
+                            }`}
                           />
                         </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="ml-auto"
-                              >
-                                Analyze
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">
-                                View detailed sales metrics
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Tooltip content="View detailed sales metrics">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-auto"
+                          >
+                            Analyze
+                          </Button>
+                        </Tooltip>
                       </div>
                     </div>
                   ))}

@@ -1,15 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Trash2, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { CalendarIcon, Trash2, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { useState } from "react";
 
 interface SalesEntryHeaderProps {
   selectedDate?: Date;
@@ -18,8 +11,7 @@ interface SalesEntryHeaderProps {
   onToggleInventoryImpact: () => void;
   onClearAll: () => void;
   hasSalesEntries: boolean;
-  onLoadPreviousDay: () => void;
-  hasPreviousDayTemplate: boolean;
+  onViewHistory?: () => void;
 }
 
 export function SalesEntryHeader({
@@ -29,105 +21,88 @@ export function SalesEntryHeader({
   onToggleInventoryImpact,
   onClearAll,
   hasSalesEntries,
-  onLoadPreviousDay,
-  hasPreviousDayTemplate,
+  onViewHistory,
 }: SalesEntryHeaderProps) {
-  const today = new Date();
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.valueAsDate) {
+      onDateSelect(e.target.valueAsDate);
+    }
+  };
 
   return (
-    <div className="border-b bg-background/60 backdrop-blur-sm sticky top-0 z-20">
-      <div className="px-8 py-5">
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Menu Items
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Enter quantities sold for today&apos;s sales
-            </p>
-          </div>
+    <div className="flex items-center justify-between py-4 px-2 border-b border-neutral-100">
+      <div className="relative">
+        <button
+          className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-orange-600"
+          onClick={() => setCalendarOpen(!calendarOpen)}
+        >
+          <CalendarIcon className="h-4 w-4 text-orange-500" />
+          {selectedDate ? (
+            <span>{format(selectedDate, "EEEE, MMM d, yyyy")}</span>
+          ) : (
+            <span className="text-neutral-400">Select date</span>
+          )}
+          <ChevronDown className="h-3.5 w-3.5 text-neutral-400 ml-1" />
+        </button>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date"
-                  variant="outline"
-                  size="default"
-                  className={cn(
-                    "h-10 w-[240px] justify-start text-left font-normal border-slate-200 bg-white",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-3 h-4 w-4 text-slate-500" />
-                  {selectedDate ? (
-                    format(selectedDate, "EEEE, MMM d, yyyy")
-                  ) : (
-                    <span>Select date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 shadow-lg" align="end">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={onDateSelect}
-                  initialFocus
-                  fromDate={firstDayOfMonth}
-                  toDate={lastDayOfMonth}
-                  weekStartsOn={1}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Button
-              type="button"
-              variant={showInventoryImpact ? "default" : "outline"}
-              size="default"
-              onClick={onToggleInventoryImpact}
-              className={cn(
-                "h-10",
-                showInventoryImpact
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "border-slate-200 bg-white"
-              )}
-            >
-              {showInventoryImpact ? (
-                <EyeOff className="h-4 w-4 mr-2" />
-              ) : (
-                <Eye className="h-4 w-4 mr-2" />
-              )}
-              {showInventoryImpact ? "Hide" : "Show"} Inventory
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="default"
-              onClick={onClearAll}
-              disabled={!hasSalesEntries}
-              className="h-10 border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear All
-            </Button>
-
-            {hasPreviousDayTemplate && (
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                onClick={onLoadPreviousDay}
-                className="h-10 border-slate-200 bg-white"
+        {calendarOpen && (
+          <div className="absolute top-full left-0 mt-1 z-50 p-4 shadow-sm bg-white rounded-lg w-72 border border-neutral-100">
+            <input
+              type="date"
+              className="w-full p-2 text-sm border-b border-neutral-100 mb-3 focus:outline-none"
+              value={selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""}
+              onChange={handleDateChange}
+            />
+            <div className="flex justify-between">
+              <button
+                className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700"
+                onClick={() => setCalendarOpen(false)}
               >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Load Previous
-              </Button>
-            )}
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1.5 text-xs font-medium text-orange-600 hover:text-orange-700"
+                onClick={() => setCalendarOpen(false)}
+              >
+                Apply
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleInventoryImpact}
+          className="text-sm font-medium text-neutral-600 hover:text-orange-600 transition-colors flex items-center gap-1.5"
+        >
+          {showInventoryImpact ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+          <span>{showInventoryImpact ? "Hide" : "Show"} Inventory</span>
+        </button>
+
+        <button
+          onClick={onClearAll}
+          disabled={!hasSalesEntries}
+          className="text-sm font-medium text-neutral-600 hover:text-orange-600 transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:hover:text-neutral-600"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span>Clear All</span>
+        </button>
+
+        {onViewHistory && (
+          <button
+            onClick={onViewHistory}
+            className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors flex items-center gap-1.5"
+          >
+            <span>View History</span>
+          </button>
+        )}
       </div>
     </div>
   );

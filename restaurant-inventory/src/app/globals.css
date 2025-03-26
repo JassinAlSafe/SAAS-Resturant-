@@ -1,10 +1,14 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: bumblebee --default, dark --prefersdark;
+}
 
 @layer base {
   /* Font configuration */
   :root {
     --font-satoshi: "__satoshi_variable";
     --font-cabinet-grotesk: "__cabinetGrotesk_variable";
+    --font-sans: var(--font-satoshi);
   }
 
   /* Apply headline font to headings */

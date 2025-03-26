@@ -124,12 +124,12 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
         transition={{ duration: 0.3 }}
         className="mb-6"
       >
-        <Card className="bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 p-8 text-center">
-          <CircleOff className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-          <h4 className="font-medium text-lg text-foreground mb-1">
+        <Card className="bg-white p-8 text-center rounded-lg shadow-sm">
+          <CircleOff className="h-12 w-12 mx-auto text-neutral-300 mb-4" />
+          <h4 className="font-medium text-lg text-neutral-800 mb-2">
             No Inventory Impact
           </h4>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          <p className="text-sm text-neutral-500 max-w-md mx-auto">
             Add quantities to dishes to see how your sales will affect your
             inventory levels
           </p>
@@ -170,31 +170,37 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="mb-6"
+      className="mb-8"
     >
-      <Card className="bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-md">
-              <ShoppingCart className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+      <Card className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="p-6 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 bg-orange-50 rounded-md">
+              <ShoppingCart className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <h4 className="font-medium">Inventory Impact</h4>
-              <p className="text-xs text-muted-foreground">
+              <h4 className="font-medium text-lg text-neutral-900">
+                Inventory Impact
+              </h4>
+              <p className="text-sm text-neutral-500 mt-1">
                 Effect on your inventory after sales
               </p>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div>
             <Button
               type="button"
               variant={showLowStock ? "default" : "outline"}
               size="sm"
               onClick={() => setShowLowStock(!showLowStock)}
-              className="text-xs h-8 px-3 flex items-center gap-1.5"
+              className={`text-sm h-9 px-4 rounded-lg flex items-center gap-2 ${
+                showLowStock
+                  ? "bg-orange-600 hover:bg-orange-700 text-white"
+                  : "bg-white text-neutral-700"
+              }`}
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
+              <AlertTriangle className="h-4 w-4" />
               {showLowStock ? "Hide" : "Show"} Low Stock
             </Button>
           </div>
@@ -202,72 +208,82 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
 
         {/* Status Summary Card */}
         {!isLoadingInventory && !error && (
-          <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-900">
-            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-950 rounded-md border border-gray-200 dark:border-gray-800">
-              <div className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded-md">
-                <PackageX className="h-4 w-4 text-red-600 dark:text-red-400" />
+          <div className="grid grid-cols-3 gap-3 p-4 bg-neutral-50">
+            <div className="flex items-center gap-3 p-4 bg-white rounded-lg">
+              <div className="p-2 bg-red-50 rounded-md">
+                <PackageX className="h-4 w-4 text-red-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Out of Stock</p>
-                <p className="font-medium">{statusCounts.outOfStock}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wider">
+                  Out of Stock
+                </p>
+                <p className="font-medium text-lg mt-1">
+                  {statusCounts.outOfStock}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-950 rounded-md border border-gray-200 dark:border-gray-800">
-              <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-md">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-3 p-4 bg-white rounded-lg">
+              <div className="p-2 bg-amber-50 rounded-md">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Low Stock</p>
-                <p className="font-medium">{statusCounts.lowStock}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wider">
+                  Low Stock
+                </p>
+                <p className="font-medium text-lg mt-1">
+                  {statusCounts.lowStock}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-950 rounded-md border border-gray-200 dark:border-gray-800">
-              <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-md">
-                <PackageCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <div className="flex items-center gap-3 p-4 bg-white rounded-lg">
+              <div className="p-2 bg-green-50 rounded-md">
+                <PackageCheck className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">In Stock</p>
-                <p className="font-medium">{statusCounts.inStock}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wider">
+                  In Stock
+                </p>
+                <p className="font-medium text-lg mt-1">
+                  {statusCounts.inStock}
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 p-3 text-sm">
-            {error}
-          </div>
+          <div className="bg-red-50 text-red-700 p-4 text-sm">{error}</div>
         )}
 
         {isLoadingInventory ? (
           <div className="p-8 text-center">
-            <div className="h-2 w-24 bg-muted animate-pulse rounded-full mx-auto mb-3"></div>
-            <p className="text-sm text-muted-foreground">
+            <div className="h-2 w-24 bg-neutral-200 animate-pulse rounded-full mx-auto mb-3"></div>
+            <p className="text-sm text-neutral-500">
               Loading inventory levels...
             </p>
           </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto border-t border-gray-200 dark:border-gray-800">
+          <div className="max-h-80 overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-900">
-                  <th className="py-2 px-3 text-left font-medium text-muted-foreground">
+                <tr className="bg-neutral-50">
+                  <th className="py-3 px-6 text-left font-medium text-neutral-500 uppercase tracking-wider">
                     Ingredient
                   </th>
-                  <th className="py-2 px-3 text-right font-medium text-muted-foreground">
+                  <th className="py-3 px-6 text-right font-medium text-neutral-500 uppercase tracking-wider">
                     Quantity Used
                   </th>
-                  <th className="py-2 px-3 text-right font-medium text-muted-foreground">
+                  <th className="py-3 px-6 text-right font-medium text-neutral-500 uppercase tracking-wider">
                     Stock After
                   </th>
-                  <th className="py-2 px-3 text-right font-medium text-muted-foreground">
+                  <th className="py-3 px-6 text-right font-medium text-neutral-500 uppercase tracking-wider">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+              <tbody>
                 <AnimatePresence>
                   {Object.values(groupedImpacts).map((impact, index) => {
                     const inventory = inventoryLevels[impact.ingredientId];
@@ -297,27 +313,27 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className={`border-b hover:bg-slate-50 dark:hover:bg-slate-900/50 ${
+                          className={`hover:bg-neutral-50 ${
                             isOutOfStock
-                              ? "bg-red-50/80 dark:bg-red-900/10"
+                              ? "bg-red-50"
                               : isLowStock
-                              ? "bg-amber-50/80 dark:bg-amber-900/10"
+                              ? "bg-amber-50"
                               : ""
                           }`}
                         >
-                          <td className="py-3 px-3 font-medium">
+                          <td className="py-4 px-6 font-medium text-neutral-800">
                             {impact.name}
                           </td>
-                          <td className="py-3 px-3 text-right">
+                          <td className="py-4 px-6 text-right text-neutral-700">
                             {impact.quantityUsed.toFixed(2)} {impact.unit}
                           </td>
-                          <td className="py-3 px-3 text-right">
+                          <td className="py-4 px-6 text-right">
                             <div className="flex flex-col items-end gap-1">
                               <span
                                 className={
                                   isOutOfStock
-                                    ? "text-red-600 dark:text-red-400 font-medium"
-                                    : ""
+                                    ? "text-red-600 font-medium"
+                                    : "text-neutral-700"
                                 }
                               >
                                 {remainingStock.toFixed(2)} {impact.unit}
@@ -326,42 +342,36 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
                                 <div className="w-24">
                                   <Progress
                                     value={stockPercentage}
-                                    className={`h-1.5 ${
+                                    className={`h-2 ${
                                       isOutOfStock
-                                        ? "bg-red-200 dark:bg-red-900/30"
+                                        ? "bg-red-200"
                                         : isLowStock
-                                        ? "bg-amber-200 dark:bg-amber-900/30"
-                                        : "bg-muted"
+                                        ? "bg-amber-200"
+                                        : "bg-neutral-200"
                                     }`}
                                     indicatorClassName={
                                       isOutOfStock
-                                        ? "bg-red-600 dark:bg-red-500"
+                                        ? "bg-red-600"
                                         : isLowStock
-                                        ? "bg-amber-600 dark:bg-amber-500"
-                                        : "bg-primary"
+                                        ? "bg-amber-600"
+                                        : "bg-neutral-600"
                                     }
                                   />
                                 </div>
                               )}
                             </div>
                           </td>
-                          <td className="py-3 px-3 text-right">
+                          <td className="py-4 px-6 text-right">
                             {isOutOfStock ? (
-                              <Badge variant="destructive" className="ml-auto">
+                              <Badge className="bg-red-100 text-red-800 rounded-full font-normal px-3 py-1">
                                 Out of Stock
                               </Badge>
                             ) : isLowStock ? (
-                              <Badge
-                                variant="outline"
-                                className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30"
-                              >
+                              <Badge className="bg-amber-100 text-amber-800 rounded-full font-normal px-3 py-1">
                                 Low Stock
                               </Badge>
                             ) : (
-                              <Badge
-                                variant="outline"
-                                className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30"
-                              >
+                              <Badge className="bg-green-100 text-green-800 rounded-full font-normal px-3 py-1">
                                 In Stock
                               </Badge>
                             )}
@@ -388,7 +398,7 @@ const InventoryImpactSection: React.FC<InventoryImpactSectionProps> = ({
                   <tr>
                     <td
                       colSpan={4}
-                      className="py-8 text-center text-muted-foreground"
+                      className="py-10 text-center text-neutral-500"
                     >
                       <div className="flex flex-col items-center gap-1">
                         <AlertTriangle className="h-5 w-5 text-muted-foreground/50 mb-1" />

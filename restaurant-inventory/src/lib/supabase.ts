@@ -12,6 +12,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error(
         'Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.'
     );
+} else {
+    console.log('Supabase URL is set:', supabaseUrl);
+    console.log('Supabase Anon Key is set (first 10 chars):', supabaseAnonKey.substring(0, 10));
 }
 
 // Create the Supabase client with persistent session handling
@@ -32,6 +35,12 @@ try {
             console.error('Error connecting to Supabase:', result.error);
         } else {
             console.log('Supabase client initialized successfully');
+            console.log('Session exists:', !!result.data.session);
+            if (result.data.session) {
+                console.log('User is authenticated. User ID:', result.data.session.user.id);
+            } else {
+                console.log('No active session found. User needs to log in.');
+            }
         }
     });
 } catch (error) {

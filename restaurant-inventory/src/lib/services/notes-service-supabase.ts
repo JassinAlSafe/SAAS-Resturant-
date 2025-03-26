@@ -1,15 +1,20 @@
 import { Note, NoteTag } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
-import { useBusinessProfile } from "@/lib/business-profile-context";
 
-// Notes service
-export const notesService = {
-    // Get all notes
+// Notes service with Supabase integration
+export const notesServiceSupabase = {
+    // Get all notes for the current user's business profile
     getNotes: async (): Promise<Note[]> => {
+        console.log("getNotes called");
         try {
             // Get the user's business profile ID
             const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            console.log("Auth user data:", profileData);
+
+            if (!profileData.user) {
+                console.error("User not authenticated");
+                throw new Error("User not authenticated");
+            }
 
             const { data: businessData, error: businessError } = await supabase
                 .from("business_profile_users")
@@ -17,10 +22,18 @@ export const notesService = {
                 .eq("user_id", profileData.user.id)
                 .single();
 
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
+            if (businessError) {
+                console.error("Business profile error:", businessError);
+                throw businessError;
+            }
+
+            if (!businessData) {
+                console.error("No business profile found for user", profileData.user.id);
+                throw new Error("No business profile found");
+            }
 
             const businessProfileId = businessData.business_profile_id;
+            console.log("Business profile ID for fetching notes:", businessProfileId);
 
             // Fetch notes for the business profile
             const { data, error } = await supabase
@@ -29,10 +42,16 @@ export const notesService = {
                 .eq("business_profile_id", businessProfileId)
                 .order("created_at", { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching notes:", error);
+                throw error;
+            }
 
+            console.log("Raw notes data from Supabase:", data);
             // Transform from snake_case to camelCase
-            return (data || []).map(transformNoteFromDB);
+            const transformedNotes = (data || []).map(transformNoteFromDB);
+            console.log("Transformed notes:", transformedNotes);
+            return transformedNotes;
         } catch (error) {
             console.error("Error fetching notes:", error);
             return []; // Return empty array on error
@@ -125,10 +144,16 @@ export const notesService = {
     addNote: async (
         note: Omit<Note, "id" | "createdAt" | "updatedAt">
     ): Promise<Note> => {
+        console.log("addNote called with", note);
         try {
             // Get the user's business profile ID
             const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            console.log("Auth user data for adding note:", profileData?.user?.id);
+
+            if (!profileData.user) {
+                console.error("User not authenticated");
+                throw new Error("User not authenticated");
+            }
 
             const { data: businessData, error: businessError } = await supabase
                 .from("business_profile_users")
@@ -136,30 +161,52 @@ export const notesService = {
                 .eq("user_id", profileData.user.id)
                 .single();
 
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
+            if (businessError) {
+                console.error("Business profile error when adding note:", businessError);
+                throw businessError;
+            }
+
+            if (!businessData) {
+                console.error("No business profile found when adding note");
+                throw new Error("No business profile found");
+            }
 
             const businessProfileId = businessData.business_profile_id;
+            console.log("Business profile ID for new note:", businessProfileId);
 
             // Insert the new note
+            const newNote = {
+                content: note.content,
+                tags: note.tags,
+                entity_type: note.entityType,
+                entity_id: note.entityId,
+                created_by: profileData.user.id,
+                business_profile_id: businessProfileId
+            };
+
+            console.log("Inserting new note:", newNote);
+
             const { data, error } = await supabase
                 .from("notes")
-                .insert({
-                    content: note.content,
-                    tags: note.tags,
-                    entity_type: note.entityType,
-                    entity_id: note.entityId,
-                    created_by: profileData.user.id,
-                    business_profile_id: businessProfileId
-                })
+                .insert(newNote)
                 .select()
                 .single();
 
-            if (error) throw error;
-            if (!data) throw new Error("Failed to create note");
+            if (error) {
+                console.error("Error adding note:", error);
+                throw error;
+            }
 
+            if (!data) {
+                console.error("Failed to create note - no data returned");
+                throw new Error("Failed to create note");
+            }
+
+            console.log("New note data from Supabase:", data);
             // Transform from snake_case to camelCase
-            return transformNoteFromDB(data);
+            const transformedNote = transformNoteFromDB(data);
+            console.log("Transformed new note:", transformedNote);
+            return transformedNote;
         } catch (error) {
             console.error("Error adding note:", error);
             throw error;
@@ -319,4 +366,4 @@ function transformNoteTagFromDB(dbTag: any): NoteTag {
         color: dbTag.color,
         createdAt: dbTag.created_at
     };
-}
+} 

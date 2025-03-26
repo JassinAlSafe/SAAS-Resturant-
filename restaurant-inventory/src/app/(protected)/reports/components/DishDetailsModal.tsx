@@ -1,21 +1,5 @@
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ChevronRight, UtensilsCrossed } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 interface Ingredient {
@@ -57,41 +41,47 @@ export function DishDetailsModal({
   // Calculate profit margin
   const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0;
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <UtensilsCrossed className="h-5 w-5" />
-            {dishName}
-          </DialogTitle>
-          <DialogDescription>
-            Dish performance for {periodLabel}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="modal modal-open">
+      <div className="modal-box max-w-2xl">
+        <div className="flex items-center gap-2 text-xl">
+          <UtensilsCrossed className="h-5 w-5" />
+          <h3 className="font-bold">{dishName}</h3>
+        </div>
+        <p className="py-2 text-base-content text-opacity-60">
+          Dish performance for {periodLabel}
+        </p>
 
         {isLoading ? (
           <div className="space-y-4">
-            <div className="h-4 bg-muted rounded animate-pulse w-3/4 mx-auto" />
-            <div className="h-20 bg-muted rounded animate-pulse" />
-            <div className="h-40 bg-muted rounded animate-pulse" />
+            <div className="h-4 bg-base-300 rounded animate-pulse w-3/4 mx-auto"></div>
+            <div className="h-20 bg-base-300 rounded animate-pulse"></div>
+            <div className="h-40 bg-base-300 rounded animate-pulse"></div>
           </div>
         ) : (
           <>
             {/* Summary Stats */}
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-secondary/20 rounded-md p-3">
-                <div className="text-sm text-muted-foreground">Orders</div>
+            <div className="grid grid-cols-4 gap-4 my-4">
+              <div className="bg-base-200 rounded-md p-3">
+                <div className="text-sm text-base-content text-opacity-60">
+                  Orders
+                </div>
                 <div className="text-2xl font-semibold">{quantity}</div>
               </div>
-              <div className="bg-secondary/20 rounded-md p-3">
-                <div className="text-sm text-muted-foreground">Revenue</div>
+              <div className="bg-base-200 rounded-md p-3">
+                <div className="text-sm text-base-content text-opacity-60">
+                  Revenue
+                </div>
                 <div className="text-2xl font-semibold">
                   {formatCurrency(revenue)}
                 </div>
               </div>
-              <div className="bg-secondary/20 rounded-md p-3">
-                <div className="text-sm text-muted-foreground">Cost</div>
+              <div className="bg-base-200 rounded-md p-3">
+                <div className="text-sm text-base-content text-opacity-60">
+                  Cost
+                </div>
                 <div className="text-2xl font-semibold">
                   {formatCurrency(cost)}
                 </div>
@@ -99,11 +89,11 @@ export function DishDetailsModal({
               <div
                 className={`rounded-md p-3 ${
                   profitMargin >= 0
-                    ? "bg-green-100 dark:bg-green-900/30"
-                    : "bg-red-100 dark:bg-red-900/30"
+                    ? "bg-success bg-opacity-10"
+                    : "bg-error bg-opacity-10"
                 }`}
               >
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-base-content text-opacity-60">
                   Profit Margin
                 </div>
                 <div className="text-2xl font-semibold">
@@ -142,9 +132,9 @@ export function DishDetailsModal({
                     <span>Cost vs. Revenue</span>
                     <span>{((cost / revenue) * 100).toFixed(1)}% Cost</span>
                   </div>
-                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="bg-base-300 h-2 w-full rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-primary"
+                      className="bg-primary h-full"
                       style={{ width: `${(cost / revenue) * 100}%` }}
                     />
                   </div>
@@ -155,63 +145,64 @@ export function DishDetailsModal({
             {/* Ingredients Table */}
             <div className="mt-4">
               <h3 className="text-sm font-medium mb-2">Ingredients Used</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="text-right">
-                      Quantity Per Dish
-                    </TableHead>
-                    <TableHead className="text-right">Total Used</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ingredients.map((ingredient) => (
-                    <TableRow key={ingredient.id}>
-                      <TableCell>
-                        <Link
-                          href={`/inventory?highlight=${ingredient.id}`}
-                          className="hover:underline flex items-center"
+              <div className="overflow-x-auto">
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th className="text-right">Quantity Per Dish</th>
+                      <th className="text-right">Total Used</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ingredients.map((ingredient) => (
+                      <tr key={ingredient.id}>
+                        <td>
+                          <Link
+                            href={`/inventory?highlight=${ingredient.id}`}
+                            className="hover:underline flex items-center"
+                          >
+                            {ingredient.name}
+                            <ChevronRight className="h-4 w-4 inline ml-1" />
+                          </Link>
+                        </td>
+                        <td className="text-right">
+                          {ingredient.quantity} {ingredient.unit}
+                        </td>
+                        <td className="text-right">
+                          {(ingredient.quantity * quantity).toFixed(1)}{" "}
+                          {ingredient.unit}
+                        </td>
+                      </tr>
+                    ))}
+                    {ingredients.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={3}
+                          className="text-center text-base-content text-opacity-60 py-4"
                         >
-                          {ingredient.name}
-                          <ChevronRight className="h-4 w-4 inline ml-1" />
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {ingredient.quantity} {ingredient.unit}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {(ingredient.quantity * quantity).toFixed(1)}{" "}
-                        {ingredient.unit}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {ingredients.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="text-center text-muted-foreground py-4"
-                      >
-                        No ingredient data available for this dish
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                          No ingredient data available for this dish
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="modal-action">
               <Link href={`/recipes/${dishId}`}>
-                <Button variant="outline">View Recipe</Button>
+                <button className="btn btn-outline">View Recipe</button>
               </Link>
-              <Button variant="outline" onClick={onClose}>
+              <button className="btn" onClick={onClose}>
                 Close
-              </Button>
+              </button>
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+      <div className="modal-backdrop" onClick={onClose}></div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -23,7 +23,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   PieChart,
   ListFilter,
@@ -35,12 +34,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,27 +44,29 @@ import {
 import { format } from "date-fns";
 import { ReportMetrics } from "../types";
 
+// Improved type definitions using the Chart.js type structure
+interface ChartDataset {
+  label: string;
+  data: number[];
+  backgroundColor: string | string[];
+  borderColor?: string;
+  borderWidth?: number;
+}
+
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+interface TopDish {
+  name: string;
+  sales: number;
+  rank: number;
+}
+
 interface SalesAnalyticsViewProps {
-  salesData: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string | string[];
-      borderColor?: string;
-      borderWidth?: number;
-    }[];
-  };
-  topDishesData: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string | string[];
-      borderColor?: string;
-      borderWidth?: number;
-    }[];
-  };
+  salesData: ChartData;
+  topDishesData: ChartData;
   previousPeriodData?: ReportMetrics;
   dateRange: string;
   formatCurrency: (amount: number) => string;
@@ -118,14 +114,33 @@ export function SalesAnalyticsView({
   formatCurrency,
   getPercentageChange,
 }: SalesAnalyticsViewProps) {
-  // Extract summary data from charts
-  const totalSales =
-    salesData.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0;
-  const totalTransactions =
-    salesData.datasets[1]?.data.reduce((a, b) => a + b, 0) || 0;
-  const averageOrderValue = totalTransactions
-    ? totalSales / totalTransactions
-    : 0;
+  // Extract summary data from charts using useMemo for optimization
+  const { totalSales, totalTransactions, averageOrderValue, topDishesTable } =
+    useMemo(() => {
+      const totalSales =
+        salesData.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0;
+      const totalTransactions =
+        salesData.datasets[1]?.data.reduce((a, b) => a + b, 0) || 0;
+      const averageOrderValue = totalTransactions
+        ? totalSales / totalTransactions
+        : 0;
+
+      // Generate top dishes for table view
+      const topDishesTable: TopDish[] = topDishesData.labels.map(
+        (dish, index) => ({
+          name: dish,
+          sales: topDishesData.datasets[0].data[index],
+          rank: index + 1,
+        })
+      );
+
+      return {
+        totalSales,
+        totalTransactions,
+        averageOrderValue,
+        topDishesTable,
+      };
+    }, [salesData, topDishesData]);
 
   // Calculate percentage changes with null checks and proper property names
   const salesPercentChange = getPercentageChange(
@@ -157,12 +172,40 @@ export function SalesAnalyticsView({
     }
   };
 
-  // Generate top dishes for table view
-  const topDishesTable = topDishesData.labels.map((dish, index) => ({
-    name: dish,
-    sales: topDishesData.datasets[0].data[index],
-    rank: index + 1,
-  }));
+  // Extracted component for percentage change display to reduce repetition
+  const PercentageChange = ({ value }: { value: number }) => (
+    <div className="flex items-center gap-2">
+      {value >= 0 ? (
+        <>
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-0 font-normal"
+          >
+            <ArrowUpRight className="h-3 w-3 mr-1" aria-hidden="true" />
+            {value.toFixed(1)}%
+          </Badge>
+          <span className="text-sm text-muted-foreground">
+            vs. previous period
+          </span>
+        </>
+      ) : (
+        <>
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-0 font-normal"
+          >
+            <ArrowDownRight className="h-3 w-3 mr-1" aria-hidden="true" />
+            {Math.abs(value).toFixed(1)}%
+          </Badge>
+          <span className="text-sm text-muted-foreground">
+            vs. previous period
+          </span>
+        </>
+      )}
+    </div>
+  );
+
+  const currentDate = format(new Date(), "MMM d, yyyy");
 
   return (
     <div className="space-y-8">
@@ -171,29 +214,22 @@ export function SalesAnalyticsView({
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Sales Analytics</h2>
           <p className="text-muted-foreground">
-            {getPeriodLabel()} • {format(new Date(), "MMM d, yyyy")}
+            {getPeriodLabel()} • {currentDate}
           </p>
         </div>
 
         <div className="flex gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Data
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Download data as CSV or Excel</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip content="Download data as CSV or Excel">
+            <Button variant="outline" size="sm" className="h-9">
+              <Download className="h-4 w-4 mr-2" aria-hidden="true" />
+              Export Data
+            </Button>
+          </Tooltip>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
-                <ListFilter className="h-4 w-4 mr-2" />
+                <ListFilter className="h-4 w-4 mr-2" aria-hidden="true" />
                 Filter View
               </Button>
             </DropdownMenuTrigger>
@@ -210,7 +246,10 @@ export function SalesAnalyticsView({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Total Sales Card */}
         <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-primary/5 rounded-bl-full"></div>
+          <div
+            className="absolute top-0 right-0 h-20 w-20 bg-primary/5 rounded-bl-full"
+            aria-hidden="true"
+          ></div>
           <CardHeader className="pb-2">
             <CardDescription>Total Sales</CardDescription>
             <div className="flex items-center justify-between">
@@ -219,7 +258,10 @@ export function SalesAnalyticsView({
               </CardTitle>
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <span className="sr-only">Sales information</span>
+                  </Button>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80">
                   <div className="flex justify-between">
@@ -238,41 +280,16 @@ export function SalesAnalyticsView({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              {salesPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    {salesPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                    {Math.abs(salesPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
-            </div>
+            <PercentageChange value={salesPercentChange} />
           </CardContent>
         </Card>
 
         {/* Total Transactions Card */}
         <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-blue-50 rounded-bl-full"></div>
+          <div
+            className="absolute top-0 right-0 h-20 w-20 bg-blue-50 rounded-bl-full"
+            aria-hidden="true"
+          ></div>
           <CardHeader className="pb-2">
             <CardDescription>Transactions</CardDescription>
             <div className="flex items-center justify-between">
@@ -281,7 +298,10 @@ export function SalesAnalyticsView({
               </CardTitle>
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <span className="sr-only">Transaction information</span>
+                  </Button>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80">
                   <div className="flex justify-between">
@@ -300,41 +320,16 @@ export function SalesAnalyticsView({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              {transactionsPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    {transactionsPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                    {Math.abs(transactionsPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
-            </div>
+            <PercentageChange value={transactionsPercentChange} />
           </CardContent>
         </Card>
 
         {/* Average Order Value Card */}
         <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-amber-50 rounded-bl-full"></div>
+          <div
+            className="absolute top-0 right-0 h-20 w-20 bg-amber-50 rounded-bl-full"
+            aria-hidden="true"
+          ></div>
           <CardHeader className="pb-2">
             <CardDescription>Average Order Value</CardDescription>
             <div className="flex items-center justify-between">
@@ -343,7 +338,10 @@ export function SalesAnalyticsView({
               </CardTitle>
               <HoverCard>
                 <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <span className="sr-only">Average order information</span>
+                  </Button>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80">
                   <div className="flex justify-between">
@@ -362,35 +360,7 @@ export function SalesAnalyticsView({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              {averageOrderPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    {averageOrderPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                    {Math.abs(averageOrderPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
-            </div>
+            <PercentageChange value={averageOrderPercentChange} />
           </CardContent>
         </Card>
       </div>
@@ -415,14 +385,14 @@ export function SalesAnalyticsView({
                     value="bar"
                     className="h-8 flex items-center gap-1"
                   >
-                    <BarChart3 className="h-4 w-4" />
+                    <BarChart3 className="h-4 w-4" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">Bar</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="line"
                     className="h-8 flex items-center gap-1"
                   >
-                    <TrendingUp className="h-4 w-4" />
+                    <TrendingUp className="h-4 w-4" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">Line</span>
                   </TabsTrigger>
                 </TabsList>
@@ -430,7 +400,7 @@ export function SalesAnalyticsView({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
+            <div className="h-80" aria-label="Sales performance chart">
               <Bar data={salesData} options={chartOptions} />
             </div>
           </CardContent>
@@ -448,16 +418,16 @@ export function SalesAnalyticsView({
             <Tabs defaultValue="chart">
               <TabsList className="grid w-full grid-cols-2 h-9 mb-4">
                 <TabsTrigger value="chart" className="flex items-center gap-1">
-                  <PieChart className="h-4 w-4" />
+                  <PieChart className="h-4 w-4" aria-hidden="true" />
                   <span>Chart</span>
                 </TabsTrigger>
                 <TabsTrigger value="table" className="flex items-center gap-1">
-                  <ListFilter className="h-4 w-4" />
+                  <ListFilter className="h-4 w-4" aria-hidden="true" />
                   <span>Table</span>
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="chart" className="mt-0">
-                <div className="h-64">
+                <div className="h-64" aria-label="Top selling items chart">
                   <Doughnut
                     data={topDishesData}
                     options={{
@@ -469,7 +439,7 @@ export function SalesAnalyticsView({
                 </div>
               </TabsContent>
               <TabsContent value="table" className="mt-0">
-                <div className="border rounded-md">
+                <div className="border rounded-md overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>

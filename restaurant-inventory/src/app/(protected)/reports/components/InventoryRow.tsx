@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { InventoryItem } from "../types";
 
 export const InventoryRow = ({
@@ -13,24 +11,23 @@ export const InventoryRow = ({
   warning,
 }: InventoryItem) => {
   return (
-    <TableRow>
-      <TableCell className="font-medium">{name}</TableCell>
-      <TableCell>{stock}</TableCell>
-      <TableCell>{usage}</TableCell>
-      <TableCell>
+    <tr>
+      <td className="font-medium">{name}</td>
+      <td>{stock}</td>
+      <td>{usage}</td>
+      <td>
         <span
-          className={cn(
-            "px-2 py-1 rounded-full text-xs font-medium",
+          className={`badge ${
             depleted
-              ? "bg-destructive/10 text-destructive"
+              ? "badge-error bg-opacity-20 text-error"
               : warning
-              ? "bg-warning/10 text-warning"
-              : "bg-success/10 text-success"
-          )}
+              ? "badge-warning bg-opacity-20 text-warning"
+              : "badge-success bg-opacity-20 text-success"
+          }`}
         >
           {depletion}
         </span>
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 };

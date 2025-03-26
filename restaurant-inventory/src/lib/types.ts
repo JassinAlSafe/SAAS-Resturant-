@@ -434,3 +434,23 @@ export function mapShoppingListItemToDb(item: ShoppingListItem): ShoppingListIte
     business_profile_id: item.businessProfileId,
   };
 }
+
+// Note type definition
+export interface Note {
+  id: string;
+  content: string;
+  tags: string[];
+  entityType: "general" | "inventory" | "supplier" | "sale";
+  entityId?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Note tag type definition
+export interface NoteTag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}

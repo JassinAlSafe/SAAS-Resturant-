@@ -24,6 +24,8 @@ export interface SaleEntry {
 export interface Recipe {
     id: string;
     name: string;
+    price?: number;
+    category?: string;
     ingredients: Array<{
         ingredientId: string;
         quantity: number;
@@ -56,6 +58,7 @@ export interface SalesEntryFormProps {
     hasPreviousDayTemplate?: boolean;
     activeTab?: TabType;
     onTabChange?: (tab: TabType) => void;
+    onViewHistory?: () => void;
 }
 
 export interface SalesFilter {
@@ -81,8 +84,8 @@ export function loadDishesFromRecipes(recipes: Recipe[]): Dish[] {
     return recipes.map(recipe => ({
         id: recipe.id,
         name: recipe.name,
-        price: recipe.price,
-        category: recipe.category,
+        price: recipe.price || 0,
+        category: recipe.category || 'Unknown',
         recipeId: recipe.id,
         ingredients: recipe.ingredients.map(ing => ({
             ingredientId: ing.ingredientId,

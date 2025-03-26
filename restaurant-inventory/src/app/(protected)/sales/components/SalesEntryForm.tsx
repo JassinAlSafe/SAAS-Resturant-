@@ -26,8 +26,7 @@ export default function SalesEntryForm({
   showInventoryImpact,
   calculateInventoryImpact,
   onClearAll,
-  onLoadPreviousDay,
-  hasPreviousDayTemplate,
+  onViewHistory,
 }: SalesEntryFormProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     dateString ? new Date(dateString) : undefined
@@ -90,16 +89,10 @@ export default function SalesEntryForm({
     }
   }, [onClearAll]);
 
-  const onLoadPreviousDayCallback = useCallback(() => {
-    if (onLoadPreviousDay) {
-      onLoadPreviousDay();
-    }
-  }, [onLoadPreviousDay]);
-
   return (
     <form
       onSubmit={handleFormSubmit}
-      className="w-full h-full flex flex-col bg-white relative"
+      className="w-full h-full flex flex-col bg-transparent"
     >
       <SalesEntryHeader
         selectedDate={selectedDate}
@@ -108,32 +101,32 @@ export default function SalesEntryForm({
         onToggleInventoryImpact={onToggleInventoryImpactCallback}
         onClearAll={onClearAllCallback}
         hasSalesEntries={hasSalesEntries}
-        onLoadPreviousDay={onLoadPreviousDayCallback}
-        hasPreviousDayTemplate={hasPreviousDayTemplate || false}
+        onViewHistory={onViewHistory}
       />
 
-      <div className="grid grid-cols-12 gap-6 px-8 py-3 bg-slate-50 border-y border-slate-200 sticky top-[73px] z-10">
-        <div className="col-span-6 text-sm font-medium text-slate-600">
-          Dish
+      <div className="px-2 pt-6 pb-2">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-medium text-neutral-800">Menu Items</h3>
+          <p className="text-sm text-neutral-500">
+            Enter quantities sold for today&apos;s sales
+          </p>
         </div>
-        <div className="col-span-2 text-sm font-medium text-slate-600">
-          Price
-        </div>
-        <div className="col-span-2 text-sm font-medium text-slate-600">
-          Quantity
-        </div>
-        <div className="col-span-2 text-sm font-medium text-slate-600">
-          Total
+
+        <div className="grid grid-cols-12 gap-6 pb-2 text-xs font-medium text-neutral-500 uppercase tracking-wide">
+          <div className="col-span-6">Dish</div>
+          <div className="col-span-2">Price</div>
+          <div className="col-span-2">Quantity</div>
+          <div className="col-span-2">Total</div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto px-2">
         {dishes.length === 0 ? (
-          <div className="px-8 py-12 text-center text-slate-500">
+          <div className="flex items-center justify-center h-40 text-neutral-500">
             No menu items found. Add recipes to your menu to record sales.
           </div>
         ) : (
-          <div>
+          <>
             {dishes.map((dish) => (
               <SalesEntryRow
                 key={dish.id}
@@ -147,7 +140,7 @@ export default function SalesEntryForm({
                 )}
               />
             ))}
-          </div>
+          </>
         )}
       </div>
 

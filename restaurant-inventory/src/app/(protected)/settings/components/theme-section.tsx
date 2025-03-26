@@ -83,11 +83,13 @@ export function ThemeSection() {
               <Button
                 variant="outline"
                 className={`flex flex-col items-center justify-center gap-2 p-4 ${
-                  theme === "light" ? "border-primary" : ""
+                  theme === "bumblebee" ? "border-primary" : ""
                 }`}
-                onClick={() => setTheme("light")}
+                onClick={() => setTheme("bumblebee")}
               >
-                <Sun className="h-6 w-6" />
+                <span className="h-6 w-6 flex items-center justify-center text-yellow-400">
+                  🐝
+                </span>
                 <span>Light</span>
               </Button>
               <Button

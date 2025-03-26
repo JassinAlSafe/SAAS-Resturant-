@@ -1,12 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { format, subDays, startOfMonth } from "date-fns";
 import { CalendarIcon, Filter } from "lucide-react";
 
@@ -49,25 +40,23 @@ export function DateRangeSelector({
   isLoading,
 }: DateRangeSelectorProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-4 justify-between items-start bg-card p-4 rounded-lg border">
+    <div className="flex flex-col md:flex-row gap-4 justify-between items-start border-b border-neutral-100 py-4 pb-6">
       <div className="flex flex-wrap gap-2">
         {DATE_RANGES.map((range, index) => (
-          <Button
+          <button
             key={index}
-            variant={
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               format(startDate, "yyyy-MM-dd") ===
                 format(range.startDate, "yyyy-MM-dd") &&
               format(endDate, "yyyy-MM-dd") ===
                 format(range.endDate, "yyyy-MM-dd")
-                ? "default"
-                : "outline"
-            }
-            size="sm"
+                ? "bg-orange-600 text-white hover:bg-orange-700"
+                : "text-neutral-600 hover:text-orange-600 hover:bg-orange-50"
+            } min-w-24 flex justify-center`}
             onClick={() => onDateRangeSelect(range)}
-            className="min-w-24 justify-center"
           >
             {range.label}
-          </Button>
+          </button>
         ))}
       </div>
 
@@ -84,16 +73,18 @@ export function DateRangeSelector({
           date={endDate}
           onSelect={onEndDateChange}
         />
-        <Button
-          size="icon"
-          variant="default"
-          className="h-9 w-9"
+        <button
+          className="w-10 h-10 flex items-center justify-center rounded-md text-white bg-orange-600 hover:bg-orange-700 transition-colors"
           onClick={onFilter}
           disabled={isLoading}
           aria-label="Filter sales data"
         >
-          <Filter className="h-4 w-4" />
-        </Button>
+          {isLoading ? (
+            <span className="loading loading-spinner loading-xs"></span>
+          ) : (
+            <Filter className="h-4 w-4" />
+          )}
+        </button>
       </div>
     </div>
   );
@@ -108,38 +99,25 @@ interface DateInputProps {
 
 function DateInput({ id, label, date, onSelect }: DateInputProps) {
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id} className="text-xs font-medium">
+    <div className="flex flex-col gap-1.5">
+      <label
+        htmlFor={id}
+        className="text-xs font-medium uppercase tracking-wider text-neutral-500"
+      >
         {label}
-      </Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            id={id}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "w-[140px] justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "MMM d, yyyy") : <span>Pick a date</span>}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(newDate: Date | undefined) =>
-              newDate && onSelect(newDate)
-            }
-            initialFocus
-            weekStartsOn={1}
-            className="rounded-md border"
-          />
-        </PopoverContent>
-      </Popover>
+      </label>
+      <div className="relative">
+        <input
+          type="date"
+          id={id}
+          value={format(date, "yyyy-MM-dd")}
+          onChange={(e) =>
+            e.target.valueAsDate && onSelect(e.target.valueAsDate)
+          }
+          className="input input-sm w-[140px] h-10 pl-3 pr-10 rounded-md border border-neutral-200 focus:outline-none focus:border-orange-500 bg-transparent transition-colors"
+        />
+        <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+      </div>
     </div>
   );
 }

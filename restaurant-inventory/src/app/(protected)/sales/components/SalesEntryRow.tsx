@@ -1,8 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Dish } from "@/lib/types";
 import { useCurrency } from "@/lib/currency";
 import { InventoryImpactItem } from "../types";
@@ -38,81 +35,67 @@ export function SalesEntryRow({
 
   return (
     <div
-      className="grid grid-cols-12 gap-6 items-center px-8 py-4 hover:bg-slate-50/60 border-b border-slate-200/70 transition-colors"
+      className="grid grid-cols-12 gap-6 items-center px-3 py-3 border-b border-neutral-50 hover:bg-neutral-50/30 transition-colors"
       data-testid={`sales-entry-row-${dish.id}`}
     >
       <div className="col-span-6">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm md:text-base text-slate-900 truncate">
-              {dish.name}
-            </div>
-            {dish.category && (
-              <Badge
-                variant="outline"
-                className="text-xs font-normal mt-1.5 text-slate-600 bg-slate-100/60 border-slate-200"
-              >
-                {dish.category}
-              </Badge>
-            )}
+        <div className="font-medium text-neutral-700">{dish.name}</div>
+        {dish.category && (
+          <div className="mt-1.5">
+            <span className="inline-flex px-2 py-0.5 text-xs font-normal text-neutral-500">
+              {dish.category}
+            </span>
           </div>
-        </div>
+        )}
+
         {showInventoryImpact && inventoryImpact.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {inventoryImpact.map((impact, index) => (
-              <Badge
+              <span
                 key={index}
-                variant={impact.quantityUsed > 0 ? "secondary" : "outline"}
-                className="text-xs font-normal px-1.5 py-0.5"
+                className={`inline-flex px-2 py-0.5 text-xs font-normal ${
+                  impact.quantityUsed > 0
+                    ? "text-amber-700"
+                    : "text-neutral-500"
+                }`}
               >
                 {impact.name}: {impact.quantityUsed} {impact.unit}
-              </Badge>
+              </span>
             ))}
           </div>
         )}
       </div>
-      <div className="col-span-2 text-sm font-medium text-slate-800">
+
+      <div className="col-span-2 text-sm font-medium text-neutral-600">
         {formatCurrency(dish.price)}
       </div>
+
       <div className="col-span-2">
-        <div className="flex items-center space-x-2">
-          <Button
+        <div className="flex items-center">
+          <button
             type="button"
-            variant="outline"
-            size="icon"
             onClick={handleDecrement}
             disabled={quantity === 0}
-            className="h-8 w-8 bg-white border-slate-200"
+            className="flex items-center justify-center w-7 h-7 text-neutral-400 hover:text-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Minus className="h-4 w-4 text-slate-500" />
-            <span className="sr-only">Decrease quantity</span>
-          </Button>
+            <Minus className="h-3 w-3" />
+          </button>
 
-          <Input
-            type="number"
-            min={0}
-            value={quantity || ""}
-            onChange={(e) => {
-              const newQuantity = parseInt(e.target.value) || 0;
-              onQuantityChange(dish.id, newQuantity);
-            }}
-            className="w-14 h-9 text-center border-slate-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            aria-label={`Quantity for ${dish.name}`}
-          />
+          <span className="w-6 text-center text-neutral-700 font-medium">
+            {quantity}
+          </span>
 
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="icon"
             onClick={handleIncrement}
-            className="h-8 w-8 bg-white border-slate-200"
+            className="flex items-center justify-center w-7 h-7 text-orange-500 hover:text-orange-600"
           >
-            <Plus className="h-4 w-4 text-slate-500" />
-            <span className="sr-only">Increase quantity</span>
-          </Button>
+            <Plus className="h-3 w-3" />
+          </button>
         </div>
       </div>
-      <div className="col-span-2 text-sm font-medium text-slate-900">
+
+      <div className="col-span-2 text-sm font-medium text-orange-600">
         {formatCurrency(dishTotal)}
       </div>
     </div>

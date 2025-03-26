@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useCallback, Suspense } from "react";
-import { Loader2, Receipt, FileBarChart2, Calendar } from "lucide-react";
+import { Receipt, FileBarChart2, Calendar } from "lucide-react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Add SalesPageData type
 interface SalesPageData {
@@ -15,7 +13,7 @@ interface SalesPageData {
 const SalesPage = dynamic(() => import("./components/SalesPage"), {
   loading: () => (
     <div className="flex h-[400px] w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <span className="loading loading-spinner loading-md text-primary"></span>
     </div>
   ),
 });
@@ -25,7 +23,7 @@ const SalesHistoryView = dynamic(
   {
     loading: () => (
       <div className="flex h-[400px] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="loading loading-spinner loading-md text-primary"></span>
       </div>
     ),
   }
@@ -51,80 +49,72 @@ export default function Page() {
   );
 
   return (
-    <div className="h-full flex-1">
-      <header className="border-b bg-white dark:bg-gray-950">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="p-3 bg-primary/10 rounded-xl">
-                <FileBarChart2 className="h-6 w-6 text-primary" />
+    <div className="h-full flex-1 bg-white">
+      <header className="border-b border-neutral-100 bg-white py-6 px-8">
+        <div className="flex flex-col gap-5">
+          {/* Top section with logo and title */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-orange-500">
+                <FileBarChart2 className="h-6 w-6" />
               </div>
-              {activeTab === "daily" && salesData.sales.length > 0 && (
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="absolute -top-2 -right-2 bg-primary text-[11px] text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center font-medium"
-                >
-                  {salesData.sales.length > 99 ? "99+" : salesData.sales.length}
-                </motion.div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
-                Sales Management
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Record and analyze your restaurant&apos;s sales data
-              </p>
+              <div>
+                <div className="flex items-baseline gap-1.5">
+                  {salesData.sales.length > 0 && (
+                    <span className="text-2xl font-bold">
+                      {salesData.sales.length}
+                    </span>
+                  )}
+                  <h1 className="text-2xl font-semibold text-neutral-800">
+                    Sales Management
+                  </h1>
+                </div>
+                <p className="text-sm text-neutral-500">
+                  Record and analyze your restaurant&apos;s sales data
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            {salesData.sales.length > 0 && (
-              <div className="text-sm text-muted-foreground hidden md:block">
-                Showing data for {salesData.sales.length}{" "}
-                {salesData.sales.length === 1 ? "sale" : "sales"}
-              </div>
-            )}
-
-            <Tabs
-              defaultValue="daily"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-auto"
+          {/* Navigation tabs */}
+          <div className="flex border-b border-neutral-100 -mb-6 -mx-8 px-8">
+            <button
+              onClick={() => setActiveTab("daily")}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === "daily"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-neutral-500 hover:text-neutral-800"
+              }`}
             >
-              <TabsList className="bg-slate-100/80 dark:bg-slate-800/50 rounded-full p-0.5">
-                <TabsTrigger
-                  value="daily"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-xs flex items-center gap-1.5"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  Daily Sales
-                </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-950 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-xs flex items-center gap-1.5"
-                >
-                  <Receipt className="h-3.5 w-3.5" />
-                  Sales History
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+              <Calendar className="h-4 w-4" />
+              Daily Sales
+            </button>
+            <button
+              onClick={() => setActiveTab("history")}
+              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === "history"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              <Receipt className="h-4 w-4" />
+              Sales Analytics
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="h-[calc(100vh-5rem)] bg-slate-50 dark:bg-slate-900">
+      <main className="h-[calc(100vh-9rem)] bg-white">
         {activeTab === "daily" ? (
           <Suspense
             fallback={
               <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <span className="loading loading-spinner loading-md text-primary"></span>
               </div>
             }
           >
             <SalesPage
-              onViewHistory={() => setActiveTab("history")}
+              onAnalyticsView={() => setActiveTab("history")}
               onDataUpdate={handleSalesDataUpdate}
             />
           </Suspense>
@@ -132,7 +122,7 @@ export default function Page() {
           <Suspense
             fallback={
               <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <span className="loading loading-spinner loading-md text-primary"></span>
               </div>
             }
           >

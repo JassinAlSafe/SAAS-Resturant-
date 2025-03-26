@@ -67,6 +67,7 @@ export interface SalesMetricCardProps {
     positive: boolean;
     previousValue?: string;
     tooltip?: string;
+    className?: string;
 }
 
 export interface InventoryRowProps {

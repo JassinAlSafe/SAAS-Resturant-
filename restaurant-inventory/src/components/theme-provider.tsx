@@ -11,9 +11,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
     <NextThemesProvider
       attribute="data-theme"
-      defaultTheme="light"
+      defaultTheme="bumblebee"
       enableSystem={true}
-      themes={["light", "dark"]}
+      themes={["bumblebee", "dark"]}
     >
       {children}
     </NextThemesProvider>
