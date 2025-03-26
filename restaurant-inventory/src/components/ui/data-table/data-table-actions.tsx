@@ -9,99 +9,77 @@ import {
   Archive, 
   RotateCcw 
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-interface DataTableActionsProps<T> {
-  item: T;
-  onEdit?: (item: T) => void;
-  onDelete?: (item: T) => void;
-  onDuplicate?: (item: T) => void;
-  onArchive?: (item: T) => Promise<void>;
+interface DataTableActionsProps {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  onArchive?: () => void;
   isArchived?: boolean;
-  actionLabels?: {
-    edit?: string;
-    delete?: string;
-    duplicate?: string;
-    archive?: string;
-    restore?: string;
-  };
+  className?: string;
 }
 
-export function DataTableActions<T>({
-  item,
+export function DataTableActions({
   onEdit,
   onDelete,
   onDuplicate,
   onArchive,
   isArchived = false,
-  actionLabels = {
-    edit: "Edit",
-    delete: "Delete",
-    duplicate: "Duplicate",
-    archive: "Archive",
-    restore: "Restore"
-  }
-}: DataTableActionsProps<T>) {
+  className,
+}: DataTableActionsProps) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+    <div className={cn("dropdown dropdown-end", className)}>
+      <div tabIndex={0} role="button" className="btn btn-ghost btn-xs btn-square">
+        <MoreHorizontal className="h-4 w-4" />
+      </div>
+      <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+        <li className="menu-title">Actions</li>
         {onEdit && (
-          <DropdownMenuItem onClick={() => onEdit(item)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            {actionLabels.edit}
-          </DropdownMenuItem>
+          <li>
+            <button onClick={onEdit} className="flex items-center">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </button>
+          </li>
         )}
         {onDuplicate && (
-          <DropdownMenuItem onClick={() => onDuplicate(item)}>
-            <Copy className="mr-2 h-4 w-4" />
-            {actionLabels.duplicate}
-          </DropdownMenuItem>
+          <li>
+            <button onClick={onDuplicate} className="flex items-center">
+              <Copy className="h-4 w-4" />
+              Duplicate
+            </button>
+          </li>
         )}
         {onArchive && (
-          <DropdownMenuItem 
-            onClick={() => onArchive(item)}
-          >
-            {isArchived ? (
-              <>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                {actionLabels.restore}
-              </>
-            ) : (
-              <>
-                <Archive className="mr-2 h-4 w-4" />
-                {actionLabels.archive}
-              </>
-            )}
-          </DropdownMenuItem>
+          <li>
+            <button onClick={onArchive} className="flex items-center">
+              {isArchived ? (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  Restore
+                </>
+              ) : (
+                <>
+                  <Archive className="h-4 w-4" />
+                  Archive
+                </>
+              )}
+            </button>
+          </li>
         )}
         {onDelete && (
           <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              className="text-red-600 focus:text-red-600"
-              onClick={() => onDelete(item)}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              {actionLabels.delete}
-            </DropdownMenuItem>
+            <li className="divider"></li>
+            <li>
+              <button onClick={onDelete} className="text-error">
+                <Trash className="h-4 w-4" />
+                Delete
+              </button>
+            </li>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </ul>
+    </div>
   );
 }

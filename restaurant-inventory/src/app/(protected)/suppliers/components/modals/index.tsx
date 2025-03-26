@@ -17,7 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import SupplierForm from "./SupplierForm";
+import { SupplierForm } from "./SupplierForm";
+import { FiAlertTriangle } from "react-icons/fi";
+import { motion } from "framer-motion";
 
 interface SupplierModalsProps {
   isModalOpen: boolean;
@@ -46,15 +48,15 @@ export function SupplierModals({
     <>
       <Dialog open={isModalOpen} onOpenChange={onCloseModal}>
         <DialogContent
-          className="max-w-4xl w-[95%] p-5 max-h-[90vh] overflow-y-auto"
+          className="max-w-4xl w-[95%] p-0 max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-lg border-t-4 border-orange-500 mx-auto"
           onInteractOutside={(e) => e.preventDefault()}
         >
-          <DialogHeader className="pb-2">
-            <DialogTitle>
+          <DialogHeader className="p-6 pb-3 border-b border-gray-100">
+            <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center">
               {selectedSupplier ? "Edit" : "Add"} Supplier
             </DialogTitle>
           </DialogHeader>
-          <div className="mt-2">
+          <div className="px-6 py-5">
             <SupplierForm
               supplier={selectedSupplier ?? undefined}
               onSubmit={onSaveSupplier}
@@ -65,20 +67,33 @@ export function SupplierModals({
       </Dialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={onCloseDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <AlertDialogContent className="bg-white rounded-xl shadow-lg max-w-md mx-auto border-t-4 border-red-500 p-0">
+          <AlertDialogHeader className="p-6">
+            <div className="flex items-center justify-center mb-4">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-red-500"
+              >
+                <FiAlertTriangle size={32} />
+              </motion.div>
+            </div>
+            <AlertDialogTitle className="text-xl font-bold text-center">
+              Are you sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-gray-600 mt-2">
               This will permanently delete the supplier &quot;
-              {supplierToDelete?.name}&quot; and all associated data. This
-              action cannot be undone.
+              <span className="font-semibold">{supplierToDelete?.name}</span>
+              &quot; and all associated data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex justify-center gap-3 p-6 pt-0">
+            <AlertDialogCancel className="btn btn-outline border-gray-300 hover:bg-gray-100 hover:border-gray-300 px-6">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={onDeleteSupplier}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="btn bg-red-500 hover:bg-red-600 text-white border-none px-6"
             >
               Delete Supplier
             </AlertDialogAction>

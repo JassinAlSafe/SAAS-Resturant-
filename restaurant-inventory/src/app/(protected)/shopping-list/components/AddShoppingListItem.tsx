@@ -114,10 +114,10 @@ export default function AddShoppingListItem({
   if (!isVisible) return null;
 
   return (
-    <Card className="mb-6 border shadow-sm">
-      <CardHeader className="pb-3 pt-4 px-4 flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-lg font-medium flex items-center">
-          <FiShoppingBag className="h-5 w-5 mr-2 text-primary" />
+    <Card className="mb-6 border border-gray-200 shadow-sm bg-white">
+      <CardHeader className="pb-3 pt-4 px-4 flex flex-row items-center justify-between space-y-0 border-b border-gray-100">
+        <CardTitle className="text-lg font-medium flex items-center text-black">
+          <FiShoppingBag className="h-5 w-5 mr-2 text-orange-500" />
           Add Item to Shopping List
         </CardTitle>
         <TooltipProvider>
@@ -126,7 +126,7 @@ export default function AddShoppingListItem({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 rounded-full p-0"
+                className="h-8 w-8 rounded-full p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 onClick={onCancel}
                 aria-label="Close"
               >
@@ -142,17 +142,38 @@ export default function AddShoppingListItem({
 
       <form onSubmit={handleSubmit}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
+          <div className="px-4 pt-2">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-md">
+              <TabsTrigger
+                value="basic"
+                className={`rounded-md py-1.5 ${
+                  activeTab === "basic"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Basic Info
+              </TabsTrigger>
+              <TabsTrigger
+                value="details"
+                className={`rounded-md py-1.5 ${
+                  activeTab === "details"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Details
+              </TabsTrigger>
             </TabsList>
           </div>
 
           <CardContent className="p-4">
             <TabsContent value="basic" className="mt-0 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="item-name" className="font-medium">
+                <Label
+                  htmlFor="item-name"
+                  className="font-medium text-gray-700"
+                >
                   Item Name <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -167,7 +188,9 @@ export default function AddShoppingListItem({
                       }
                     }}
                     autoFocus
-                    className={errors.name ? "border-red-500 pr-10" : ""}
+                    className={`border ${
+                      errors.name ? "border-red-500" : "border-gray-200"
+                    } rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
                     aria-invalid={errors.name ? "true" : "false"}
                     aria-describedby={errors.name ? "name-error" : undefined}
                   />
@@ -176,7 +199,7 @@ export default function AddShoppingListItem({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3"
+                      className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-gray-700"
                       onClick={() => onItemNameChange("")}
                       aria-label="Clear item name"
                     >
@@ -193,7 +216,10 @@ export default function AddShoppingListItem({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="item-quantity" className="font-medium">
+                  <Label
+                    htmlFor="item-quantity"
+                    className="font-medium text-gray-700"
+                  >
                     Quantity <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -208,7 +234,9 @@ export default function AddShoppingListItem({
                         setErrors({ ...errors, quantity: "" });
                       }
                     }}
-                    className={errors.quantity ? "border-red-500" : ""}
+                    className={`border ${
+                      errors.quantity ? "border-red-500" : "border-gray-200"
+                    } rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
                     aria-invalid={errors.quantity ? "true" : "false"}
                     aria-describedby={
                       errors.quantity ? "quantity-error" : undefined
@@ -225,7 +253,10 @@ export default function AddShoppingListItem({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="item-unit" className="font-medium">
+                  <Label
+                    htmlFor="item-unit"
+                    className="font-medium text-gray-700"
+                  >
                     Unit <span className="text-red-500">*</span>
                   </Label>
                   <Select
@@ -239,17 +270,19 @@ export default function AddShoppingListItem({
                   >
                     <SelectTrigger
                       id="item-unit"
-                      className={errors.unit ? "border-red-500" : ""}
+                      className={`border ${
+                        errors.unit ? "border-red-500" : "border-gray-200"
+                      } rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
                       aria-invalid={errors.unit ? "true" : "false"}
                       aria-describedby={errors.unit ? "unit-error" : undefined}
                     >
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border border-gray-200 shadow-md rounded-md">
                       <SelectItem value="custom">Custom</SelectItem>
                       {Object.entries(unitGroups).map(([group, groupUnits]) => (
                         <div key={group}>
-                          <p className="px-2 text-xs text-muted-foreground uppercase my-1">
+                          <p className="px-2 text-xs text-gray-500 uppercase my-1">
                             {group}
                           </p>
                           {groupUnits.map((unit) => (
@@ -274,9 +307,9 @@ export default function AddShoppingListItem({
               <div className="space-y-2">
                 <Label
                   htmlFor="item-category"
-                  className="font-medium flex items-center"
+                  className="font-medium text-gray-700 flex items-center"
                 >
-                  <FiTag className="h-4 w-4 mr-1.5" />
+                  <FiTag className="h-4 w-4 mr-1.5 text-gray-600" />
                   Category
                 </Label>
                 <Combobox
@@ -293,7 +326,11 @@ export default function AddShoppingListItem({
                       variant={
                         itemCategory === category ? "default" : "outline"
                       }
-                      className="cursor-pointer"
+                      className={`cursor-pointer px-2 py-1 text-xs rounded-full ${
+                        itemCategory === category
+                          ? "bg-orange-500 text-white"
+                          : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                      }`}
                       onClick={() => onItemCategoryChange(category)}
                     >
                       {category}
@@ -305,9 +342,9 @@ export default function AddShoppingListItem({
               <div className="space-y-2">
                 <Label
                   htmlFor="item-cost"
-                  className="font-medium flex items-center"
+                  className="font-medium text-gray-700 flex items-center"
                 >
-                  <FiDollarSign className="h-4 w-4 mr-1.5" />
+                  <FiDollarSign className="h-4 w-4 mr-1.5 text-gray-600" />
                   Estimated Cost
                 </Label>
                 <Input
@@ -322,7 +359,9 @@ export default function AddShoppingListItem({
                       setErrors({ ...errors, cost: "" });
                     }
                   }}
-                  className={errors.cost ? "border-red-500" : ""}
+                  className={`border ${
+                    errors.cost ? "border-red-500" : "border-gray-200"
+                  } rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent`}
                   aria-invalid={errors.cost ? "true" : "false"}
                   aria-describedby={errors.cost ? "cost-error" : undefined}
                   placeholder="0.00"
@@ -337,8 +376,8 @@ export default function AddShoppingListItem({
           </CardContent>
         </Tabs>
 
-        <CardFooter className="px-4 py-3 flex justify-between items-center border-t">
-          <div className="text-sm text-muted-foreground">
+        <CardFooter className="px-4 py-3 flex justify-between items-center border-t border-gray-100 bg-gray-50">
+          <div className="text-sm text-gray-500">
             <span className="text-red-500">*</span> Required fields
           </div>
           <div className="flex">
@@ -346,11 +385,19 @@ export default function AddShoppingListItem({
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="mr-2"
+              className="mr-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!isFormValid} className="relative">
+            <Button
+              type="submit"
+              disabled={!isFormValid}
+              className={`relative px-4 py-2 rounded-md ${
+                isFormValid
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+            >
               Add to Shopping List
               {!isFormValid && (
                 <span className="absolute -top-1 -right-1">

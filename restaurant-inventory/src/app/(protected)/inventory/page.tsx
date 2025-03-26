@@ -19,7 +19,6 @@ import { InventoryFiltersWrapper } from "./components/InventoryFilters";
 import InventoryLoading from "./components/InventoryLoading";
 import { InventoryModals } from "./components/modals";
 import { InventoryContent } from "./components/InventoryContent";
-import { InventoryDebugControls } from "./components/InventoryDebugControls";
 import { BatchOperations } from "@/components/ui/batch-operations/batch-operations";
 import { useInventoryManager } from "./hooks/useInventoryStore";
 import { useInventoryFilters } from "./hooks/useInventoryFilters";

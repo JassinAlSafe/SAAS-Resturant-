@@ -36,7 +36,7 @@ export function BaseModal({
 
   // Handle escape key to close
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDialogElement>) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       onClose();
     }
   };
@@ -51,7 +51,7 @@ export function BaseModal({
         if (!dialogElement.open) {
           dialogElement.showModal();
           // Prevent body scrolling when modal is open
-          document.body.style.overflow = 'hidden';
+          document.body.style.overflow = "hidden";
         }
       } catch (error) {
         console.error("Error showing modal:", error);
@@ -61,14 +61,14 @@ export function BaseModal({
     else if (dialogElement?.open) {
       dialogElement.close();
       // Restore body scrolling when modal is closed
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
 
     // Clean up by ensuring the dialog is closed when unmounted
     return () => {
       if (dialogElement?.open) {
         dialogElement.close();
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
       }
     };
   }, [isOpen]);
@@ -99,7 +99,7 @@ export function BaseModal({
         >
           <div
             className={cn(
-              "modal-box shadow-lg",
+              "modal-box shadow-lg bg-white",
               sizeClasses[size],
               position === "top" && "mt-16",
               position === "bottom" && "mb-16",
@@ -114,7 +114,7 @@ export function BaseModal({
           {/* Modal backdrop - using daisyUI's modal-backdrop */}
           <form
             method="dialog"
-            className="modal-backdrop bg-black bg-opacity-60"
+            className="modal-backdrop bg-black bg-opacity-70"
           >
             <button type="button" onClick={onClose} className="cursor-default">
               close

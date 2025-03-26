@@ -1,23 +1,7 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { FiSearch, FiFilter, FiTag, FiX } from "react-icons/fi";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CustomCheckbox } from "@/components/ui/custom-checkbox";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useState } from "react";
+import { Filter, Search, Tag, X } from "lucide-react";
 
 interface ShoppingListFiltersProps {
   searchTerm: string;
@@ -39,17 +23,21 @@ export default function ShoppingListFilters({
   categories,
 }: ShoppingListFiltersProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const hasActiveFilters = selectedCategory !== "all" || showPurchased || searchTerm.trim().length > 0;
+  const hasActiveFilters =
+    selectedCategory !== "all" || showPurchased || searchTerm.trim().length > 0;
 
   // Group categories by first letter for better organization in dropdown
-  const groupedCategories = categories.reduce<Record<string, string[]>>((acc, category) => {
-    const firstLetter = category.charAt(0).toUpperCase();
-    if (!acc[firstLetter]) {
-      acc[firstLetter] = [];
-    }
-    acc[firstLetter].push(category);
-    return acc;
-  }, {});
+  const groupedCategories = categories.reduce<Record<string, string[]>>(
+    (acc, category) => {
+      const firstLetter = category.charAt(0).toUpperCase();
+      if (!acc[firstLetter]) {
+        acc[firstLetter] = [];
+      }
+      acc[firstLetter].push(category);
+      return acc;
+    },
+    {}
+  );
 
   // Sort the category groups alphabetically
   const sortedGroups = Object.keys(groupedCategories).sort();
@@ -61,146 +49,159 @@ export default function ShoppingListFilters({
   };
 
   return (
-    <Card className="bg-background border rounded-md">
-      <CardHeader className="px-4 py-3 border-b flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="flex items-center text-lg font-medium">
-          <FiFilter className="h-5 w-5 text-muted-foreground mr-2" />
-          Filters
-          {hasActiveFilters && (
-            <Badge variant="secondary" className="ml-2">
-              Active
-            </Badge>
-          )}
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
-          aria-label={isOpen ? "Collapse filters" : "Expand filters"}
-          className="h-8 px-2"
-        >
-          <span className="sr-only">{isOpen ? "Hide" : "Show"}</span>
-          {isOpen ? "−" : "+"}
-        </Button>
-      </CardHeader>
-
-      {isOpen && (
-        <CardContent className="p-4 space-y-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <FiSearch className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Input
-              type="text"
-              placeholder="Search items..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10"
-              aria-label="Search shopping list items"
-            />
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute inset-y-0 right-0 px-3 py-0 h-full"
-                onClick={() => onSearchChange("")}
-                aria-label="Clear search"
-              >
-                <FiX className="h-4 w-4" />
-              </Button>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-black flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-600" />
+            Filters
+            {hasActiveFilters && (
+              <div className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full">
+                Active
+              </div>
             )}
-          </div>
+          </h3>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            {isOpen ? "−" : "+"}
+          </button>
+        </div>
 
-          <div>
-            <Label htmlFor="category" className="mb-1.5 block font-medium">
-              Category
-            </Label>
-            <Select value={selectedCategory} onValueChange={onCategoryChange}>
-              <SelectTrigger id="category" className="w-full">
-                <div className="flex items-center">
-                  <FiTag className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <SelectValue placeholder="Select a category" />
+        {isOpen && (
+          <div className="space-y-4">
+            {/* Search Input */}
+            <div className="w-full">
+              <div className="flex w-full">
+                <div className="bg-gray-50 flex items-center justify-center px-3 rounded-l-md border border-r-0 border-gray-200">
+                  <Search className="h-4 w-4 text-gray-500" />
                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {sortedGroups.map((letter) => (
-                  <SelectGroup key={letter}>
-                    <SelectLabel>{letter}</SelectLabel>
-                    {groupedCategories[letter].map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="flex-grow px-3 py-2 text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => onSearchChange("")}
+                    className="px-3 flex items-center justify-center bg-gray-50 border border-l-0 border-gray-200 rounded-r-md text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+                {!searchTerm && (
+                  <div className="px-3 flex items-center justify-center bg-gray-50 border border-l-0 border-gray-200 rounded-r-md text-gray-300">
+                    <X className="h-4 w-4 invisible" />
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <div className="flex flex-wrap gap-2 mt-2">
-            <Badge
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              className="cursor-pointer hover:bg-muted-foreground/10 transition-colors"
-              onClick={() => onCategoryChange("all")}
-            >
-              All
-            </Badge>
-            {categories.slice(0, 6).map((category) => (
-              <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className="cursor-pointer hover:bg-muted-foreground/10 transition-colors"
-                onClick={() => onCategoryChange(category)}
+            {/* Category Selector */}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                <Tag className="h-4 w-4" />
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               >
-                {category}
-              </Badge>
-            ))}
-            {categories.length > 6 && (
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-muted-foreground/10 transition-colors"
+                <option value="all">All Categories</option>
+                {sortedGroups.map((letter) => (
+                  <optgroup key={letter} label={letter}>
+                    {groupedCategories[letter].map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {/* Category Quick Select */}
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`px-2 py-1 text-xs rounded-full cursor-pointer transition-colors ${
+                  selectedCategory === "all"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                onClick={() => onCategoryChange("all")}
               >
-                +{categories.length - 6} more
-              </Badge>
+                All
+              </span>
+              {categories.slice(0, 6).map((category) => (
+                <span
+                  key={category}
+                  className={`px-2 py-1 text-xs rounded-full cursor-pointer transition-colors ${
+                    selectedCategory === category
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                  onClick={() => onCategoryChange(category)}
+                >
+                  {category}
+                </span>
+              ))}
+              {categories.length > 6 && (
+                <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500">
+                  +{categories.length - 6} more
+                </span>
+              )}
+            </div>
+
+            {/* Show Purchased Checkbox */}
+            <div className="w-full">
+              <label className="flex items-center cursor-pointer gap-2">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showPurchased}
+                    onChange={() => onShowPurchasedChange(!showPurchased)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-4 h-4 border ${
+                      showPurchased
+                        ? "bg-orange-500 border-orange-500"
+                        : "bg-white border-gray-300"
+                    } rounded transition-colors`}
+                  >
+                    {showPurchased && (
+                      <svg
+                        className="w-4 h-4 text-white fill-current"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-gray-700">
+                  Show purchased items
+                </span>
+              </label>
+            </div>
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="w-full py-2 px-4 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Clear all filters
+              </button>
             )}
           </div>
-
-          <Separator className="my-4" />
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <CustomCheckbox
-                id="showPurchased"
-                checked={showPurchased}
-                onCheckedChange={onShowPurchasedChange}
-                aria-label="Show purchased items"
-              />
-              <Label 
-                htmlFor="showPurchased" 
-                className="cursor-pointer flex-1"
-              >
-                Show purchased items
-              </Label>
-            </div>
-          </div>
-
-          {hasActiveFilters && (
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearFilters}
-                className="w-full"
-              >
-                <FiX className="mr-2 h-4 w-4" />
-                Clear all filters
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      )}
-    </Card>
+        )}
+      </div>
+    </div>
   );
 }

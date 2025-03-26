@@ -23,8 +23,8 @@ import {
 import { useCurrency } from "@/lib/currency";
 
 interface ShoppingWizardProps {
-  shoppingList?: ShoppingListItem[];
-  categories?: string[];
+  shoppingList: ShoppingListItem[];
+  categories: string[];
   onAddItem: () => void;
   onGenerateList: () => Promise<void>;
   onMarkAllPurchased: () => Promise<void>;
@@ -55,8 +55,8 @@ const steps = [
 ];
 
 export default function ShoppingWizard({
-  shoppingList = [],
-  categories = [],
+  shoppingList,
+  categories,
   onAddItem,
   onGenerateList,
   onMarkAllPurchased,
@@ -68,12 +68,12 @@ export default function ShoppingWizard({
   const { formatCurrency } = useCurrency();
 
   // Determine current shopping phase based on data
-  const pendingItems = shoppingList?.filter((item) => !item.isPurchased) || [];
-  const purchasedItems = shoppingList?.filter((item) => item.isPurchased) || [];
+  const pendingItems = shoppingList.filter((item) => !item.isPurchased);
+  const purchasedItems = shoppingList.filter((item) => item.isPurchased);
 
   // Auto-select the appropriate step based on data
   const determineActiveStep = () => {
-    if (!shoppingList || shoppingList.length === 0) return "plan";
+    if (shoppingList.length === 0) return "plan";
     if (pendingItems.length === 0) return "complete";
     if (purchasedItems.length > 0) return "shop";
     return "plan";
@@ -82,17 +82,16 @@ export default function ShoppingWizard({
   // Update current step when data changes
   useEffect(() => {
     const recommendedStep = determineActiveStep();
-    if (shoppingList?.length > 0 && currentStep !== recommendedStep) {
+    if (shoppingList.length > 0 && currentStep !== recommendedStep) {
       // Uncomment to auto-navigate to the recommended step
       // setCurrentStep(recommendedStep);
     }
-  }, [shoppingList, currentStep, pendingItems.length, purchasedItems.length]);
+  }, [shoppingList.length, pendingItems.length, purchasedItems.length]);
 
   // Compute list statistics
-  const urgentCount =
-    shoppingList?.filter((item) => item.isUrgent)?.length || 0;
+  const urgentCount = shoppingList.filter((item) => item.isUrgent).length;
   const completionPercentage =
-    shoppingList && shoppingList.length > 0
+    shoppingList.length > 0
       ? Math.round((purchasedItems.length / shoppingList.length) * 100)
       : 0;
 
@@ -108,7 +107,7 @@ export default function ShoppingWizard({
 
   return (
     <div className="card bg-base-100 shadow-lg">
-      <div className="card-body p-5 bg-white">
+      <div className="card-body p-5">
         {/* Header */}
         <div className="flex justify-between items-center mb-2">
           <h2 className="card-title text-xl flex items-center gap-2">
@@ -128,7 +127,7 @@ export default function ShoppingWizard({
         {/* Wizard Steps */}
         <div className="w-full py-2 mb-4">
           <div className="flex items-center justify-between relative">
-            {steps.map((step) => {
+            {steps.map((step, index) => {
               const isCompleted =
                 (step.id === "plan" &&
                   ["shop", "complete"].includes(currentStep)) ||
@@ -283,7 +282,7 @@ export default function ShoppingWizard({
                     </div>
                     <div className="stat-title">Current List</div>
                     <div className="stat-value text-primary">
-                      {shoppingList?.length || 0}
+                      {shoppingList.length}
                     </div>
                     <div className="stat-desc">
                       {urgentCount > 0 && (
@@ -306,7 +305,7 @@ export default function ShoppingWizard({
                         >
                           <BarChart3 className="h-5 w-5 text-secondary" />
                         </label>
-                        {categories && categories.length > 0 && (
+                        {categories.length > 0 && (
                           <ul
                             tabIndex={0}
                             className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
@@ -317,9 +316,11 @@ export default function ShoppingWizard({
                                 <a className="flex justify-between">
                                   <span>{category}</span>
                                   <span className="text-base-content/60">
-                                    {shoppingList?.filter(
-                                      (item) => item.category === category
-                                    )?.length || 0}
+                                    {
+                                      shoppingList.filter(
+                                        (item) => item.category === category
+                                      ).length
+                                    }
                                   </span>
                                 </a>
                               </li>
@@ -338,7 +339,7 @@ export default function ShoppingWizard({
                       {formatCurrency(totalEstimatedCost)}
                     </div>
                     <div className="stat-desc">
-                      For {shoppingList?.length || 0} items
+                      For {shoppingList.length} items
                     </div>
                   </div>
                 </div>
@@ -481,7 +482,7 @@ export default function ShoppingWizard({
                     </div>
                     <div className="stat-title">Total Items</div>
                     <div className="stat-value text-primary">
-                      {shoppingList?.length || 0}
+                      {shoppingList.length}
                     </div>
                   </div>
 

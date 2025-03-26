@@ -182,7 +182,7 @@ export function DataTable<T>({
     <div className={cn("space-y-4", className)}>
       <div className="rounded-md border">
         <Table>
-          <TableHeader className={tableHeaderClassName}>
+          <TableHeader className={cn("bg-gray-50", tableHeaderClassName)}>
             <TableRow>
               {selectable && (
                 <TableHead className="w-12">
@@ -195,7 +195,7 @@ export function DataTable<T>({
                     }
                     onCheckedChange={toggleAllRows}
                     aria-label="Select all"
-                    className={checkboxClassName}
+                    className={cn("justify-center", checkboxClassName)}
                   />
                 </TableHead>
               )}
@@ -209,6 +209,7 @@ export function DataTable<T>({
                     sortField={sortField}
                     sortDirection={sortDirection}
                     handleSort={handleSort}
+                    className={cn("text-left", "py-4", "pl-4")}
                   />
                 </TableHead>
               ))}
@@ -217,7 +218,7 @@ export function DataTable<T>({
               )}
             </TableRow>
           </TableHeader>
-          <TableBody className={tableBodyClassName}>
+          <TableBody className={cn("divide-y", "divide-gray-100", tableBodyClassName)}>
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -254,7 +255,7 @@ export function DataTable<T>({
                             onCheckedChange={() => toggleRowSelection(rowKey)}
                             aria-label="Select row"
                             onClick={(e) => e.stopPropagation()}
-                            className={checkboxClassName}
+                            className={cn("justify-center", checkboxClassName)}
                           />
                         </TableCell>
                       )}
@@ -278,7 +279,7 @@ export function DataTable<T>({
                       {columns.map((column) => (
                         <TableCell
                           key={column.id}
-                          className={tableCellClassName}
+                          className={cn("py-4", "pl-4", tableCellClassName)}
                         >
                           {column.cell
                             ? column.cell(item)
@@ -289,19 +290,14 @@ export function DataTable<T>({
                       ))}
                       {(onEdit || onDelete || onDuplicate || onArchive) && (
                         <TableCell
-                          className={cn("text-right", tableCellClassName)}
+                          className={cn("text-right", "py-4", "pr-4", tableCellClassName)}
                         >
+                          {/* Create wrapper functions to handle passing the item to the action handlers */}
                           <DataTableActions
                             onEdit={onEdit ? () => onEdit(item) : undefined}
-                            onDelete={
-                              onDelete ? () => onDelete(item) : undefined
-                            }
-                            onDuplicate={
-                              onDuplicate ? () => onDuplicate(item) : undefined
-                            }
-                            onArchive={
-                              onArchive ? () => onArchive(item) : undefined
-                            }
+                            onDelete={onDelete ? () => onDelete(item) : undefined}
+                            onDuplicate={onDuplicate ? () => onDuplicate(item) : undefined}
+                            onArchive={onArchive ? () => onArchive(item) : undefined}
                             isArchived={isArchived}
                             className={actionButtonsClassName}
                           />
@@ -319,7 +315,7 @@ export function DataTable<T>({
                               ? 1
                               : 0)
                           }
-                          className={tableCellClassName}
+                          className={cn("p-4", "bg-gray-50", tableCellClassName)}
                         >
                           {expandedContent(item)}
                         </TableCell>
@@ -339,7 +335,7 @@ export function DataTable<T>({
           totalItems={sortedData.length}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
-          className={paginationClassName}
+          className={cn("mt-4", paginationClassName)}
         />
       )}
     </div>

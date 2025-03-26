@@ -11,6 +11,7 @@ interface DataTableHeaderProps {
   sortField: string | null;
   sortDirection: "asc" | "desc";
   handleSort: (field: string) => void;
+  className?: string;
 }
 
 export function DataTableHeader({
@@ -20,16 +21,17 @@ export function DataTableHeader({
   sortField,
   sortDirection,
   handleSort,
+  className,
 }: DataTableHeaderProps) {
   const isActive = sortField === field;
 
   if (!sortable) {
-    return <span>{label}</span>;
+    return <span className={className}>{label}</span>;
   }
 
   return (
     <div
-      className="flex items-center gap-1 cursor-pointer group"
+      className={cn("flex items-center gap-1 cursor-pointer group", className)}
       onClick={() => handleSort(field)}
     >
       {label}
@@ -37,8 +39,8 @@ export function DataTableHeader({
         className={cn(
           "transition-colors",
           isActive
-            ? "text-foreground"
-            : "text-muted-foreground/0 group-hover:text-muted-foreground/50"
+            ? "text-primary"
+            : "text-gray-400/0 group-hover:text-gray-400/50"
         )}
       >
         {isActive ? (

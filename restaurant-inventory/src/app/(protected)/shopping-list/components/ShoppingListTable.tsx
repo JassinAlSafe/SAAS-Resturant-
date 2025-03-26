@@ -1,26 +1,20 @@
 "use client";
 
 import { ShoppingListItem } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import {
-  Loader2,
   Clock,
   Plus,
   ShoppingBag,
   AlertTriangle,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  BarChart3,
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { format, isToday, isYesterday, isThisWeek } from "date-fns";
-import { DataTable, Column } from "@/components/ui/data-table/data-table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ShoppingListTableProps {
   items: ShoppingListItem[];
@@ -58,289 +52,281 @@ export default function ShoppingListTable({
     }
   };
 
-  // Define columns for the table
-  const columns: Column<ShoppingListItem>[] = [
-    {
-      id: "status",
-      header: "",
-      cell: (item) => {
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePurchased(item.id, !item.isPurchased);
-                  }}
-                >
-                  <div className="relative">
-                    <div
-                      className={cn(
-                        "h-5 w-5 border-2 rounded-md flex items-center justify-center transition-all cursor-pointer hover:shadow-sm",
-                        item.isPurchased
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : item.isUrgent
-                          ? "border-red-400 bg-red-50/40"
-                          : "border-blue-300 bg-transparent hover:bg-blue-50/50"
-                      )}
-                    >
-                      {item.isPurchased && (
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M20 6L9 17L4 12"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
-                      <input
-                        type="checkbox"
-                        checked={item.isPurchased}
-                        onChange={() => {}} // Controlled by parent onClick
-                        disabled={isUpdating}
-                        className="sr-only"
-                        aria-label={`Mark ${item.name} as ${
-                          item.isPurchased ? "not purchased" : "purchased"
-                        }`}
-                      />
-                    </div>
-                    {isUpdating && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>
-                  Mark as {item.isPurchased ? "not purchased" : "purchased"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      },
-      sortable: false,
-    },
-    {
-      id: "name",
-      header: "Item Details",
-      accessorKey: "name",
-      cell: (item) => {
-        return (
-          <div className="flex flex-col py-2">
-            <div className="flex items-center">
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  item.isUrgent &&
-                    !item.isPurchased &&
-                    "text-red-600 font-semibold",
-                  item.isPurchased && "text-muted-foreground line-through"
-                )}
-              >
-                {item.name}
-              </span>
-
-              <div className="flex space-x-1 ml-2">
-                {item.isUrgent && !item.isPurchased && (
-                  <Badge variant="destructive" className="text-xs">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    Urgent
-                  </Badge>
-                )}
-
-                {item.isPurchased && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-green-50 text-green-700 border-green-200"
-                  >
-                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                    Purchased
-                  </Badge>
-                )}
-
-                {item.isAutoGenerated && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                  >
-                    Auto
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            {item.notes && (
-              <p className="text-xs text-slate-500 mt-1 max-w-md truncate">
-                {item.notes}
-              </p>
-            )}
-
-            <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
-              {item.addedAt && (
-                <span className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {formatAddedDate(item.addedAt)}
-                </span>
-              )}
-            </div>
-          </div>
-        );
-      },
-      sortable: true,
-    },
-    {
-      id: "quantity",
-      header: "Qty",
-      accessorKey: "quantity",
-      cell: (item) => {
-        return (
-          <div className="text-sm">
-            <span
-              className={cn(
-                "px-2 py-1 rounded-md tabular-nums font-medium inline-flex",
-                item.isPurchased ? "bg-slate-100" : "bg-blue-50/50"
-              )}
-            >
-              {item.quantity}
-              {item.unit && (
-                <span className="ml-1 text-slate-500">{item.unit}</span>
-              )}
-            </span>
-          </div>
-        );
-      },
-      sortable: true,
-    },
-    {
-      id: "category",
-      header: "Category",
-      accessorKey: "category",
-      cell: (item) => {
-        const categoryColorMap: Record<string, string> = {
-          Pantry: "bg-amber-50 text-amber-700 border-amber-200",
-          Dairy: "bg-blue-50 text-blue-700 border-blue-200",
-          Produce: "bg-green-50 text-green-700 border-green-200",
-          Meat: "bg-red-50 text-red-700 border-red-200",
-          Bakery: "bg-yellow-50 text-yellow-700 border-yellow-200",
-          Seafood: "bg-cyan-50 text-cyan-700 border-cyan-200",
-          Other: "bg-purple-50 text-purple-700 border-purple-200",
-        };
-
-        const category = item.category;
-        const colorClass =
-          categoryColorMap[category] ||
-          "bg-slate-50 text-slate-700 border-slate-200";
-
-        return (
-          <div>
-            <Badge
-              variant="outline"
-              className={cn(
-                "inline-flex rounded-md text-xs font-medium",
-                colorClass,
-                item.isPurchased && "opacity-70"
-              )}
-            >
-              {category || "Uncategorized"}
-            </Badge>
-          </div>
-        );
-      },
-      sortable: true,
-    },
-    {
-      id: "estimatedCost",
-      header: "Est. Cost",
-      accessorKey: "estimatedCost",
-      cell: (item) => {
-        return (
-          <div
-            className={cn(
-              "text-right px-3 py-1 rounded-md tabular-nums text-sm font-medium inline-block",
-              item.isPurchased
-                ? "bg-slate-100 text-slate-500"
-                : "bg-green-50/50 text-green-700"
-            )}
-          >
-            {formatCurrency(item.estimatedCost || 0)}
-          </div>
-        );
-      },
-      sortable: true,
-    },
-  ];
-
-  // Custom row styling based on item state
-  const getRowClassName = (item: ShoppingListItem) => {
-    return cn(
-      "hover:bg-slate-50/80 transition-colors",
-      item.isPurchased && "bg-slate-50/70",
-      item.isUrgent &&
-        !item.isPurchased &&
-        "bg-red-50/10 border-l-2 border-l-red-400"
-    );
+  // Helper function to get category color - modified to use new color theme
+  const getCategoryBadgeClass = (category: string) => {
+    // Using a single orange accent color with different opacities for categories
+    return "bg-orange-100 text-orange-600";
   };
 
-  // Handle item deletion with confirmation
-  const handleDeleteItem = (item: ShoppingListItem) => {
-    if (isDeleting) return;
-    if (window.confirm(`Are you sure you want to delete ${item.name}?`)) {
-      onDeleteItem(item.id);
-    }
-  };
-
-  // If there are no items, show empty state
-  if (items.length === 0) {
-    return (
-      <div className="flex h-80 flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50 p-8 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50/70 shadow-sm">
-          <ShoppingBag className="h-10 w-10 text-slate-400" />
-        </div>
-        <h3 className="mt-6 text-lg font-medium text-slate-700">
-          No items in your shopping list
-        </h3>
-        <p className="mt-3 text-sm text-slate-500 max-w-md">
-          Your shopping list is empty. Add items manually or let us generate a
-          list based on your inventory levels.
-        </p>
-        <div className="mt-6 flex space-x-3">
-          <Button onClick={onAddItem} variant="default" className="shadow-sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Item Manually
-          </Button>
-          <Button onClick={onAddItem} variant="outline" className="shadow-sm">
-            Generate Shopping List
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Calculate statistics
+  const totalItems = items.length;
+  const purchasedItems = items.filter((item) => item.isPurchased).length;
+  const purchasedPercentage =
+    totalItems > 0 ? Math.round((purchasedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="space-y-2">
-      <DataTable
-        data={items}
-        columns={columns}
-        keyField="id"
-        onEdit={onEditItem}
-        onDelete={handleDeleteItem}
-        rowClassName={getRowClassName}
-        emptyMessage="Your shopping list is empty."
-        className="bg-white rounded-md overflow-hidden border-separate border-spacing-0"
-      />
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="w-full h-full flex flex-col"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white rounded-lg shadow-sm border border-gray-100"
+      >
+        {/* Progress bar for purchased items */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium flex items-center gap-1.5 text-black">
+              <CheckCircle2 className="h-4 w-4 text-orange-500" />
+              Purchase Progress
+            </span>
+            <motion.span
+              key={purchasedPercentage}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={cn(
+                "text-sm font-bold px-2 py-0.5 rounded-full",
+                purchasedPercentage === 100
+                  ? "bg-orange-100 text-orange-600"
+                  : purchasedPercentage > 50
+                  ? "bg-orange-50 text-orange-500"
+                  : "bg-gray-100 text-gray-700"
+              )}
+            >
+              {purchasedPercentage}% complete
+            </motion.span>
+          </div>
+          <div className="relative h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${purchasedPercentage}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className={cn(
+                "absolute top-0 left-0 h-full rounded-full",
+                purchasedPercentage === 100
+                  ? "bg-orange-500"
+                  : "bg-orange-400"
+              )}
+            />
+            {purchasedPercentage > 0 && purchasedPercentage < 100 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                  x: ["0%", "5%", "0%"],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                  ease: "easeInOut",
+                }}
+                className="absolute top-0 left-0 h-full w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Table or Empty State */}
+        <AnimatePresence mode="wait">
+          {items.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center py-16 px-4"
+            >
+              <div className="bg-orange-50 text-orange-500 rounded-full w-24 h-24 flex items-center justify-center mb-6">
+                <ShoppingBag className="h-12 w-12" />
+              </div>
+              <h3 className="text-xl font-medium mb-2 text-black">No shopping items</h3>
+              <p className="text-gray-600 mb-6 max-w-md text-center">
+                Your shopping list is empty. Add items to get started.
+              </p>
+              <button onClick={onAddItem} className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add First Item
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="table"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-auto"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="w-[50px] p-3"></th>
+                      <th className="p-3 text-left text-sm font-medium text-gray-700">Item Details</th>
+                      <th className="p-3 text-left text-sm font-medium text-gray-700">Qty</th>
+                      <th className="p-3 text-left text-sm font-medium text-gray-700">Category</th>
+                      <th className="p-3 text-left text-sm font-medium text-gray-700">Est. Cost</th>
+                      <th className="w-[100px] p-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={cn(
+                          "border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer",
+                          item.isPurchased && "opacity-70"
+                        )}
+                        onClick={() => onEditItem(item)}
+                      >
+                        <td className="text-center p-3">
+                          <input
+                            type="checkbox"
+                            checked={item.isPurchased}
+                            className={cn(
+                              "h-4 w-4 rounded",
+                              item.isPurchased
+                                ? "text-orange-500 focus:ring-orange-500"
+                                : item.isUrgent
+                                ? "text-orange-500 focus:ring-orange-500"
+                                : "text-orange-400 focus:ring-orange-400"
+                            )}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              onTogglePurchased(item.id, !item.isPurchased);
+                            }}
+                            disabled={isUpdating}
+                          />
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col py-2">
+                            <div className="flex items-center flex-wrap gap-2">
+                              <span
+                                className={cn(
+                                  "font-medium text-black",
+                                  item.isUrgent &&
+                                    !item.isPurchased &&
+                                    "text-red-600",
+                                  item.isPurchased && "line-through text-gray-500"
+                                )}
+                              >
+                                {item.name}
+                              </span>
+
+                              {item.isUrgent && !item.isPurchased && (
+                                <span className="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Urgent
+                                </span>
+                              )}
+
+                              {item.isPurchased && (
+                                <span className="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Purchased
+                                </span>
+                              )}
+
+                              {item.isAutoGenerated && (
+                                <span className="bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">
+                                  Auto
+                                </span>
+                              )}
+                            </div>
+
+                            {item.notes && (
+                              <p className="text-xs text-gray-500 mt-1 max-w-md truncate">
+                                {item.notes}
+                              </p>
+                            )}
+
+                            <div className="text-xs text-gray-500 mt-1 space-x-2">
+                              {item.addedAt && (
+                                <span className="flex items-center">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  {formatAddedDate(item.addedAt)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+                            {item.quantity}
+                            {item.unit && (
+                              <span className="ml-1">{item.unit}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className={`text-xs px-2 py-0.5 rounded-full ${getCategoryBadgeClass(item.category)}`}>
+                            {item.category}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-medium tabular-nums text-black">
+                            {formatCurrency(item.estimatedCost)}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditItem(item);
+                              }}
+                              className="text-gray-500 hover:text-orange-500 p-1 rounded-full hover:bg-orange-50 transition-colors"
+                              aria-label={`Edit ${item.name}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteItem(item.id);
+                              }}
+                              disabled={isDeleting}
+                              className="text-gray-500 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
+                              aria-label={`Delete ${item.name}`}
+                            >
+                              {isDeleting ? (
+                                <span className="h-4 w-4 border-2 border-red-500 border-r-transparent rounded-full animate-spin inline-block"></span>
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Table Footer */}
+              <div className="p-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 bg-gray-50">
+                <div className="flex items-center gap-1">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>
+                    Showing {items.length} of {items.length} items
+                  </span>
+                </div>
+                <div className="flex items-center mt-2 sm:mt-0">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span>
+                    Last updated: {format(new Date(), "MMMM d, yyyy")}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 }

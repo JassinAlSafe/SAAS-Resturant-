@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface SwitchWithLabelProps {
@@ -29,20 +28,21 @@ export function SwitchWithLabel({
       <Switch
         id={id}
         checked={checked}
-        onCheckedChange={onCheckedChange}
+        onChange={(e) => onCheckedChange(e.target.checked)}
         disabled={disabled}
+        color="primary"
       />
       <div className="grid gap-1.5 leading-none">
         {label && (
-          <Label
+          <label
             htmlFor={id}
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            className="text-sm font-medium leading-none cursor-pointer"
           >
             {label}
-          </Label>
+          </label>
         )}
         {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="text-xs text-gray-500">{description}</p>
         )}
       </div>
     </div>

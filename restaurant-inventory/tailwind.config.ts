@@ -10,6 +10,12 @@ const config = {
         "./app/**/*.{ts,tsx}",
         "./src/**/*.{ts,tsx}",
     ],
+    safelist: [
+        'hover:shadow',
+        'hover:shadow-md',
+        'hover:shadow-lg',
+        'hover:shadow-xl',
+    ],
     plugins: [
         shadcnPlugin,
         daisyui

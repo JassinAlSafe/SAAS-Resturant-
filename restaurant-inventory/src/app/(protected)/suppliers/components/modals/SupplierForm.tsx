@@ -15,13 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { CustomSwitch } from "@/components/ui/custom-switch";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,11 +24,11 @@ import {
   FiMail,
   FiPhone,
   FiMapPin,
-  FiTag,
   FiImage,
 } from "react-icons/fi";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const phoneRegex = /^(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
 
@@ -54,7 +48,7 @@ const supplierFormSchema = z.object({
   isPreferred: z.boolean().default(false),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
   logo: z.string().optional(),
-  rating: z.number().default(0),
+  rating: z.number().min(0).max(5).default(0),
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
@@ -80,7 +74,7 @@ const categoryColors: Record<SupplierCategory, string> = {
   [SupplierCategory.OTHER]: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
-export default function SupplierForm({
+export function SupplierForm({
   supplier,
   onSubmit,
   onCancel,
@@ -106,39 +100,43 @@ export default function SupplierForm({
   };
 
   const isEditing = !!supplier;
+  const isSubmitting = form.formState.isSubmitting;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="space-y-1">
-          <h3 className="text-lg font-medium">Basic Information</h3>
+        <div className="space-y-1 mb-4">
+          <h3 className="text-lg font-medium text-gray-800">Basic Information</h3>
           <p className="text-sm text-gray-500">
             Enter the core details about the supplier
           </p>
-          <Separator className="my-2" />
+          <Separator className="my-2 bg-orange-100" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
           {/* Name Field */}
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-2">
+                <FormLabel className="flex items-center gap-2 text-gray-700">
                   <span>Name</span> <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       placeholder="Enter supplier name"
-                      className="pl-9 bg-gray-50"
+                      className={cn(
+                        "pl-9 input input-bordered focus:border-orange-400 focus:ring-orange-400",
+                        form.formState.errors.name && "input-error"
+                      )}
                       {...field}
                     />
                     <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -149,20 +147,20 @@ export default function SupplierForm({
             name="contactName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-2">
+                <FormLabel className="flex items-center gap-2 text-gray-700">
                   Contact Person
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       placeholder="Enter contact person name"
-                      className="pl-9 bg-gray-50"
+                      className="pl-9 input input-bordered focus:border-orange-400 focus:ring-orange-400"
                       {...field}
                     />
                     <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -173,14 +171,17 @@ export default function SupplierForm({
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-2">Email</FormLabel>
+                <FormLabel className="flex items-center gap-2 text-gray-700">Email</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       type="email"
                       placeholder="Enter email address"
                       list="email-suggestions"
-                      className="pl-9 bg-gray-50"
+                      className={cn(
+                        "pl-9 input input-bordered focus:border-orange-400 focus:ring-orange-400",
+                        form.formState.errors.email && "input-error"
+                      )}
                       {...field}
                     />
                     <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -192,7 +193,7 @@ export default function SupplierForm({
                   <option value="@outlook.com" />
                   <option value="@hotmail.com" />
                 </datalist>
-                <FormMessage />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -203,12 +204,15 @@ export default function SupplierForm({
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-2">Phone</FormLabel>
+                <FormLabel className="flex items-center gap-2 text-gray-700">Phone</FormLabel>
                 <FormControl>
                   <div className="relative">
                     <Input
                       placeholder="(123) 456-7890"
-                      className="pl-9 bg-gray-50"
+                      className={cn(
+                        "pl-9 input input-bordered focus:border-orange-400 focus:ring-orange-400",
+                        form.formState.errors.phone && "input-error"
+                      )}
                       {...field}
                       onChange={(e) => {
                         // Auto-format phone number
@@ -231,7 +235,7 @@ export default function SupplierForm({
                     <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   </div>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -243,30 +247,30 @@ export default function SupplierForm({
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center gap-2">
+              <FormLabel className="flex items-center gap-2 text-gray-700">
                 <span>Address</span>
               </FormLabel>
               <FormControl>
                 <div className="relative">
                   <Textarea
                     placeholder="Enter complete address"
-                    className="resize-none pl-9 pt-3 bg-gray-50 min-h-[80px]"
+                    className="resize-none pl-9 pt-3 input input-bordered focus:border-orange-400 focus:ring-orange-400 min-h-[80px]"
                     {...field}
                   />
                   <FiMapPin className="absolute left-3 top-7 text-gray-400" />
                 </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
 
         <div className="space-y-1 pt-2">
-          <h3 className="text-lg font-medium">Categories & Settings</h3>
+          <h3 className="text-lg font-medium text-gray-800">Categories & Settings</h3>
           <p className="text-sm text-gray-500">
             Configure supplier categories and additional settings
           </p>
-          <Separator className="my-2" />
+          <Separator className="my-2 bg-orange-100" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-6">
@@ -276,37 +280,37 @@ export default function SupplierForm({
             name="categories"
             render={({ field }) => (
               <FormItem className="lg:col-span-2">
-                <FormLabel className="flex items-center gap-2">
-                  <span>Categories</span>{" "}
+                <FormLabel className="flex items-center gap-2 text-gray-700">
+                  Categories
                   <span className="text-red-500">*</span>
                 </FormLabel>
                 <div className="space-y-3">
-                  <div className="relative">
-                    <Select
-                      onValueChange={(value) => {
-                        const category = value as SupplierCategory;
-                        if (!field.value.includes(category)) {
-                          field.onChange([...field.value, category]);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="pl-9 bg-gray-50">
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(SupplierCategory).map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category.replace("_", " ")}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FiTag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-                  </div>
+                  <Select
+                    value={field.value.length > 0 ? field.value[0] : ""}
+                    onChange={(e) => {
+                      const category = e.target.value as SupplierCategory;
+                      if (category && !field.value.includes(category)) {
+                        field.onChange([...field.value, category]);
+                      }
+                    }}
+                    className="input input-bordered focus:border-orange-400 focus:ring-orange-400 w-full"
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
+                    {Object.values(SupplierCategory).map((category) => (
+                      <option key={category} value={category}>
+                        {category.replace("_", " ")}
+                      </option>
+                    ))}
+                  </Select>
                   <div
                     className={cn(
-                      "flex flex-wrap gap-2 min-h-[40px] p-3 border rounded-md border-dashed border-gray-300",
-                      field.value.length > 0 ? "bg-gray-50" : "bg-gray-50/50"
+                      "flex flex-wrap gap-2 min-h-[40px] p-3 border rounded-md border-dashed",
+                      field.value.length > 0
+                        ? "border-orange-200 bg-orange-50"
+                        : "border-gray-300 bg-gray-50/50",
+                      form.formState.errors.categories && "border-red-300 bg-red-50"
                     )}
                   >
                     {field.value.length === 0 && (
@@ -318,7 +322,7 @@ export default function SupplierForm({
                       <Badge
                         key={category}
                         variant="outline"
-                        className={`flex items-center gap-1 ${categoryColors[category]} transition-all hover:shadow-xs`}
+                        className={`flex items-center gap-1 ${categoryColors[category]} transition-all hover:shadow-md`}
                       >
                         {category.replace("_", " ")}
                         <button
@@ -335,7 +339,7 @@ export default function SupplierForm({
                       </Badge>
                     ))}
                   </div>
-                  <FormMessage />
+                  <FormMessage className="text-red-500" />
                 </div>
               </FormItem>
             )}
@@ -347,24 +351,20 @@ export default function SupplierForm({
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel className="text-gray-700">Status</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  className="input input-bordered focus:border-orange-400 focus:ring-orange-400"
                 >
-                  <SelectTrigger className="bg-gray-50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE" className="text-green-600">
-                      Active
-                    </SelectItem>
-                    <SelectItem value="INACTIVE" className="text-red-600">
-                      Inactive
-                    </SelectItem>
-                  </SelectContent>
+                  <option value="ACTIVE" className="text-green-600">
+                    Active
+                  </option>
+                  <option value="INACTIVE" className="text-red-600">
+                    Inactive
+                  </option>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-red-500" />
               </FormItem>
             )}
           />
@@ -376,7 +376,7 @@ export default function SupplierForm({
           name="logo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center gap-2">
+              <FormLabel className="flex items-center gap-2 text-gray-700">
                 Logo URL
               </FormLabel>
               <FormControl>
@@ -384,13 +384,13 @@ export default function SupplierForm({
                   <Input
                     placeholder="Enter logo URL"
                     type="url"
-                    className="pl-9 bg-gray-50"
+                    className="pl-9 input input-bordered focus:border-orange-400 focus:ring-orange-400"
                     {...field}
                   />
                   <FiImage className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
@@ -409,32 +409,71 @@ export default function SupplierForm({
                   description="Mark as a preferred supplier"
                   isLoading={form.formState.isSubmitting}
                   size="sm"
+                  activeColor="bg-orange-500"
                 />
               </FormControl>
             </FormItem>
           )}
         />
 
+        {/* Rating Field */}
+        <FormField
+          control={form.control}
+          name="rating"
+          render={({ field }) => (
+            <FormItem className="mt-2">
+              <FormLabel className="flex items-center gap-2 text-gray-700">
+                Rating (0-5)
+              </FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="1"
+                    value={field.value}
+                    onChange={(e) => {
+                      // Convert to number and validate range
+                      const value = e.target.value === '' ? 0 : Number(e.target.value);
+                      field.onChange(isNaN(value) ? 0 : Math.max(0, Math.min(5, value)));
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                    className="input input-bordered focus:border-orange-400 focus:ring-orange-400 w-full"
+                  />
+                </div>
+              </FormControl>
+              <FormMessage className="text-red-500" />
+            </FormItem>
+          )}
+        />
+
         {/* Form Actions */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white pb-2">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 sticky bottom-0 bg-white pb-2 mt-8">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="px-8 py-2"
+            className="btn btn-outline border-gray-300 hover:bg-gray-100 hover:border-gray-300 px-8 py-2"
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={form.formState.isSubmitting}
+            className="btn bg-orange-500 hover:bg-orange-600 text-white border-none px-8 py-2"
+            disabled={isSubmitting}
           >
-            {form.formState.isSubmitting
-              ? "Saving..."
-              : isEditing
-              ? "Update Supplier"
-              : "Create Supplier"}
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <span className="loading loading-spinner loading-sm"></span>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <span>{isEditing ? "Update" : "Create"} Supplier</span>
+            )}
           </Button>
         </div>
       </form>

@@ -1,134 +1,161 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { FiShoppingCart } from "react-icons/fi";
+import { ShoppingCart } from "lucide-react";
 
 export default function ShoppingListLoading() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 animate-pulse">
-      <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div
-            className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <FiShoppingCart className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-24 rounded-md" />
-        </div>
-      </header>
-
-      {/* Summary Cards */}
-      <section className="bg-white p-6 rounded-lg border shadow-sm mb-6">
-        <Skeleton className="h-6 w-48 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={`summary-card-${i}`}
-              className="bg-gray-50 p-4 rounded-lg"
-            >
-              <Skeleton className="h-5 w-24 mb-2" />
-              <Skeleton className="h-8 w-32 mb-1" />
-              <Skeleton className="h-4 w-36" />
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      {/* Header Skeleton */}
+      <div className="mb-8 animate-pulse">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-gray-200 w-16 h-16 rounded-lg"></div>
+            <div>
+              <div className="bg-gray-200 h-8 w-64 mb-2 rounded"></div>
+              <div className="bg-gray-200 h-4 w-32 rounded"></div>
             </div>
-          ))}
+          </div>
+          <div className="flex gap-3">
+            <div className="bg-gray-200 h-10 w-24 rounded-md"></div>
+            <div className="bg-orange-100 h-10 w-24 rounded-md"></div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Filters Section */}
-      <section className="bg-white p-4 rounded-lg border shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <Skeleton className="h-10 w-full md:w-2/3 rounded-md" />
-          <Skeleton className="h-10 w-full md:w-1/3 rounded-md" />
-        </div>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton
-              key={`filter-chip-${i}`}
-              className="h-6 w-16 rounded-full"
-            />
-          ))}
-        </div>
-        <Skeleton className="h-5 w-40 rounded-md" />
-      </section>
+      {/* Stats Cards Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-pulse">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={`stat-${i}`} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="bg-gray-200 h-4 w-24 mb-2 rounded"></div>
+                  <div className="bg-gray-200 h-8 w-16 rounded"></div>
+                </div>
+                <div className="bg-orange-100 w-10 h-10 rounded-full"></div>
+              </div>
+              <div className="mt-4">
+                <div className="bg-gray-200 h-2 w-full rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Table/List Section */}
-      <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
+      {/* Search/Filter Bar Skeleton */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6 animate-pulse">
         <div className="p-4">
-          {/* Table Header */}
-          <div className="hidden md:grid md:grid-cols-7 gap-2 pb-3 border-b border-gray-100 font-medium text-sm text-gray-500">
-            <div className="col-span-1">
-              <Skeleton className="h-6 w-6 rounded-md" />
-            </div>
-            <div className="col-span-2">
-              <Skeleton className="h-6 w-32 rounded-md" />
-            </div>
-            <div className="col-span-1">
-              <Skeleton className="h-6 w-24 rounded-md" />
-            </div>
-            <div className="col-span-1">
-              <Skeleton className="h-6 w-20 rounded-md" />
-            </div>
-            <div className="col-span-1">
-              <Skeleton className="h-6 w-20 rounded-md" />
-            </div>
-            <div className="col-span-1">
-              <Skeleton className="h-6 w-20 rounded-md" />
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="bg-gray-200 h-12 w-full sm:w-2/3 rounded"></div>
+            <div className="bg-gray-200 h-12 w-full sm:w-1/3 rounded"></div>
           </div>
+        </div>
+      </div>
 
-          {/* Table Rows */}
-          <div className="space-y-4 mt-2">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={`item-row-${index}`}
-                className="grid grid-cols-2 md:grid-cols-7 gap-2 py-2 items-center border-b border-gray-100 last:border-0"
-              >
-                <div className="col-span-1 flex items-center">
-                  <Skeleton className="h-5 w-5 rounded-md" />
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Table Skeleton */}
+        <div className="lg:col-span-3">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 animate-pulse">
+            <div className="p-0">
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex justify-between mb-1">
+                  <div className="bg-gray-200 h-4 w-32 rounded"></div>
+                  <div className="bg-orange-100 h-4 w-16 rounded"></div>
                 </div>
-                <div className="col-span-1 md:col-span-2">
-                  <Skeleton className="h-5 w-full max-w-xs rounded-md" />
-                  <Skeleton className="h-4 w-24 mt-1 md:hidden" />
-                </div>
-                <div className="hidden md:block md:col-span-1">
-                  <Skeleton className="h-5 w-20 rounded-md" />
-                </div>
-                <div className="hidden md:block md:col-span-1">
-                  <Skeleton className="h-5 w-16 rounded-md" />
-                </div>
-                <div className="hidden md:block md:col-span-1">
-                  <Skeleton className="h-5 w-16 rounded-md" />
-                </div>
-                <div className="col-span-1 flex justify-end md:justify-between">
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                  </div>
+                <div className="bg-gray-200 h-4 w-full mt-2 rounded"></div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-3">
+                        <div className="bg-gray-200 h-4 w-4 rounded"></div>
+                      </th>
+                      <th className="p-3 text-left">
+                        <div className="bg-gray-200 h-4 w-32 rounded"></div>
+                      </th>
+                      <th className="p-3 text-left">
+                        <div className="bg-gray-200 h-4 w-12 rounded"></div>
+                      </th>
+                      <th className="p-3 text-left">
+                        <div className="bg-gray-200 h-4 w-20 rounded"></div>
+                      </th>
+                      <th className="p-3 text-left">
+                        <div className="bg-gray-200 h-4 w-16 rounded"></div>
+                      </th>
+                      <th className="p-3 text-left">
+                        <div className="bg-gray-200 h-4 w-12 rounded"></div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={`row-${i}`} className="border-b border-gray-100">
+                        <td className="p-3 text-center">
+                          <div className="bg-gray-200 h-4 w-4 rounded mx-auto"></div>
+                        </td>
+                        <td className="p-3">
+                          <div>
+                            <div className="bg-gray-200 h-4 w-40 mb-1 rounded"></div>
+                            <div className="bg-gray-200 h-3 w-24 rounded"></div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="bg-gray-200 h-6 w-12 rounded-full"></div>
+                        </td>
+                        <td className="p-3">
+                          <div className="bg-orange-100 h-6 w-16 rounded-full"></div>
+                        </td>
+                        <td className="p-3">
+                          <div className="bg-gray-200 h-4 w-12 rounded"></div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            <div className="bg-gray-200 h-8 w-8 rounded-full"></div>
+                            <div className="bg-gray-200 h-8 w-8 rounded-full"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-4 border-t border-gray-100 bg-gray-50">
+                <div className="flex justify-between">
+                  <div className="bg-gray-200 h-4 w-32 rounded"></div>
+                  <div className="bg-gray-200 h-4 w-24 rounded"></div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="mt-4 pt-2 border-t border-gray-100 flex justify-between items-center">
-            <Skeleton className="h-5 w-32 rounded-md" />
-            <div className="flex gap-1">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={`page-${i}`} className="h-8 w-8 rounded-md" />
-              ))}
             </div>
           </div>
         </div>
-      </section>
+
+        {/* Summary Card Skeleton */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 animate-pulse">
+            <div className="p-5">
+              <div className="bg-gray-200 h-6 w-40 mb-6 rounded"></div>
+
+              <div className="space-y-4 mb-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={`stat-mini-${i}`} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="bg-gray-200 h-4 w-16 mb-2 rounded"></div>
+                    <div className="bg-gray-200 h-6 w-12 rounded"></div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-gray-200 h-4 w-32 mb-2 rounded"></div>
+              <div className="bg-gray-200 h-4 w-full mb-4 rounded"></div>
+
+              <div className="bg-gray-200 h-6 w-40 mb-4 rounded"></div>
+              <div className="bg-orange-100 h-10 w-full mb-3 rounded-md"></div>
+              <div className="bg-gray-200 h-10 w-full rounded-md"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

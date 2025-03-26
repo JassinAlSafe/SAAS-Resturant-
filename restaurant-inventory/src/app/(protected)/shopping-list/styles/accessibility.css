@@ -1,0 +1,141 @@
+/* =========================================
+   Accessibility Styles
+   ========================================= */
+
+/* High Contrast Mode */
+.high-contrast {
+  --bg-base-100: #000000;
+  --bg-base-200: #333333;
+  --bg-base-300: #444444;
+  --color-base-content: #ffffff;
+  --color-primary: #ffff00;
+  --color-primary-content: #000000;
+  --color-secondary: #00ffff;
+  --color-secondary-content: #000000;
+  --color-accent: #ff00ff;
+  --color-accent-content: #000000;
+}
+
+.high-contrast * {
+  border-color: #ffffff !important;
+}
+
+.high-contrast a:focus,
+.high-contrast button:focus,
+.high-contrast input:focus,
+.high-contrast select:focus,
+.high-contrast textarea:focus {
+  outline: 3px solid #ffff00 !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced Motion */
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Focus Indicators */
+.keyboard-focus-visible:focus {
+  outline: 3px solid var(--color-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* Screen Reader Only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* =========================================
+   Responsive Design Optimizations
+   ========================================= */
+
+/* Mobile Optimizations */
+.mobile-optimized .card-body {
+  padding: 0.75rem;
+}
+
+.mobile-optimized .btn {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.mobile-optimized .table th,
+.mobile-optimized .table td {
+  padding: 0.5rem;
+}
+
+.mobile-optimized .stats {
+  flex-direction: column;
+}
+
+.mobile-optimized .stat {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Tablet Optimizations */
+.tablet-optimized .steps .step:before {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.tablet-optimized .steps .step {
+  min-width: 4rem;
+}
+
+/* Large Touch Targets for Mobile/Tablet */
+@media (max-width: 1023px) {
+  .mobile-optimized .btn,
+  .tablet-optimized .btn,
+  .mobile-optimized .checkbox,
+  .tablet-optimized .checkbox,
+  .mobile-optimized td,
+  .tablet-optimized td {
+    min-height: 2.5rem; /* Larger touch targets */
+    cursor: pointer;
+  }
+
+  .mobile-optimized .tabs .tab,
+  .tablet-optimized .tabs .tab {
+    padding: 0.75rem;
+    min-height: 3rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+  }
+
+  body {
+    font-size: 12pt;
+  }
+
+  .shopping-list-table {
+    width: 100%;
+    page-break-inside: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+}
