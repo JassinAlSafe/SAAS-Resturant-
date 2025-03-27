@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/browser-client';
 import { Dish, DishIngredient } from '@/lib/types';
 
 // Database representation of dish ingredients

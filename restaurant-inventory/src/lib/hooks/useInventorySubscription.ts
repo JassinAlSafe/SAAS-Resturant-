@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { InventoryItem } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/browser-client';
 import { useNotificationHelpers } from '@/lib/notification-context';
 
 interface UseInventorySubscriptionProps {

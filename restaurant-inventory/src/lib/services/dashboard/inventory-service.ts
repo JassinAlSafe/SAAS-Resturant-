@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { inventoryService } from "../inventory-service";
 import { CategoryStat, InventoryItem } from "@/lib/types";
 import { getBusinessProfileId } from "./profile-service";

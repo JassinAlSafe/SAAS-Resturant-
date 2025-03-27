@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabase } from "../supabase/browser-client";
 import type { InventoryItem, InventoryFormData } from '../types';
 
 // Cache for business profile ID
@@ -18,7 +18,7 @@ type DbIngredient = {
     unit: string;
     cost: number;
     reorder_level: number | null;
-    
+
     // Fields that exist in the database
     supplier_id: string | null;
     expiry_date: string | null;
@@ -482,7 +482,7 @@ export const inventoryService = {
 
             // Create a clean copy of updates to modify
             const cleanUpdates: Partial<InventoryFormData & Record<string, unknown>> = { ...updates };
-            
+
             // Remove fields that don't exist in the database
             const fieldsToRemove = ['description', 'location'];
             fieldsToRemove.forEach(field => {
@@ -497,7 +497,7 @@ export const inventoryService = {
                 delete cleanUpdates.expiry_date;
                 console.log('Removed empty expiry_date to prevent date format errors');
             }
-            
+
             // Handle UUID fields - convert empty strings to null
             if (cleanUpdates.supplier_id === '') {
                 cleanUpdates.supplier_id = null as unknown as string;
@@ -518,20 +518,20 @@ export const inventoryService = {
                 console.error('Database error when updating item:', error);
                 throw error;
             }
-            
+
             // When mapping back to our InventoryItem interface, we need to handle fields
             // that don't exist in the database
             const mappedItem = mapDbToInventoryItem(data);
-            
+
             // Preserve fields from the original updates since they're not stored in the DB
             if (updates.description !== undefined) {
                 mappedItem.description = updates.description;
             }
-            
+
             if (updates.location !== undefined) {
                 mappedItem.location = updates.location;
             }
-            
+
             return mappedItem;
         } catch (error) {
             console.error('Error updating inventory item:', error);
@@ -593,7 +593,7 @@ export const inventoryService = {
                 console.error('Error deleting ingredient:', error);
                 throw error;
             }
-            
+
             return true;
         } catch (error) {
             console.error('Error deleting inventory item:', error);

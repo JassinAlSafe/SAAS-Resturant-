@@ -1,43 +1,74 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge, BadgeProps } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  CreditCard, 
-  Calendar, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  CreditCard,
+  Calendar,
+  CheckCircle,
+  AlertCircle,
   RefreshCw,
   ExternalLink,
-  ShieldCheck
 } from "lucide-react";
-import { 
-  getSubscription, 
-  createPortalSession, 
-  createCheckoutSession, 
-  formatCurrency, 
+import { ErrorBoundary } from "@/app/(protected)/billing/error-boundary";
+import {
+  getSubscription,
+  createPortalSession,
+  createCheckoutSession,
+  formatCurrency,
   formatInterval,
-  Subscription 
+  Subscription,
 } from "./BillingService";
 
 interface SubscriptionManagerProps {
   businessProfileId: string;
 }
 
-export function SubscriptionManager({ businessProfileId }: SubscriptionManagerProps) {
+// Feature item component for free plan
+const FeatureItem = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-center">
+    <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+    <span>{children}</span>
+  </div>
+);
+
+// Loading button component
+const LoadingButton = ({
+  isLoading,
+  loadingText = "Processing...",
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  isLoading: boolean;
+  loadingText?: string;
+}) => (
+  <Button {...props} disabled={isLoading || props.disabled}>
+    {isLoading ? (
+      <>
+        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+        {loadingText}
+      </>
+    ) : (
+      children
+    )}
+  </Button>
+);
+
+export function SubscriptionManager({
+  businessProfileId,
+}: SubscriptionManagerProps) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -54,12 +85,13 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
         const data = await getSubscription(businessProfileId);
         setSubscription(data);
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        console.error('Error fetching subscription:', error);
+        const errorMessage =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        console.error("Error fetching subscription:", error);
         toast({
-          title: 'Error',
+          title: "Error",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -72,22 +104,22 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
   // Handle subscription management
   const handleManageSubscription = async () => {
     if (!businessProfileId) return;
-    
+
     setActionLoading(true);
-    
+
     try {
       const { url } = await createPortalSession({
         businessProfileId,
       });
-      
+
       // Redirect to Stripe Customer Portal
       window.location.href = url;
     } catch (error) {
-      console.error('Error creating portal session:', error);
+      console.error("Error creating portal session:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to open billing portal. Please try again later.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to open billing portal. Please try again later.",
+        variant: "destructive",
       });
       setActionLoading(false);
     }
@@ -96,23 +128,24 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
   // Handle subscription checkout
   const handleSubscribe = async (priceId: string) => {
     if (!businessProfileId) return;
-    
+
     setActionLoading(true);
-    
+
     try {
       const { url } = await createCheckoutSession({
         priceId,
         businessProfileId,
       });
-      
+
       // Redirect to Stripe Checkout
       window.location.href = url;
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      console.error("Error creating checkout session:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to create checkout session. Please try again later.',
-        variant: 'destructive',
+        title: "Error",
+        description:
+          "Failed to create checkout session. Please try again later.",
+        variant: "destructive",
       });
       setActionLoading(false);
     }
@@ -120,62 +153,74 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
 
   // Helper function to format date
   const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
   };
 
   // Helper function to get status badge variant
-  const getStatusVariant = (status: string | null | undefined): BadgeProps['variant'] => {
-    if (!status) return 'outline';
-    
+  const getStatusVariant = (
+    status: string | null | undefined
+  ): BadgeProps["variant"] => {
+    if (!status) return "outline";
+
     switch (status) {
-      case 'active':
-        return 'default';
-      case 'trialing':
-        return 'secondary';
-      case 'past_due':
-        return 'warning';
-      case 'canceled':
-      case 'unpaid':
-        return 'destructive';
+      case "active":
+        return "default";
+      case "trialing":
+        return "secondary";
+      case "past_due":
+        return "warning";
+      case "canceled":
+      case "unpaid":
+        return "destructive";
       default:
-        return 'outline';
+        return "outline";
     }
   };
 
   // Render subscription status badge
   const renderStatusBadge = (status: string | null | undefined) => {
     if (!status) return null;
-    
+
     switch (status) {
       case "active":
         return (
-          <Badge variant={getStatusVariant(status)} className="bg-green-50 text-green-700 border-green-200">
+          <Badge
+            variant={getStatusVariant(status)}
+            className="bg-green-50 text-green-700 border-green-200"
+          >
             <CheckCircle className="w-3 h-3 mr-1" /> Active
           </Badge>
         );
       case "trialing":
         return (
-          <Badge variant={getStatusVariant(status)} className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge
+            variant={getStatusVariant(status)}
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
             <Calendar className="w-3 h-3 mr-1" /> Trial
           </Badge>
         );
       case "past_due":
         return (
-          <Badge variant={getStatusVariant(status)} className="bg-amber-50 text-amber-700 border-amber-200">
+          <Badge
+            variant={getStatusVariant(status)}
+            className="bg-amber-50 text-amber-700 border-amber-200"
+          >
             <AlertCircle className="w-3 h-3 mr-1" /> Past Due
           </Badge>
         );
       case "canceled":
         return (
-          <Badge variant={getStatusVariant(status)} className="bg-gray-50 text-gray-700 border-gray-200">
+          <Badge
+            variant={getStatusVariant(status)}
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
             Canceled
           </Badge>
         );
       default:
-        return (
-          <Badge variant={getStatusVariant(status)}>{status}</Badge>
-        );
+        return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
     }
   };
 
@@ -209,9 +254,9 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
           {subscription.error}
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="mt-2"
             onClick={() => window.location.reload()}
           >
@@ -234,40 +279,24 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-              <span>Basic inventory management</span>
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-              <span>Up to 100 items</span>
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-              <span>1 user account</span>
-            </div>
+            <FeatureItem>Basic inventory management</FeatureItem>
+            <FeatureItem>Up to 100 items</FeatureItem>
+            <FeatureItem>1 user account</FeatureItem>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
-          <Button 
-            className="w-full" 
+          <LoadingButton
+            className="w-full"
             onClick={() => handleSubscribe("price_1OvXYZABCDEFGHIJKLMNOP")}
             disabled={actionLoading}
+            isLoading={actionLoading}
           >
-            {actionLoading ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Upgrade to Pro
-              </>
-            )}
-          </Button>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Upgrade to Pro
+          </LoadingButton>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Pro plan includes unlimited items, multiple users, and advanced analytics
+            Pro plan includes unlimited items, multiple users, and advanced
+            analytics
           </p>
         </CardFooter>
       </Card>
@@ -283,9 +312,7 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
             <CardTitle>
               {subscription.subscription_plan || "Unknown"} Plan
             </CardTitle>
-            <CardDescription>
-              Your current subscription details
-            </CardDescription>
+            <CardDescription>Your current subscription details</CardDescription>
           </div>
           {renderStatusBadge(subscription.subscription_status)}
         </div>
@@ -297,11 +324,21 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Price</span>
                 <span className="font-medium">
-                  {formatCurrency(subscription.details.amount, subscription.details.currency)} / {formatInterval(subscription.details.interval, subscription.details.intervalCount)}
+                  {formatCurrency(
+                    subscription.details.amount,
+                    subscription.details.currency
+                  )}{" "}
+                  /{" "}
+                  {formatInterval(
+                    subscription.details.interval,
+                    subscription.details.intervalCount
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Current Period Ends</span>
+                <span className="text-sm text-muted-foreground">
+                  Current Period Ends
+                </span>
                 <span className="font-medium">
                   {formatDate(subscription.subscription_current_period_end)}
                 </span>
@@ -311,16 +348,23 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Payment Issue</AlertTitle>
                   <AlertDescription>
-                    We couldn&apos;t process your latest payment. Please update your payment method.
+                    We couldn&apos;t process your latest payment. Please update
+                    your payment method.
                   </AlertDescription>
                 </Alert>
               )}
               {subscription.details.cancelAtPeriodEnd && (
-                <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <Alert
+                  variant="warning"
+                  className="bg-amber-50 border-amber-200"
+                >
                   <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertTitle className="text-amber-800">Cancellation Scheduled</AlertTitle>
+                  <AlertTitle className="text-amber-800">
+                    Cancellation Scheduled
+                  </AlertTitle>
                   <AlertDescription className="text-amber-700">
-                    Your subscription will end on {formatDate(subscription.subscription_current_period_end)}
+                    Your subscription will end on{" "}
+                    {formatDate(subscription.subscription_current_period_end)}
                   </AlertDescription>
                 </Alert>
               )}
@@ -329,25 +373,27 @@ export function SubscriptionManager({ businessProfileId }: SubscriptionManagerPr
         </div>
       </CardContent>
       <CardFooter>
-        <Button 
-          className="w-full" 
+        <LoadingButton
+          className="w-full"
           variant="outline"
           onClick={handleManageSubscription}
           disabled={actionLoading}
+          isLoading={actionLoading}
         >
-          {actionLoading ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Manage Subscription
-            </>
-          )}
-        </Button>
+          <ExternalLink className="mr-2 h-4 w-4" />
+          Manage Subscription
+        </LoadingButton>
       </CardFooter>
     </Card>
+  );
+}
+
+export function SubscriptionManagerWithErrorBoundary(
+  props: SubscriptionManagerProps
+) {
+  return (
+    <ErrorBoundary>
+      <SubscriptionManager {...props} />
+    </ErrorBoundary>
   );
 }

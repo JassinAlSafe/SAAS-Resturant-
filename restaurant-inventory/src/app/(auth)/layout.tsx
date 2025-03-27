@@ -1,6 +1,6 @@
 import { GeistSans } from "geist/font/sans";
 import { NotificationContainer } from "@/components/ui/notification";
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/services/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";

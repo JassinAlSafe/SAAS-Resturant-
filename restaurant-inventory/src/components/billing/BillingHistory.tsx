@@ -7,23 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { FiDownload, FiFileText, FiExternalLink } from "react-icons/fi";
 import { format } from "date-fns";
 import { useCurrency } from "@/lib/currency";
@@ -47,15 +30,15 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
   const renderStatusBadge = (status: Invoice["status"]) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-green-500">Paid</Badge>;
+        return <span className="badge badge-success">Paid</span>;
       case "open":
-        return <Badge variant="outline">Pending</Badge>;
+        return <span className="badge badge-outline">Pending</span>;
       case "void":
-        return <Badge variant="secondary">Void</Badge>;
+        return <span className="badge badge-secondary">Void</span>;
       case "uncollectible":
-        return <Badge variant="destructive">Failed</Badge>;
+        return <span className="badge badge-error">Failed</span>;
       default:
-        return <Badge>{status}</Badge>;
+        return <span className="badge">{status}</span>;
     }
   };
 
@@ -70,86 +53,77 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
       <CardContent>
         {invoices.length > 0 ? (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
                 {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">
-                      {invoice.invoiceNumber}
-                    </TableCell>
-                    <TableCell>
+                  <tr key={invoice.id}>
+                    <td className="font-medium">{invoice.invoiceNumber}</td>
+                    <td>
                       {format(new Date(invoice.invoiceDate), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                    <TableCell>{renderStatusBadge(invoice.status)}</TableCell>
-                    <TableCell className="text-right">
+                    </td>
+                    <td>{formatCurrency(invoice.amount)}</td>
+                    <td>{renderStatusBadge(invoice.status)}</td>
+                    <td className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
+                        <button
+                          className="btn btn-ghost btn-sm"
                           onClick={() => openInvoiceDetails(invoice)}
                         >
                           <FiFileText className="mr-1 h-4 w-4" />
                           View
-                        </Button>
+                        </button>
                         {invoice.pdf && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8"
-                            asChild
+                          <a
+                            className="btn btn-ghost btn-sm"
+                            href={invoice.pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            <a
-                              href={invoice.pdf}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <FiDownload className="mr-1 h-4 w-4" />
-                              Download
-                            </a>
-                          </Button>
+                            <FiDownload className="mr-1 h-4 w-4" />
+                            Download
+                          </a>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-base-content/70">
             No billing history available yet.
           </div>
         )}
       </CardContent>
 
-      {/* Invoice Details Dialog */}
-      <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Invoice {selectedInvoice?.invoiceNumber}</DialogTitle>
-            <DialogDescription>
-              Invoice details and line items
-            </DialogDescription>
-          </DialogHeader>
+      {/* Invoice Details Modal/Dialog */}
+      <dialog
+        id="invoice_modal"
+        className={`modal ${isInvoiceDialogOpen ? "modal-open" : ""}`}
+      >
+        <div className="modal-box max-w-3xl">
+          <h3 className="font-bold text-lg">
+            Invoice {selectedInvoice?.invoiceNumber}
+          </h3>
+          <p className="text-base-content/70">Invoice details and line items</p>
 
           {selectedInvoice && (
-            <div className="space-y-6">
+            <div className="space-y-6 mt-4">
               {/* Invoice header */}
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 border-b pb-4">
                 <div>
                   <h3 className="text-lg font-bold">ShelfWise</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-base-content/70">
                     123 Restaurant Ave
                     <br />
                     San Francisco, CA 94107
@@ -172,7 +146,12 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
                   </div>
                   <div className="text-sm">
                     <span className="font-medium">Due Date:</span>{" "}
-                    {format(new Date(selectedInvoice.dueDate), "MMMM d, yyyy")}
+                    {selectedInvoice.dueDate
+                      ? format(
+                          new Date(selectedInvoice.dueDate),
+                          "MMMM d, yyyy"
+                        )
+                      : "N/A"}
                   </div>
                   <div className="mt-2">
                     {renderStatusBadge(selectedInvoice.status)}
@@ -183,32 +162,30 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
               {/* Invoice items */}
               <div>
                 <h4 className="font-medium mb-2">Invoice Items</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedInvoice.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell className="text-right">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th className="text-right">Quantity</th>
+                      <th className="text-right">Amount</th>
+                      <th className="text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedInvoice.items?.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.description}</td>
+                        <td className="text-right">{item.quantity}</td>
+                        <td className="text-right">
                           {formatCurrency(item.amount)}
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </td>
+                        <td className="text-right">
                           {formatCurrency(item.amount * item.quantity)}
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
 
               {/* Invoice total */}
@@ -232,22 +209,33 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
               {/* Invoice actions */}
               <div className="flex justify-end gap-2 pt-4">
                 {selectedInvoice.pdf && (
-                  <Button asChild>
-                    <a
-                      href={selectedInvoice.pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FiExternalLink className="mr-2 h-4 w-4" />
-                      Open PDF
-                    </a>
-                  </Button>
+                  <a
+                    className="btn btn-primary"
+                    href={selectedInvoice.pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FiExternalLink className="mr-2 h-4 w-4" />
+                    Open PDF
+                  </a>
                 )}
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+
+          <div className="modal-action">
+            <button
+              className="btn"
+              onClick={() => setIsInvoiceDialogOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={() => setIsInvoiceDialogOpen(false)}>close</button>
+        </form>
+      </dialog>
     </Card>
   );
 }

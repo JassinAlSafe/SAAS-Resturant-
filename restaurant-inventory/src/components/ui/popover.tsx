@@ -19,6 +19,7 @@ export interface PopoverContentProps
   extends React.HTMLAttributes<HTMLDivElement> {
   align?: "start" | "center" | "end";
   sideOffset?: number;
+  side?: "top" | "right" | "bottom" | "left";
 }
 
 /**
@@ -70,6 +71,9 @@ const Popover = ({
         !document.querySelector("[data-popover-content]")?.contains(target)
       ) {
         setOpen(false);
+        if (onOpenChange) {
+          onOpenChange(false);
+        }
       }
     };
 
@@ -77,7 +81,7 @@ const Popover = ({
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [open, setOpen]);
+  }, [open, setOpen, onOpenChange]);
 
   return (
     <PopoverContext.Provider value={{ open, setOpen, triggerRef }}>
@@ -145,7 +149,14 @@ PopoverTrigger.displayName = "PopoverTrigger";
 
 const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
   (
-    { className, children, align = "center", sideOffset = 4, ...props },
+    {
+      className,
+      children,
+      align = "center",
+      sideOffset = 4,
+      side = "bottom",
+      ...props
+    },
     ref
   ) => {
     const { open } = React.useContext(PopoverContext);
@@ -160,6 +171,29 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
         ? "dropdown-end"
         : "";
 
+    // Create style object based on side prop
+    const positionStyle: React.CSSProperties = {};
+
+    switch (side) {
+      case "top":
+        positionStyle.bottom = "100%";
+        positionStyle.marginBottom = sideOffset;
+        break;
+      case "right":
+        positionStyle.left = "100%";
+        positionStyle.marginLeft = sideOffset;
+        break;
+      case "bottom":
+      default:
+        positionStyle.top = "100%";
+        positionStyle.marginTop = sideOffset;
+        break;
+      case "left":
+        positionStyle.right = "100%";
+        positionStyle.marginRight = sideOffset;
+        break;
+    }
+
     return (
       <div
         ref={ref}
@@ -170,9 +204,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
           alignClass,
           className
         )}
-        style={{
-          marginTop: sideOffset,
-        }}
+        style={positionStyle}
         {...props}
       >
         {children}

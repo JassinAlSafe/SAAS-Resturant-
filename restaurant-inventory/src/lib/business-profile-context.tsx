@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { BusinessProfile } from "@/lib/types";
 import { businessProfileService } from "@/lib/services/business-profile-service";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 
 // Define the context type
 interface BusinessProfileContextType {

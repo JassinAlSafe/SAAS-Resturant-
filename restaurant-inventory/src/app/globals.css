@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: bumblebee --default, dark --prefersdark;
+  themes: restaurant --default, restaurant-dark --prefersdark;
+}
+@plugin "daisyui/theme" {
+  name: "restaurant";
+  default: true;
+  color-scheme: light;
+
+  --color-primary: hsl(24 100% 50%);
+  --color-primary-content: hsl(0 0% 100%);
+  /* Add other colors from your config */
 }
 
 @layer base {

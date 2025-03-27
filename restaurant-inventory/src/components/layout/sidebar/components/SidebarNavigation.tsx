@@ -82,7 +82,6 @@ export function SidebarNavigation({
                   side="right"
                   align="start"
                   className="p-0 w-48 rounded-md border border-gray-200 shadow-md"
-                  onInteractOutside={() => setHoveredSection(null)}
                 >
                   <div className="bg-white py-1 rounded-md">
                     <div className="px-3 py-2 text-sm font-medium text-orange-500 border-b border-gray-200 mb-1">

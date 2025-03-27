@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { RestaurantIconsSetup } from "./business-profile/RestaurantIconsSetup";
 import { BusinessProfileTabs } from "./business-profile/BusinessProfileTabs";
 

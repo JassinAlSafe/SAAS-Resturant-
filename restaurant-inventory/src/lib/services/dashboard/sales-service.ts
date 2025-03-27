@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { getBusinessProfileId } from "./profile-service";
 import { getDefaultMonthsData, logQueryDetails } from "./utils";
 import { SaleRecord, SaleWithDate, SaleItem, RecentSale } from "./types";

@@ -9,7 +9,7 @@ import { InventoryTab } from "@/components/dashboard/inventory-tab";
 import { SalesTab } from "@/components/dashboard/sales-tab";
 import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
 import { useDashboard } from "@/lib/hooks/useDashboard";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { getBusinessProfileName } from "@/lib/services/dashboard/profile-service";
 
 export default function DashboardPage() {

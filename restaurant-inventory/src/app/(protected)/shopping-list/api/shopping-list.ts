@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { ShoppingListItem, ShoppingListItemDB, mapDbToShoppingListItem } from "@/lib/types";
 
 export async function fetchShoppingList() {

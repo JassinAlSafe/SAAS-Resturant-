@@ -12,7 +12,7 @@ import {
   generateShoppingList,
 } from "@/app/(protected)/shopping-list/api/shopping-list";
 import { ShoppingListItem } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 
 export function useShoppingList() {
   const queryClient = useQueryClient();

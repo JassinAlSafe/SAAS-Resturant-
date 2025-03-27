@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 
 // Enhanced cache for business profile data
 let businessProfileCache: {
@@ -54,24 +54,24 @@ export async function getBusinessProfileId(): Promise<string | null> {
             return await fetchBusinessProfileWithRetry(user.id);
         } catch (error) {
             console.error('All retries failed in getBusinessProfileId:', error);
-            
+
             // Return cached ID if available, even if expired
             if (businessProfileCache && businessProfileCache.userId === user.id) {
                 console.log('Returning stale cached business profile ID after error');
                 return businessProfileCache.id;
             }
-            
+
             return null;
         }
     } catch (error) {
         console.error('Error in getBusinessProfileId:', error);
-        
+
         // Return cached ID if available, even if expired
         if (businessProfileCache) {
             console.log('Returning stale cached business profile ID after error');
             return businessProfileCache.id;
         }
-        
+
         return null;
     }
 }
@@ -90,7 +90,7 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
 
         if (businessProfileError) {
             console.error(`Error fetching business profile: ${businessProfileError.message}`);
-            
+
             // Retry logic
             if (retryCount < MAX_RETRIES) {
                 const delay = RETRY_DELAY_BASE * Math.pow(2, retryCount);
@@ -98,28 +98,28 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return fetchBusinessProfileWithRetry(userId, retryCount + 1);
             }
-            
+
             throw businessProfileError;
         }
 
         // If no data found, check if there's a business profile directly owned by this user
         if (!businessProfileData) {
             console.log('No business profile association found, checking direct ownership');
-            
+
             const { data: directBusinessProfile, error: directProfileError } = await supabase
                 .from('business_profiles')
                 .select('id, default_currency, name')
                 .eq('user_id', userId)
                 .maybeSingle();
-                
+
             if (directProfileError) {
                 console.error(`Error fetching direct business profile: ${directProfileError.message}`);
                 return null;
             }
-            
+
             if (directBusinessProfile) {
                 console.log('Found direct business profile:', directBusinessProfile.id);
-                
+
                 // Update cache
                 businessProfileCache = {
                     id: directBusinessProfile.id,
@@ -128,30 +128,30 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
                     name: directBusinessProfile.name || 'My Business',
                     timestamp: Date.now()
                 };
-                
+
                 return directBusinessProfile.id;
             }
-            
+
             console.log('No business profile found for user');
             return null;
         }
-        
+
         // We found a business profile association, get the full business profile
         const businessProfileId = businessProfileData.business_profile_id;
         console.log('Found business profile association:', businessProfileId);
-        
+
         // Get the business profile details
         const { data: profileDetails, error: profileDetailsError } = await supabase
             .from('business_profiles')
             .select('id, default_currency, name')
             .eq('id', businessProfileId)
             .single();
-            
+
         if (profileDetailsError) {
             console.error(`Error fetching business profile details: ${profileDetailsError.message}`);
             return businessProfileId; // Still return the ID even if we couldn't get details
         }
-        
+
         // Update cache with the full details
         businessProfileCache = {
             id: businessProfileId,
@@ -160,7 +160,7 @@ async function fetchBusinessProfileWithRetry(userId: string, retryCount = 0): Pr
             name: profileDetails.name || 'My Business',
             timestamp: Date.now()
         };
-        
+
         return businessProfileId;
     } catch (error) {
         console.error(`Error in fetchBusinessProfileWithRetry: ${error}`);
@@ -232,11 +232,11 @@ export async function getBusinessProfileNameById(profileId: string): Promise<str
 export async function getBusinessProfileCurrency(): Promise<string> {
     try {
         const profileId = await getBusinessProfileId();
-        
+
         if (!profileId) {
             return 'USD'; // Default fallback
         }
-        
+
         return getBusinessProfileCurrencyById(profileId);
     } catch (error) {
         console.error('Error in getBusinessProfileCurrency:', error);
@@ -250,11 +250,11 @@ export async function getBusinessProfileCurrency(): Promise<string> {
 export async function getBusinessProfileName(): Promise<string> {
     try {
         const profileId = await getBusinessProfileId();
-        
+
         if (!profileId) {
             return 'My Business'; // Default fallback
         }
-        
+
         return getBusinessProfileNameById(profileId);
     } catch (error) {
         console.error('Error in getBusinessProfileName:', error);
@@ -285,7 +285,7 @@ export async function getBusinessProfilePlanById(profileId: string): Promise<str
         }
 
         const plan = data.subscription_plan || 'free';
-        
+
         // Update cache if it exists for this profile
         if (businessProfileCache && businessProfileCache.id === profileId) {
             businessProfileCache.plan = plan;
@@ -322,7 +322,7 @@ export async function getBusinessProfileSubscriptionStatusById(profileId: string
         }
 
         const status = data.subscription_status || 'free';
-        
+
         // Update cache if it exists for this profile
         if (businessProfileCache && businessProfileCache.id === profileId) {
             businessProfileCache.subscriptionStatus = status;
@@ -342,11 +342,11 @@ export async function getBusinessProfileSubscriptionStatusById(profileId: string
 export async function getBusinessProfilePlan(): Promise<string> {
     try {
         const profileId = await getBusinessProfileId();
-        
+
         if (!profileId) {
             return 'free'; // Default fallback
         }
-        
+
         return getBusinessProfilePlanById(profileId);
     } catch (error) {
         console.error('Error in getBusinessProfilePlan:', error);
@@ -360,11 +360,11 @@ export async function getBusinessProfilePlan(): Promise<string> {
 export async function getBusinessProfileSubscriptionStatus(): Promise<string> {
     try {
         const profileId = await getBusinessProfileId();
-        
+
         if (!profileId) {
             return 'free'; // Default fallback
         }
-        
+
         return getBusinessProfileSubscriptionStatusById(profileId);
     } catch (error) {
         console.error('Error in getBusinessProfileSubscriptionStatus:', error);
@@ -382,7 +382,7 @@ export const useBusinessProfile = {
     getBusinessProfileCurrency,
     getBusinessProfilePlan,
     getBusinessProfileSubscriptionStatus,
-    
+
     // Additional method for the billing page
     getBusinessProfilePlanById
 };

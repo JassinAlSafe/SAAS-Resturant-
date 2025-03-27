@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

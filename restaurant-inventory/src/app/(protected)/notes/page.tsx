@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Tag as TagIcon } from "lucide-react";
 import { Note, NoteTag } from "@/lib/types";
 import { notesServiceSupabase as notesService } from "@/lib/services/notes-service-supabase";
 import { useNotificationHelpers } from "@/lib/notification-context";
@@ -13,12 +13,12 @@ import { useBusinessProfile } from "@/lib/business-profile-context";
 export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
-  const [activeTab, setActiveTab] = useState("notes");
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { profile, isLoading: isLoadingProfile } = useBusinessProfile();
   const { success, error: showError } = useNotificationHelpers();
+  const tagModalRef = useRef<HTMLDialogElement>(null);
 
   // Fetch notes and tags
   const fetchNotesAndTags = async () => {
@@ -104,6 +104,18 @@ export default function Notes() {
     }
   }, [profile, isLoadingProfile]);
 
+  const openTagModal = () => {
+    if (tagModalRef.current) {
+      tagModalRef.current.showModal();
+    }
+  };
+
+  const closeTagModal = () => {
+    if (tagModalRef.current) {
+      tagModalRef.current.close();
+    }
+  };
+
   if (isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -135,9 +147,14 @@ export default function Notes() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Notes & Communication</h1>
+        <h1 className="text-2xl font-bold">Notes</h1>
         <div className="flex space-x-2">
-          {activeTab === "notes" && !isAddingNote && (
+          <button onClick={openTagModal} className="btn btn-outline">
+            <TagIcon className="h-4 w-4 mr-2" />
+            Manage Tags
+          </button>
+
+          {!isAddingNote && (
             <button
               onClick={() => setIsAddingNote(true)}
               className="btn btn-primary"
@@ -149,83 +166,85 @@ export default function Notes() {
         </div>
       </div>
 
-      <div className="tabs-container">
-        <div className="tabs tabs-boxed">
-          <a
-            className={`tab ${activeTab === "notes" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("notes")}
-          >
-            Notes
-          </a>
-          <a
-            className={`tab ${activeTab === "tags" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("tags")}
-          >
-            Tags
-          </a>
-        </div>
-
-        <div className={`mt-6 ${activeTab === "notes" ? "block" : "hidden"}`}>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <span className="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-          ) : error ? (
-            <div className="alert alert-error">
-              <span>{error}</span>
-            </div>
-          ) : (
-            <>
-              <div
-                style={{ display: isAddingNote ? "block" : "none" }}
-                data-note-form-container
-              >
-                <div className="card bg-base-100 shadow-sm mb-6">
-                  <div className="card-body">
-                    <h2 className="card-title text-lg">Add New Note</h2>
-                    <NoteForm
-                      tags={tags}
-                      onSubmit={handleAddNote}
-                      onCancel={() => setIsAddingNote(false)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {!isAddingNote && notes.length === 0 ? (
-                <div className="text-center py-12 bg-base-200 rounded-lg">
-                  <h3 className="font-medium mb-2">No notes yet</h3>
-                  <p className="text-base-content text-opacity-60 mb-4">
-                    Create your first note to get started
-                  </p>
-                  <button
-                    onClick={() => setIsAddingNote(true)}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Note
-                  </button>
-                </div>
-              ) : (
-                <NoteList
-                  notes={notes}
-                  tags={tags}
-                  onEdit={handleUpdateNote}
-                  onDelete={handleDeleteNote}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        <div className={`mt-6 ${activeTab === "tags" ? "block" : "hidden"}`}>
-          <div className="max-w-md mx-auto card bg-base-100 shadow-sm">
-            <div className="card-body">
-              <h2 className="card-title text-lg">Manage Tags</h2>
-              <TagManager tags={tags} onAddTag={handleAddTag} />
-            </div>
+      {/* Tag Management Dialog */}
+      <dialog ref={tagModalRef} id="tag_management_modal" className="modal">
+        <div className="modal-box max-w-md">
+          <h3 className="font-bold text-lg mb-4">Manage Tags</h3>
+          <TagManager
+            tags={tags}
+            onAddTag={async (tag) => {
+              try {
+                await handleAddTag(tag);
+                // Refresh tags after adding
+                const fetchedTags = await notesService.getTags();
+                setTags(fetchedTags);
+              } catch (err) {
+                console.error("Failed to add tag:", err);
+              }
+            }}
+          />
+          <div className="modal-action mt-6">
+            <button className="btn btn-primary" onClick={closeTagModal}>
+              Close
+            </button>
           </div>
         </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={closeTagModal}>close</button>
+        </form>
+      </dialog>
+
+      <div className="mt-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+          </div>
+        ) : error ? (
+          <div className="alert alert-error">
+            <span>{error}</span>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{ display: isAddingNote ? "block" : "none" }}
+              data-note-form-container
+            >
+              <div className="card bg-base-100 shadow-sm mb-6">
+                <div className="card-body">
+                  <h2 className="card-title text-lg">Add New Note</h2>
+                  <NoteForm
+                    tags={tags}
+                    onSubmit={handleAddNote}
+                    onCancel={() => setIsAddingNote(false)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {!isAddingNote && notes.length === 0 ? (
+              <div className="text-center py-12 bg-base-200 rounded-lg">
+                <h3 className="font-medium mb-2">No notes yet</h3>
+                <p className="text-base-content text-opacity-60 mb-4">
+                  Create your first note to get started
+                </p>
+                <button
+                  onClick={() => setIsAddingNote(true)}
+                  className="btn btn-primary btn-sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Note
+                </button>
+              </div>
+            ) : (
+              <NoteList
+                notes={notes}
+                tags={tags}
+                onEdit={handleUpdateNote}
+                onDelete={handleDeleteNote}
+              />
+            )}
+          </>
+        )}
       </div>
     </div>
   );

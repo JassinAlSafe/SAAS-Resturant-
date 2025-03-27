@@ -321,6 +321,9 @@ export interface Invoice {
   hostedInvoiceUrl?: string;
   createdAt: string;
   items?: InvoiceItem[];
+  invoiceNumber: string;
+  invoiceDate: string;
+  
 }
 
 export interface OperatingHours {
@@ -438,6 +441,7 @@ export function mapShoppingListItemToDb(item: ShoppingListItem): ShoppingListIte
 // Note type definition
 export interface Note {
   id: string;
+  title: string;
   content: string;
   tags: string[];
   entityType: "general" | "inventory" | "supplier" | "sale";

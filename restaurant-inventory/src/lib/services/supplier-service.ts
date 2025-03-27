@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/browser-client';
 import { Supplier, SupplierCategory } from '@/lib/types';
 
 // Cache for business profile ID

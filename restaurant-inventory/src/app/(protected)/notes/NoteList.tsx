@@ -21,8 +21,6 @@ export default function NoteList({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterTag, setFilterTag] = useState<string>("");
-  const [filterEntity, setFilterEntity] = useState<string>("");
 
   const handleDelete = async () => {
     if (!deletingNoteId) return;
@@ -52,15 +50,6 @@ export default function NoteList({
     }, 3000);
   };
 
-  const getTagByName = (tagName: string) => {
-    return tags.find((tag) => tag.name === tagName);
-  };
-
-  const getUniqueEntityTypes = () => {
-    const entityTypes = notes.map((note) => note.entityType).filter(Boolean);
-    return [...new Set(entityTypes)];
-  };
-
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const month = date.toLocaleString("default", { month: "short" });
@@ -68,7 +57,7 @@ export default function NoteList({
     const year = date.getFullYear();
     let hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, "0");
-    const ampm = hours >= 12 ? "AM" : "AM"; // Using AM for both to match image
+    const ampm = hours >= 12 ? "PM" : "AM";
 
     if (hours > 12) hours -= 12;
     if (hours === 0) hours = 12;
@@ -76,15 +65,19 @@ export default function NoteList({
     return `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`;
   };
 
-  const filteredNotes = notes.filter((note) => {
-    const matchesSearch = note.content
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesTag =
-      !filterTag || (note.tags && note.tags.includes(filterTag));
-    const matchesEntity = !filterEntity || note.entityType === filterEntity;
+  const getTagByName = (tagName: string) => {
+    return tags.find((tag) => tag.name === tagName);
+  };
 
-    return matchesSearch && matchesTag && matchesEntity;
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch =
+      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (note.tags &&
+        note.tags.some((tag) =>
+          tag.toLowerCase().includes(searchTerm.toLowerCase())
+        ));
+    return matchesSearch;
   });
 
   return (
@@ -99,33 +92,6 @@ export default function NoteList({
             className="input input-bordered w-full"
           />
         </div>
-        <div className="flex space-x-2">
-          <select
-            className="select select-bordered w-[150px]"
-            value={filterTag}
-            onChange={(e) => setFilterTag(e.target.value)}
-          >
-            <option value="">All Tags</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.name}>
-                {tag.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="select select-bordered w-[150px]"
-            value={filterEntity}
-            onChange={(e) => setFilterEntity(e.target.value)}
-          >
-            <option value="">All Entities</option>
-            {getUniqueEntityTypes().map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {filteredNotes.length === 0 ? (
@@ -138,9 +104,9 @@ export default function NoteList({
           <table className="table table-sm">
             <thead className="bg-base-200">
               <tr className="text-base-content text-opacity-70">
-                <th className="w-[40%] font-medium">Content</th>
+                <th className="w-[20%] font-medium">Title</th>
+                <th className="w-[35%] font-medium">Content</th>
                 <th className="w-[20%] font-medium">Tags</th>
-                <th className="w-[15%] font-medium">Type</th>
                 <th className="w-[15%] font-medium">Created</th>
                 <th className="w-[10%] text-center font-medium">Actions</th>
               </tr>
@@ -165,6 +131,9 @@ export default function NoteList({
                     </td>
                   ) : (
                     <>
+                      <td className="align-top py-4 font-medium">
+                        {note.title}
+                      </td>
                       <td className="align-top py-4">
                         <div className="whitespace-pre-wrap break-words">
                           {note.content}
@@ -189,29 +158,6 @@ export default function NoteList({
                               ) : null;
                             })}
                           </div>
-                        ) : (
-                          <span className="text-base-content text-opacity-40">
-                            -
-                          </span>
-                        )}
-                      </td>
-                      <td className="align-top py-4">
-                        {note.entityType ? (
-                          <span
-                            className="badge badge-sm text-white"
-                            style={{
-                              backgroundColor:
-                                note.entityType === "inventory"
-                                  ? "#10B981"
-                                  : note.entityType === "supplier"
-                                  ? "#F59E0B"
-                                  : note.entityType === "sale"
-                                  ? "#3B82F6"
-                                  : "#6B7280",
-                            }}
-                          >
-                            {note.entityType}
-                          </span>
                         ) : (
                           <span className="text-base-content text-opacity-40">
                             -

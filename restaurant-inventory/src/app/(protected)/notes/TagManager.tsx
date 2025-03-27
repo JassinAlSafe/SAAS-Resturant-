@@ -8,19 +8,13 @@ interface TagManagerProps {
   tags: NoteTag[];
   onAddTag: (tag: Omit<NoteTag, "id">) => Promise<void>;
   onDeleteTag?: (id: string) => Promise<void>;
-  onUpdateTag?: (
-    id: string,
-    tag: Partial<Omit<NoteTag, "id">>
-  ) => Promise<void>;
 }
 
 export default function TagManager({
   tags,
   onAddTag,
   onDeleteTag,
-  onUpdateTag,
 }: TagManagerProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#3B82F6");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,35 +32,49 @@ export default function TagManager({
   ];
 
   const openModal = () => {
-    setIsModalOpen(true);
-    modalRef.current?.showModal();
+    setNewTagName("");
+    setNewTagColor("#3B82F6");
+    if (modalRef.current) {
+      modalRef.current.showModal();
+    } else {
+      console.error("Modal reference is null");
+    }
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
-    modalRef.current?.close();
     setNewTagName("");
+    setNewTagColor("#3B82F6");
+    if (modalRef.current) {
+      modalRef.current.close();
+    }
   };
 
   const showToast = (message: string, type: "success" | "error") => {
-    const toast = document.getElementById("toast-container");
-    if (toast) {
-      const alertClass = type === "success" ? "alert-success" : "alert-error";
-      const alertDiv = document.createElement("div");
-      alertDiv.className = `alert ${alertClass}`;
-      alertDiv.innerHTML = `<span>${message}</span>`;
-
-      toast.appendChild(alertDiv);
-      toast.classList.add("opacity-100");
-
-      setTimeout(() => {
-        alertDiv.classList.add("opacity-0");
-        setTimeout(() => alertDiv.remove(), 300);
-        if (toast.childElementCount <= 1) {
-          toast.classList.remove("opacity-100");
-        }
-      }, 3000);
+    // Create a toast container if it doesn't exist
+    let toast = document.getElementById("toast-container");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast-container";
+      toast.className =
+        "toast toast-top toast-end z-50 transition-opacity duration-300 opacity-0";
+      document.body.appendChild(toast);
     }
+
+    const alertClass = type === "success" ? "alert-success" : "alert-error";
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert ${alertClass}`;
+    alertDiv.innerHTML = `<span>${message}</span>`;
+
+    toast.appendChild(alertDiv);
+    toast.classList.add("opacity-100");
+
+    setTimeout(() => {
+      alertDiv.classList.add("opacity-0");
+      setTimeout(() => alertDiv.remove(), 300);
+      if (toast.childElementCount <= 1) {
+        toast.classList.remove("opacity-100");
+      }
+    }, 3000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +101,7 @@ export default function TagManager({
       });
 
       showToast("Tag created successfully", "success");
+      setNewTagName(""); // Clear the input field
       closeModal();
     } catch (error) {
       console.error("Failed to create tag:", error);

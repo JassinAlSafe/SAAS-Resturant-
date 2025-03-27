@@ -5,17 +5,16 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FiArrowLeft } from "react-icons/fi";
 import { gsap } from "gsap";
 import { LoginTransition } from "@/components/auth/LoginTransition";
 import { AuthBackground } from "@/components/auth/AuthBackground";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -84,7 +83,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(email, password);
-      
+
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -166,10 +165,10 @@ export default function LoginPage() {
     // Get redirect URL from query params if available
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get("redirectTo");
-    
+
     // Force a hard navigation to dashboard to ensure a full page reload
     // This helps clear any stale state and ensures proper redirection
-    if (redirectTo && redirectTo.startsWith('/')) {
+    if (redirectTo && redirectTo.startsWith("/")) {
       window.location.href = redirectTo;
     } else {
       window.location.href = "/dashboard";

@@ -14,8 +14,8 @@ function BillingLoadingState() {
         <Skeleton className="h-5 w-2/3" />
       </div>
 
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 dark:from-blue-950/30 dark:to-indigo-950/30 dark:border-blue-900/50">
-        <CardContent className="p-6">
+      <Card className="border-accent/20">
+        <CardContent>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Skeleton className="h-4 w-20 mb-2" />
@@ -33,10 +33,10 @@ function BillingLoadingState() {
         </CardContent>
       </Card>
 
-      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full rounded-lg bg-accent opacity-10" />
 
       <Card>
-        <CardContent className="p-6">
+        <CardContent>
           <Skeleton className="h-64 w-full" />
         </CardContent>
       </Card>

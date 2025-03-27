@@ -1,16 +1,18 @@
+//Auth context provider using SSR-compatible client
+
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "./supabase";
-import { User } from "./types";
-import { useNotificationHelpers } from "./notification-context";
+import { createBrowserClient } from "@supabase/ssr";
+import { User } from "../types";
+import { useNotificationHelpers } from "../notification-context";
 import { authService } from "@/lib/services/auth-service";
 
 // Define minimal types to avoid dependencies
 type Session = {
   access_token: string;
   refresh_token: string;
-  expires_at?: number; // Make optional to match Supabase's type
+  expires_at?: number;
   user: {
     id: string;
     email?: string;
@@ -50,7 +52,16 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create Supabase browser client using the correct pattern
+const createClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = createClient();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -102,21 +113,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes with the correct SSR pattern
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth state changed:", event, session?.user?.id);
-        
-        setSession(session as Session | null);
-        setUser(session?.user ?? null);
+      const { data } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          console.log("Auth state changed:", event, session?.user?.id);
 
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setIsLoading(false);
+          setSession(session as Session | null);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
+            setIsLoading(false);
+          }
         }
-      });
+      );
 
       return () => {
         data.subscription.unsubscribe();
@@ -315,24 +328,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Show success notification with more detailed instructions
       showSuccess(
         "Account Created Successfully",
-        "Please check your email to verify your account. The verification link will expire in 1 hour. You'll need to complete your business profile setup after verification."
+        "Please check your email to verify your account. The verification link will expire in 1 hour."
       );
-
-      // We'll create the profile after email verification in the callback page
-      // This avoids RLS policy violations since the user will be authenticated by then
-      if (data.user) {
-        console.log(
-          "User created successfully, profile will be created after email verification"
-        );
-      }
 
       // Check if email confirmation is required
       const isEmailConfirmationRequired = !data.session;
-
-      // Log information about the verification process
-      console.log("Email verification required:", isEmailConfirmationRequired);
-      console.log("Verification email sent to:", email);
-      console.log("PKCE flow enabled for secure verification");
 
       return { isEmailConfirmationRequired };
     } catch (error: unknown) {
@@ -360,11 +360,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Use the auth service for a comprehensive logout
       await authService.logout();
-
-      // No need to redirect here as the auth service handles it
     } catch (error) {
       console.error("Error signing out:", error);
-      showError("Logout Failed", "There was an error signing out. Please try again.");
+      showError(
+        "Logout Failed",
+        "There was an error signing out. Please try again."
+      );
     }
   };
 
@@ -446,7 +447,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     } catch (error) {
       console.error("Error updating password:", error);
-      throw error;
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during password update";
+      return { success: false, error: errorMessage };
     }
   };
 

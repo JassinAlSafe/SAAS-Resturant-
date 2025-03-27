@@ -1,6 +1,5 @@
 import { Note, NoteTag } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
-import { useBusinessProfile } from "@/lib/business-profile-context";
+import { supabase } from "@/lib/supabase/browser-client";
 
 // Notes service
 export const notesService = {

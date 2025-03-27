@@ -63,7 +63,9 @@ function useAuth(): AuthHook {
     // Dynamic import for auth context
     const loadAuth = async () => {
       try {
-        const { useAuth: importedUseAuth } = await import("@/lib/auth-context");
+        const { useAuth: importedUseAuth } = await import(
+          "@/lib/services/auth-context"
+        );
         const auth = importedUseAuth();
         setAuthState(auth);
       } catch {

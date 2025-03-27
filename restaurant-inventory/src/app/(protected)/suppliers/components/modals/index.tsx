@@ -47,10 +47,7 @@ export function SupplierModals({
   return (
     <>
       <Dialog open={isModalOpen} onOpenChange={onCloseModal}>
-        <DialogContent
-          className="max-w-4xl w-[95%] p-0 max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-lg border-t-4 border-orange-500 mx-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-        >
+        <DialogContent className="max-w-4xl w-[95%] p-0 max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-lg border-t-4 border-orange-500 mx-auto">
           <DialogHeader className="p-6 pb-3 border-b border-gray-100">
             <DialogTitle className="text-2xl font-bold text-gray-800 flex items-center">
               {selectedSupplier ? "Edit" : "Add"} Supplier

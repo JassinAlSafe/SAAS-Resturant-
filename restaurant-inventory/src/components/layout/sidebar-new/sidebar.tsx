@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarThemeToggle } from "../sidebar/components/SidebarThemeToggle";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,

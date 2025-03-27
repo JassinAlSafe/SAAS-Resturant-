@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -142,7 +142,7 @@ export default function SignupPage() {
     } else {
       feedback.push("Add numbers");
     }
-    
+
     // Contains special characters
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       strength += 10;
@@ -271,12 +271,13 @@ export default function SignupPage() {
                       </li>
                       <li>Click the link to verify your email address</li>
                       <li>
-                        Complete your business profile setup in the onboarding process
+                        Complete your business profile setup in the onboarding
+                        process
                       </li>
                     </ol>
                     <p className="mt-2">
-                      The verification link will expire in 1 hour. Please verify your email 
-                      to access all features of your account.
+                      The verification link will expire in 1 hour. Please verify
+                      your email to access all features of your account.
                     </p>
                   </div>
                 </div>
