@@ -42,25 +42,23 @@ export function BillingTabs({ activeTab, onTabChange }: BillingTabsProps) {
   ];
 
   return (
-    <div className="tabs tabs-boxed bg-base-200 rounded-lg mb-6 p-1">
-      <div className="flex w-full">
-        {tabs.map((tab) => (
-          <button
-            key={tab.name}
-            onClick={() => onTabChange(tab.value)}
-            className={cn(
-              "tab flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
-              tab.active
-                ? "tab-active bg-base-100 text-primary"
-                : "text-base-content/70 hover:text-base-content"
-            )}
-          >
-            {tab.icon}
-            <span className="hidden sm:inline">{tab.name}</span>
-            <span className="sm:hidden">{tab.name.split(" ")[0]}</span>
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap justify-center bg-white rounded-xl border-none mb-6 p-1 shadow-sm mx-auto max-w-2xl">
+      {tabs.map((tab) => (
+        <button
+          key={tab.name}
+          onClick={() => onTabChange(tab.value)}
+          className={cn(
+            "flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all rounded-full mx-1",
+            tab.active
+              ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+              : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+          )}
+        >
+          {tab.icon}
+          <span className="hidden sm:inline">{tab.name}</span>
+          <span className="sm:hidden">{tab.name.split(" ")[0]}</span>
+        </button>
+      ))}
     </div>
   );
 }

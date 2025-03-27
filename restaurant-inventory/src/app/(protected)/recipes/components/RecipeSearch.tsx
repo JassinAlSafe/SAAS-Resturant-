@@ -43,7 +43,7 @@ export default function RecipeSearch({
 
   return (
     <div className="w-full">
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <form onSubmit={handleSearch} className="flex gap-3">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <FiSearch className="w-4 h-4 text-neutral-400" />
@@ -52,7 +52,7 @@ export default function RecipeSearch({
             type="search"
             name="query"
             placeholder="Search recipes..."
-            className="w-full pl-10 pr-10 py-2.5 border border-neutral-200 rounded-lg text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            className="w-full pl-10 pr-10 py-2.5 border border-neutral-300 rounded-md text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-500 focus:border-neutral-500"
             value={searchQuery}
             onChange={handleSearchChange}
           />
@@ -69,16 +69,16 @@ export default function RecipeSearch({
         <button
           type="button"
           onClick={onFilterClick || onFilter}
-          className={`px-4 py-2.5 rounded-lg font-medium flex items-center justify-center transition-colors duration-200 ${
+          className={`px-4 py-2.5 rounded-md font-medium flex items-center justify-center transition-colors ${
             filterActive
-              ? "bg-orange-500 text-white hover:bg-orange-600"
-              : "bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+              ? "bg-neutral-800 text-white hover:bg-neutral-900"
+              : "bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-50"
           }`}
         >
           <FiFilter className="w-4 h-4 mr-2" />
           Filter
           {filterActive && (
-            <span className="ml-1.5 px-1.5 py-0.5 bg-white text-orange-600 text-xs font-medium rounded">
+            <span className="ml-1.5 px-1.5 py-0.5 bg-white text-neutral-800 text-xs font-medium rounded">
               Active
             </span>
           )}

@@ -13,6 +13,7 @@ import {
   Archive,
   ChevronDown,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import {
   Table,
@@ -25,64 +26,87 @@ import {
 
 interface RecipeTableProps {
   recipes: Dish[];
-  showArchivedRecipes?: boolean;
-  onEdit?: (recipe: Dish) => void;
-  onDelete?: (recipe: Dish) => void;
-  onArchive?: (recipe: Dish) => Promise<void>;
+  showArchived?: boolean;
+  onAction?: (
+    recipe: Dish,
+    action: "view" | "edit" | "delete" | "archive"
+  ) => void;
+  onUnarchive?: (id: string) => Promise<void>;
+  isLoading?: boolean;
   onRowClick?: (recipe: Dish) => void;
 }
 
 export default function RecipeTableNew({
   recipes,
-  showArchivedRecipes = false,
-  onEdit,
-  onDelete,
-  onArchive,
+  showArchived = false,
+  onAction,
+  onUnarchive,
+  isLoading = false,
   onRowClick,
 }: RecipeTableProps) {
   const { formatCurrency } = useCurrency();
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
 
-  // Empty state
+  // Function to get the color based on the popularity percentage
+  const getPopularityColor = (popularity?: number) => {
+    if (!popularity) return "bg-neutral-100";
+    if (popularity < 30) return "bg-red-100";
+    if (popularity < 70) return "bg-amber-100";
+    return "bg-green-100";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white p-8">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-800"></div>
+          <p className="text-neutral-600">Loading recipes...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (recipes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center text-center py-16">
-        <Utensils className="h-16 w-16 text-neutral-300" aria-hidden="true" />
-        <h3 className="text-lg font-semibold text-neutral-900 mt-4">
-          {showArchivedRecipes
-            ? "No archived recipes found"
-            : "No recipes found"}
-        </h3>
-        <p className="text-neutral-500 max-w-md mt-2">
-          {showArchivedRecipes
-            ? "You don't have any archived recipes. Archived recipes will appear here."
-            : "Start creating recipes to build your menu."}
-        </p>
+      <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white">
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <div className="bg-neutral-100 mb-4 p-4 rounded-full">
+            <Utensils className="h-8 w-8 text-neutral-500" />
+          </div>
+          <h3 className="mb-1 text-lg font-medium text-neutral-900">
+            {showArchived ? "No archived recipes found" : "No recipes found"}
+          </h3>
+          <p className="text-neutral-500 max-w-md">
+            {showArchived
+              ? "You don't have any archived recipes yet."
+              : "Add your first recipe to get started with your menu."}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white">
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium">
+        <TableHeader className="bg-neutral-50">
+          <TableRow className="border-b border-neutral-200">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium">
               Name
             </TableHead>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium">
               Price
             </TableHead>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium">
               Category
             </TableHead>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium">
               Popularity
             </TableHead>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium">
               Status
             </TableHead>
-            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-500 font-medium text-right">
+            <TableHead className="py-4 text-xs uppercase tracking-wider text-neutral-600 font-medium text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -91,7 +115,7 @@ export default function RecipeTableNew({
           {recipes.map((recipe) => (
             <React.Fragment key={recipe.id}>
               <TableRow
-                className="hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 transition-colors"
+                className="hover:bg-neutral-50 cursor-pointer border-b border-neutral-200 transition-colors"
                 onClick={() => {
                   if (onRowClick) {
                     onRowClick(recipe);
@@ -115,7 +139,7 @@ export default function RecipeTableNew({
                         />
                       ) : (
                         <ChefHat
-                          className="h-6 w-6 text-neutral-400"
+                          className="h-6 w-6 text-neutral-500"
                           aria-hidden="true"
                         />
                       )}
@@ -142,56 +166,54 @@ export default function RecipeTableNew({
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
-                  <span className="font-medium text-orange-600">
+                  <span className="font-medium text-neutral-800">
                     {formatCurrency(recipe.price)}
                   </span>
                 </TableCell>
                 <TableCell className="py-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-neutral-100 text-neutral-700">
                     {recipe.category || "General"}
                   </span>
                 </TableCell>
                 <TableCell className="py-4">
-                  <div className="flex flex-col gap-1 w-32">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-amber-500" />
-                        <span className="text-neutral-500">Popularity</span>
-                      </span>
-                      <span className="font-medium text-neutral-800">
-                        {recipe.popularity ? `${recipe.popularity}%` : "N/A"}
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-neutral-100 rounded-full overflow-hidden">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${getProgressColor(
-                          recipe.popularity || 0
+                        className={`h-2 ${getPopularityColor(
+                          recipe.popularity
                         )}`}
-                        style={{ width: `${recipe.popularity || 0}%` }}
+                        style={{
+                          width: `${recipe.popularity || 0}%`,
+                        }}
                       ></div>
                     </div>
+                    <span className="text-xs text-neutral-600">
+                      {recipe.popularity ? `${recipe.popularity}%` : "N/A"}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
                   {recipe.isArchived ? (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-neutral-700">
+                      <Archive className="h-3 w-3 mr-1" />
                       Archived
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">
+                      <Star className="h-3 w-3 mr-1" />
                       Active
                     </span>
                   )}
                 </TableCell>
                 <TableCell className="text-right py-4">
                   <div className="flex items-center justify-end space-x-1">
-                    {showArchivedRecipes ? (
+                    {showArchived ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onArchive?.(recipe);
+                          onUnarchive?.(recipe.id);
                         }}
-                        className="p-2 text-neutral-400 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                        className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
                         title="Unarchive"
                       >
                         <Archive className="h-4 w-4" />
@@ -201,9 +223,19 @@ export default function RecipeTableNew({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onEdit?.(recipe);
+                            onAction?.(recipe, "view");
                           }}
-                          className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                          className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAction?.(recipe, "edit");
+                          }}
+                          className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
@@ -211,53 +243,154 @@ export default function RecipeTableNew({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDelete?.(recipe);
+                            onAction?.(recipe, "delete");
                           }}
-                          className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                          className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAction?.(recipe, "archive");
+                          }}
+                          className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
+                          title="Archive"
+                        >
+                          <Archive className="h-4 w-4" />
                         </button>
                       </>
                     )}
                   </div>
                 </TableCell>
               </TableRow>
-              {expandedRecipeId === recipe.id && (
-                <TableRow className="border-b border-neutral-100">
-                  <TableCell colSpan={6} className="bg-neutral-50 p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white p-4 rounded-md">
-                        <h4 className="text-sm font-semibold text-neutral-900 mb-2">
-                          Description
-                        </h4>
-                        <p className="text-sm text-neutral-600">
-                          {recipe.description || "No description available"}
-                        </p>
-                      </div>
+              {expandedRecipeId === recipe.id && !onRowClick && (
+                <TableRow className="bg-neutral-50 border-b border-neutral-200">
+                  <TableCell colSpan={6} className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2 text-neutral-900">
+                          Recipe Details
+                        </h3>
+                        <div className="bg-white p-4 rounded-md border border-neutral-200">
+                          <dl className="grid grid-cols-2 gap-4">
+                            <div>
+                              <dt className="text-xs text-neutral-500">
+                                Food Cost
+                              </dt>
+                              <dd className="text-sm font-medium text-neutral-800">
+                                {recipe.foodCost
+                                  ? formatCurrency(recipe.foodCost)
+                                  : "Not set"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs text-neutral-500">
+                                Profit Margin
+                              </dt>
+                              <dd className="text-sm font-medium text-neutral-800">
+                                {recipe.foodCost && recipe.price
+                                  ? `${Math.round(
+                                      ((recipe.price - recipe.foodCost) /
+                                        recipe.price) *
+                                        100
+                                    )}%`
+                                  : "Not set"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs text-neutral-500">
+                                Preparation Time
+                              </dt>
+                              <dd className="text-sm font-medium text-neutral-800">
+                                {recipe.preparationTime
+                                  ? `${recipe.preparationTime} min`
+                                  : "Not set"}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-xs text-neutral-500">
+                                Serving Size
+                              </dt>
+                              <dd className="text-sm font-medium text-neutral-800">
+                                {recipe.servingSize
+                                  ? `${recipe.servingSize} servings`
+                                  : "Not set"}
+                              </dd>
+                            </div>
+                          </dl>
 
-                      {recipe.ingredients && recipe.ingredients.length > 0 && (
-                        <div className="bg-white p-4 rounded-md">
-                          <h4 className="text-sm font-semibold text-neutral-900 mb-2">
-                            Ingredients
-                          </h4>
-                          <ul className="divide-y divide-neutral-100">
-                            {recipe.ingredients.map((ingredient, index) => (
-                              <li
-                                key={index}
-                                className="py-2 flex justify-between"
-                              >
-                                <span className="text-sm text-neutral-800">
-                                  {ingredient.ingredientId}
-                                </span>
-                                <span className="text-sm text-neutral-500">
-                                  {ingredient.quantity} {ingredient.unit || ""}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                          {recipe.instructions && (
+                            <div className="mt-4 pt-3 border-t border-neutral-100">
+                              <dt className="text-xs text-neutral-500 mb-1">
+                                Cooking Instructions
+                              </dt>
+                              <dd className="text-sm text-neutral-700">
+                                {recipe.instructions.length > 100
+                                  ? `${recipe.instructions.substring(
+                                      0,
+                                      100
+                                    )}...`
+                                  : recipe.instructions}
+                              </dd>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2 text-neutral-900">
+                          Ingredients
+                        </h3>
+                        {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                          <div className="bg-white p-4 rounded-md border border-neutral-200">
+                            <ul className="space-y-2">
+                              {recipe.ingredients.map((ingredient, index) => (
+                                <li
+                                  key={index}
+                                  className="flex items-center justify-between p-2 hover:bg-neutral-50 rounded"
+                                >
+                                  <span className="text-sm font-medium text-neutral-700">
+                                    {ingredient.ingredientId}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-neutral-600 font-medium">
+                                      {ingredient.quantity}
+                                    </span>
+                                    <span className="text-xs text-neutral-500">
+                                      {ingredient.unit || "units"}
+                                    </span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {/* Show relationship data details */}
+                            <div className="mt-4 pt-3 border-t border-neutral-100">
+                              <p className="text-xs text-neutral-500">
+                                <span className="font-semibold">
+                                  Recipe-Dish Relationship:
+                                </span>{" "}
+                                This recipe has full relational features enabled
+                                via its dish_id connection.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white p-4 rounded-md border border-neutral-200">
+                            <div className="text-center py-4">
+                              <span className="text-sm text-neutral-500">
+                                No ingredients listed
+                              </span>
+                              <p className="text-xs text-neutral-400 mt-1">
+                                This recipe exists in the recipes table but
+                                doesn&apos;t have a corresponding dish record
+                                yet.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -268,11 +401,4 @@ export default function RecipeTableNew({
       </Table>
     </div>
   );
-}
-
-// Helper function to get the right progress color based on value
-function getProgressColor(value: number): string {
-  if (value < 30) return "bg-red-500";
-  if (value < 70) return "bg-amber-500";
-  return "bg-green-500";
 }

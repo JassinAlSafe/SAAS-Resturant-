@@ -1,337 +1,294 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRecipes } from "./hooks/useRecipes";
-import { useRecipeModals } from "./hooks/useRecipeModals";
+import { FC, useEffect, useState, useCallback } from "react";
 import RecipeHeader from "./components/RecipeHeader";
 import RecipeTableNew from "./components/RecipeTableNew";
-import RecipeSearch from "./components/RecipeSearch";
-import RecipeLoading from "./components/RecipeLoading";
-import EmptyRecipes from "./components/EmptyRecipes";
-import RecipeActions from "./components/RecipeActions";
-import { RecipeModals } from "./components/modals/RecipeModals";
-import RecipeFilterDialog from "./components/modals/RecipeFilterDialog";
+import { FilterCriteria, RecipeModalType } from "./types";
 import { Dish } from "@/lib/types";
+import { useRecipes } from "./hooks/useRecipes";
+import RecipeFilterDialog from "./components/modals/RecipeFilterDialog";
+import RecipeSearch from "./components/RecipeSearch";
+import RecipeAddModal from "./components/modals/RecipeAddModal";
+import RecipeEditModal from "./components/modals/RecipeEditModal";
+import RecipeDeleteModal from "./components/modals/RecipeDeleteModal";
+import RecipeArchiveModal from "./components/modals/RecipeArchiveModal";
+import RecipeDetailModal from "./components/modals/RecipeDetailModal";
 import { toast } from "sonner";
-import { FiSearch } from "react-icons/fi";
 
-interface FilterCriteria {
-  categories: string[];
-  allergens: string[];
-  minPrice?: number;
-  maxPrice?: number;
-  minFoodCost?: number;
-  maxFoodCost?: number;
-}
+const RecipesPage: FC = () => {
+  const { recipes, isLoading, isError, refetch } = useRecipes();
 
-export default function RecipesPage() {
-  // Use our custom hooks
-  const {
-    recipes,
-    ingredients,
-    isLoading,
-    error,
-    showArchivedRecipes,
-    setShowArchivedRecipes,
-    addRecipe,
-    updateRecipe,
-    deleteRecipe,
-    archiveRecipe,
-    unarchiveRecipe,
-    fetchRecipesAndIngredients,
-  } = useRecipes();
-
-  // Memoize the fetch function to prevent infinite loops
-  const fetchRecipesAndIngredientsMemoized = useCallback(() => {
-    fetchRecipesAndIngredients();
-  }, [fetchRecipesAndIngredients]);
-
-  // Use recipe modals hook
-  const recipeModals = useRecipeModals();
-
-  // State for search and processing status
+  const [filteredRecipes, setFilteredRecipes] = useState<Dish[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // State for filter dialog and criteria
-  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     categories: [],
     allergens: [],
   });
+  const [showArchivedRecipes, setShowArchivedRecipes] = useState(false);
+  const [currentRecipe, setCurrentRecipe] = useState<Dish | null>(null);
+  const [modalType, setModalType] = useState<RecipeModalType | null>(null);
 
-  // Effect to refetch recipes when archive state changes
-  useEffect(() => {
-    fetchRecipesAndIngredientsMemoized();
-  }, [showArchivedRecipes, fetchRecipesAndIngredientsMemoized]);
+  // Modal disclosure hooks
+  const addModal = useDisclosure(false);
+  const editModal = useDisclosure(false);
+  const deleteModal = useDisclosure(false);
+  const archiveModal = useDisclosure(false);
+  const detailModal = useDisclosure(false);
+  const filterModal = useDisclosure(false);
 
-  // Update the filter recipes function to include all criteria
-  const filteredRecipes = recipes.filter((recipe) => {
-    // Search query filter
-    const matchesSearch =
-      !searchQuery ||
-      recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Handle add/edit/delete/archive actions
+  const handleAddRecipe = () => {
+    setModalType("add");
+    addModal.open();
+  };
 
-    // Archive status filter
-    const matchesArchiveState = showArchivedRecipes
-      ? recipe.isArchived
-      : !recipe.isArchived;
+  const handleEditRecipe = (recipe: Dish) => {
+    setCurrentRecipe(recipe);
+    setModalType("edit");
+    editModal.open();
+  };
 
-    // Category filter
-    const matchesCategory =
-      filterCriteria.categories.length === 0 ||
-      (recipe.category && filterCriteria.categories.includes(recipe.category));
+  const handleDeleteRecipe = (recipe: Dish) => {
+    setCurrentRecipe(recipe);
+    setModalType("delete");
+    deleteModal.open();
+  };
 
-    // Allergen filter
-    const matchesAllergens =
-      filterCriteria.allergens.length === 0 ||
-      (recipe.allergies &&
-        filterCriteria.allergens.every((allergen) =>
-          recipe.allergies?.includes(allergen)
-        ));
+  const handleArchiveRecipe = (recipe: Dish) => {
+    setCurrentRecipe(recipe);
+    setModalType("archive");
+    archiveModal.open();
+  };
 
-    // Price range filter
-    const matchesPrice =
-      (!filterCriteria.minPrice || recipe.price >= filterCriteria.minPrice) &&
-      (!filterCriteria.maxPrice || recipe.price <= filterCriteria.maxPrice);
+  const handleViewRecipe = (recipe: Dish) => {
+    setCurrentRecipe(recipe);
+    setModalType("view");
+    detailModal.open();
+  };
 
-    // Food cost range filter
-    const matchesFoodCost =
-      (!filterCriteria.minFoodCost ||
-        (recipe.foodCost && recipe.foodCost >= filterCriteria.minFoodCost)) &&
-      (!filterCriteria.maxFoodCost ||
-        (recipe.foodCost && recipe.foodCost <= filterCriteria.maxFoodCost));
+  // Apply filters to recipes
+  const applyFilters = useCallback(() => {
+    console.log("Applying filters to", recipes.length, "recipes");
 
-    return (
-      matchesSearch &&
-      matchesArchiveState &&
-      matchesCategory &&
-      matchesAllergens &&
-      matchesPrice &&
-      matchesFoodCost
+    // Analyze recipe-dish relationships (safely checking for dish_id property)
+    const recipesWithDishes = recipes.filter(
+      (recipe) => "dish_id" in recipe && recipe.dish_id != null
     );
-  });
+    const recipesWithoutDishes = recipes.filter(
+      (recipe) => !("dish_id" in recipe) || recipe.dish_id == null
+    );
 
-  // Sort the filtered recipes based on name
-  const sortedRecipes = [...filteredRecipes].sort((a, b) => {
-    return a.name.localeCompare(b.name);
-  });
+    console.log(`Recipe-Dish Relationship Analysis:
+    - Total Recipes: ${recipes.length}
+    - With Dish relationship: ${recipesWithDishes.length}
+    - Without Dish relationship: ${recipesWithoutDishes.length}`);
 
-  // Handle toggling archived recipes view
-  const handleToggleArchivedRecipes = (show: boolean) => {
-    setShowArchivedRecipes(show);
-    setSearchQuery(""); // Clear search when switching views
-  };
+    let results = [...recipes];
 
-  // Handle deleting a recipe
-  const handleDeleteRecipe = async (recipeId: string) => {
-    setIsProcessing(true);
-    try {
-      const result = await deleteRecipe(recipeId);
-
-      if (result.success) {
-        recipeModals.closeModal();
-        toast.success("Recipe deleted successfully");
-      } else if (result.hasSalesReferences) {
-        recipeModals.setArchiveOption(true);
-        toast.error("Cannot delete recipe", {
-          description:
-            "This recipe has associated sales records. You can archive it instead to hide it from active recipes.",
-          duration: 5000,
-        });
-      } else {
-        toast.error(`Failed to delete recipe: ${result.error}`);
-      }
-    } catch (error) {
-      console.error("Error in handleDeleteRecipe:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle archiving a recipe
-  const handleArchiveRecipe = async (recipeId: string) => {
-    setIsProcessing(true);
-    try {
-      const success = await archiveRecipe(recipeId);
-      if (success) {
-        recipeModals.closeModal();
-        toast.success("Recipe archived successfully");
-      } else {
-        toast.error("Failed to archive recipe");
-      }
-    } catch (error) {
-      console.error("Error in handleArchiveRecipe:", error);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle add recipe
-  const handleAddRecipe = async (recipe: Dish) => {
-    setIsProcessing(true);
-    try {
-      await addRecipe(recipe);
-      recipeModals.closeModal();
-      await fetchRecipesAndIngredientsMemoized(); // Refetch after adding
-      toast.success("Recipe added successfully");
-    } catch (error) {
-      console.error("Error in handleAddRecipe:", error);
-      toast.error("Failed to add recipe");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle edit recipe
-  const handleEditRecipe = async (recipe: Dish) => {
-    setIsProcessing(true);
-    try {
-      const { id, ...recipeData } = recipe;
-      await updateRecipe(id, recipeData);
-      recipeModals.closeModal();
-      await fetchRecipesAndIngredientsMemoized(); // Refetch after editing
-      toast.success("Recipe updated successfully");
-    } catch (error) {
-      console.error("Error in handleEditRecipe:", error);
-      toast.error("Failed to update recipe");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle unarchive recipe
-  const handleUnarchiveRecipe = async (recipe: Dish) => {
-    if (!recipe.id) {
-      toast.error("Invalid recipe");
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      await unarchiveRecipe(recipe.id);
-      await fetchRecipesAndIngredientsMemoized(); // Refetch after unarchiving
-      toast.success("Recipe unarchived successfully");
-    } catch (error) {
-      console.error("Error unarchiving recipe:", error);
-      toast.error("Failed to unarchive recipe");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Handle filter dialog open
-  const handleFilterClick = () => {
-    setIsFilterDialogOpen(true);
-  };
-
-  // Handle filter apply
-  const handleFilterApply = (criteria: FilterCriteria) => {
-    setFilterCriteria(criteria);
-    setIsFilterDialogOpen(false);
-  };
-
-  // Handle filter clear
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    setFilterCriteria({
-      categories: [],
-      allergens: [],
+    // Filter by archived status
+    results = results.filter((recipe) => {
+      // Safeguard against undefined isArchived values
+      const isArchived = recipe.isArchived ?? false;
+      return showArchivedRecipes ? isArchived : !isArchived;
     });
+
+    console.log("After archived filtering:", results.length, "recipes remain");
+
+    // Apply search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      results = results.filter(
+        (recipe) =>
+          recipe.name.toLowerCase().includes(query) ||
+          recipe.category?.toLowerCase().includes(query) ||
+          recipe.description?.toLowerCase().includes(query)
+      );
+
+      console.log("After search filtering:", results.length, "recipes remain");
+    }
+
+    // Apply category filter
+    if (filterCriteria.categories && filterCriteria.categories.length > 0) {
+      results = results.filter((recipe) =>
+        filterCriteria.categories?.includes(recipe.category || "")
+      );
+    }
+
+    // Apply price range filter
+    if (filterCriteria.minPrice !== undefined) {
+      results = results.filter(
+        (recipe) => recipe.price >= (filterCriteria.minPrice || 0)
+      );
+    }
+    if (filterCriteria.maxPrice !== undefined) {
+      results = results.filter(
+        (recipe) => recipe.price <= (filterCriteria.maxPrice || 999999)
+      );
+    }
+
+    setFilteredRecipes(results);
+  }, [recipes, searchQuery, filterCriteria, showArchivedRecipes]);
+
+  // Update filters when recipes change
+  useEffect(() => {
+    applyFilters();
+  }, [recipes, searchQuery, filterCriteria, showArchivedRecipes, applyFilters]);
+
+  // Return handler after recipe operation
+  const handleRecipeChange = useCallback(() => {
+    console.log("handleRecipeChange called - refreshing recipes");
+
+    // Try to use the refetch function if available
+    if (typeof refetch === "function") {
+      try {
+        console.log("Using refetch function to refresh recipes");
+        refetch();
+
+        // Force update of filtered recipes after a short delay
+        setTimeout(() => {
+          applyFilters();
+          console.log("Applied filters after delay");
+        }, 500);
+      } catch (error) {
+        console.error("Error refetching recipes:", error);
+        toast.error("Failed to refresh recipe list");
+
+        // Force a manual re-filter as fallback
+        applyFilters();
+      }
+    } else {
+      console.warn("refetch is not a function, using fallback refresh method");
+      // Force a list update by just refreshing the filtered list
+      applyFilters();
+      toast.success("Recipe added successfully");
+    }
+  }, [refetch, applyFilters]);
+
+  // Handle modal close events
+  const handleCloseModal = () => {
+    setCurrentRecipe(null);
+    setModalType(null);
   };
 
+  // Return the component JSX
   return (
-    <div className="bg-white min-h-screen px-6 py-8">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <RecipeHeader
-        recipesCount={sortedRecipes.length}
-        totalRecipes={sortedRecipes.length}
-        error={error}
-        onRetry={fetchRecipesAndIngredientsMemoized}
-        showArchivedRecipes={showArchivedRecipes}
-        onToggleArchivedRecipes={handleToggleArchivedRecipes}
+        recipeCount={filteredRecipes.length}
+        onAddRecipe={handleAddRecipe}
+        showArchived={showArchivedRecipes}
+        setShowArchived={setShowArchivedRecipes}
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={refetch}
       />
 
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <RecipeSearch
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onFilterClick={handleFilterClick}
-            filterActive={
-              filterCriteria.categories.length > 0 ||
-              filterCriteria.allergens.length > 0 ||
-              filterCriteria.minPrice !== undefined ||
-              filterCriteria.maxPrice !== undefined ||
-              filterCriteria.minFoodCost !== undefined ||
-              filterCriteria.maxFoodCost !== undefined
-            }
-          />
-          <RecipeActions
-            showArchivedRecipes={showArchivedRecipes}
-            onAddRecipe={recipeModals.openAddModal}
-          />
-        </div>
-      </div>
+      <RecipeSearch
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onFilter={() => filterModal.open()}
+        filterCriteria={filterCriteria}
+      />
 
-      {isLoading ? (
-        <RecipeLoading />
-      ) : recipes.length === 0 ? (
-        <EmptyRecipes
-          showArchivedRecipes={showArchivedRecipes}
-          onAddRecipe={recipeModals.openAddModal}
-        />
-      ) : sortedRecipes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mb-4">
-            <FiSearch className="w-8 h-8 text-orange-500" />
-          </div>
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-            No recipes found
-          </h3>
-          <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-            {showArchivedRecipes
-              ? "No archived recipes match your search criteria."
-              : "No recipes match your search criteria."}
-          </p>
-          <button
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors duration-200"
-            onClick={handleClearFilters}
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : (
-        <RecipeTableNew
-          recipes={sortedRecipes}
-          showArchivedRecipes={showArchivedRecipes}
-          onEdit={recipeModals.openEditModal}
-          onDelete={recipeModals.openDeleteModal}
-          onArchive={handleUnarchiveRecipe}
-          onRowClick={recipeModals.openViewIngredientsModal}
+      <RecipeTableNew
+        recipes={filteredRecipes}
+        isLoading={isLoading}
+        onAction={(recipe, action) => {
+          if (action === "view") handleViewRecipe(recipe);
+          if (action === "edit") handleEditRecipe(recipe);
+          if (action === "delete") handleDeleteRecipe(recipe);
+          if (action === "archive") handleArchiveRecipe(recipe);
+        }}
+        showArchived={showArchivedRecipes}
+        onUnarchive={async () => await refetch()}
+      />
+
+      {/* Modals */}
+      {recipes.length > 0 && (
+        <RecipeFilterDialog
+          isOpen={filterModal.isOpen}
+          onClose={filterModal.close}
+          recipes={recipes}
+          onFilter={setFilterCriteria}
         />
       )}
 
-      {/* Recipe Modals */}
-      <RecipeModals
-        ingredients={ingredients}
-        isProcessing={isProcessing}
-        onAddRecipe={handleAddRecipe}
-        onEditRecipe={handleEditRecipe}
-        onDeleteRecipe={handleDeleteRecipe}
-        onArchiveRecipe={handleArchiveRecipe}
-        onBulkDeleteRecipes={() => console.log("Bulk delete not implemented")}
-        onBulkArchiveRecipes={() => console.log("Bulk archive not implemented")}
-        {...recipeModals}
-      />
+      {modalType === "add" && (
+        <RecipeAddModal
+          isOpen={addModal.isOpen}
+          onClose={() => {
+            console.log("RecipeAddModal closing...");
+            addModal.close();
+            handleCloseModal();
+            // Explicitly refresh recipes when modal closes
+            if (typeof refetch === "function") {
+              console.log("Explicit refetch on modal close");
+              refetch().catch((err) =>
+                console.error("Error in explicit refetch:", err)
+              );
+            }
+          }}
+          onSuccess={handleRecipeChange}
+        />
+      )}
 
-      {/* Filter Dialog */}
-      <RecipeFilterDialog
-        isOpen={isFilterDialogOpen}
-        onClose={() => setIsFilterDialogOpen(false)}
-        onFilter={handleFilterApply}
-        recipes={recipes}
-      />
+      {modalType === "edit" && currentRecipe && (
+        <RecipeEditModal
+          isOpen={editModal.isOpen}
+          onClose={() => {
+            editModal.close();
+            handleCloseModal();
+          }}
+          recipe={currentRecipe}
+          onSuccess={handleRecipeChange}
+        />
+      )}
+
+      {modalType === "delete" && currentRecipe && (
+        <RecipeDeleteModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => {
+            deleteModal.close();
+            handleCloseModal();
+          }}
+          recipe={currentRecipe}
+          onSuccess={handleRecipeChange}
+        />
+      )}
+
+      {modalType === "archive" && currentRecipe && (
+        <RecipeArchiveModal
+          isOpen={archiveModal.isOpen}
+          onClose={() => {
+            archiveModal.close();
+            handleCloseModal();
+          }}
+          recipe={currentRecipe}
+          isArchiving={!currentRecipe.isArchived}
+          onSuccess={handleRecipeChange}
+        />
+      )}
+
+      {modalType === "view" && currentRecipe && (
+        <RecipeDetailModal
+          isOpen={detailModal.isOpen}
+          onClose={() => {
+            detailModal.close();
+            handleCloseModal();
+          }}
+          recipe={currentRecipe}
+        />
+      )}
     </div>
   );
+};
+
+// Create local useDisclosure hook
+function useDisclosure(initialState = false) {
+  const [isOpen, setIsOpen] = useState(initialState);
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
+  return { isOpen, open, close };
 }
+
+export default RecipesPage;

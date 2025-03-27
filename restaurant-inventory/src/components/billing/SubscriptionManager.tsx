@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge, BadgeProps } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,6 +30,7 @@ import {
   formatInterval,
   Subscription,
 } from "./BillingService";
+import { cn } from "@/lib/utils";
 
 interface SubscriptionManagerProps {
   businessProfileId: string;
@@ -54,7 +54,15 @@ const LoadingButton = ({
   isLoading: boolean;
   loadingText?: string;
 }) => (
-  <Button {...props} disabled={isLoading || props.disabled}>
+  <button
+    {...props}
+    disabled={isLoading || props.disabled}
+    className={cn(
+      "flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors",
+      "bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50",
+      props.className
+    )}
+  >
     {isLoading ? (
       <>
         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -63,7 +71,7 @@ const LoadingButton = ({
     ) : (
       children
     )}
-  </Button>
+  </button>
 );
 
 export function SubscriptionManager({
@@ -157,27 +165,6 @@ export function SubscriptionManager({
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Helper function to get status badge variant
-  const getStatusVariant = (
-    status: string | null | undefined
-  ): BadgeProps["variant"] => {
-    if (!status) return "outline";
-
-    switch (status) {
-      case "active":
-        return "default";
-      case "trialing":
-        return "secondary";
-      case "past_due":
-        return "warning";
-      case "canceled":
-      case "unpaid":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   // Render subscription status badge
   const renderStatusBadge = (status: string | null | undefined) => {
     if (!status) return null;
@@ -185,49 +172,41 @@ export function SubscriptionManager({
     switch (status) {
       case "active":
         return (
-          <Badge
-            variant={getStatusVariant(status)}
-            className="bg-green-50 text-green-700 border-green-200"
-          >
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <CheckCircle className="w-3 h-3 mr-1" /> Active
-          </Badge>
+          </span>
         );
       case "trialing":
         return (
-          <Badge
-            variant={getStatusVariant(status)}
-            className="bg-blue-50 text-blue-700 border-blue-200"
-          >
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <Calendar className="w-3 h-3 mr-1" /> Trial
-          </Badge>
+          </span>
         );
       case "past_due":
         return (
-          <Badge
-            variant={getStatusVariant(status)}
-            className="bg-amber-50 text-amber-700 border-amber-200"
-          >
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
             <AlertCircle className="w-3 h-3 mr-1" /> Past Due
-          </Badge>
+          </span>
         );
       case "canceled":
         return (
-          <Badge
-            variant={getStatusVariant(status)}
-            className="bg-gray-50 text-gray-700 border-gray-200"
-          >
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
             Canceled
-          </Badge>
+          </span>
         );
       default:
-        return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {status}
+          </span>
+        );
     }
   };
 
   // Loading state
   if (loading) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm rounded-xl">
         <CardHeader>
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
@@ -249,7 +228,7 @@ export function SubscriptionManager({
   // Error state
   if (subscription?.error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="rounded-xl">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>
@@ -257,7 +236,7 @@ export function SubscriptionManager({
           <Button
             variant="outline"
             size="sm"
-            className="mt-2"
+            className="mt-2 rounded-full"
             onClick={() => window.location.reload()}
           >
             <RefreshCw className="mr-2 h-4 w-4" /> Try Again
@@ -270,7 +249,7 @@ export function SubscriptionManager({
   // No subscription
   if (!subscription?.subscription_id) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Subscription</CardTitle>
           <CardDescription>
@@ -286,7 +265,7 @@ export function SubscriptionManager({
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <LoadingButton
-            className="w-full"
+            className="w-full rounded-full bg-orange-500 hover:bg-orange-600"
             onClick={() => handleSubscribe("price_1OvXYZABCDEFGHIJKLMNOP")}
             disabled={actionLoading}
             isLoading={actionLoading}
@@ -305,7 +284,7 @@ export function SubscriptionManager({
 
   // Active subscription
   return (
-    <Card>
+    <Card className="border-none shadow-sm rounded-xl">
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
@@ -354,10 +333,7 @@ export function SubscriptionManager({
                 </Alert>
               )}
               {subscription.details.cancelAtPeriodEnd && (
-                <Alert
-                  variant="warning"
-                  className="bg-amber-50 border-amber-200"
-                >
+                <Alert className="bg-amber-50 border-amber-200">
                   <AlertCircle className="h-4 w-4 text-amber-600" />
                   <AlertTitle className="text-amber-800">
                     Cancellation Scheduled
@@ -374,8 +350,7 @@ export function SubscriptionManager({
       </CardContent>
       <CardFooter>
         <LoadingButton
-          className="w-full"
-          variant="outline"
+          className="w-full border border-orange-200 bg-white text-gray-700 hover:bg-orange-50 rounded-full"
           onClick={handleManageSubscription}
           disabled={actionLoading}
           isLoading={actionLoading}

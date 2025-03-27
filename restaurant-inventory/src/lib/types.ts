@@ -28,6 +28,15 @@ export interface Dish {
   createdAt: string;
   updatedAt: string;
   isArchived?: boolean;
+  preparationTime?: number;
+  servingSize?: number;
+  instructions?: string;
+  nutritionInfo?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
 }
 
 // DishIngredient interface for the relationship between dishes and ingredients
@@ -323,7 +332,7 @@ export interface Invoice {
   items?: InvoiceItem[];
   invoiceNumber: string;
   invoiceDate: string;
-  
+
 }
 
 export interface OperatingHours {

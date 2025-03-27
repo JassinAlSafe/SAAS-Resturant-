@@ -1,16 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { format } from "date-fns";
 import { SaleData, SummaryData } from "./types";
 import { useState } from "react";
+import SalesTable from "../SalesTable";
+import { Sale } from "@/lib/types";
 
 const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#A569BD",
-  "#EC7063",
+  "#F97316", // orange-500
+  "#FB923C", // orange-400
+  "#FD9A46", // a lighter orange
+  "#FDBA74", // orange-300
+  "#FFB686", // a peach color
+  "#FED7AA", // orange-200
 ];
 
 interface SalesAnalysisTabsProps {
@@ -38,37 +41,47 @@ export function SalesAnalysisTabs({
   );
 
   return (
-    <div className="border border-neutral-100 rounded-lg">
-      <div className="tabs tabs-bordered w-full">
-        <button
-          className={`tab text-sm font-medium px-6 ${
-            activeTab === "categories" ? "tab-active" : ""
-          }`}
-          onClick={() => setActiveTab("categories")}
-        >
-          Categories
-        </button>
+    <div className="bg-white border-none shadow-sm rounded-xl">
+      {/* Tab navigation */}
+      <div className="flex justify-center pt-5 px-6 mb-4">
+        <div className="inline-flex rounded-full p-1 bg-orange-50/50 border-0">
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "categories"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("categories")}
+          >
+            Categories
+          </button>
 
-        <button
-          className={`tab text-sm font-medium px-6 ${
-            activeTab === "items" ? "tab-active" : ""
-          }`}
-          onClick={() => setActiveTab("items")}
-        >
-          Top Items
-        </button>
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "items"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("items")}
+          >
+            Top Items
+          </button>
 
-        <button
-          className={`tab text-sm font-medium px-6 ${
-            activeTab === "transactions" ? "tab-active" : ""
-          }`}
-          onClick={() => setActiveTab("transactions")}
-        >
-          Transactions
-        </button>
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "transactions"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("transactions")}
+          >
+            Transactions
+          </button>
+        </div>
       </div>
 
-      <div className="p-5">
+      {/* Tab content container */}
+      <div className="px-5 pb-5">
         {/* Categories Tab Content */}
         {activeTab === "categories" && (
           <CategoryAnalysis
@@ -128,7 +141,7 @@ function CategoryAnalysis({
       <div className="h-[400px]">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
-            <span className="loading loading-spinner loading-md text-orange-600"></span>
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
           </div>
         ) : pieChartData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -185,7 +198,10 @@ function CategoryAnalysis({
                   {Object.entries(categoryTotals)
                     .sort((a, b) => b[1].sales - a[1].sales)
                     .map(([category, data], index) => (
-                      <tr key={index}>
+                      <tr
+                        key={index}
+                        className="hover:bg-orange-50/30 transition-colors"
+                      >
                         <td className="font-medium">
                           <div className="flex items-center gap-2">
                             <div
@@ -197,10 +213,14 @@ function CategoryAnalysis({
                             {category}
                           </div>
                         </td>
-                        <td className="text-right">
+                        <td className="text-right font-medium text-orange-600">
                           {formatCurrency(data.sales)}
                         </td>
-                        <td className="text-right">{data.items}</td>
+                        <td className="text-right">
+                          <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-sm">
+                            {data.items}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                 </tbody>
@@ -241,7 +261,7 @@ function TopItemsAnalysis({
 
       {isLoading ? (
         <div className="h-[350px] w-full flex items-center justify-center">
-          <span className="loading loading-spinner loading-md text-orange-600"></span>
+          <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
         </div>
       ) : salesData.length > 0 ? (
         <div className="overflow-y-auto max-h-[400px]">
@@ -287,12 +307,16 @@ function TopItemsAnalysis({
                   <tr key={index}>
                     <td className="font-medium">{item.dish_name}</td>
                     <td>
-                      <Badge variant="outline" className="bg-primary/5">
+                      <Badge className="bg-orange-50 text-orange-600 border-none hover:bg-orange-100">
                         {item.category || "Uncategorized"}
                       </Badge>
                     </td>
-                    <td className="text-right">{item.quantity}</td>
-                    <td className="text-right font-medium">
+                    <td className="text-right">
+                      <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-sm">
+                        {item.quantity}
+                      </span>
+                    </td>
+                    <td className="text-right font-medium text-orange-600">
                       {formatCurrency(item.total)}
                     </td>
                   </tr>
@@ -318,8 +342,22 @@ interface TransactionHistoryProps {
 function TransactionHistory({
   isLoading,
   salesData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   formatCurrency,
 }: TransactionHistoryProps) {
+  // Adapter function to convert SaleData to Sale[]
+  const adaptSalesToTableFormat = (data: SaleData[]): Sale[] => {
+    return data.map((sale) => ({
+      id: sale.id || `sale-${Math.random().toString(36).substring(7)}`,
+      date: sale.date,
+      dishId: sale.items[0]?.dish_name || "multiple",
+      dishName: sale.items.map((item) => item.dish_name).join(", "),
+      quantity: sale.items.reduce((sum, item) => sum + item.quantity, 0),
+      totalAmount: sale.total,
+      createdAt: sale.date, // Use date as createdAt since it's required
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -333,56 +371,13 @@ function TransactionHistory({
 
       {isLoading ? (
         <div className="h-[350px] w-full flex items-center justify-center">
-          <span className="loading loading-spinner loading-md text-orange-600"></span>
-        </div>
-      ) : salesData.length > 0 ? (
-        <div className="overflow-y-auto max-h-[400px]">
-          <table className="table table-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Items</th>
-                <th className="text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {salesData
-                .sort(
-                  (a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                )
-                .map((sale, index) => (
-                  <tr key={index}>
-                    <td className="font-medium">
-                      {format(new Date(sale.date), "EEEE, MMM d, yyyy")}
-                    </td>
-                    <td>{format(new Date(sale.date), "h:mm a")}</td>
-                    <td>
-                      <div className="flex flex-wrap gap-1.5 max-w-md">
-                        {sale.items.map((item, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="mb-1 bg-primary/5 whitespace-nowrap"
-                          >
-                            {item.dish_name} × {item.quantity}
-                          </Badge>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="text-right font-medium">
-                      {formatCurrency(sale.total)}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+          <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
         </div>
       ) : (
-        <div className="h-[350px] w-full flex items-center justify-center text-neutral-500">
-          No transactions available for the selected period
-        </div>
+        <SalesTable
+          sales={adaptSalesToTableFormat(salesData)}
+          onRefresh={() => {}}
+        />
       )}
     </div>
   );

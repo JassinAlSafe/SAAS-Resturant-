@@ -233,37 +233,41 @@ export default function BillingContent() {
     : null;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">
+    <div className="container mx-auto py-6 space-y-6 max-w-6xl px-4">
+      <div className="flex flex-col gap-2 text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           Billing & Subscription
         </h1>
-        <p className="text-base-content/70">
+        <p className="text-gray-600">
           Manage your subscription, payment methods, and billing history
         </p>
       </div>
 
       {/* Billing Summary Card */}
-      <Card className="border-accent/20">
-        <CardContent>
+      <Card className="bg-white border-none shadow-sm rounded-xl">
+        <CardContent className="p-6">
           <div className="grid md:grid-cols-3 gap-6">
             {/* Current Plan */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-base-content/70">
+            <div className="space-y-2 text-center">
+              <h3 className="text-sm font-medium text-gray-500">
                 Current Plan
               </h3>
               {loading.subscription ? (
-                <Skeleton className="h-8 w-32" />
+                <div className="flex justify-center">
+                  <Skeleton className="h-8 w-32" />
+                </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-semibold">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <span className="text-xl font-semibold text-gray-900">
                     {subscription?.plan?.name || "No active plan"}
                   </span>
                   {subscription?.status === "active" && (
-                    <span className="badge badge-success badge-sm">Active</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-green-500 to-green-400 text-white">
+                      Active
+                    </span>
                   )}
                   {subscription?.status === "canceled" && (
-                    <span className="badge badge-warning badge-sm">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-orange-500 to-orange-400 text-white">
                       Canceled
                     </span>
                   )}
@@ -272,14 +276,16 @@ export default function BillingContent() {
             </div>
 
             {/* Next Billing */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-base-content/70">
+            <div className="space-y-2 text-center">
+              <h3 className="text-sm font-medium text-gray-500">
                 Next Billing
               </h3>
               {loading.subscription ? (
-                <Skeleton className="h-8 w-32" />
+                <div className="flex justify-center">
+                  <Skeleton className="h-8 w-32" />
+                </div>
               ) : (
-                <p className="text-xl font-semibold">
+                <p className="text-xl font-semibold text-gray-900">
                   {nextBillingDate
                     ? format(nextBillingDate, "MMMM d, yyyy")
                     : "Not applicable"}
@@ -288,14 +294,16 @@ export default function BillingContent() {
             </div>
 
             {/* Payment Method */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-base-content/70">
+            <div className="space-y-2 text-center">
+              <h3 className="text-sm font-medium text-gray-500">
                 Payment Method
               </h3>
               {loading.paymentMethods ? (
-                <Skeleton className="h-8 w-32" />
+                <div className="flex justify-center">
+                  <Skeleton className="h-8 w-32" />
+                </div>
               ) : (
-                <p className="text-xl font-semibold">
+                <p className="text-xl font-semibold text-gray-900">
                   {paymentMethods.length > 0
                     ? `${paymentMethods[0].brand} •••• ${paymentMethods[0].last4}`
                     : "No payment method"}
@@ -308,31 +316,36 @@ export default function BillingContent() {
 
       {/* Error alerts */}
       {errors.length > 0 && (
-        <div className="alert alert-error">
-          <FiAlertTriangle className="h-5 w-5" />
-          <div>
-            <h3 className="font-bold">Error loading billing information</h3>
-            <ul className="list-disc pl-5 mt-2">
-              {errors.map((error, index) => (
-                <li key={index}>
-                  {error.section}: {error.message}
-                  <button
-                    className="btn btn-ghost btn-xs ml-2"
-                    onClick={() => {
-                      clearErrorsForSection(error.section);
-                      if (error.section === "subscription") fetchSubscription();
-                      if (error.section === "paymentMethods")
-                        fetchPaymentMethods();
-                      if (error.section === "invoices") fetchInvoices();
-                      if (error.section === "plans") fetchPlans();
-                    }}
-                  >
-                    <FiRefreshCw className="mr-1 h-3 w-3" />
-                    Retry
-                  </button>
-                </li>
-              ))}
-            </ul>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="flex items-start">
+            <FiAlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-3" />
+            <div>
+              <h3 className="font-semibold text-red-800">
+                Error loading billing information
+              </h3>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                {errors.map((error, index) => (
+                  <li key={index} className="text-sm">
+                    {error.section}: {error.message}
+                    <button
+                      className="ml-2 inline-flex items-center text-xs font-medium text-red-700 hover:text-red-900 bg-red-100 hover:bg-red-200 px-2 py-1 rounded transition-colors"
+                      onClick={() => {
+                        clearErrorsForSection(error.section);
+                        if (error.section === "subscription")
+                          fetchSubscription();
+                        if (error.section === "paymentMethods")
+                          fetchPaymentMethods();
+                        if (error.section === "invoices") fetchInvoices();
+                        if (error.section === "plans") fetchPlans();
+                      }}
+                    >
+                      <FiRefreshCw className="mr-1 h-3 w-3" />
+                      Retry
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       )}
@@ -350,19 +363,22 @@ export default function BillingContent() {
                 onSubscriptionChange={handleSubscriptionChange}
               />
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>No Active Subscription</CardTitle>
-                  <CardDescription>
+              <Card className="bg-white border-none shadow-sm rounded-xl">
+                <CardHeader className="pb-5 border-none">
+                  <CardTitle className="text-lg font-bold text-gray-900">
+                    No Active Subscription
+                  </CardTitle>
+                  <CardDescription className="text-gray-600 mt-1">
                     You don&apos;t have an active subscription. Choose a plan to
                     get started.
                   </CardDescription>
                 </CardHeader>
-                <CardFooter>
+                <CardFooter className="pt-6">
                   <button
-                    className="btn btn-primary"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-colors"
                     onClick={() => setActiveTab("plans")}
                   >
+                    <FiRefreshCw className="h-4 w-4" />
                     View Plans
                   </button>
                 </CardFooter>

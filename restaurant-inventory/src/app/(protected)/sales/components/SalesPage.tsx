@@ -10,6 +10,9 @@ import { useSalesPage } from "../hooks/useSalesHooks";
 import { Dish } from "@/lib/types";
 import { SaleEntry } from "../types";
 
+// Override default toast settings for this component
+import { Toaster } from "sonner";
+
 // Create a custom hook for the circuit breaker to isolate it
 function useRenderGuard() {
   // Use refs to avoid re-renders when tracking renders
@@ -140,6 +143,7 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
         {
           description:
             "Some ingredients are below minimum stock levels after recent sales.",
+          icon: "⚠️",
           action: {
             label: "View",
             onClick: () => setActiveTab("entry"),
@@ -169,7 +173,7 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
   if (renderGuardActive) {
     return (
       <div className="p-8 text-center">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-sm p-8 border-red-200">
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-8 border-none">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-3">
             Sales Module Temporarily Unavailable
@@ -180,7 +184,7 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+            className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-full hover:bg-orange-600 transition-colors font-medium"
           >
             Refresh Page
           </button>
@@ -192,20 +196,20 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
   // Loading state
   if (salesPage.isLoading) {
     return (
-      <div className="p-8">
+      <div className="p-8 flex justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col items-center justify-center min-h-[60vh] bg-white rounded-lg shadow-sm p-10"
+          className="flex flex-col items-center justify-center min-h-[60vh] bg-white rounded-xl shadow-sm p-10 border-none max-w-3xl w-full"
         >
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center justify-center animate-pulse">
               <FileBarChart2 className="h-16 w-16 text-neutral-200" />
             </div>
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
           </div>
-          <h3 className="text-xl font-medium mb-2 text-neutral-900">
+          <h3 className="text-xl font-medium mb-2 text-neutral-900 text-center">
             Loading Sales Data
           </h3>
           <p className="text-neutral-500 text-center max-w-md">
@@ -219,14 +223,14 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
   // Error state
   if (salesPage.error) {
     return (
-      <div className="p-8">
+      <div className="p-8 flex justify-center">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="bg-white rounded-lg shadow-sm p-8 border-red-100 text-center max-w-md mx-auto"
+          className="bg-white rounded-xl shadow-sm p-8 border-none text-center max-w-md mx-auto"
         >
-          <div className="alert alert-error mb-6">
+          <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-center justify-center gap-2 text-red-500">
             <AlertCircle className="h-6 w-6" />
             <span>Unable to Load Sales Data</span>
           </div>
@@ -236,7 +240,7 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="btn btn-neutral"
+            className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-full hover:bg-orange-600 transition-colors font-medium"
           >
             Reload Page
           </button>
@@ -246,43 +250,40 @@ export default function SalesPage({ onDataUpdate }: SalesPageProps) {
   }
 
   return (
-    <div className="px-6 py-5">
+    <div className="w-full">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="h-full w-full flex flex-col"
       >
-        <div className="card bg-white border border-neutral-100 rounded-lg shadow-sm">
-          <SalesEntryForm
-            dishes={salesPage.dishes.map((dish: Dish) => ({
-              ...dish,
-              recipeId: dish.id,
-              ingredients:
-                dish.ingredients?.map(
-                  (ing: { ingredientId: string; quantity: number }) => ({
-                    ingredientId: ing.ingredientId,
-                    quantity: ing.quantity,
-                  })
-                ) || [],
-            }))}
-            recipes={salesPage.recipes}
-            total={salesPage.calculateTotal()}
-            salesEntries={salesPage.salesEntries}
-            dateString={salesPage.dateString}
-            onDateChange={salesPage.setDateString}
-            onQuantityChange={salesPage.handleQuantityChange}
-            onSubmit={salesPage.handleSubmitSales}
-            onAddDishFromRecipe={salesPage.onAddDishFromRecipe}
-            isSubmitting={salesPage.isSubmitting}
-            onToggleInventoryImpact={salesPage.toggleInventoryImpact}
-            showInventoryImpact={salesPage.showInventoryImpact}
-            calculateInventoryImpact={salesPage.calculateInventoryImpact}
-            onClearAll={salesPage.clearAllQuantities}
-            onLoadPreviousDay={salesPage.loadPreviousDayTemplate}
-            hasPreviousDayTemplate={salesPage.hasPreviousDayTemplate}
-          />
-        </div>
+        <SalesEntryForm
+          dishes={salesPage.dishes.map((dish: Dish) => ({
+            ...dish,
+            recipeId: dish.id,
+            ingredients:
+              dish.ingredients?.map(
+                (ing: { ingredientId: string; quantity: number }) => ({
+                  ingredientId: ing.ingredientId,
+                  quantity: ing.quantity,
+                })
+              ) || [],
+          }))}
+          recipes={salesPage.recipes}
+          total={salesPage.calculateTotal()}
+          salesEntries={salesPage.salesEntries}
+          dateString={salesPage.dateString}
+          onDateChange={salesPage.setDateString}
+          onQuantityChange={salesPage.handleQuantityChange}
+          onSubmit={salesPage.handleSubmitSales}
+          onAddDishFromRecipe={salesPage.onAddDishFromRecipe}
+          isSubmitting={salesPage.isSubmitting}
+          onToggleInventoryImpact={salesPage.toggleInventoryImpact}
+          showInventoryImpact={salesPage.showInventoryImpact}
+          calculateInventoryImpact={salesPage.calculateInventoryImpact}
+          onClearAll={salesPage.clearAllQuantities}
+          onLoadPreviousDay={salesPage.loadPreviousDayTemplate}
+          hasPreviousDayTemplate={salesPage.hasPreviousDayTemplate}
+        />
       </motion.div>
 
       {salesPage.selectedSale && (

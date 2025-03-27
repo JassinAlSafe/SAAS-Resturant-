@@ -46,7 +46,23 @@ export default function RootLayout({
         <ThemeProvider>
           <Providers>
             {children}
-            <Sonner />
+            {/* Wrapper to ensure toast has solid background */}
+            <div
+              className="z-[9999] relative bg-transparent"
+              style={{ pointerEvents: "none" }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  pointerEvents: "auto",
+                }}
+              >
+                <Sonner />
+              </div>
+            </div>
           </Providers>
         </ThemeProvider>
       </body>

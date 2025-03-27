@@ -35,14 +35,14 @@ export function SalesEntryRow({
 
   return (
     <div
-      className="grid grid-cols-12 gap-6 items-center px-3 py-3 border-b border-neutral-50 hover:bg-neutral-50/30 transition-colors"
+      className="grid grid-cols-12 gap-6 items-center px-4 py-4 mb-2 bg-white border-none shadow-sm rounded-xl hover:shadow-md transition-all"
       data-testid={`sales-entry-row-${dish.id}`}
     >
       <div className="col-span-6">
         <div className="font-medium text-neutral-700">{dish.name}</div>
         {dish.category && (
           <div className="mt-1.5">
-            <span className="inline-flex px-2 py-0.5 text-xs font-normal text-neutral-500">
+            <span className="inline-flex px-2 py-0.5 text-xs font-normal bg-orange-50 rounded-full text-orange-600">
               {dish.category}
             </span>
           </div>
@@ -53,10 +53,10 @@ export function SalesEntryRow({
             {inventoryImpact.map((impact, index) => (
               <span
                 key={index}
-                className={`inline-flex px-2 py-0.5 text-xs font-normal ${
+                className={`inline-flex px-2 py-0.5 text-xs font-normal rounded-full ${
                   impact.quantityUsed > 0
-                    ? "text-amber-700"
-                    : "text-neutral-500"
+                    ? "bg-orange-50 text-orange-600"
+                    : "bg-orange-50/50 text-orange-500"
                 }`}
               >
                 {impact.name}: {impact.quantityUsed} {impact.unit}
@@ -71,12 +71,12 @@ export function SalesEntryRow({
       </div>
 
       <div className="col-span-2">
-        <div className="flex items-center">
+        <div className="flex items-center bg-orange-50/50 rounded-full p-1">
           <button
             type="button"
             onClick={handleDecrement}
             disabled={quantity === 0}
-            className="flex items-center justify-center w-7 h-7 text-neutral-400 hover:text-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-7 h-7 text-orange-400 hover:text-orange-600 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Minus className="h-3 w-3" />
           </button>
@@ -88,7 +88,7 @@ export function SalesEntryRow({
           <button
             type="button"
             onClick={handleIncrement}
-            className="flex items-center justify-center w-7 h-7 text-orange-500 hover:text-orange-600"
+            className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500"
           >
             <Plus className="h-3 w-3" />
           </button>

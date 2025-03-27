@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, Suspense } from "react";
-import { Receipt, FileBarChart2, Calendar } from "lucide-react";
+import { Receipt, Calendar } from "lucide-react";
 import dynamic from "next/dynamic";
 
 // Add SalesPageData type
@@ -13,7 +13,7 @@ interface SalesPageData {
 const SalesPage = dynamic(() => import("./components/SalesPage"), {
   loading: () => (
     <div className="flex h-[400px] w-full items-center justify-center">
-      <span className="loading loading-spinner loading-md text-primary"></span>
+      <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
     </div>
   ),
 });
@@ -23,7 +23,7 @@ const SalesHistoryView = dynamic(
   {
     loading: () => (
       <div className="flex h-[400px] w-full items-center justify-center">
-        <span className="loading loading-spinner loading-md text-primary"></span>
+        <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
       </div>
     ),
   }
@@ -31,7 +31,8 @@ const SalesHistoryView = dynamic(
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<string>("daily");
-  const [salesData, setSalesData] = useState<SalesPageData>({ sales: [] });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_salesData, setSalesData] = useState<SalesPageData>({ sales: [] });
 
   const handleSalesDataUpdate = useCallback(
     (data: {
@@ -49,87 +50,69 @@ export default function Page() {
   );
 
   return (
-    <div className="h-full flex-1 bg-white">
-      <header className="border-b border-neutral-100 bg-white py-6 px-8">
-        <div className="flex flex-col gap-5">
-          {/* Top section with logo and title */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-orange-500">
-                <FileBarChart2 className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="flex items-baseline gap-1.5">
-                  {salesData.sales.length > 0 && (
-                    <span className="text-2xl font-bold">
-                      {salesData.sales.length}
-                    </span>
-                  )}
-                  <h1 className="text-2xl font-semibold text-neutral-800">
-                    Sales Management
-                  </h1>
-                </div>
-                <p className="text-sm text-neutral-500">
-                  Record and analyze your restaurant&apos;s sales data
-                </p>
-              </div>
-            </div>
-          </div>
+    <div className="container mx-auto py-6 max-w-6xl px-4">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Sales Management
+        </h1>
+        <p className="text-gray-600">
+          Record and analyze your restaurant&apos;s sales data
+        </p>
+      </div>
 
-          {/* Navigation tabs */}
-          <div className="flex border-b border-neutral-100 -mb-6 -mx-8 px-8">
-            <button
-              onClick={() => setActiveTab("daily")}
-              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "daily"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-neutral-500 hover:text-neutral-800"
-              }`}
-            >
-              <Calendar className="h-4 w-4" />
-              Daily Sales
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`flex items-center gap-2 px-5 py-3 font-medium text-sm border-b-2 transition-colors ${
-                activeTab === "history"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-neutral-500 hover:text-neutral-800"
-              }`}
-            >
-              <Receipt className="h-4 w-4" />
-              Sales Analytics
-            </button>
-          </div>
+      {/* Navigation tabs */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-full p-1 bg-gray-100 border-0 shadow-sm">
+          <button
+            onClick={() => setActiveTab("daily")}
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "daily"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            Daily Sales
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "history"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+          >
+            <Receipt className="h-4 w-4" />
+            Sales Analytics
+          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="h-[calc(100vh-9rem)] bg-white">
+      {/* Main content container */}
+      <div className="bg-white border-none shadow-sm rounded-xl overflow-hidden">
         {activeTab === "daily" ? (
           <Suspense
             fallback={
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="loading loading-spinner loading-md text-primary"></span>
+              <div className="flex h-[500px] w-full items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
               </div>
             }
           >
-            <SalesPage
-              onAnalyticsView={() => setActiveTab("history")}
-              onDataUpdate={handleSalesDataUpdate}
-            />
+            <SalesPage onDataUpdate={handleSalesDataUpdate} />
           </Suspense>
         ) : (
           <Suspense
             fallback={
-              <div className="flex h-full w-full items-center justify-center">
-                <span className="loading loading-spinner loading-md text-primary"></span>
+              <div className="flex h-[500px] w-full items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
               </div>
             }
           >
             <SalesHistoryView />
           </Suspense>
         )}
-      </main>
+      </div>
     </div>
   );
 }

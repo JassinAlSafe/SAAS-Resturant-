@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CheckCircle, X, RefreshCw, CreditCard } from "lucide-react";
 import { createCheckoutSession } from "./BillingService";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 interface PlanFeature {
   name: string;
@@ -94,7 +102,10 @@ const plans: PricingPlan[] = [
   },
 ];
 
-export function PricingPlans({ businessProfileId, currentPlan }: PricingPlansProps) {
+export function PricingPlans({
+  businessProfileId,
+  currentPlan,
+}: PricingPlansProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -109,21 +120,22 @@ export function PricingPlans({ businessProfileId, currentPlan }: PricingPlansPro
     }
 
     setLoading(true);
-    
+
     try {
-      const { url } = await createCheckoutSession({ 
-        priceId, 
+      const { url } = await createCheckoutSession({
+        priceId,
         productId,
-        businessProfileId 
+        businessProfileId,
       });
-      
+
       // Redirect to Stripe Checkout
       window.location.href = url;
     } catch (error) {
       console.error("Error creating checkout session:", error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session. Please try again later.",
+        description:
+          "Failed to create checkout session. Please try again later.",
         variant: "destructive",
       });
       setLoading(false);
@@ -138,75 +150,102 @@ export function PricingPlans({ businessProfileId, currentPlan }: PricingPlansPro
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
-      {plans.map((plan) => {
-        const isCurrentPlan = currentPlan?.toLowerCase() === plan.id.toLowerCase();
+    <div className="max-w-6xl mx-auto px-4">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold mb-2">Choose the perfect plan</h2>
+        <p className="text-muted-foreground">
+          Select a plan that best fits your restaurant&apos;s needs
+        </p>
+      </div>
+      <div className="grid gap-6 md:grid-cols-3">
+        {plans.map((plan) => {
+          const isCurrentPlan =
+            currentPlan?.toLowerCase() === plan.id.toLowerCase();
 
-        return (
-          <Card
-            key={plan.id}
-            className={`flex flex-col ${plan.popular ? 'border-primary shadow-md' : ''}`}
-          >
-            {plan.popular && (
-              <div className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-t-sm text-center font-medium">
-                MOST POPULAR
-              </div>
-            )}
-            <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-4">
-                <span className="text-3xl font-bold">
-                  {formatCurrency(plan.price, plan.currency)}
-                </span>
-                <span className="text-muted-foreground">/{plan.interval}</span>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ul className="space-y-2">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center">
-                    {feature.included ? (
-                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                    ) : (
-                      <X className="h-4 w-4 mr-2 text-gray-300" />
-                    )}
-                    <span className={feature.included ? "" : "text-muted-foreground"}>
-                      {feature.name}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button
-                variant={plan.popular ? "default" : "outline"}
-                className="w-full"
-                disabled={isCurrentPlan || loading}
-                onClick={() => handleSubscribe(plan.priceId, plan.productId)}
-              >
-                {loading && plan.id === "pro" ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : isCurrentPlan ? (
-                  "Current Plan"
-                ) : (
-                  <>
-                    {plan.id === "free" ? "Get Started" : (
-                      <>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Subscribe
-                      </>
-                    )}
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        );
-      })}
+          return (
+            <Card
+              key={plan.id}
+              className={cn(
+                "flex flex-col overflow-hidden border-none shadow-sm rounded-xl",
+                plan.popular
+                  ? "border-primary shadow-md ring-1 ring-orange-200"
+                  : ""
+              )}
+            >
+              {plan.popular && (
+                <div className="px-3 py-1 text-xs bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-t-xl text-center font-medium">
+                  MOST POPULAR
+                </div>
+              )}
+              <CardHeader className="text-center">
+                <CardTitle>{plan.name}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
+                <div className="mt-4">
+                  <span className="text-3xl font-bold">
+                    {formatCurrency(plan.price, plan.currency)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    /{plan.interval}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <ul className="space-y-2 mx-auto max-w-[260px]">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      {feature.included ? (
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2 text-gray-300 flex-shrink-0" />
+                      )}
+                      <span
+                        className={
+                          feature.included ? "" : "text-muted-foreground"
+                        }
+                      >
+                        {feature.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter className="pt-2 pb-6 px-6">
+                <Button
+                  variant={plan.popular ? "default" : "outline"}
+                  className={cn(
+                    "w-full rounded-full py-6 text-white border-0 shadow-sm",
+                    plan.popular
+                      ? "bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500"
+                      : "bg-gradient-to-r from-orange-400 to-orange-300 hover:from-orange-500 hover:to-orange-400"
+                  )}
+                  disabled={isCurrentPlan || loading}
+                  onClick={() => handleSubscribe(plan.priceId, plan.productId)}
+                >
+                  {loading && plan.id === "pro" ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : isCurrentPlan ? (
+                    "Current Plan"
+                  ) : (
+                    <>
+                      {plan.id === "free" ? (
+                        "Get Started"
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Subscribe
+                        </>
+                      )}
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
