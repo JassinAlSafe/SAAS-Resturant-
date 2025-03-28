@@ -1,6 +1,6 @@
 "use client";
 
-import { XIcon } from "lucide-react";
+import { X } from "lucide-react";
 import { ReportFilters } from "./ReportsFilter";
 
 interface ActiveFilterPillsProps {
@@ -36,37 +36,37 @@ export function ActiveFilterPills({
   };
 
   return (
-    <div className="flex flex-wrap gap-2 my-4">
+    <div className="flex flex-wrap gap-2 mb-6">
       {filters.searchTerm && (
-        <div className="badge badge-lg bg-primary bg-opacity-10 text-primary gap-1">
+        <div className="flex items-center py-1.5 px-3 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
           <span>Search: {filters.searchTerm}</span>
           <button
             onClick={() => onRemoveFilter("searchTerm")}
-            className="ml-1 rounded-full hover:bg-base-300 p-0.5"
+            className="ml-2 rounded-full hover:bg-blue-100 p-0.5 transition-colors"
+            aria-label="Remove search filter"
           >
-            <XIcon className="h-3 w-3" />
-            <span className="sr-only">Remove search filter</span>
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}
 
       {filters.category !== "all" && (
-        <div className="badge badge-lg bg-primary bg-opacity-10 text-primary gap-1">
+        <div className="flex items-center py-1.5 px-3 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
           <span>
             Category: {categoryNames[filters.category] || filters.category}
           </span>
           <button
             onClick={() => onRemoveFilter("category")}
-            className="ml-1 rounded-full hover:bg-base-300 p-0.5"
+            className="ml-2 rounded-full hover:bg-blue-100 p-0.5 transition-colors"
+            aria-label="Remove category filter"
           >
-            <XIcon className="h-3 w-3" />
-            <span className="sr-only">Remove category filter</span>
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}
 
       {(filters.minAmount !== undefined || filters.maxAmount !== undefined) && (
-        <div className="badge badge-lg bg-primary bg-opacity-10 text-primary gap-1">
+        <div className="flex items-center py-1.5 px-3 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
           <span>
             {activeTab === "sales" ? "Amount" : "Quantity"}:{" "}
             {filters.minAmount !== undefined ? filters.minAmount : "Any"} to{" "}
@@ -77,10 +77,10 @@ export function ActiveFilterPills({
               onRemoveFilter("minAmount");
               onRemoveFilter("maxAmount");
             }}
-            className="ml-1 rounded-full hover:bg-base-300 p-0.5"
+            className="ml-2 rounded-full hover:bg-blue-100 p-0.5 transition-colors"
+            aria-label="Remove range filter"
           >
-            <XIcon className="h-3 w-3" />
-            <span className="sr-only">Remove range filter</span>
+            <X className="h-3 w-3" />
           </button>
         </div>
       )}

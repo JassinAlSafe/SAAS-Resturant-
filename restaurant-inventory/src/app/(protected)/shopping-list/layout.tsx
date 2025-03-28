@@ -2,10 +2,7 @@
 
 import React, { useEffect } from "react";
 import { AccessibilityProvider } from "./context/AccessibilityContext";
-import {
-  AccessibilityPanel,
-  KeyboardShortcuts,
-} from "./components/accessibility";
+import { AccessibilityPanel } from "./components/accessibility";
 import { mountAnnouncer } from "./components/accessibility/helpers";
 import { ToastProvider } from "./utils/toast";
 import {
@@ -49,9 +46,6 @@ export default function ShoppingListLayout({
           {children}
 
           {/* Accessibility Tools */}
-          <div className="fixed bottom-4 left-4 z-50">
-            <KeyboardShortcuts />
-          </div>
           <AccessibilityPanel />
 
           {/* Global Announcer for Screen Readers */}

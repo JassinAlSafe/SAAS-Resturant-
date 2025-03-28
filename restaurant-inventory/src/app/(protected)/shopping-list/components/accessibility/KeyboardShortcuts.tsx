@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Keyboard } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface ShortcutProps {
   keys: string[];
@@ -10,13 +12,15 @@ interface ShortcutProps {
 
 function Shortcut({ keys, description }: ShortcutProps) {
   return (
-    <div className="flex justify-between items-center py-2 text-sm">
+    <div className="flex justify-between items-center py-2.5 text-sm hover:bg-gray-50 px-2 rounded-md -mx-2">
       <span className="text-gray-700">{description}</span>
       <div className="flex gap-1 items-center">
         {keys.map((key, index) => (
           <span key={index}>
             {index > 0 && <span className="text-gray-400 px-1">+</span>}
-            <kbd className="kbd kbd-sm">{key}</kbd>
+            <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md shadow-sm">
+              {key}
+            </kbd>
           </span>
         ))}
       </div>
@@ -42,13 +46,17 @@ export function KeyboardShortcuts() {
   ];
 
   return (
-    <div className="card bg-base-100 shadow-lg p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <Keyboard className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-medium">Keyboard Shortcuts</h3>
+    <Card className="bg-white shadow-md rounded-xl border border-gray-100 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="bg-blue-50 rounded-full p-1.5">
+          <Keyboard className="h-4 w-4 text-blue-500" />
+        </div>
+        <h3 className="text-sm font-medium text-gray-800">
+          Keyboard Shortcuts
+        </h3>
       </div>
 
-      <div className="divide-y">
+      <div className="divide-y divide-gray-100">
         {basicShortcuts.map((shortcut, i) => (
           <Shortcut
             key={i}
@@ -59,7 +67,7 @@ export function KeyboardShortcuts() {
       </div>
 
       {isExpanded && (
-        <div className="divide-y mt-2 pt-2 border-t">
+        <div className="divide-y divide-gray-100 mt-2 pt-2 border-t border-gray-100">
           {advancedShortcuts.map((shortcut, i) => (
             <Shortcut
               key={i}
@@ -72,7 +80,10 @@ export function KeyboardShortcuts() {
 
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-1 text-primary text-sm mt-2 w-full justify-center"
+        className={cn(
+          "flex items-center gap-1.5 w-full justify-center mt-3 py-2 rounded-md text-sm font-medium",
+          "bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+        )}
       >
         {isExpanded ? (
           <>
@@ -86,6 +97,6 @@ export function KeyboardShortcuts() {
           </>
         )}
       </button>
-    </div>
+    </Card>
   );
 }

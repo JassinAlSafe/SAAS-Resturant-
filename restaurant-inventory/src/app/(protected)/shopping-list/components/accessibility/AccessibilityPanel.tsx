@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Lightbulb, KeyRound, Eye, Volume2 } from "lucide-react";
+import { Lightbulb, KeyRound, Eye, Volume2, Settings } from "lucide-react";
+import { KeyboardShortcuts } from "../KeyboardShortcuts";
 
 interface AccessibilityTipProps {
   title: string;
@@ -27,9 +28,9 @@ function AccessibilityTip({
   );
 }
 
-export default function AccessibilityPanel() {
+export function AccessibilityPanel() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"keyboard" | "visual" | "audio">(
+  const [activeTab, setActiveTab] = useState<"keyboard" | "visual" | "audio" | "shortcuts">(
     "keyboard"
   );
 
@@ -37,69 +38,94 @@ export default function AccessibilityPanel() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 btn btn-circle btn-primary z-50"
-        aria-label="Open accessibility panel"
+        className="fixed bottom-4 right-4 z-50 bg-white shadow-md rounded-full p-3 border border-gray-200 hover:bg-gray-50 transition-colors"
+        aria-label="Open accessibility options"
+        title="Accessibility Options"
       >
-        <Eye className="h-5 w-5" />
+        <Settings className="h-5 w-5 text-indigo-500" />
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 card bg-base-100 shadow-lg z-50 overflow-hidden">
-      <div className="card-body p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="card-title text-lg">Accessibility</h2>
+    <div className="fixed bottom-4 right-4 w-80 bg-white rounded-xl shadow-lg z-50 overflow-hidden border border-gray-100">
+      <div className="p-4">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold text-gray-800">Accessibility</h2>
           <button
-            className="btn btn-sm btn-ghost"
+            className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 hover:text-gray-700 transition-colors"
             onClick={() => setIsOpen(false)}
+            aria-label="Close accessibility panel"
           >
             Close
           </button>
         </div>
 
-        <div className="tabs mb-3">
+        <div className="flex border-b border-gray-200 mb-3">
           <button
-            className={`tab tab-bordered ${
-              activeTab === "keyboard" ? "tab-active" : ""
+            className={`flex items-center py-2 px-3 text-sm ${
+              activeTab === "keyboard" 
+                ? "border-b-2 border-indigo-500 text-indigo-600 font-medium" 
+                : "text-gray-600 hover:text-gray-900"
             }`}
             onClick={() => setActiveTab("keyboard")}
           >
-            <KeyRound className="h-4 w-4 mr-1" />
-            Keyboard
+            <KeyRound className="h-4 w-4 mr-1.5" />
+            Tips
           </button>
           <button
-            className={`tab tab-bordered ${
-              activeTab === "visual" ? "tab-active" : ""
+            className={`flex items-center py-2 px-3 text-sm ${
+              activeTab === "shortcuts" 
+                ? "border-b-2 border-indigo-500 text-indigo-600 font-medium" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+            onClick={() => setActiveTab("shortcuts")}
+          >
+            <KeyRound className="h-4 w-4 mr-1.5" />
+            Shortcuts
+          </button>
+          <button
+            className={`flex items-center py-2 px-3 text-sm ${
+              activeTab === "visual" 
+                ? "border-b-2 border-indigo-500 text-indigo-600 font-medium" 
+                : "text-gray-600 hover:text-gray-900"
             }`}
             onClick={() => setActiveTab("visual")}
           >
-            <Eye className="h-4 w-4 mr-1" />
+            <Eye className="h-4 w-4 mr-1.5" />
             Visual
           </button>
           <button
-            className={`tab tab-bordered ${
-              activeTab === "audio" ? "tab-active" : ""
+            className={`flex items-center py-2 px-3 text-sm ${
+              activeTab === "audio" 
+                ? "border-b-2 border-indigo-500 text-indigo-600 font-medium" 
+                : "text-gray-600 hover:text-gray-900"
             }`}
             onClick={() => setActiveTab("audio")}
           >
-            <Volume2 className="h-4 w-4 mr-1" />
+            <Volume2 className="h-4 w-4 mr-1.5" />
             Audio
           </button>
         </div>
 
-        <div className="overflow-y-auto max-h-64">
+        <div className="overflow-y-auto max-h-64 pr-2">
           {activeTab === "keyboard" && (
             <>
               <AccessibilityTip
                 title="Keyboard Shortcuts"
-                description="Use Alt+A to add a new item, Alt+V to view details of the first item, Alt+P to purchase the first pending item."
+                description="Press Alt+K to view all keyboard shortcuts. Basic shortcuts include Alt+A to add items and Alt+P to purchase items."
                 icon={<KeyRound className="h-5 w-5 text-blue-500" />}
               />
-              <p className="text-sm mt-2">
+              <p className="text-sm mt-2 text-gray-600">
                 Tab navigation is fully supported throughout the application.
               </p>
             </>
+          )}
+
+          {activeTab === "shortcuts" && (
+            <div className="mt-2">
+              <KeyboardShortcuts />
+            </div>
           )}
 
           {activeTab === "visual" && (
@@ -109,7 +135,7 @@ export default function AccessibilityPanel() {
                 description="All UI elements meet WCAG AA standards for color contrast."
                 icon={<Eye className="h-5 w-5 text-blue-500" />}
               />
-              <p className="text-sm mt-2">
+              <p className="text-sm mt-2 text-gray-600">
                 The application respects your system&#39;s reduced motion and
                 high contrast preferences.
               </p>
@@ -123,7 +149,7 @@ export default function AccessibilityPanel() {
                 description="All interactive elements have proper ARIA labels and announcements."
                 icon={<Volume2 className="h-5 w-5 text-blue-500" />}
               />
-              <p className="text-sm mt-2">
+              <p className="text-sm mt-2 text-gray-600">
                 Status updates (like adding items or marking items as purchased)
                 are announced to screen readers.
               </p>

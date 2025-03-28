@@ -10,10 +10,10 @@ import { Sale } from "@/lib/types";
 const COLORS = [
   "#F97316", // orange-500
   "#FB923C", // orange-400
-  "#FD9A46", // a lighter orange
   "#FDBA74", // orange-300
-  "#FFB686", // a peach color
   "#FED7AA", // orange-200
+  "#FFEDD5", // orange-100
+  "#EA580C", // orange-600
 ];
 
 interface SalesAnalysisTabsProps {
@@ -41,10 +41,10 @@ export function SalesAnalysisTabs({
   );
 
   return (
-    <div className="bg-white border-none shadow-sm rounded-xl">
+    <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
       {/* Tab navigation */}
       <div className="flex justify-center pt-5 px-6 mb-4">
-        <div className="inline-flex rounded-full p-1 bg-orange-50/50 border-0">
+        <div className="inline-flex rounded-full p-1 bg-orange-50/50 border border-gray-100 shadow-sm">
           <button
             className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
               activeTab === "categories"
@@ -130,10 +130,8 @@ function CategoryAnalysis({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-neutral-800">
-          Sales by Category
-        </h3>
-        <p className="text-sm text-neutral-500">
+        <h3 className="text-lg font-medium text-gray-900">Sales by Category</h3>
+        <p className="text-sm text-gray-500">
           Distribution of sales across different categories
         </p>
       </div>
@@ -186,15 +184,21 @@ function CategoryAnalysis({
             </div>
 
             <div className="overflow-y-auto max-h-[300px] pr-2">
-              <table className="table table-sm">
+              <table className="w-full border-collapse">
                 <thead className="sticky top-0 bg-white">
                   <tr>
-                    <th>Category</th>
-                    <th className="text-right">Sales</th>
-                    <th className="text-right">Items</th>
+                    <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sales
+                    </th>
+                    <th className="py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Items
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-100">
                   {Object.entries(categoryTotals)
                     .sort((a, b) => b[1].sales - a[1].sales)
                     .map(([category, data], index) => (
@@ -202,7 +206,7 @@ function CategoryAnalysis({
                         key={index}
                         className="hover:bg-orange-50/30 transition-colors"
                       >
-                        <td className="font-medium">
+                        <td className="py-3 font-medium">
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
@@ -213,11 +217,11 @@ function CategoryAnalysis({
                             {category}
                           </div>
                         </td>
-                        <td className="text-right font-medium text-orange-600">
+                        <td className="py-3 text-right font-medium text-orange-600">
                           {formatCurrency(data.sales)}
                         </td>
-                        <td className="text-right">
-                          <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-sm">
+                        <td className="py-3 text-right">
+                          <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-xs">
                             {data.items}
                           </span>
                         </td>
@@ -228,7 +232,7 @@ function CategoryAnalysis({
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-500">
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
             No data available for the selected period
           </div>
         )}
@@ -248,87 +252,101 @@ function TopItemsAnalysis({
   salesData,
   formatCurrency,
 }: TopItemsAnalysisProps) {
+  // Calculate top selling items
+  const topItems = salesData.reduce((acc: Record<string, number>, sale) => {
+    sale.items.forEach((item) => {
+      const itemName = item.name;
+      if (!acc[itemName]) {
+        acc[itemName] = 0;
+      }
+      acc[itemName] += item.quantity;
+    });
+    return acc;
+  }, {});
+
+  // Convert to array and sort
+  const sortedItems = Object.entries(topItems)
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 10);
+
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-neutral-800">
-          Top Selling Items
-        </h3>
-        <p className="text-sm text-neutral-500">
-          Most popular items by quantity and revenue
+        <h3 className="text-lg font-medium text-gray-900">Top Selling Items</h3>
+        <p className="text-sm text-gray-500">
+          Most popular items by quantity sold
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="h-[350px] w-full flex items-center justify-center">
-          <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
-        </div>
-      ) : salesData.length > 0 ? (
-        <div className="overflow-y-auto max-h-[400px]">
-          <table className="table table-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr>
-                <th className="w-[40%]">Item</th>
-                <th className="w-[20%]">Category</th>
-                <th className="text-right w-[20%]">Quantity</th>
-                <th className="text-right w-[20%]">Revenue</th>
+      <div className="overflow-hidden rounded-lg border border-gray-100">
+        {isLoading ? (
+          <div className="w-full h-[400px] flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
+          </div>
+        ) : sortedItems.length > 0 ? (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rank
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Item
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Quantity Sold
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
               </tr>
             </thead>
-            <tbody>
-              {salesData
-                .flatMap((sale) => sale.items)
-                .reduce<
-                  Array<{
-                    dish_name: string;
-                    quantity: number;
-                    total: number;
-                    category: string;
-                  }>
-                >((acc, item) => {
-                  const existing = acc.find(
-                    (i) => i.dish_name === item.dish_name
-                  );
-                  if (existing) {
-                    existing.quantity += item.quantity;
-                    existing.total += item.total;
-                  } else {
-                    acc.push({
-                      dish_name: item.dish_name,
-                      quantity: item.quantity,
-                      total: item.total,
-                      category: item.category,
-                    });
-                  }
-                  return acc;
-                }, [])
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 10)
-                .map((item, index) => (
-                  <tr key={index}>
-                    <td className="font-medium">{item.dish_name}</td>
-                    <td>
-                      <Badge className="bg-orange-50 text-orange-600 border-none hover:bg-orange-100">
-                        {item.category || "Uncategorized"}
+            <tbody className="divide-y divide-gray-100">
+              {sortedItems.map((item, index) => {
+                // Find the category for this item from any sale
+                const category =
+                  salesData
+                    .find((sale) =>
+                      sale.items.some((i) => i.name === item.name)
+                    )
+                    ?.items.find((i) => i.name === item.name)?.category ||
+                  "Unknown";
+
+                return (
+                  <tr
+                    key={index}
+                    className="hover:bg-orange-50/30 transition-colors"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-7 w-7 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {item.name}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-orange-600">
+                      {item.quantity}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Badge className="bg-orange-50 text-orange-600 hover:bg-orange-50 font-normal">
+                        {category}
                       </Badge>
                     </td>
-                    <td className="text-right">
-                      <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-sm">
-                        {item.quantity}
-                      </span>
-                    </td>
-                    <td className="text-right font-medium text-orange-600">
-                      {formatCurrency(item.total)}
-                    </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
-        </div>
-      ) : (
-        <div className="h-[350px] w-full flex items-center justify-center text-neutral-500">
-          No data available for the selected period
-        </div>
-      )}
+        ) : (
+          <div className="w-full h-[400px] flex items-center justify-center text-gray-500">
+            No data available for the selected period
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -345,40 +363,49 @@ function TransactionHistory({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   formatCurrency,
 }: TransactionHistoryProps) {
-  // Adapter function to convert SaleData to Sale[]
+  // Convert the sales data to the expected format for SalesTable
   const adaptSalesToTableFormat = (data: SaleData[]): Sale[] => {
     return data.map((sale) => ({
-      id: sale.id || `sale-${Math.random().toString(36).substring(7)}`,
+      id: sale.id,
       date: sale.date,
-      dishId: sale.items[0]?.dish_name || "multiple",
-      dishName: sale.items.map((item) => item.dish_name).join(", "),
-      quantity: sale.items.reduce((sum, item) => sum + item.quantity, 0),
-      totalAmount: sale.total,
-      createdAt: sale.date, // Use date as createdAt since it's required
+      amount: sale.total,
+      items: sale.items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      paymentMethod: sale.paymentMethod,
     }));
   };
+
+  const salesForTable = adaptSalesToTableFormat(salesData);
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium text-neutral-800">
+        <h3 className="text-lg font-medium text-gray-900">
           Transaction History
         </h3>
-        <p className="text-sm text-neutral-500">
-          Detailed record of all sales transactions
+        <p className="text-sm text-gray-500">
+          Detailed view of all transactions in the period
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="h-[350px] w-full flex items-center justify-center">
-          <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
-        </div>
-      ) : (
-        <SalesTable
-          sales={adaptSalesToTableFormat(salesData)}
-          onRefresh={() => {}}
-        />
-      )}
+      <div>
+        {isLoading ? (
+          <div className="w-full h-[400px] flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
+          </div>
+        ) : salesForTable.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-gray-100">
+            <SalesTable sales={salesForTable} />
+          </div>
+        ) : (
+          <div className="w-full h-[400px] flex items-center justify-center text-gray-500">
+            No transactions in the selected period
+          </div>
+        )}
+      </div>
     </div>
   );
 }

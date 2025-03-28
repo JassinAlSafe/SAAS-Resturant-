@@ -11,18 +11,18 @@ export const InventoryRow = ({
   warning,
 }: InventoryItem) => {
   return (
-    <tr>
-      <td className="font-medium">{name}</td>
-      <td>{stock}</td>
-      <td>{usage}</td>
-      <td>
+    <tr className="border-b border-gray-100 last:border-b-0">
+      <td className="py-3 px-4 font-medium text-gray-900">{name}</td>
+      <td className="py-3 px-4 text-gray-700">{stock}</td>
+      <td className="py-3 px-4 text-gray-700">{usage}</td>
+      <td className="py-3 px-4">
         <span
-          className={`badge ${
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
             depleted
-              ? "badge-error bg-opacity-20 text-error"
+              ? "bg-red-50 text-red-700"
               : warning
-              ? "badge-warning bg-opacity-20 text-warning"
-              : "badge-success bg-opacity-20 text-success"
+              ? "bg-amber-50 text-amber-700"
+              : "bg-green-50 text-green-700"
           }`}
         >
           {depletion}

@@ -2,7 +2,18 @@
 
 import { useState } from "react";
 import { ShoppingListItem } from "@/lib/types";
-import { X, Loader2 } from "lucide-react";
+import {
+  X,
+  Loader2,
+  ShoppingBag,
+  PackageCheck,
+  AlertTriangle,
+  DollarSign,
+  ClipboardList,
+  Plus,
+} from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -96,161 +107,213 @@ export default function AddItemModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box">
-        <button
-          onClick={onClose}
-          className="btn btn-sm btn-circle absolute right-2 top-2"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <h3 className="font-bold text-lg mb-4">Add Shopping Item</h3>
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-control w-full mb-4">
-            <label className="label">
-              <span className="label-text">Item Name*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter item name"
-              className={`input input-bordered w-full ${
-                errors.name ? "input-error" : ""
-              }`}
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-            />
-            {errors.name && (
-              <label className="label">
-                <span className="label-text-alt text-error">{errors.name}</span>
-              </label>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Quantity*</span>
-              </label>
-              <input
-                type="number"
-                min="0.1"
-                step="any"
-                className={`input input-bordered w-full ${
-                  errors.quantity ? "input-error" : ""
-                }`}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-              />
-              {errors.quantity && (
-                <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.quantity}
-                  </span>
-                </label>
-              )}
+    <AnimatePresence>
+      {isOpen && (
+        <div className="modal modal-open modal-bottom sm:modal-middle">
+          <div className="modal-box max-w-2xl bg-base-100 border border-base-200 shadow-md rounded-lg p-0 overflow-hidden">
+            <div className="p-5 border-b border-base-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                    <ShoppingBag className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-bold text-xl">Add New Item</h3>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="btn btn-sm btn-circle btn-ghost"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Unit</span>
-              </label>
-              <select
-                className="select select-bordered w-full"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-              >
-                <option value="">Select unit</option>
-                {unitOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
+            <div className="p-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-medium flex items-center gap-1.5">
+                      <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                      Item Name
+                      <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="What do you need to buy?"
+                    className={cn(
+                      "input input-bordered w-full",
+                      errors.name && "input-error"
+                    )}
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                  />
+                  {errors.name && (
+                    <label className="label">
+                      <span className="label-text-alt text-error flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        {errors.name}
+                      </span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text font-medium flex items-center gap-1.5">
+                        <PackageCheck className="h-3.5 w-3.5 text-primary" />
+                        Quantity
+                        <span className="text-error">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="any"
+                      className={cn(
+                        "input input-bordered w-full",
+                        errors.quantity && "input-error"
+                      )}
+                      value={quantity}
+                      onChange={(e) => setQuantity(Number(e.target.value))}
+                    />
+                    {errors.quantity && (
+                      <label className="label">
+                        <span className="label-text-alt text-error flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {errors.quantity}
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text font-medium flex items-center gap-1.5">
+                        Unit
+                      </span>
+                    </label>
+                    <select
+                      className="select select-bordered w-full"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                    >
+                      <option value="">Select unit</option>
+                      {unitOptions.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text font-medium flex items-center gap-1.5">
+                        Category
+                      </span>
+                    </label>
+                    <select
+                      className="select select-bordered w-full"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-control w-full">
+                    <label className="label">
+                      <span className="label-text font-medium flex items-center gap-1.5">
+                        <DollarSign className="h-3.5 w-3.5 text-primary" />
+                        Estimated Cost
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input input-bordered w-full"
+                      value={estimatedCost}
+                      onChange={(e) => setEstimatedCost(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-control w-full">
+                  <label className="label">
+                    <span className="label-text font-medium flex items-center gap-1.5">
+                      Notes
+                    </span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered h-20 w-full"
+                    placeholder="Add any special instructions or details..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  ></textarea>
+                </div>
+
+                <div className="form-control">
+                  <label className="cursor-pointer label justify-start gap-3 py-2">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-warning"
+                      checked={isUrgent}
+                      onChange={(e) => setIsUrgent(e.target.checked)}
+                    />
+                    <div className="flex flex-col">
+                      <span className="label-text font-medium flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                        Mark as Urgent
+                      </span>
+                      <span className="label-text-alt mt-0.5">
+                        Urgent items will be highlighted in your shopping list
+                      </span>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-4 border-t border-base-200 mt-6">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="btn btn-ghost"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={isAddingItem}
+                  >
+                    {isAddingItem ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Adding Item...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Category</span>
-              </label>
-              <select
-                className="select select-bordered w-full"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="">Select category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Estimated Cost</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="input input-bordered w-full"
-                value={estimatedCost}
-                onChange={(e) => setEstimatedCost(Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <div className="form-control mb-4">
-            <label className="label">
-              <span className="label-text">Notes</span>
-            </label>
-            <textarea
-              className="textarea textarea-bordered h-24"
-              placeholder="Add any notes about this item"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            ></textarea>
-          </div>
-
-          <div className="form-control mb-6">
-            <label className="cursor-pointer label justify-start gap-2">
-              <input
-                type="checkbox"
-                className="checkbox checkbox-warning"
-                checked={isUrgent}
-                onChange={(e) => setIsUrgent(e.target.checked)}
-              />
-              <span className="label-text">Mark as urgent</span>
-            </label>
-          </div>
-
-          <div className="modal-action">
-            <button type="button" onClick={onClose} className="btn btn-outline">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isAddingItem}
-            >
-              {isAddingItem ? (
-                <>
-                  <span className="loading loading-spinner loading-xs mr-2"></span>
-                  Adding...
-                </>
-              ) : (
-                "Add Item"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-      <div className="modal-backdrop" onClick={onClose}></div>
-    </div>
+          <div className="modal-backdrop bg-base-200/80" onClick={onClose} />
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

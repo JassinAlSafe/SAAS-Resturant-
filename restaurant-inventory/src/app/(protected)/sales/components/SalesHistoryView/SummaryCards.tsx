@@ -26,22 +26,24 @@ export const SummaryCards = ({
     averageOrderValue || (totalOrders > 0 ? totalSales / totalOrders : 0);
 
   return (
-    <div className="bg-white border-none shadow-sm rounded-xl p-5 mb-6">
+    <div className="bg-white border border-gray-100 shadow-sm rounded-xl p-5 mb-6">
       <div className="mb-4">
-        <h2 className="text-lg font-medium">Performance Summary</h2>
-        <p className="text-sm text-neutral-500">
+        <h2 className="text-lg font-medium text-gray-900">
+          Performance Summary
+        </h2>
+        <p className="text-sm text-gray-500">
           Key metrics for the selected period
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Total Sales Card */}
-        <div className="border border-orange-100/50 bg-orange-50/20 rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
+        <div className="border border-orange-100 bg-white rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Total Sales
               </span>
-              <span className="text-2xl font-semibold mt-2 text-neutral-900">
+              <span className="text-2xl font-semibold mt-2 text-gray-900">
                 {isLoading ? (
                   <div className="h-5 w-5 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin"></div>
                 ) : (
@@ -49,7 +51,7 @@ export const SummaryCards = ({
                 )}
               </span>
             </div>
-            <div className="p-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-white">
+            <div className="p-2 rounded-lg bg-orange-50 text-orange-500">
               <DollarSign className="h-5 w-5" />
             </div>
           </div>
@@ -60,21 +62,21 @@ export const SummaryCards = ({
         </div>
 
         {/* Total Orders Card */}
-        <div className="border border-blue-100/50 bg-blue-50/20 rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
+        <div className="border border-orange-100 bg-white rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Total Orders
               </span>
-              <span className="text-2xl font-semibold mt-2 text-neutral-900">
+              <span className="text-2xl font-semibold mt-2 text-gray-900">
                 {isLoading ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-blue-200 border-t-blue-500 animate-spin"></div>
+                  <div className="h-5 w-5 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin"></div>
                 ) : (
                   totalOrders
                 )}
               </span>
             </div>
-            <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-400 text-white">
+            <div className="p-2 rounded-lg bg-orange-50 text-orange-500">
               <ShoppingBag className="h-5 w-5" />
             </div>
           </div>
@@ -85,21 +87,21 @@ export const SummaryCards = ({
         </div>
 
         {/* Average Order Value Card */}
-        <div className="border border-purple-100/50 bg-purple-50/20 rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
+        <div className="border border-orange-100 bg-white rounded-xl p-5 flex flex-col transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
-              <span className="text-xs font-medium uppercase tracking-wider text-neutral-500">
+              <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
                 Average Order
               </span>
-              <span className="text-2xl font-semibold mt-2 text-neutral-900">
+              <span className="text-2xl font-semibold mt-2 text-gray-900">
                 {isLoading ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-purple-200 border-t-purple-500 animate-spin"></div>
+                  <div className="h-5 w-5 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin"></div>
                 ) : (
                   formatCurrency(avgOrderValue)
                 )}
               </span>
             </div>
-            <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-400 text-white">
+            <div className="p-2 rounded-lg bg-orange-50 text-orange-500">
               <PercentIcon className="h-5 w-5" />
             </div>
           </div>

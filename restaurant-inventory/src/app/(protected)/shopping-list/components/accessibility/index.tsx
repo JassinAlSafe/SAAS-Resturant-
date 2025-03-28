@@ -1,6 +1,6 @@
 "use client";
 
-export { default as AccessibilityPanel } from "./AccessibilityPanel";
+export { AccessibilityPanel } from "./AccessibilityPanel";
 export { KeyboardShortcuts } from "./KeyboardShortcuts";
 export { default as ScreenReaderAnnouncer } from "./ScreenReaderAnnouncer";
 export { default as FormAccessibility } from "./FormAccessibility";

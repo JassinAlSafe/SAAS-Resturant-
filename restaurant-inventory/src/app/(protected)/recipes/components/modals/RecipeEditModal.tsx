@@ -1,22 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FiX, FiEdit } from "react-icons/fi";
-import { Dish } from "@/lib/types";
+import { Dish, DishIngredient } from "@/lib/types";
 import { RecipeFormData } from "../../types";
+import { recipeService } from "@/lib/services/recipe-service";
+import { toast } from "sonner";
 
 interface RecipeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipe: Dish;
-  onSubmit: (recipe: RecipeFormData) => void;
+  onSuccess: () => Promise<void>;
 }
 
 export default function RecipeEditModal({
   isOpen,
   onClose,
   recipe,
-  onSubmit,
+  onSuccess,
 }: RecipeEditModalProps) {
   // Form state
   const [formData, setFormData] = useState<RecipeFormData>({
@@ -32,10 +34,18 @@ export default function RecipeEditModal({
 
   // Form validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize form data when recipe changes
   useEffect(() => {
     if (recipe) {
+      // Convert DishIngredient[] to RecipeFormData ingredients
+      const formIngredients = recipe.ingredients.map((ing) => ({
+        ingredientId: ing.ingredientId,
+        quantity: ing.quantity,
+        unit: ing.unit,
+      }));
+
       setFormData({
         name: recipe.name,
         price: recipe.price || 0,
@@ -43,7 +53,7 @@ export default function RecipeEditModal({
         description: recipe.description || "",
         imageUrl: recipe.imageUrl || "",
         foodCost: recipe.foodCost || 0,
-        ingredients: recipe.ingredients || [],
+        ingredients: formIngredients,
         allergies: recipe.allergies || [],
       });
     }
@@ -97,13 +107,83 @@ export default function RecipeEditModal({
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (validateForm()) {
-      onSubmit(formData);
-    }
-  };
+      // Validate form
+      if (!validateForm()) {
+        toast.error("Please fix the errors in the form");
+        return;
+      }
+
+      if (!recipe || !recipe.id) {
+        toast.error("Missing recipe ID");
+        return;
+      }
+
+      setIsSubmitting(true);
+      const toastId = toast.loading("Updating recipe...");
+
+      try {
+        console.log("Submitting recipe update with data:", formData);
+
+        // Convert formData ingredients to DishIngredient format
+        // The API expects ingredients in the format used by the Dish type
+        const dishIngredients: DishIngredient[] =
+          formData.ingredients?.map((ingredient) => ({
+            ingredientId: ingredient.ingredientId,
+            quantity: ingredient.quantity,
+            unit: ingredient.unit,
+          })) || [];
+
+        // Create the formatted recipe with the correct structure
+        const formattedRecipe = {
+          name: formData.name,
+          price: formData.price,
+          category: formData.category || "",
+          description: formData.description || "",
+          imageUrl: formData.imageUrl || "",
+          foodCost: formData.foodCost || 0,
+          allergens: formData.allergies || [],
+          ingredients: dishIngredients,
+        };
+
+        console.log("Formatted recipe for update:", formattedRecipe);
+
+        // Call the service to update the recipe
+        const result = await recipeService.updateRecipe(
+          recipe.id,
+          formattedRecipe
+        );
+
+        if (result) {
+          toast.dismiss(toastId);
+          toast.success("Recipe updated successfully");
+
+          // Call onSuccess to trigger refresh in parent
+          await onSuccess();
+
+          // Close the modal
+          onClose();
+        } else {
+          throw new Error("Failed to update recipe");
+        }
+      } catch (error) {
+        console.error("Error updating recipe:", error);
+        toast.dismiss(toastId);
+
+        if (error instanceof Error) {
+          toast.error(`Update failed: ${error.message}`);
+        } else {
+          toast.error("Failed to update recipe. Please try again.");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [recipe, formData, validateForm, onSuccess, onClose]
+  );
 
   if (!isOpen) return null;
 
@@ -127,6 +207,7 @@ export default function RecipeEditModal({
           <button
             onClick={onClose}
             className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-neutral-100 transition-colors text-neutral-500"
+            disabled={isSubmitting}
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -280,16 +361,48 @@ export default function RecipeEditModal({
 
         <div className="p-6 border-t border-neutral-200 flex justify-end gap-3 bg-neutral-50">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
+            type="submit"
             onClick={handleSubmit}
-            className="px-4 py-2 bg-neutral-800 text-white rounded-md text-sm font-medium hover:bg-neutral-900 transition-colors"
+            disabled={isSubmitting}
+            className={`px-4 py-2 ${
+              isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            } text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center`}
           >
-            Update Recipe
+            {isSubmitting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Updating...
+              </>
+            ) : (
+              "Update Recipe"
+            )}
           </button>
         </div>
       </div>

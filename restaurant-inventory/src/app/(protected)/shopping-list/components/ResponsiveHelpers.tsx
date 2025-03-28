@@ -5,6 +5,7 @@ import { Smartphone, Tablet, Monitor, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/components/ui/accessibility-helpers";
 import { announceToScreen } from "@/components/ui/accessibility-helpers";
+import { Card } from "@/components/ui/card";
 
 export default function ResponsiveHelpers() {
   const [isMobile, setIsMobile] = useState(false);
@@ -78,6 +79,7 @@ export default function ResponsiveHelpers() {
         title: "Mobile Tips",
         content:
           "Use landscape mode for a better view of your shopping list. Swipe horizontally to see all columns in tables.",
+        bgColor: "bg-blue-500",
       };
     } else if (isTablet) {
       return {
@@ -86,6 +88,7 @@ export default function ResponsiveHelpers() {
         title: "Tablet Tips",
         content:
           "Double tap on items for quick actions. The shopping wizard is optimized for your tablet screen.",
+        bgColor: "bg-indigo-500",
       };
     } else {
       return {
@@ -94,6 +97,7 @@ export default function ResponsiveHelpers() {
         title: "Desktop Tips",
         content:
           "Use keyboard shortcuts for faster navigation. Press Alt+A to access accessibility options.",
+        bgColor: "bg-emerald-500",
       };
     }
   };
@@ -146,7 +150,7 @@ export default function ResponsiveHelpers() {
     <AnimatePresence>
       {showTips && (
         <motion.div
-          className="toast toast-top toast-end z-40"
+          className="fixed top-4 right-4 z-50 w-full max-w-sm"
           variants={toastVariants}
           initial="initial"
           animate="animate"
@@ -155,22 +159,41 @@ export default function ResponsiveHelpers() {
           role="status"
           aria-live="polite"
         >
-          <div className="alert alert-info">
-            <div className="flex gap-2">
-              {tipInfo.icon}
-              <div>
-                <h3 className="font-bold text-sm">{tipInfo.title}</h3>
-                <div className="text-xs">{tipInfo.content}</div>
+          <Card className="shadow-lg border border-gray-100 overflow-hidden">
+            <div
+              className={`h-1 w-full bg-gradient-to-r from-${
+                tipInfo.bgColor.split("-")[1]
+              }-500 to-${tipInfo.bgColor.split("-")[1]}-400`}
+            />
+            <div className="p-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-start space-x-3">
+                  <div
+                    className={`rounded-full p-2 ${
+                      tipInfo.bgColor.replace("bg-", "bg-") + "/10"
+                    } ${tipInfo.bgColor.replace("bg-", "text-")}`}
+                  >
+                    {tipInfo.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-gray-800 font-semibold text-sm">
+                      {tipInfo.title}
+                    </h3>
+                    <p className="text-gray-600 text-xs mt-1 pr-4">
+                      {tipInfo.content}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => dismissTip(tipInfo.id)}
+                  className="rounded-full p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label={`Dismiss ${tipInfo.title}`}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
               </div>
             </div>
-            <button
-              onClick={() => dismissTip(tipInfo.id)}
-              className="btn btn-sm btn-ghost"
-              aria-label={`Dismiss ${tipInfo.title}`}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+          </Card>
         </motion.div>
       )}
     </AnimatePresence>

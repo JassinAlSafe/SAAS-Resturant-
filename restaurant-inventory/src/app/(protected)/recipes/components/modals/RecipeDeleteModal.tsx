@@ -1,21 +1,69 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { FiX, FiTrash2 } from "react-icons/fi";
 import { Dish } from "@/lib/types";
+import { recipeService } from "@/lib/services/recipe-service";
+import { toast } from "sonner";
 
 interface RecipeDeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipe: Dish;
-  onDelete: () => void;
+  onSuccess: () => Promise<void>;
 }
 
 export default function RecipeDeleteModal({
   isOpen,
   onClose,
   recipe,
-  onDelete,
+  onSuccess,
 }: RecipeDeleteModalProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!recipe || !recipe.id) {
+      toast.error("Invalid recipe data");
+      return;
+    }
+
+    setIsDeleting(true);
+    const toastId = toast.loading("Deleting recipe...");
+
+    try {
+      console.log(`Attempting to delete recipe: ${recipe.id} - ${recipe.name}`);
+
+      // Call the service to delete the recipe
+      const result = await recipeService.deleteRecipe(recipe.id);
+
+      console.log("Delete operation result:", result);
+
+      if (result.success) {
+        toast.dismiss(toastId);
+        toast.success("Recipe deleted successfully");
+
+        // Call onSuccess first to trigger refresh
+        await onSuccess();
+
+        // Then close the modal
+        onClose();
+      } else if (result.hasSalesReferences) {
+        toast.dismiss(toastId);
+        toast.error(
+          "Cannot delete: Recipe has sales references. Consider archiving instead."
+        );
+      } else {
+        throw new Error("Failed to delete recipe");
+      }
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+      toast.dismiss(toastId);
+      toast.error("Failed to delete recipe. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [recipe, onClose, onSuccess]);
+
   if (!isOpen) return null;
 
   return (
@@ -38,6 +86,7 @@ export default function RecipeDeleteModal({
           <button
             onClick={onClose}
             className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-neutral-100 transition-colors text-neutral-500"
+            disabled={isDeleting}
           >
             <FiX className="h-5 w-5" />
           </button>
@@ -67,14 +116,44 @@ export default function RecipeDeleteModal({
           <button
             onClick={onClose}
             className="px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+            disabled={isDeleting}
           >
             Cancel
           </button>
           <button
-            onClick={onDelete}
-            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className={`px-4 py-2 ${
+              isDeleting ? "bg-red-400" : "bg-red-600 hover:bg-red-700"
+            } text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center`}
           >
-            Delete Recipe
+            {isDeleting ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Deleting...
+              </>
+            ) : (
+              "Delete Recipe"
+            )}
           </button>
         </div>
       </div>

@@ -1,12 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useState,
+  useCallback,
+  ReactNode,
+  ChangeEvent,
+  MouseEvent,
+} from "react";
 import { FiX, FiPlusCircle } from "react-icons/fi";
-import { RecipeFormData } from "../../types";
 import { toast } from "sonner";
 import { recipeService } from "@/lib/services/recipe-service";
-import { supabase } from "@/lib/supabase/client";
+import { getCurrentUser } from "@/lib/utils/Auth/auth-utils";
 
+// Define RecipeFormData type locally if it's not being used from imported file
+interface RecipeFormData {
+  name: string;
+  price: number;
+  category: string;
+  description: string;
+  imageUrl: string;
+  foodCost: number;
+  ingredients: Array<{
+    ingredientId: string;
+    quantity: number;
+    unit: string;
+  }>;
+  allergies: string[];
+  preparationTime: number;
+  servingSize: number;
+  instructions: string;
+  nutritionInfo: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  _ingredientNames?: Record<string, string>;
+}
+
+// Define FormField prop types
+interface FormFieldProps {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: ReactNode;
+}
+
+// Components
+const FormField = ({ label, error, required, children }: FormFieldProps) => (
+  <div>
+    <label className="block text-sm font-medium text-neutral-700 mb-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children}
+    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+  </div>
+);
+
+// Default form values
+const defaultFormData: RecipeFormData = {
+  name: "",
+  price: 0,
+  category: "",
+  description: "",
+  imageUrl: "",
+  foodCost: 0,
+  ingredients: [],
+  allergies: [],
+  preparationTime: 0,
+  servingSize: 1,
+  instructions: "",
+  nutritionInfo: {
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  },
+};
+
+// Define modal props interface
 interface RecipeAddModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,358 +91,213 @@ export default function RecipeAddModal({
   onSuccess,
 }: RecipeAddModalProps) {
   // Form state
-  const [formData, setFormData] = useState<RecipeFormData>({
-    name: "",
-    price: 0,
-    category: "",
-    description: "",
-    imageUrl: "",
-    foodCost: 0,
-    ingredients: [],
-    allergies: [],
-    preparationTime: 0,
-    servingSize: 1,
-    instructions: "",
-    nutritionInfo: {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-    },
-  });
+  const [formData, setFormData] = useState<RecipeFormData>(defaultFormData);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Ingredient temporary state
-  const [currentIngredient, setCurrentIngredient] = useState({
-    ingredientId: "",
+  // Ingredient state
+  const [ingredientState, setIngredientState] = useState({
     name: "",
     quantity: 1,
     unit: "g",
   });
 
-  // Form validation state
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Function to generate a proper UUID (v4)
-  const generateUUID = () => {
-    // Use crypto.randomUUID() if available (modern browsers)
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-
-    // Fallback implementation for older browsers
-    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => {
-      const num = Number(c);
-      return (
-        num ^
-        (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (num / 4)))
-      ).toString(16);
-    });
-  };
-
   // Handle form input changes
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
+  const handleChange = useCallback(
+    (
+      e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+      const { name, value } = e.target;
 
-    // Convert numeric fields to numbers
-    if (name === "price" || name === "foodCost") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value ? parseFloat(value) : 0,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+      // Handle nested fields with dot notation (e.g., nutritionInfo.calories)
+      if (name.includes(".")) {
+        const [parent, child] = name.split(".");
+        setFormData((prev) => {
+          if (parent === "nutritionInfo") {
+            return {
+              ...prev,
+              nutritionInfo: {
+                ...prev.nutritionInfo,
+                [child]:
+                  typeof value === "string" && !isNaN(parseFloat(value))
+                    ? parseFloat(value) || 0
+                    : value,
+              },
+            };
+          }
+          return prev;
+        });
+      } else if (name === "price" || name === "foodCost") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value ? parseFloat(value) : 0,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }
 
-    // Clear error for the field being changed
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
+      // Clear error for this field
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
 
-  // Validate the form
-  const validateForm = (): boolean => {
+  // Validate form
+  const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Recipe name is required";
-    }
-
-    if (formData.price <= 0) {
+    if (!formData.name.trim()) newErrors.name = "Recipe name is required";
+    if (formData.price <= 0)
       newErrors.price = "Price must be greater than zero";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
-  // Create recipe in database
-  const createRecipe = async (recipe: RecipeFormData) => {
-    // Track toast ID to dismiss later
-    let toastId: string | number = "";
-
-    try {
-      setIsSubmitting(true);
-
-      // Show saving notification
-      toastId = toast.loading("Creating your recipe...");
-
-      // Debug: Log the data we're trying to insert
-      console.log("Attempting to create recipe with data:", recipe);
-
-      // Check if user is authenticated first
-      const { data: authData, error: authError } =
-        await supabase.auth.getUser();
-
-      if (authError) {
-        console.error("Authentication error:", authError);
-        toast.dismiss(toastId);
-        toast.error("Authentication failed. Please try logging in again.");
-        onClose(); // Close modal on auth error
-        return;
-      }
-
-      console.log(
-        "Authentication status:",
-        authData.user ? "Authenticated" : "Not authenticated",
-        "User ID:",
-        authData.user?.id
-      );
-
-      if (!authData.user) {
-        toast.dismiss(toastId);
-        toast.error("You must be logged in to create a recipe");
-        onClose(); // Close modal when not authenticated
-        return;
-      }
-
-      // Remove internal tracking field before sending to server
-      // We need to use a temporary variable to satisfy the linter
-      const { _ingredientNames: _names, ...recipeToSend } = recipe;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _unusedVar = _names; // This line is just to satisfy the linter
-      console.log("Prepared data for server:", recipeToSend);
-
-      try {
-        // Use the recipe service
-        console.log("Calling recipeService.addRecipe...");
-
-        // Update toast message to show progress
-        toast.loading("Connecting to server...", { id: toastId });
-
-        const result = await recipeService.addRecipe({
-          name: recipeToSend.name,
-          price: recipeToSend.price,
-          category: recipeToSend.category || "",
-          description: recipeToSend.description || "",
-          imageUrl: recipeToSend.imageUrl || "",
-          foodCost: recipeToSend.foodCost || 0,
-          ingredients: recipeToSend.ingredients || [],
-          allergies: recipeToSend.allergies || [],
-          isArchived: false, // Explicitly set to false
-          popularity: 0,
-          preparationTime: recipeToSend.preparationTime || 0,
-          servingSize: recipeToSend.servingSize || 1,
-          instructions: recipeToSend.instructions || "",
-          nutritionInfo: recipeToSend.nutritionInfo || {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-          },
-        });
-
-        console.log("Recipe creation API returned:", result);
-
-        if (!result) {
-          toast.dismiss(toastId);
-          toast.error("Server returned empty response. Please try again.");
-          onClose(); // Close modal on error
-          return;
-        }
-
-        // Dismiss loading toast and show success
-        toast.dismiss(toastId);
-        toast.success("Recipe created successfully!");
-
-        // Call the success callback to update the parent component
-        onSuccess();
-
-        // Reset form state
-        setFormData({
-          name: "",
-          price: 0,
-          category: "",
-          description: "",
-          imageUrl: "",
-          foodCost: 0,
-          ingredients: [],
-          allergies: [],
-          preparationTime: 0,
-          servingSize: 1,
-          instructions: "",
-          nutritionInfo: {
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-          },
-        });
-
-        // Close the modal
-        onClose();
-      } catch (serviceError: Error | unknown) {
-        console.error("Recipe service error:", serviceError);
-
-        // Handle specific error types
-        let errorMessage = "Failed to create recipe. Please try again.";
-
-        if (serviceError instanceof Error) {
-          if (serviceError.message.includes("business profile")) {
-            errorMessage =
-              "Missing business profile. Please set up your business profile first.";
-          } else if (
-            serviceError.message.includes("authentication") ||
-            serviceError.message.includes("authenticated")
-          ) {
-            errorMessage = "Authentication issue. Please log in again.";
-          } else {
-            // Use the actual error message if available
-            errorMessage = serviceError.message;
-          }
-        }
-
-        toast.dismiss(toastId);
-        toast.error(errorMessage);
-        onClose(); // Close modal on service error
-      }
-    } catch (error) {
-      console.error("Unexpected error in recipe creation:", error);
-      toast.dismiss(toastId);
-      toast.error("An unexpected error occurred. Please try again later.");
-      onClose(); // Close modal on unexpected error
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (validateForm() && !isSubmitting) {
-      await createRecipe(formData);
-    }
-  };
-
-  // Close the modal and reset form
-  const handleClose = () => {
-    setFormData({
-      name: "",
-      price: 0,
-      category: "",
-      description: "",
-      imageUrl: "",
-      foodCost: 0,
-      ingredients: [],
-      allergies: [],
-      preparationTime: 0,
-      servingSize: 1,
-      instructions: "",
-      nutritionInfo: {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-      },
-      _ingredientNames: {},
-    });
-    setErrors({});
-    onClose();
-  };
-
-  // Add ingredient to the recipe
-  const addIngredient = () => {
-    if (!currentIngredient.name.trim()) {
+  // Add ingredient
+  const addIngredient = useCallback(() => {
+    if (!ingredientState.name.trim()) {
       toast.error("Please enter an ingredient name");
       return;
     }
 
-    // Important: For now, we'll store just the name and unit info
-    // The actual ingredient ID will be determined server-side
-    // This prevents foreign key violations with non-existent IDs
-
-    // Create a temporary ID for UI purposes only
-    const tempId = generateUUID();
-
-    // Keep track of ingredient names for display purposes
-    const ingredientNames = {
-      ...(formData._ingredientNames || {}),
-      [tempId]: currentIngredient.name,
-    };
-
-    setFormData({
-      ...formData,
+    setFormData((prev: RecipeFormData) => ({
+      ...prev,
       ingredients: [
-        ...(formData.ingredients || []),
+        ...prev.ingredients,
         {
-          // Use name as the ID to be resolved on the server
-          ingredientId: currentIngredient.name, // Using name instead of random UUID
-          quantity: currentIngredient.quantity,
-          unit: currentIngredient.unit,
+          ingredientId: ingredientState.name,
+          quantity: ingredientState.quantity,
+          unit: ingredientState.unit,
         },
       ],
-      // Store ingredient names internally but don't send to server
-      _ingredientNames: ingredientNames,
-    });
+      _ingredientNames: {
+        ...(prev._ingredientNames || {}),
+        [ingredientState.name]: ingredientState.name,
+      },
+    }));
 
-    // Reset the current ingredient
-    setCurrentIngredient({
-      ingredientId: "",
+    // Reset ingredient state
+    setIngredientState({
       name: "",
       quantity: 1,
       unit: "g",
     });
-  };
+  }, [ingredientState]);
 
-  // Remove an ingredient
-  const removeIngredient = (index: number) => {
-    const updatedIngredients = [...(formData.ingredients || [])];
-    const ingredientToRemove = updatedIngredients[index];
-    updatedIngredients.splice(index, 1);
+  // Remove ingredient
+  const removeIngredient = useCallback((index: number) => {
+    setFormData((prev) => {
+      const updatedIngredients = [...prev.ingredients];
+      updatedIngredients.splice(index, 1);
 
-    // Create a copy of ingredient names without the removed one
-    const updatedIngredientNames = { ...(formData._ingredientNames || {}) };
-    if (
-      ingredientToRemove &&
-      updatedIngredientNames[ingredientToRemove.ingredientId]
-    ) {
-      delete updatedIngredientNames[ingredientToRemove.ingredientId];
-    }
-
-    setFormData({
-      ...formData,
-      ingredients: updatedIngredients,
-      _ingredientNames: updatedIngredientNames,
+      return {
+        ...prev,
+        ingredients: updatedIngredients,
+      };
     });
-  };
+  }, []);
+
+  // Submit form
+  const handleSubmit = useCallback(
+    async (
+      e: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>
+    ) => {
+      // Prevent default form submission behavior
+      e.preventDefault();
+
+      // Validate form
+      if (!validateForm()) {
+        toast.error("Please fix the errors in the form");
+        return;
+      }
+
+      setIsSubmitting(true);
+      const toastId = toast.loading("Creating your recipe...");
+
+      try {
+        // Check authentication
+        const { user, error: authError } = await getCurrentUser();
+
+        if (authError || !user) {
+          toast.dismiss(toastId);
+          toast.error("Authentication failed. Please try logging in again.");
+          onClose();
+          return;
+        }
+
+        // Remove internal tracking field and rename it to avoid unused variable warning
+        const { _ingredientNames: _unused, ...recipeToSend } = formData;
+        // Explicitly mark as unused to satisfy linter
+        void _unused;
+
+        // Create recipe
+        console.log("Creating recipe with data:", recipeToSend);
+        const result = await recipeService.addRecipe({
+          ...recipeToSend,
+          category: recipeToSend.category || "",
+          description: recipeToSend.description || "",
+          isArchived: false,
+          popularity: 0,
+        });
+
+        console.log("Recipe creation result:", result);
+        if (!result) {
+          throw new Error("Failed to create recipe");
+        }
+
+        toast.dismiss(toastId);
+        toast.success("Recipe created successfully!");
+
+        // First call success callback to trigger the refetch
+        console.log("Calling onSuccess to refresh recipe list");
+        onSuccess();
+
+        // Reset form state
+        setFormData(defaultFormData);
+
+        // Then close the modal
+        console.log("Closing modal after successful creation");
+        onClose();
+      } catch (error: unknown) {
+        console.error("Recipe creation failed:", error);
+        toast.dismiss(toastId);
+
+        // Type guard for error with message property
+        if (error instanceof Error) {
+          toast.error(error.message || "Failed to create recipe");
+        } else {
+          toast.error("An unexpected error occurred");
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, validateForm, onClose, onSuccess]
+  );
+
+  // Reset state when closing
+  const handleClose = useCallback(() => {
+    setFormData(defaultFormData);
+    setErrors({});
+    onClose();
+  }, [onClose]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-md shadow-lg max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        {/* Header */}
         <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-neutral-100 p-2.5 rounded-md">
@@ -393,19 +320,13 @@ export default function RecipeAddModal({
           </button>
         </div>
 
+        {/* Form */}
         <div className="overflow-y-auto flex-grow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Recipe Name */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-neutral-700 mb-1"
-              >
-                Recipe Name <span className="text-red-500">*</span>
-              </label>
+            <FormField label="Recipe Name" error={errors.name} required>
               <input
                 type="text"
-                id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
@@ -414,27 +335,17 @@ export default function RecipeAddModal({
                 } rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500`}
                 placeholder="Enter recipe name"
               />
-              {errors.name && (
-                <p className="mt-1 text-xs text-red-500">{errors.name}</p>
-              )}
-            </div>
+            </FormField>
 
-            {/* Price and Category in two columns */}
+            {/* Price and Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="price"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Price <span className="text-red-500">*</span>
-                </label>
+              <FormField label="Price" error={errors.price} required>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
                     kr
                   </span>
                   <input
                     type="number"
-                    id="price"
                     name="price"
                     value={formData.price || ""}
                     onChange={handleChange}
@@ -446,46 +357,29 @@ export default function RecipeAddModal({
                     placeholder="0.00"
                   />
                 </div>
-                {errors.price && (
-                  <p className="mt-1 text-xs text-red-500">{errors.price}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div>
-                <label
-                  htmlFor="category"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Category
-                </label>
+              <FormField label="Category">
                 <input
                   type="text"
-                  id="category"
                   name="category"
                   value={formData.category || ""}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500"
                   placeholder="e.g., Appetizer, Main Course"
                 />
-              </div>
+              </FormField>
             </div>
 
-            {/* Food Cost and Image URL in two columns */}
+            {/* Food Cost and Image URL */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="foodCost"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Food Cost
-                </label>
+              <FormField label="Food Cost">
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
                     kr
                   </span>
                   <input
                     type="number"
-                    id="foodCost"
                     name="foodCost"
                     value={formData.foodCost || ""}
                     onChange={handleChange}
@@ -495,37 +389,23 @@ export default function RecipeAddModal({
                     placeholder="0.00"
                   />
                 </div>
-              </div>
+              </FormField>
 
-              <div>
-                <label
-                  htmlFor="imageUrl"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Image URL
-                </label>
+              <FormField label="Image URL">
                 <input
                   type="text"
-                  id="imageUrl"
                   name="imageUrl"
                   value={formData.imageUrl || ""}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500"
                   placeholder="https://example.com/image.jpg"
                 />
-              </div>
+              </FormField>
             </div>
 
             {/* Description */}
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-neutral-700 mb-1"
-              >
-                Description
-              </label>
+            <FormField label="Description">
               <textarea
-                id="description"
                 name="description"
                 value={formData.description || ""}
                 onChange={handleChange}
@@ -533,20 +413,13 @@ export default function RecipeAddModal({
                 className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 resize-none"
                 placeholder="Enter recipe description"
               />
-            </div>
+            </FormField>
 
-            {/* Preparation Time and Serving Size in two columns */}
+            {/* Preparation Time and Serving Size */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="preparationTime"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Preparation Time (minutes)
-                </label>
+              <FormField label="Preparation Time (minutes)">
                 <input
                   type="number"
-                  id="preparationTime"
                   name="preparationTime"
                   value={formData.preparationTime || ""}
                   onChange={handleChange}
@@ -554,18 +427,11 @@ export default function RecipeAddModal({
                   className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500"
                   placeholder="45"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label
-                  htmlFor="servingSize"
-                  className="block text-sm font-medium text-neutral-700 mb-1"
-                >
-                  Serving Size
-                </label>
+              <FormField label="Serving Size">
                 <input
                   type="number"
-                  id="servingSize"
                   name="servingSize"
                   value={formData.servingSize || ""}
                   onChange={handleChange}
@@ -573,19 +439,12 @@ export default function RecipeAddModal({
                   className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500"
                   placeholder="1"
                 />
-              </div>
+              </FormField>
             </div>
 
             {/* Cooking Instructions */}
-            <div>
-              <label
-                htmlFor="instructions"
-                className="block text-sm font-medium text-neutral-700 mb-1"
-              >
-                Cooking Instructions
-              </label>
+            <FormField label="Cooking Instructions">
               <textarea
-                id="instructions"
                 name="instructions"
                 value={formData.instructions || ""}
                 onChange={handleChange}
@@ -593,9 +452,9 @@ export default function RecipeAddModal({
                 className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 resize-none"
                 placeholder="Enter step-by-step cooking instructions"
               />
-            </div>
+            </FormField>
 
-            {/* Nutrition Information - Basic */}
+            {/* Nutrition Information */}
             <div>
               <div className="flex justify-between items-center mb-3">
                 <label className="block text-sm font-medium text-neutral-700">
@@ -605,143 +464,34 @@ export default function RecipeAddModal({
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div>
-                  <label
-                    htmlFor="calories"
-                    className="block text-xs text-neutral-600 mb-1"
-                  >
-                    Calories
-                  </label>
-                  <input
-                    type="number"
-                    id="calories"
-                    name="nutritionInfo.calories"
-                    value={formData.nutritionInfo?.calories || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        nutritionInfo: {
-                          ...(formData.nutritionInfo || {
-                            calories: 0,
-                            protein: 0,
-                            carbs: 0,
-                            fat: 0,
-                          }),
-                          calories: parseFloat(e.target.value) || 0,
-                        },
-                      })
-                    }
-                    min="0"
-                    className="w-full px-3 py-1.5 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
-                    placeholder="kcal"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="protein"
-                    className="block text-xs text-neutral-600 mb-1"
-                  >
-                    Protein
-                  </label>
-                  <input
-                    type="number"
-                    id="protein"
-                    name="nutritionInfo.protein"
-                    value={formData.nutritionInfo?.protein || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        nutritionInfo: {
-                          ...(formData.nutritionInfo || {
-                            calories: 0,
-                            protein: 0,
-                            carbs: 0,
-                            fat: 0,
-                          }),
-                          protein: parseFloat(e.target.value) || 0,
-                        },
-                      })
-                    }
-                    min="0"
-                    className="w-full px-3 py-1.5 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
-                    placeholder="g"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="carbs"
-                    className="block text-xs text-neutral-600 mb-1"
-                  >
-                    Carbs
-                  </label>
-                  <input
-                    type="number"
-                    id="carbs"
-                    name="nutritionInfo.carbs"
-                    value={formData.nutritionInfo?.carbs || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        nutritionInfo: {
-                          ...(formData.nutritionInfo || {
-                            calories: 0,
-                            protein: 0,
-                            carbs: 0,
-                            fat: 0,
-                          }),
-                          carbs: parseFloat(e.target.value) || 0,
-                        },
-                      })
-                    }
-                    min="0"
-                    className="w-full px-3 py-1.5 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
-                    placeholder="g"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="fat"
-                    className="block text-xs text-neutral-600 mb-1"
-                  >
-                    Fat
-                  </label>
-                  <input
-                    type="number"
-                    id="fat"
-                    name="nutritionInfo.fat"
-                    value={formData.nutritionInfo?.fat || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        nutritionInfo: {
-                          ...(formData.nutritionInfo || {
-                            calories: 0,
-                            protein: 0,
-                            carbs: 0,
-                            fat: 0,
-                          }),
-                          fat: parseFloat(e.target.value) || 0,
-                        },
-                      })
-                    }
-                    min="0"
-                    className="w-full px-3 py-1.5 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
-                    placeholder="g"
-                  />
-                </div>
+                {["calories", "protein", "carbs", "fat"].map((nutrient) => (
+                  <div key={nutrient}>
+                    <label className="block text-xs text-neutral-600 mb-1">
+                      {nutrient.charAt(0).toUpperCase() + nutrient.slice(1)}
+                    </label>
+                    <input
+                      type="number"
+                      name={`nutritionInfo.${nutrient}`}
+                      value={
+                        formData.nutritionInfo[
+                          nutrient as keyof typeof formData.nutritionInfo
+                        ] || ""
+                      }
+                      onChange={handleChange}
+                      min="0"
+                      className="w-full px-3 py-1.5 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
+                      placeholder={nutrient === "calories" ? "kcal" : "g"}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Ingredients Note */}
             <div className="p-4 bg-blue-50 rounded-md">
               <p className="text-sm text-blue-700">
-                <strong>Note:</strong> Adding ingredients to your recipe creates
-                a dish record, enabling advanced features like inventory
-                tracking and cost calculation.
-              </p>
-              <p className="text-sm text-blue-600 mt-1">
-                For the MVP, recipes without ingredients will still display in
-                your list but won&apos;t have relational features.
+                <strong>Note:</strong> Adding ingredients enables advanced
+                features like inventory tracking and cost calculation.
               </p>
             </div>
 
@@ -755,42 +505,34 @@ export default function RecipeAddModal({
               <div className="mb-4 p-4 bg-neutral-50 rounded-md border border-neutral-200">
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-12 sm:col-span-5">
-                    <label
-                      htmlFor="ingredientName"
-                      className="block text-xs text-neutral-600 mb-1"
-                    >
+                    <label className="block text-xs text-neutral-600 mb-1">
                       Ingredient Name
                     </label>
                     <input
                       type="text"
-                      id="ingredientName"
-                      value={currentIngredient.name}
+                      value={ingredientState.name}
                       onChange={(e) =>
-                        setCurrentIngredient({
-                          ...currentIngredient,
+                        setIngredientState((prev) => ({
+                          ...prev,
                           name: e.target.value,
-                        })
+                        }))
                       }
                       className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
                       placeholder="e.g., Tomato"
                     />
                   </div>
                   <div className="col-span-6 sm:col-span-3">
-                    <label
-                      htmlFor="quantity"
-                      className="block text-xs text-neutral-600 mb-1"
-                    >
+                    <label className="block text-xs text-neutral-600 mb-1">
                       Quantity
                     </label>
                     <input
                       type="number"
-                      id="quantity"
-                      value={currentIngredient.quantity}
+                      value={ingredientState.quantity}
                       onChange={(e) =>
-                        setCurrentIngredient({
-                          ...currentIngredient,
+                        setIngredientState((prev) => ({
+                          ...prev,
                           quantity: parseFloat(e.target.value) || 0,
-                        })
+                        }))
                       }
                       min="0"
                       step="0.01"
@@ -799,30 +541,26 @@ export default function RecipeAddModal({
                     />
                   </div>
                   <div className="col-span-6 sm:col-span-2">
-                    <label
-                      htmlFor="unit"
-                      className="block text-xs text-neutral-600 mb-1"
-                    >
+                    <label className="block text-xs text-neutral-600 mb-1">
                       Unit
                     </label>
                     <select
-                      id="unit"
-                      value={currentIngredient.unit}
+                      value={ingredientState.unit}
                       onChange={(e) =>
-                        setCurrentIngredient({
-                          ...currentIngredient,
+                        setIngredientState((prev) => ({
+                          ...prev,
                           unit: e.target.value,
-                        })
+                        }))
                       }
                       className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm bg-white"
                     >
-                      <option value="g">g</option>
-                      <option value="kg">kg</option>
-                      <option value="ml">ml</option>
-                      <option value="l">l</option>
-                      <option value="pcs">pcs</option>
-                      <option value="tbsp">tbsp</option>
-                      <option value="tsp">tsp</option>
+                      {["g", "kg", "ml", "l", "pcs", "tbsp", "tsp"].map(
+                        (unit) => (
+                          <option key={unit} value={unit}>
+                            {unit}
+                          </option>
+                        )
+                      )}
                     </select>
                   </div>
                   <div className="col-span-12 sm:col-span-2 flex items-end">
@@ -861,7 +599,6 @@ export default function RecipeAddModal({
                       formData.ingredients.map((ingredient, index) => (
                         <tr key={index} className="hover:bg-neutral-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-neutral-800">
-                            {/* Use stored ingredient name if available */}
                             {formData._ingredientNames?.[
                               ingredient.ingredientId
                             ] || ingredient.ingredientId}
@@ -898,13 +635,10 @@ export default function RecipeAddModal({
                 </table>
               </div>
             </div>
-
-            {/* Note: Allergies would be added here
-                using more complex components. For this example, 
-                we'll keep it simple */}
           </form>
         </div>
 
+        {/* Footer */}
         <div className="p-6 border-t border-neutral-200 flex justify-end gap-3 bg-neutral-50">
           <button
             onClick={handleClose}
@@ -913,7 +647,7 @@ export default function RecipeAddModal({
             Cancel
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={(e: MouseEvent<HTMLButtonElement>) => handleSubmit(e)}
             disabled={isSubmitting}
             className={`px-4 py-2 ${
               isSubmitting

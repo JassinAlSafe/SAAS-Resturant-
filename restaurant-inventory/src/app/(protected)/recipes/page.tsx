@@ -1,11 +1,12 @@
 "use client";
 
-import { FC, useEffect, useState, useCallback } from "react";
+import { FC, useState, useCallback, useMemo, useEffect } from "react";
 import RecipeHeader from "./components/RecipeHeader";
 import RecipeTableNew from "./components/RecipeTableNew";
 import { FilterCriteria, RecipeModalType } from "./types";
 import { Dish } from "@/lib/types";
 import { useRecipes } from "./hooks/useRecipes";
+import { recipeService } from "@/lib/services/recipe-service";
 import RecipeFilterDialog from "./components/modals/RecipeFilterDialog";
 import RecipeSearch from "./components/RecipeSearch";
 import RecipeAddModal from "./components/modals/RecipeAddModal";
@@ -15,84 +16,97 @@ import RecipeArchiveModal from "./components/modals/RecipeArchiveModal";
 import RecipeDetailModal from "./components/modals/RecipeDetailModal";
 import { toast } from "sonner";
 
+/* Additional debug logging to understand recipe archived status */
+function logRecipeArchiveStatus(recipes: Dish[]): void {
+  const archivedRecipes = recipes.filter((r) => Boolean(r.isArchived) === true);
+  const activeRecipes = recipes.filter((r) => Boolean(r.isArchived) !== true);
+
+  console.log(`[DEBUG] Total recipes: ${recipes.length}`);
+  console.log(`[DEBUG] Active recipes: ${activeRecipes.length}`);
+  console.log(`[DEBUG] Archived recipes: ${archivedRecipes.length}`);
+
+  if (archivedRecipes.length > 0) {
+    console.log(`[DEBUG] First archived recipe:`, {
+      id: archivedRecipes[0].id,
+      name: archivedRecipes[0].name,
+      isArchived: archivedRecipes[0].isArchived,
+    });
+  }
+
+  if (activeRecipes.length > 0) {
+    console.log(`[DEBUG] First active recipe:`, {
+      id: activeRecipes[0].id,
+      name: activeRecipes[0].name,
+      isArchived: activeRecipes[0].isArchived,
+    });
+  }
+}
+
+interface ModalState {
+  type: RecipeModalType | null;
+  recipe: Dish | null;
+  isOpen: boolean;
+}
+
 const RecipesPage: FC = () => {
   const { recipes, isLoading, isError, refetch } = useRecipes();
 
-  const [filteredRecipes, setFilteredRecipes] = useState<Dish[]>([]);
+  // Add debug logging when recipes change
+  useEffect(() => {
+    if (recipes.length > 0) {
+      logRecipeArchiveStatus(recipes);
+    }
+  }, [recipes]);
+
+  // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     categories: [],
     allergens: [],
   });
   const [showArchivedRecipes, setShowArchivedRecipes] = useState(false);
-  const [currentRecipe, setCurrentRecipe] = useState<Dish | null>(null);
-  const [modalType, setModalType] = useState<RecipeModalType | null>(null);
 
-  // Modal disclosure hooks
-  const addModal = useDisclosure(false);
-  const editModal = useDisclosure(false);
-  const deleteModal = useDisclosure(false);
-  const archiveModal = useDisclosure(false);
-  const detailModal = useDisclosure(false);
-  const filterModal = useDisclosure(false);
+  // Consolidated modal state
+  const [modalState, setModalState] = useState<ModalState>({
+    type: null,
+    recipe: null,
+    isOpen: false,
+  });
 
-  // Handle add/edit/delete/archive actions
-  const handleAddRecipe = () => {
-    setModalType("add");
-    addModal.open();
-  };
+  // Filter dialog state
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
-  const handleEditRecipe = (recipe: Dish) => {
-    setCurrentRecipe(recipe);
-    setModalType("edit");
-    editModal.open();
-  };
-
-  const handleDeleteRecipe = (recipe: Dish) => {
-    setCurrentRecipe(recipe);
-    setModalType("delete");
-    deleteModal.open();
-  };
-
-  const handleArchiveRecipe = (recipe: Dish) => {
-    setCurrentRecipe(recipe);
-    setModalType("archive");
-    archiveModal.open();
-  };
-
-  const handleViewRecipe = (recipe: Dish) => {
-    setCurrentRecipe(recipe);
-    setModalType("view");
-    detailModal.open();
-  };
-
-  // Apply filters to recipes
-  const applyFilters = useCallback(() => {
-    console.log("Applying filters to", recipes.length, "recipes");
-
-    // Analyze recipe-dish relationships (safely checking for dish_id property)
-    const recipesWithDishes = recipes.filter(
-      (recipe) => "dish_id" in recipe && recipe.dish_id != null
-    );
-    const recipesWithoutDishes = recipes.filter(
-      (recipe) => !("dish_id" in recipe) || recipe.dish_id == null
-    );
-
-    console.log(`Recipe-Dish Relationship Analysis:
-    - Total Recipes: ${recipes.length}
-    - With Dish relationship: ${recipesWithDishes.length}
-    - Without Dish relationship: ${recipesWithoutDishes.length}`);
+  // Apply filters to recipes - memoized to avoid recalculation
+  const filteredRecipes = useMemo(() => {
+    if (!recipes.length) return [];
 
     let results = [...recipes];
 
-    // Filter by archived status
+    // First, filter by archived status - ensure we're properly comparing boolean values
     results = results.filter((recipe) => {
-      // Safeguard against undefined isArchived values
-      const isArchived = recipe.isArchived ?? false;
-      return showArchivedRecipes ? isArchived : !isArchived;
+      if (showArchivedRecipes) {
+        // Only return recipes with isArchived=true
+        return Boolean(recipe.isArchived) === true;
+      } else {
+        // Only return recipes with isArchived=false or undefined/null
+        return !Boolean(recipe.isArchived);
+      }
     });
 
-    console.log("After archived filtering:", results.length, "recipes remain");
+    // Add debug logging to help troubleshoot
+    console.log(
+      `Filtering recipes: ${recipes.length} total, ${
+        results.length
+      } after archive filter (showing ${
+        showArchivedRecipes ? "archived" : "active"
+      })`
+    );
+    console.log(
+      `Archive status of first few recipes:`,
+      recipes
+        .slice(0, 3)
+        .map((r) => ({ id: r.id, name: r.name, isArchived: r.isArchived }))
+    );
 
     // Apply search query filter
     if (searchQuery) {
@@ -100,15 +114,13 @@ const RecipesPage: FC = () => {
       results = results.filter(
         (recipe) =>
           recipe.name.toLowerCase().includes(query) ||
-          recipe.category?.toLowerCase().includes(query) ||
-          recipe.description?.toLowerCase().includes(query)
+          (recipe.category || "").toLowerCase().includes(query) ||
+          (recipe.description || "").toLowerCase().includes(query)
       );
-
-      console.log("After search filtering:", results.length, "recipes remain");
     }
 
     // Apply category filter
-    if (filterCriteria.categories && filterCriteria.categories.length > 0) {
+    if (filterCriteria.categories?.length) {
       results = results.filter((recipe) =>
         filterCriteria.categories?.includes(recipe.category || "")
       );
@@ -120,175 +132,245 @@ const RecipesPage: FC = () => {
         (recipe) => recipe.price >= (filterCriteria.minPrice || 0)
       );
     }
+
     if (filterCriteria.maxPrice !== undefined) {
       results = results.filter(
         (recipe) => recipe.price <= (filterCriteria.maxPrice || 999999)
       );
     }
 
-    setFilteredRecipes(results);
+    return results;
   }, [recipes, searchQuery, filterCriteria, showArchivedRecipes]);
 
-  // Update filters when recipes change
-  useEffect(() => {
-    applyFilters();
-  }, [recipes, searchQuery, filterCriteria, showArchivedRecipes, applyFilters]);
+  // Modal handlers - consolidated into a single function
+  const openModal = useCallback(
+    (type: RecipeModalType, recipe: Dish | null = null) => {
+      setModalState({
+        type,
+        recipe,
+        isOpen: true,
+      });
+    },
+    []
+  );
 
-  // Return handler after recipe operation
-  const handleRecipeChange = useCallback(() => {
-    console.log("handleRecipeChange called - refreshing recipes");
+  const closeModal = useCallback(() => {
+    setModalState((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
 
-    // Try to use the refetch function if available
-    if (typeof refetch === "function") {
-      try {
-        console.log("Using refetch function to refresh recipes");
-        refetch();
+    // Reset modal state after animation completes
+    setTimeout(() => {
+      setModalState({
+        type: null,
+        recipe: null,
+        isOpen: false,
+      });
+    }, 300);
+  }, []);
 
-        // Force update of filtered recipes after a short delay
-        setTimeout(() => {
-          applyFilters();
-          console.log("Applied filters after delay");
-        }, 500);
-      } catch (error) {
-        console.error("Error refetching recipes:", error);
-        toast.error("Failed to refresh recipe list");
+  // Action handlers
+  const handleAddRecipe = () => openModal("add");
+  const handleEditRecipe = (recipe: Dish) => openModal("edit", recipe);
+  const handleDeleteRecipe = (recipe: Dish) => openModal("delete", recipe);
+  const handleArchiveRecipe = (recipe: Dish) => openModal("archive", recipe);
+  const handleViewRecipe = (recipe: Dish) => openModal("view", recipe);
 
-        // Force a manual re-filter as fallback
-        applyFilters();
+  // After recipe change, refresh data
+  const handleRecipeChange = useCallback(async (): Promise<void> => {
+    console.log("[handleRecipeChange] Recipe change detected, refreshing data");
+
+    try {
+      // Always refetch data after recipe operations
+      if (typeof refetch === "function") {
+        // Use await to ensure refetch completes
+        const refreshedRecipes = await refetch();
+        console.log(
+          `[handleRecipeChange] Recipe list refreshed successfully with ${refreshedRecipes.length} recipes`
+        );
+
+        // Log the archive status of the refreshed recipes
+        logRecipeArchiveStatus(refreshedRecipes);
+      } else {
+        console.warn("[handleRecipeChange] refetch function not available");
       }
-    } else {
-      console.warn("refetch is not a function, using fallback refresh method");
-      // Force a list update by just refreshing the filtered list
-      applyFilters();
-      toast.success("Recipe added successfully");
+    } catch (error) {
+      console.error("[handleRecipeChange] Error refreshing recipes:", error);
+      toast.error(
+        "Failed to refresh recipe list. The change was saved, but you may need to reload the page to see updates."
+      );
     }
-  }, [refetch, applyFilters]);
+  }, [refetch]);
 
-  // Handle modal close events
-  const handleCloseModal = () => {
-    setCurrentRecipe(null);
-    setModalType(null);
-  };
+  // Handle recipe actions from table
+  const handleRecipeAction = useCallback((recipe: Dish, action: string) => {
+    switch (action) {
+      case "view":
+        handleViewRecipe(recipe);
+        break;
+      case "edit":
+        handleEditRecipe(recipe);
+        break;
+      case "delete":
+        handleDeleteRecipe(recipe);
+        break;
+      case "archive":
+        handleArchiveRecipe(recipe);
+        break;
+    }
+  }, []);
 
-  // Return the component JSX
+  // Handle unarchiving a recipe
+  const handleUnarchive = useCallback(
+    async (id: string): Promise<void> => {
+      console.log(`[handleUnarchive] Unarchiving recipe with id: ${id}`);
+      try {
+        // Call the recipe service directly to unarchive
+        const success = await recipeService.unarchiveRecipe(id);
+        if (success) {
+          toast.success("Recipe restored successfully");
+          // Then trigger a refresh
+          if (typeof refetch === "function") {
+            const newRecipes = await refetch();
+            console.log(
+              `[handleUnarchive] Recipe list refreshed with ${newRecipes.length} recipes after unarchive`
+            );
+
+            // If we don't have any archived recipes left, switch back to active view
+            const archivedRecipes = newRecipes.filter(
+              (r) => Boolean(r.isArchived) === true
+            );
+            if (archivedRecipes.length === 0 && showArchivedRecipes) {
+              console.log(
+                "[handleUnarchive] No archived recipes left, switching to active view"
+              );
+              setShowArchivedRecipes(false);
+            }
+          }
+        } else {
+          toast.error("Failed to restore recipe");
+        }
+      } catch (error) {
+        console.error("[handleUnarchive] Error unarchiving recipe:", error);
+        toast.error("Failed to restore recipe");
+      }
+    },
+    [refetch, showArchivedRecipes]
+  );
+
+  // Improve the onToggleArchived function to force refresh when switching views
+  const handleToggleArchivedView = useCallback(() => {
+    setShowArchivedRecipes((prev) => {
+      const newValue = !prev;
+      console.log(
+        `[handleToggleArchivedView] Toggling archive view from ${prev} to ${newValue}`
+      );
+      return newValue;
+    });
+
+    // Also trigger a refresh when toggling views
+    setTimeout(() => {
+      if (typeof refetch === "function") {
+        refetch().then((newRecipes) => {
+          console.log(
+            `[handleToggleArchivedView] Refreshed recipes: ${newRecipes.length} total`
+          );
+          logRecipeArchiveStatus(newRecipes);
+        });
+      }
+    }, 100);
+  }, [refetch]);
+
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <RecipeHeader
-        recipeCount={filteredRecipes.length}
+        recipesCount={filteredRecipes.length}
         onAddRecipe={handleAddRecipe}
         showArchived={showArchivedRecipes}
-        setShowArchived={setShowArchivedRecipes}
+        onToggleArchived={handleToggleArchivedView}
         isLoading={isLoading}
-        isError={isError}
-        onRetry={refetch}
+        error={isError ? "Failed to load recipes" : ""}
+        onRetry={async () => {
+          try {
+            await refetch();
+            return Promise.resolve();
+          } catch (error) {
+            console.error("Error refreshing:", error);
+            return Promise.reject(error);
+          }
+        }}
       />
 
       <RecipeSearch
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onFilter={() => filterModal.open()}
-        filterCriteria={filterCriteria}
+        onFilter={() => setIsFilterDialogOpen(true)}
       />
 
       <RecipeTableNew
         recipes={filteredRecipes}
         isLoading={isLoading}
-        onAction={(recipe, action) => {
-          if (action === "view") handleViewRecipe(recipe);
-          if (action === "edit") handleEditRecipe(recipe);
-          if (action === "delete") handleDeleteRecipe(recipe);
-          if (action === "archive") handleArchiveRecipe(recipe);
-        }}
+        onAction={handleRecipeAction}
         showArchived={showArchivedRecipes}
-        onUnarchive={async () => await refetch()}
+        onUnarchive={handleUnarchive}
       />
 
       {/* Modals */}
       {recipes.length > 0 && (
         <RecipeFilterDialog
-          isOpen={filterModal.isOpen}
-          onClose={filterModal.close}
+          isOpen={isFilterDialogOpen}
+          onClose={() => setIsFilterDialogOpen(false)}
           recipes={recipes}
           onFilter={setFilterCriteria}
         />
       )}
 
-      {modalType === "add" && (
+      {modalState.type === "add" && (
         <RecipeAddModal
-          isOpen={addModal.isOpen}
-          onClose={() => {
-            console.log("RecipeAddModal closing...");
-            addModal.close();
-            handleCloseModal();
-            // Explicitly refresh recipes when modal closes
-            if (typeof refetch === "function") {
-              console.log("Explicit refetch on modal close");
-              refetch().catch((err) =>
-                console.error("Error in explicit refetch:", err)
-              );
-            }
-          }}
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
           onSuccess={handleRecipeChange}
         />
       )}
 
-      {modalType === "edit" && currentRecipe && (
+      {modalState.type === "edit" && modalState.recipe && (
         <RecipeEditModal
-          isOpen={editModal.isOpen}
-          onClose={() => {
-            editModal.close();
-            handleCloseModal();
-          }}
-          recipe={currentRecipe}
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          recipe={modalState.recipe}
           onSuccess={handleRecipeChange}
         />
       )}
 
-      {modalType === "delete" && currentRecipe && (
+      {modalState.type === "delete" && modalState.recipe && (
         <RecipeDeleteModal
-          isOpen={deleteModal.isOpen}
-          onClose={() => {
-            deleteModal.close();
-            handleCloseModal();
-          }}
-          recipe={currentRecipe}
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          recipe={modalState.recipe}
           onSuccess={handleRecipeChange}
         />
       )}
 
-      {modalType === "archive" && currentRecipe && (
+      {modalState.type === "archive" && modalState.recipe && (
         <RecipeArchiveModal
-          isOpen={archiveModal.isOpen}
-          onClose={() => {
-            archiveModal.close();
-            handleCloseModal();
-          }}
-          recipe={currentRecipe}
-          isArchiving={!currentRecipe.isArchived}
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          recipe={modalState.recipe}
+          isArchiving={!modalState.recipe.isArchived}
           onSuccess={handleRecipeChange}
         />
       )}
 
-      {modalType === "view" && currentRecipe && (
+      {modalState.type === "view" && modalState.recipe && (
         <RecipeDetailModal
-          isOpen={detailModal.isOpen}
-          onClose={() => {
-            detailModal.close();
-            handleCloseModal();
-          }}
-          recipe={currentRecipe}
+          isOpen={modalState.isOpen}
+          onClose={closeModal}
+          recipe={modalState.recipe}
         />
       )}
     </div>
   );
 };
-
-// Create local useDisclosure hook
-function useDisclosure(initialState = false) {
-  const [isOpen, setIsOpen] = useState(initialState);
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
-  return { isOpen, open, close };
-}
 
 export default RecipesPage;

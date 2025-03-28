@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar/calendar";
 import {
   Popover,
   PopoverContent,
