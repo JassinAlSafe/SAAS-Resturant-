@@ -32,16 +32,16 @@ export function ReportsTabs({ activeTab, onTabChange }: ReportsTabsProps) {
   ];
 
   return (
-    <div className="flex flex-wrap justify-center bg-white rounded-xl border border-gray-100 shadow-sm p-1.5 mx-auto max-w-2xl">
+    <div className="flex w-full max-w-lg bg-muted/30 rounded-lg p-1 mx-auto mb-6">
       {tabs.map((tab) => (
         <button
           key={tab.name}
           onClick={() => onTabChange(tab.value as TabType)}
           className={cn(
-            "flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-all rounded-full mx-1",
+            "flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium transition-all rounded-md flex-1",
             tab.active
-              ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
-              : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           )}
         >
           {tab.icon}

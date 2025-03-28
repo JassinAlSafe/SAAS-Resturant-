@@ -51,6 +51,10 @@ export function ReportsWrapper({
     );
   }
 
-  // Otherwise, just render children
-  return <>{children}</>;
+  // Otherwise, just render children in a Card
+  return (
+    <Card className="border-none shadow-sm rounded-xl">
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
 }
