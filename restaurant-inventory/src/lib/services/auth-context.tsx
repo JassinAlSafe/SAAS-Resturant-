@@ -52,7 +52,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create Supabase browser client using the correct pattern
+// Create regular Supabase browser client
 const createClient = () => {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,8 +60,26 @@ const createClient = () => {
   );
 };
 
+// Create specialized verification client for auth operations
+const createVerificationClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: true,
+        storageKey: "supabase-auth-token",
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "pkce",
+      },
+    }
+  );
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
+  const verificationClient = createVerificationClient();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -284,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Sign up with email and password
+  // Sign up with email and password - using verification client
   const signUp = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
@@ -299,7 +317,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Using redirect URL:", redirectUrl.toString());
 
-      const { data, error } = await supabase.auth.signUp({
+      // Use verification client for signup
+      const { data, error } = await verificationClient.auth.signUp({
         email,
         password,
         options: {
@@ -369,12 +388,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Reset password
+  // Reset password - using verification client
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      // Use verification client for password reset
+      const { error } = await verificationClient.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }
+      );
 
       if (error) {
         throw error;
@@ -390,14 +413,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Update user password with secure confirmation
+  // Update user password with secure confirmation - using verification client
   const updateUserPassword = async (
     currentPassword: string,
     newPassword: string
   ) => {
     try {
       // First verify the current password by attempting to sign in
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await verificationClient.auth.getUser();
       if (!userData.user || !userData.user.email) {
         throw new Error("User not authenticated");
       }
@@ -418,19 +441,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // If the user hasn't signed in recently, verify their current password
       if (lastSignIn < twentyFourHoursAgo) {
-        // Verify current password
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: userData.user.email,
-          password: currentPassword,
-        });
+        // Verify current password using verification client
+        const { error: signInError } =
+          await verificationClient.auth.signInWithPassword({
+            email: userData.user.email,
+            password: currentPassword,
+          });
 
         if (signInError) {
           throw new Error("Current password is incorrect");
         }
       }
 
-      // Update the password
-      const { error } = await supabase.auth.updateUser({
+      // Update the password using verification client
+      const { error } = await verificationClient.auth.updateUser({
         password: newPassword,
       });
 

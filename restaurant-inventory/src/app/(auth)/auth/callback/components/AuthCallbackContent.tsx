@@ -2,7 +2,7 @@
 
 import { useReducer, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { createClient } from "@/lib/supabase/browser-client";
+import { createVerificationClient } from "@/lib/supabase/verification-client";
 import { AuthCallbackHandler } from "./AuthCallbackHandler";
 import { VerificationProcess } from "./VerificationProcess";
 import { VerificationSuccessful } from "./VerificationSuccessful";
@@ -67,16 +67,12 @@ function verificationReducer(
   }
 }
 
-/**
- * AuthCallbackContent Component
- *
- * Manages the state and UI flow for email verification
- */
 export function AuthCallbackContent() {
   const [state, dispatch] = useReducer(verificationReducer, initialState);
   const { toast } = useToast();
-  const analytics = useAnalytics(); // Assumed analytics hook
-  const reportedErrors = useRef(new Set());
+  const analytics = useAnalytics();
+  const reportedErrors = useRef(new Set<string>());
+  const supabase = createVerificationClient();
 
   // Memoized state setter functions
   const setIsLoading = useCallback((isLoading: boolean) => {
@@ -99,7 +95,6 @@ export function AuthCallbackContent() {
     if (isResending) {
       dispatch({ type: "RESEND_START" });
     } else {
-      // Don't set resendSuccess here, let the specific success/error actions handle it
       dispatch({ type: "RESEND_ERROR" });
     }
   }, []);
@@ -112,34 +107,26 @@ export function AuthCallbackContent() {
     }
   }, []);
 
-  // Email validation helper
-  const validateEmail = useCallback(
-    (email: string): boolean => {
-      if (!email || email.trim() === "") {
-        toast({
-          title: "Email Required",
-          description:
-            "Please enter your email address to resend the verification.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      return true;
-    },
-    [toast]
-  );
-
   // Handle resend email confirmation
   const handleResendConfirmation = useCallback(async () => {
-    if (!validateEmail(state.email)) return;
+    const email = state.email.trim();
 
-    const supabase = createClient();
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description:
+          "Please enter your email address to resend the verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     dispatch({ type: "RESEND_START" });
 
     try {
       const { error } = await supabase.auth.resend({
         type: "signup",
-        email: state.email.trim(),
+        email,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -162,7 +149,7 @@ export function AuthCallbackContent() {
         dispatch({ type: "RESEND_SUCCESS" });
         toast({
           title: "Verification Email Sent",
-          description: "A new verification email has been sent to your inbox.",
+          description: `A new verification email has been sent to ${email}. Please check your inbox.`,
           variant: "default",
         });
         analytics.trackEvent("Email_Verification_Resend_Success");
@@ -179,7 +166,7 @@ export function AuthCallbackContent() {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  }, [state.email, toast, analytics, validateEmail]);
+  }, [state.email, toast, analytics, supabase]);
 
   // Track verification success
   useEffect(() => {

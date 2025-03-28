@@ -5,8 +5,8 @@ import { AlertCircle, ArrowRight, Check, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/lib/supabase/browser-client";
 import { useRouter } from "next/navigation";
+import { createVerificationClient } from "@/lib/supabase/verification-client";
 
 interface VerificationErrorProps {
   errorMessage: string | null;
@@ -19,12 +19,6 @@ interface VerificationErrorProps {
   onResendConfirmation: () => Promise<void>;
 }
 
-/**
- * Enhanced VerificationError Component
- *
- * Displays error messages and provides options to resend verification email
- * or attempt to login directly
- */
 export const VerificationError = memo(
   ({
     errorMessage,
@@ -107,7 +101,7 @@ export const VerificationError = memo(
         setLoginError(null);
 
         try {
-          const supabase = createClient();
+          const supabase = createVerificationClient();
           const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password.trim(),
