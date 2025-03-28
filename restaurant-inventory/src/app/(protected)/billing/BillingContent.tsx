@@ -376,7 +376,10 @@ export default function BillingContent() {
                 <CardFooter className="pt-6">
                   <button
                     className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md transition-colors"
-                    onClick={() => setActiveTab("plans")}
+                    onClick={() => {
+                      // Just switch to plans tab instead of a broken redirect
+                      setActiveTab("plans");
+                    }}
                   >
                     <FiRefreshCw className="h-4 w-4" />
                     View Plans

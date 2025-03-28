@@ -1,16 +1,43 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
+    // Initialize Supabase with correct cookies handling
+    const cookieStore = cookies();
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
+            }
+          },
+        },
+      }
+    );
+
     // Get the request body
     const body = await request.json();
     const { priceId, businessProfileId, businessId, successUrl, cancelUrl, productId } = body;
-    
+
     // Support both businessProfileId and businessId for backward compatibility
     const profileId = businessProfileId || businessId;
-    
+
     // Validate required parameters
     if (!priceId) {
       return NextResponse.json(
@@ -18,7 +45,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     if (!profileId) {
       return NextResponse.json(
         { error: 'Missing business profile ID parameter' },
@@ -57,7 +84,7 @@ export async function POST(request: Request) {
       .select('*')
       .eq('id', profileId)
       .single();
-    
+
     if (!businessProfile) {
       return NextResponse.json(
         { error: 'Business profile not found' },
@@ -73,7 +100,7 @@ export async function POST(request: Request) {
       .eq('business_profile_id', profileId)
       .order('created_at', { ascending: false })
       .limit(1);
-    
+
     if (existingSubscription && existingSubscription.length > 0 && existingSubscription[0].stripe_customer_id) {
       customerId = existingSubscription[0].stripe_customer_id;
     } else {
@@ -90,6 +117,18 @@ export async function POST(request: Request) {
     }
 
     // Create the checkout session
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    console.log('Creating Stripe checkout session with:', {
+      priceId,
+      customerId,
+      baseUrl
+    });
+
+    const successUrlFull = successUrl || `${baseUrl}/dashboard/billing?success=true`;
+    const cancelUrlFull = cancelUrl || `${baseUrl}/dashboard/billing?canceled=true`;
+
+    console.log('Redirect URLs:', { successUrlFull, cancelUrlFull });
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       billing_address_collection: 'auto',
@@ -107,8 +146,8 @@ export async function POST(request: Request) {
           productId: productId || '',
         },
       },
-      success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/billing?success=true`,
-      cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/billing?canceled=true`,
+      success_url: successUrlFull,
+      cancel_url: cancelUrlFull,
       metadata: {
         businessId: profileId, // Keep this for backward compatibility
         businessProfileId: profileId,
@@ -117,6 +156,7 @@ export async function POST(request: Request) {
       customer: customerId,
     });
 
+    console.log('Stripe session created successfully with URL:', session.url);
     return NextResponse.json({ url: session.url });
   } catch (error: unknown) {
     console.error('Error creating checkout session:', error);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/services/auth-context";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { useRouter } from "next/navigation";
 
 export function useSecuritySettings() {

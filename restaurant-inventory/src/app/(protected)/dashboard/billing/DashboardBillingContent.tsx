@@ -11,12 +11,23 @@ import { SubscriptionManager, PricingPlans } from "@/components/billing";
 import * as profileService from "@/lib/services/dashboard/profile-service";
 
 export default function DashboardBillingContent() {
-  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
+  const [businessProfileId, setBusinessProfileId] = useState<string | null>(
+    null
+  );
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  
+
+  // Debug alert - check if component is mounting
+  useEffect(() => {
+    console.log("DashboardBillingContent mounted");
+    // Show alert after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      alert("Debug: Component is mounted. Click OK to continue.");
+    }, 1000);
+  }, []);
+
   // Check for success/canceled URL parameters from Stripe redirect
   const success = searchParams.get("success");
   const canceled = searchParams.get("canceled");
@@ -29,10 +40,12 @@ export default function DashboardBillingContent() {
         const profileId = await profileService.getBusinessProfileId();
         if (profileId) {
           setBusinessProfileId(profileId);
-          
+
           // Get the current plan
-          const plan = await profileService.getBusinessProfilePlanById(profileId);
-          setCurrentPlan(plan || 'free');
+          const plan = await profileService.getBusinessProfilePlanById(
+            profileId
+          );
+          setCurrentPlan(plan || "free");
         }
       } catch (error) {
         console.error("Error fetching business profile:", error);
@@ -80,7 +93,8 @@ export default function DashboardBillingContent() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            Could not retrieve your business profile. Please try refreshing the page.
+            Could not retrieve your business profile. Please try refreshing the
+            page.
           </AlertDescription>
         </Alert>
       </div>
@@ -90,27 +104,29 @@ export default function DashboardBillingContent() {
   return (
     <div className="container py-10">
       <h1 className="text-3xl font-bold mb-6 text-base-content">Billing</h1>
-      
+
       {success === "true" && (
         <Alert className="mb-6 alert alert-success">
           <CheckCircle className="h-4 w-4" />
           <AlertTitle>Subscription Updated</AlertTitle>
           <AlertDescription>
-            Your subscription has been successfully updated. Thank you for your business!
+            Your subscription has been successfully updated. Thank you for your
+            business!
           </AlertDescription>
         </Alert>
       )}
-      
+
       {canceled === "true" && (
         <Alert className="mb-6 alert alert-warning">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Subscription Update Canceled</AlertTitle>
           <AlertDescription>
-            You&apos;ve canceled the subscription update process. Your current subscription remains unchanged.
+            You&apos;ve canceled the subscription update process. Your current
+            subscription remains unchanged.
           </AlertDescription>
         </Alert>
       )}
-      
+
       <Tabs defaultValue="subscription" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="subscription" className="tab tab-bordered">
@@ -122,18 +138,19 @@ export default function DashboardBillingContent() {
             Available Plans
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="subscription" className="card bg-base-100 shadow-md p-6">
+
+        <TabsContent
+          value="subscription"
+          className="card bg-base-100 shadow-md p-6"
+        >
           {businessProfileId && (
-            <SubscriptionManager 
-              businessProfileId={businessProfileId} 
-            />
+            <SubscriptionManager businessProfileId={businessProfileId} />
           )}
         </TabsContent>
-        
+
         <TabsContent value="plans" className="card bg-base-100 shadow-md p-6">
-          <PricingPlans 
-            businessProfileId={businessProfileId} 
+          <PricingPlans
+            businessProfileId={businessProfileId}
             currentPlan={currentPlan}
           />
         </TabsContent>

@@ -1,3 +1,5 @@
-export * from './SubscriptionManager';
 export * from './PricingPlans';
-export * from './BillingService';
+export * from './SubscriptionManager';
+export * from './PaymentMethods';
+export * from './BillingHistory';
+export * from './BillingWrapper';
