@@ -16,18 +16,20 @@ export function SidebarCollapseButton({
   toggleSidebar,
 }: SidebarCollapseButtonProps) {
   return (
-    <div className="absolute -right-3 top-20 z-50">
+    <div className="absolute -right-3 top-20 z-[100]">
       <Tooltip
         content={open ? "Collapse sidebar" : "Expand sidebar"}
         position="right"
       >
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
           onClick={toggleSidebar}
           className={cn(
-            "h-7 w-7 p-0 rounded-full border-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md",
-            "hover:from-orange-600 hover:to-orange-700",
+            "h-7 w-7 p-0 rounded-full",
+            "bg-orange-500 border-orange-400",
+            "text-white shadow-md",
+            "hover:bg-orange-600 hover:border-orange-500",
             "active:scale-95",
             "flex items-center justify-center transition-all duration-200"
           )}

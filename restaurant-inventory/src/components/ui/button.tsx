@@ -16,7 +16,7 @@ export interface ButtonProps
     | "ghost"
     | "link"
     | "outline";
-  size?: "default" | "xs" | "sm" | "md" | "lg";
+  size?: "default" | "xs" | "sm" | "md" | "lg" | "icon";
   shape?: "default" | "circle" | "square";
   asChild?: boolean;
   loading?: boolean;
@@ -60,6 +60,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       sm: "btn-sm",
       md: "btn-md",
       lg: "btn-lg",
+      icon: "btn-sm p-0", // Icon button - small size with no padding
     };
 
     // Map shapes to DaisyUI classes

@@ -34,7 +34,7 @@ const verificationClient = createVerificationClient();
 /**
  * Sign in with email and password
  */
-export async function signIn(email: string, password: string) {
+async function signIn(email: string, password: string) {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -57,7 +57,7 @@ export async function signIn(email: string, password: string) {
 /**
  * Sign up with email and password - using verification client
  */
-export async function signUp(
+async function signUp(
   email: string,
   password: string,
   metadata: UserMetadata = {}
@@ -98,7 +98,7 @@ export async function signUp(
 /**
  * Basic sign out - for most components
  */
-export async function signOut() {
+async function signOut() {
   try {
     const { error } = await supabase.auth.signOut();
 
@@ -119,7 +119,7 @@ export async function signOut() {
  * Comprehensive logout function that ensures all session data is cleared
  * This should be the single source of truth for logout functionality
  */
-export async function logout(): Promise<void> {
+async function logout(): Promise<void> {
   try {
     // Only run this code in browser environment
     if (typeof window === 'undefined') {
@@ -191,7 +191,7 @@ export async function logout(): Promise<void> {
 /**
  * Reset password - using verification client
  */
-export async function resetPassword(email: string) {
+async function resetPassword(email: string) {
   try {
     // Use verification client for password reset
     const { error } = await verificationClient.auth.resetPasswordForEmail(email, {
@@ -214,7 +214,7 @@ export async function resetPassword(email: string) {
 /**
  * Update password - using verification client
  */
-export async function updatePassword(newPassword: string) {
+async function updatePassword(newPassword: string) {
   try {
     // Use verification client for password updates
     const { error } = await verificationClient.auth.updateUser({
@@ -237,7 +237,7 @@ export async function updatePassword(newPassword: string) {
 /**
  * Verify current password - using verification client
  */
-export async function verifyPassword(email: string, password: string) {
+async function verifyPassword(email: string, password: string) {
   try {
     // Use verification client for password verification
     const { error } = await verificationClient.auth.signInWithPassword({
@@ -261,7 +261,7 @@ export async function verifyPassword(email: string, password: string) {
 /**
  * Get current user
  */
-export async function getCurrentUser() {
+async function getCurrentUser() {
   try {
     const { data, error } = await supabase.auth.getUser();
 
@@ -281,7 +281,7 @@ export async function getCurrentUser() {
 /**
  * Get current session
  */
-export async function getCurrentSession() {
+async function getCurrentSession() {
   try {
     const { data, error } = await supabase.auth.getSession();
 
@@ -301,7 +301,7 @@ export async function getCurrentSession() {
 /**
  * Update user profile
  */
-export async function updateUserProfile(
+async function updateUserProfile(
   userId: string,
   profileData: ProfileData
 ) {
@@ -327,7 +327,7 @@ export async function updateUserProfile(
 /**
  * Check if user has a specific role
  */
-export async function hasRole(userId: string, roles: string[]) {
+async function hasRole(userId: string, roles: string[]) {
   try {
     const { data, error } = await supabase
       .from("profiles")
@@ -345,3 +345,33 @@ export async function hasRole(userId: string, roles: string[]) {
     return false;
   }
 }
+
+// Export all functions as part of an authService object
+export const authService = {
+  signIn,
+  signUp,
+  signOut,
+  logout,
+  resetPassword,
+  updatePassword,
+  verifyPassword,
+  getCurrentUser,
+  getCurrentSession,
+  updateUserProfile,
+  hasRole
+};
+
+// Also keep individual exports for backward compatibility
+export {
+  signIn,
+  signUp,
+  signOut,
+  logout,
+  resetPassword,
+  updatePassword,
+  verifyPassword,
+  getCurrentUser,
+  getCurrentSession,
+  updateUserProfile,
+  hasRole
+};

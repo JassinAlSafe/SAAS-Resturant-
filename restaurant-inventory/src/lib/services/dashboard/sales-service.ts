@@ -94,7 +94,7 @@ async function deduplicate<T>(key: string, fetchFn: () => Promise<T>): Promise<T
  * Fetch monthly sales data for the last 6 months
  * Now with caching and request deduplication
  */
-export async function fetchMonthlySales(): Promise<{
+export async function fetchMonthlySales(_options?: { signal?: AbortSignal }): Promise<{
     currentMonthSales: number;
     monthlySalesData: { month: string; sales: number }[]
 }> {
@@ -305,7 +305,7 @@ function processSalesData(
  * Calculate sales growth percentage between last month and the month before
  * Now with caching and request deduplication
  */
-export async function fetchSalesGrowth(): Promise<number> {
+export async function fetchSalesGrowth(_options?: { signal?: AbortSignal }): Promise<number> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) {
@@ -397,13 +397,9 @@ export async function fetchSalesGrowth(): Promise<number> {
 
 /**
  * Fetch recent sales for the dashboard
- * Now with caching and request deduplication
- */
-/**
- * Fetch recent sales for the dashboard
  * Modified to work with the actual database schema
  */
-export async function fetchRecentSales(): Promise<RecentSale[]> {
+export async function fetchRecentSales(_options?: { signal?: AbortSignal }): Promise<RecentSale[]> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) {
@@ -520,7 +516,7 @@ export async function fetchRecentSales(): Promise<RecentSale[]> {
  * Fetch the top selling items
  * Now with caching and request deduplication
  */
-export async function fetchTopSellingItems(): Promise<Array<{ name: string; quantity: number }>> {
+export async function fetchTopSellingItems(_options?: { signal?: AbortSignal }): Promise<Array<{ name: string; quantity: number }>> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) {

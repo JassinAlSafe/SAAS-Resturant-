@@ -92,7 +92,7 @@ async function deduplicate<T>(key: string, fetchFn: () => Promise<T>): Promise<T
  * Fetch low stock items more reliably by handling comparison in JS
  * Now with caching and request deduplication
  */
-export async function fetchLowStockItems(): Promise<{ id: string; name: string; quantity: number; reorderLevel: number }[]> {
+export async function fetchLowStockItems(options?: { signal?: AbortSignal }): Promise<{ id: string; name: string; quantity: number; reorderLevel: number }[]> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) return [];
@@ -171,7 +171,7 @@ export async function fetchLowStockItems(): Promise<{ id: string; name: string; 
  * Get the count of low stock items
  * Uses cached data when available
  */
-export async function fetchLowStockCount(): Promise<number> {
+export async function fetchLowStockCount(options?: { signal?: AbortSignal }): Promise<number> {
     try {
         // Try to use cached low stock items first
         if (cache.lowStockItems && Date.now() - cache.lowStockItems.timestamp < CACHE_TTL) {
@@ -197,7 +197,7 @@ export async function fetchLowStockCount(): Promise<number> {
  * Calculate the total inventory value
  * Now with caching and request deduplication
  */
-export async function fetchInventoryValue(): Promise<number> {
+export async function fetchInventoryValue(options?: { signal?: AbortSignal }): Promise<number> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) return 0;
@@ -267,7 +267,7 @@ export async function fetchInventoryValue(): Promise<number> {
  * Fetch inventory category statistics
  * Now with caching and request deduplication
  */
-export async function fetchCategoryStats(): Promise<CategoryStat[]> {
+export async function fetchCategoryStats(options?: { signal?: AbortSignal }): Promise<CategoryStat[]> {
     try {
         // We need businessProfileId for cache key
         const businessProfileId = await getBusinessProfileId();
@@ -382,7 +382,7 @@ export async function fetchCategoryStats(): Promise<CategoryStat[]> {
  * Fetch inventory alerts - low stock and expiring items
  * Now with caching and request deduplication
  */
-export async function fetchInventoryAlerts(): Promise<InventoryAlert[]> {
+export async function fetchInventoryAlerts(options?: { signal?: AbortSignal }): Promise<InventoryAlert[]> {
     try {
         const businessProfileId = await getBusinessProfileId();
         if (!businessProfileId) {
