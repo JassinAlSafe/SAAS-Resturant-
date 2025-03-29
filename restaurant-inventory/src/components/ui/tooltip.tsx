@@ -21,6 +21,49 @@ type TooltipProps = {
   contentClassName?: string;
 };
 
+// Provider component for context
+const TooltipContext = React.createContext<{ open: boolean }>({ open: false });
+
+const TooltipProvider = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <TooltipContext.Provider value={{ open: false }}>
+      {children}
+    </TooltipContext.Provider>
+  );
+};
+
+// Trigger component
+type TooltipTriggerProps = {
+  children: React.ReactNode;
+  asChild?: boolean;
+};
+
+const TooltipTrigger = React.forwardRef<HTMLDivElement, TooltipTriggerProps>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ({ children, asChild }, ref) => {
+    return <div ref={ref}>{children}</div>;
+  }
+);
+TooltipTrigger.displayName = "TooltipTrigger";
+
+// Content component
+type TooltipContentProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
+  ({ children, className }, ref) => {
+    return (
+      <div ref={ref} className={cn("tooltip-content", className)}>
+        {children}
+      </div>
+    );
+  }
+);
+TooltipContent.displayName = "TooltipContent";
+
+// Main tooltip component
 const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   (
     {
@@ -63,4 +106,4 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
 
 Tooltip.displayName = "Tooltip";
 
-export { Tooltip };
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

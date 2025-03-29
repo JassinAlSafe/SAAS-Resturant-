@@ -1,7 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FiPlus, FiEdit2, FiTrash2, FiMessageSquare } from "react-icons/fi";
+import { useState, useEffect, useRef } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  MessageSquare,
+  Tag as TagIcon,
+  X,
+  Save,
+  Clock,
+  Check,
+} from "lucide-react";
 import { Note, NoteTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,15 +25,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { notesService } from "@/lib/services/notes-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface EntityNotesProps {
   entityType: Note["entityType"];
@@ -40,6 +49,9 @@ export default function EntityNotes({
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfirmDelete, setShowConfirmDelete] = useState<string | null>(
+    null
+  );
 
   // Note form state
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
@@ -47,6 +59,7 @@ export default function EntityNotes({
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [noteContent, setNoteContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Notifications
   const { success, error } = useNotificationHelpers();
@@ -85,6 +98,7 @@ export default function EntityNotes({
 
     try {
       const newNote = await notesService.addNote({
+        title: `Note for ${entityName || entityType}`,
         content: noteContent,
         tags: selectedTags,
         entityType,
@@ -92,7 +106,7 @@ export default function EntityNotes({
         createdBy: "user-1", // In a real app, this would be the current user's ID
       });
 
-      setNotes([...notes, newNote]);
+      setNotes([newNote, ...notes]);
       success("Note Added", "Your note has been added successfully.");
       resetNoteForm();
     } catch (err) {
@@ -132,6 +146,7 @@ export default function EntityNotes({
       await notesService.deleteNote(noteId);
       setNotes(notes.filter((note) => note.id !== noteId));
       success("Note Deleted", "Your note has been deleted successfully.");
+      setShowConfirmDelete(null);
     } catch (err) {
       console.error("Error deleting note:", err);
       error("Failed to delete note", "Please try again.");
@@ -151,6 +166,12 @@ export default function EntityNotes({
   const openAddNoteDialog = () => {
     resetNoteForm();
     setIsNoteDialogOpen(true);
+    // Focus the textarea after dialog is open
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 100);
   };
 
   // Open note dialog for editing a note
@@ -160,15 +181,19 @@ export default function EntityNotes({
     setSelectedTags(note.tags);
     setIsEditMode(true);
     setIsNoteDialogOpen(true);
+    // Focus the textarea after dialog is open
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 100);
   };
 
   // Handle tag selection in the note form
   const handleTagSelection = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
   // Get tag color by name
@@ -177,9 +202,21 @@ export default function EntityNotes({
     return tag ? tag.color : "#6b7280"; // Default to gray if tag not found
   };
 
+  // Get relative time (e.g., "2 hours ago")
+  const getRelativeTime = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
+
   // Format date
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM d, yyyy h:mm a");
+  };
+
+  // Check if date is recent (less than 24 hours)
+  const isRecent = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    return now.getTime() - date.getTime() < 24 * 60 * 60 * 1000;
   };
 
   // Load notes and tags on component mount
@@ -191,155 +228,275 @@ export default function EntityNotes({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">Notes</h3>
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-7 w-32" />
           <Skeleton className="h-9 w-24" />
         </div>
         {[...Array(2)].map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full" />
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-3 w-16" />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">
-          Notes {entityName ? `for ${entityName}` : ""}
+          {notes.length > 0 ? `Notes (${notes.length})` : "Notes"}
+          {entityName ? (
+            <span className="text-muted-foreground text-sm font-normal ml-1">
+              for {entityName}
+            </span>
+          ) : (
+            ""
+          )}
         </h3>
-        <Button size="sm" onClick={openAddNoteDialog}>
-          <FiPlus className="mr-2 h-4 w-4" />
+        <Button
+          size="sm"
+          onClick={openAddNoteDialog}
+          className="rounded-full gap-1.5 px-3 h-9"
+        >
+          <Plus className="h-4 w-4" />
           Add Note
         </Button>
       </div>
 
       {notes.length === 0 ? (
-        <div className="text-center py-8 border rounded-md bg-muted/20">
-          <FiMessageSquare className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">No notes yet</p>
+        <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-lg bg-muted/10 text-center">
+          <MessageSquare
+            className="h-10 w-10 text-muted-foreground/50 mb-3"
+            strokeWidth={1.25}
+          />
+          <p className="text-muted-foreground mb-4">No notes yet</p>
           <Button
-            variant="link"
+            variant="outline"
             size="sm"
-            className="mt-2"
+            className="rounded-full"
             onClick={openAddNoteDialog}
           >
+            <Plus className="h-3.5 w-3.5 mr-1" />
             Add your first note
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
-          {notes
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            )
-            .map((note) => (
-              <div
-                key={note.id}
-                className="p-4 border rounded-md bg-card shadow-xs"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex flex-wrap gap-1">
-                    {note.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="outline"
-                        className="flex items-center gap-1"
-                        style={{
-                          borderColor: getTagColor(tag),
-                          color: getTagColor(tag),
-                        }}
-                      >
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: getTagColor(tag) }}
-                        ></div>
-                        {tag}
-                      </Badge>
-                    ))}
+          <AnimatePresence>
+            {notes
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime()
+              )
+              .map((note) => (
+                <motion.div
+                  key={note.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-4 border rounded-lg bg-card shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Note content area */}
+                  <div className="mb-3 whitespace-pre-wrap">{note.content}</div>
+
+                  {/* Tags and actions area */}
+                  <div className="flex flex-wrap justify-between items-center gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {note.tags.length > 0 ? (
+                        note.tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="text-xs py-0 h-5 rounded-full"
+                            style={{
+                              backgroundColor: `${getTagColor(tag)}20`, // 20% opacity
+                              borderColor: getTagColor(tag),
+                              color: getTagColor(tag),
+                            }}
+                          >
+                            {tag}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          No tags
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {/* Timestamp */}
+                      <TooltipProvider>
+                        <Tooltip content={<p>{formatDate(note.createdAt)}</p>}>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3 mr-1" />
+                              <span>{getRelativeTime(note.createdAt)}</span>
+                              {isRecent(note.createdAt) && (
+                                <span className="ml-1.5 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      {/* Actions */}
+                      <div className="flex gap-1">
+                        <TooltipProvider>
+                          <Tooltip content={<p>Edit note</p>}>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                onClick={() => openEditNoteDialog(note)}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        {showConfirmDelete === note.id ? (
+                          <div className="flex items-center bg-destructive/10 rounded-full px-2 py-0.5 animate-in fade-in slide-in-from-right-2 duration-200">
+                            <span className="text-xs text-destructive mr-1.5">
+                              Confirm?
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-full hover:bg-destructive/20 text-destructive"
+                              onClick={() => handleDeleteNote(note.id)}
+                            >
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 rounded-full text-muted-foreground"
+                              onClick={() => setShowConfirmDelete(null)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip content={<p>Delete note</p>}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 rounded-full hover:bg-red-50 hover:text-red-600 transition-colors"
+                                  onClick={() => setShowConfirmDelete(note.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-blue-600"
-                      onClick={() => openEditNoteDialog(note)}
-                      title="Edit note"
-                    >
-                      <FiEdit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-600"
-                      onClick={() => handleDeleteNote(note.id)}
-                      title="Delete note"
-                    >
-                      <FiTrash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <p className="mb-2">{note.content}</p>
-                <div className="text-xs text-muted-foreground">
-                  {formatDate(note.createdAt)}
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+          </AnimatePresence>
         </div>
       )}
 
       {/* Note Dialog */}
-      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog
+        open={isNoteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) resetNoteForm();
+          else setIsNoteDialogOpen(true);
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px] p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl">
               {isEditMode ? "Edit Note" : "Add New Note"}
             </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
+          <div className="grid gap-5 py-4">
+            <div className="relative">
               <Textarea
-                placeholder="Enter your note here..."
+                ref={textareaRef}
+                placeholder="Write your note here..."
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
-                rows={5}
+                rows={6}
+                className="resize-none focus-visible:ring-1 focus-visible:ring-offset-1 transition-all min-h-[120px]"
               />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <Badge
-                    key={tag.id}
-                    variant={
-                      selectedTags.includes(tag.name) ? "default" : "outline"
-                    }
-                    className="cursor-pointer"
-                    style={{
-                      backgroundColor: selectedTags.includes(tag.name)
-                        ? tag.color
-                        : "transparent",
-                      borderColor: tag.color,
-                      color: selectedTags.includes(tag.name)
-                        ? "white"
-                        : tag.color,
-                    }}
-                    onClick={() => handleTagSelection(tag.name)}
-                  >
-                    {tag.name}
-                  </Badge>
-                ))}
+              <div className="text-xs text-muted-foreground text-right mt-1">
+                {noteContent.length} characters
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                <TagIcon className="h-3.5 w-3.5" />
+                Tags
+              </label>
+              {tags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      variant={
+                        selectedTags.includes(tag.name) ? "default" : "outline"
+                      }
+                      className="cursor-pointer transition-all hover:scale-105"
+                      style={{
+                        backgroundColor: selectedTags.includes(tag.name)
+                          ? tag.color
+                          : `${tag.color}10`, // 10% opacity background when not selected
+                        borderColor: tag.color,
+                        color: selectedTags.includes(tag.name)
+                          ? "white"
+                          : tag.color,
+                      }}
+                      onClick={() => handleTagSelection(tag.name)}
+                    >
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground mt-2">
+                  No tags available. Create tags in the tag management section.
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={resetNoteForm}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={resetNoteForm}
+              className="rounded-full"
+            >
               Cancel
             </Button>
-            <Button onClick={isEditMode ? handleUpdateNote : handleAddNote}>
-              {isEditMode ? "Update Note" : "Add Note"}
+            <Button
+              onClick={isEditMode ? handleUpdateNote : handleAddNote}
+              className="rounded-full gap-1.5"
+              disabled={!noteContent.trim()}
+            >
+              {isEditMode ? (
+                <>
+                  <Save className="h-4 w-4" />
+                  Update Note
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Add Note
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
