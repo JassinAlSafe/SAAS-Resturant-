@@ -181,88 +181,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Try to get the profile
-      const { data, error } = await supabase
+      // Try to get the profile with maybeSingle() instead of single()
+      const { data: existingProfile, error: fetchError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
+      // If profile exists, use it
+      if (existingProfile) {
+        setProfile({
+          id: existingProfile.id,
+          email: existingProfile.email,
+          name: existingProfile.name,
+          role: existingProfile.role,
+        });
+        setIsLoading(false);
+        return;
+      }
 
-        // If the profile doesn't exist, create one
-        if (error.code === "PGRST116") {
-          try {
-            const name = userData.user.user_metadata?.name || "User";
-            const email = userData.user.email || "";
+      // Handle fetch error if needed
+      if (fetchError && fetchError.code !== "PGRST116") {
+        console.error("Error fetching profile:", fetchError);
+      }
 
-            // Create a new profile
-            const { error: insertError } = await supabase
+      // Profile doesn't exist or there was an error, create one
+      try {
+        const name = userData.user.user_metadata?.name || "User";
+        const email = userData.user.email || "";
+
+        // Create a new profile
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: userId,
+              email,
+              name,
+              role: "staff", // Default role
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              email_confirmed: false, // Will be updated after email verification
+            },
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          // Handle duplicate key error (race condition)
+          if (createError.code === "23505") {
+            console.log(
+              "Profile already exists due to race condition, fetching it"
+            );
+            // Profile was created in another concurrent request, try fetching again
+            const { data: retryProfile } = await supabase
               .from("profiles")
-              .insert([
-                {
-                  id: userId,
-                  email,
-                  name,
-                  role: "staff", // Default role
-                },
-              ]);
+              .select("*")
+              .eq("id", userId)
+              .single();
 
-            if (insertError) {
-              console.error("Error creating profile:", insertError);
-            } else {
-              // Set the profile after creation
+            if (retryProfile) {
               setProfile({
-                id: userId,
-                email,
-                name,
-                role: "staff",
+                id: retryProfile.id,
+                email: retryProfile.email,
+                name: retryProfile.name,
+                role: retryProfile.role,
               });
             }
-          } catch (createError) {
-            console.error("Error in profile creation process:", createError);
+          } else {
+            console.error("Error creating profile:", createError);
           }
+        } else if (newProfile) {
+          setProfile({
+            id: newProfile.id,
+            email: newProfile.email,
+            name: newProfile.name,
+            role: newProfile.role,
+          });
         }
-      } else if (data) {
-        setProfile({
-          id: data.id,
-          email: data.email,
-          name: data.name,
-          role: data.role,
-        });
-      } else {
-        // If no data and no error, create a profile as a fallback
-        try {
-          const name = userData.user.user_metadata?.name || "User";
-          const email = userData.user.email || "";
-
-          // Create a new profile
-          const profileData = {
-            id: userId,
-            email,
-            name,
-            role: "staff", // Default role
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            email_confirmed: false, // Will be updated after email verification
-          };
-
-          // Insert the profile
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .upsert([profileData], {
-              onConflict: "id",
-              ignoreDuplicates: false,
-            });
-
-          if (profileError) {
-            console.error("Error creating fallback profile:", profileError);
-            // Don't throw here, allow the signup to complete
-          }
-        } catch (profileError) {
-          console.error("Error in fallback profile creation:", profileError);
-        }
+      } catch (createError) {
+        console.error("Error in profile creation process:", createError);
       }
     } catch (error) {
       console.error("Error in fetchProfile:", error);
