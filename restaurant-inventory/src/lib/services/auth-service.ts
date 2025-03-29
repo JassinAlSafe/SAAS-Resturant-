@@ -63,8 +63,9 @@ async function signUp(
   metadata: UserMetadata = {}
 ) {
   try {
-    const redirectUrl = new URL("/auth/callback", window.location.origin);
+    const redirectUrl = new URL("/auth/verification", window.location.origin);
     redirectUrl.searchParams.append("type", "signup");
+    redirectUrl.searchParams.append("email", encodeURIComponent(email));
 
     // Use verification client for signup
     const { data, error } = await verificationClient.auth.signUp({

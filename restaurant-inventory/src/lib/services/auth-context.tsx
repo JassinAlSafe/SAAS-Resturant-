@@ -307,7 +307,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       // Construct the redirect URL with the correct origin and type parameter
-      const redirectUrl = new URL("/auth/callback", window.location.origin);
+      const redirectUrl = new URL("/auth/verification", window.location.origin);
       redirectUrl.searchParams.append("type", "signup");
       redirectUrl.searchParams.append("email", encodeURIComponent(email));
 
