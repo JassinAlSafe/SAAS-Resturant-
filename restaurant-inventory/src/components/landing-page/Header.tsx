@@ -1,70 +1,71 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Menu } from "lucide-react";
 
-export default function Header() {
+const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="absolute top-0 left-0 right-0 z-50 pt-4 px-4">
+      <motion.div 
+        className="max-w-7xl mx-auto rounded-full bg-white shadow-lg py-3 px-6"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <nav className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="relative w-10 h-10">
-                <Image
-                  src="/assets/brand/Log In (1) 1.svg"
-                  alt="ShelfWise Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <span className="text-lg font-bold text-black">ShelfWise</span>
-            </Link>
-          </div>
-          <div className="hidden md:flex items-center space-x-10">
-            <Link
-              href="#features"
-              className="text-black hover:text-orange-500 font-medium text-sm"
-            >
+          {/* Logo */}
+          <Link href="/" className="flex items-center">
+            <div className="relative w-9 h-9 mr-2">
+              <Image
+                src="/assets/brand/Instagram post - 3.png"
+                alt="ShelfWise Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <span className="text-xl font-bold text-black">
+              Shelf<span className="text-orange-500">Wise</span>
+            </span>
+          </Link>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center justify-center space-x-12">
+            <Link href="#features" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Features
             </Link>
-            <Link
-              href="#pricing"
-              className="text-black hover:text-orange-500 font-medium text-sm"
-            >
+            <Link href="#pricing" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Pricing
             </Link>
-            <Link
-              href="#testimonials"
-              className="text-black hover:text-orange-500 font-medium text-sm"
-            >
+            <Link href="#testimonials" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Testimonials
             </Link>
-            <Link
-              href="/login"
-              className="text-black hover:text-orange-500 font-medium text-sm"
-            >
+          </div>
+          
+          {/* Right Side Actions */}
+          <div className="hidden md:flex items-center space-x-5">
+            <Link href="/login" className="text-gray-700 hover:text-orange-500 transition-colors font-medium">
               Login
             </Link>
             <Button
               asChild
-              size="sm"
-              className="bg-black text-white hover:bg-black/90 rounded-md px-4 py-2 text-sm font-medium"
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-6 py-2 shadow-md"
             >
               <Link href="/signup">Sign Up Free</Link>
             </Button>
           </div>
+          
+          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <Button
               variant="ghost"
@@ -72,102 +73,89 @@ export default function Header() {
               className="text-black"
               onClick={toggleMobileMenu}
             >
-              <span className="sr-only">Open menu</span>
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <Menu className="h-6 w-6" />
             </Button>
           </div>
         </nav>
-      </div>
+      </motion.div>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            className="fixed inset-0 bg-white z-50 md:hidden"
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <div className="flex justify-end p-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMobileMenu}
-                className="text-black"
-              >
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
-            <div className="flex flex-col items-center space-y-6 p-8">
-              <Link
-                href="/"
-                className="flex items-center space-x-2 mb-6"
-                onClick={toggleMobileMenu}
-              >
-                <div className="relative w-10 h-10">
-                  <Image
-                    src="/assets/brand/Log In (1) 1.svg"
-                    alt="ShelfWise Logo"
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                <span className="text-xl font-bold text-black">ShelfWise</span>
-              </Link>
-              <Link
-                href="#features"
-                className="text-black text-lg font-medium"
-                onClick={toggleMobileMenu}
-              >
-                Features
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-black text-lg font-medium"
-                onClick={toggleMobileMenu}
-              >
-                Pricing
-              </Link>
-              <Link
-                href="#testimonials"
-                className="text-black text-lg font-medium"
-                onClick={toggleMobileMenu}
-              >
-                Testimonials
-              </Link>
-              <Link
-                href="/login"
-                className="text-black text-lg font-medium"
-                onClick={toggleMobileMenu}
+      {mobileMenuOpen && (
+        <motion.div
+          className="fixed inset-0 bg-white z-50 md:hidden pt-4 px-4"
+          initial={{ opacity: 0, x: "100%" }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: "100%" }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex justify-between items-center mb-10">
+            <Link href="/" className="flex items-center" onClick={() => setMobileMenuOpen(false)}>
+              <div className="relative w-9 h-9 mr-2">
+                <Image
+                  src="/assets/brand/Log In (1) 1.svg"
+                  alt="ShelfWise Logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-xl font-bold text-black">
+                Shelf<span className="text-orange-500">Wise</span>
+              </span>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-black"
+              onClick={toggleMobileMenu}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-col space-y-6 items-center text-lg">
+            <Link 
+              href="#features" 
+              className="text-gray-700 hover:text-orange-500 transition-colors font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Features
+            </Link>
+            <Link 
+              href="#pricing" 
+              className="text-gray-700 hover:text-orange-500 transition-colors font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Pricing
+            </Link>
+            <Link 
+              href="#testimonials" 
+              className="text-gray-700 hover:text-orange-500 transition-colors font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Testimonials
+            </Link>
+            <div className="pt-6 w-full flex flex-col space-y-4">
+              <Link 
+                href="/login" 
+                className="text-gray-700 hover:text-orange-500 transition-colors font-medium text-center"
+                onClick={() => setMobileMenuOpen(false)}
               >
                 Login
               </Link>
               <Button
                 asChild
-                size="lg"
-                className="bg-black hover:bg-black/90 text-white w-full mt-4"
+                className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-6 py-6 w-full shadow-md"
               >
-                <Link href="/signup" onClick={toggleMobileMenu}>
+                <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
                   Sign Up Free
                 </Link>
               </Button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
     </header>
   );
-}
+};
+
+export default Header;
