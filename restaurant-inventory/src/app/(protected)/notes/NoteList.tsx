@@ -48,13 +48,25 @@ export default function NoteList({
     const toast = document.createElement("div");
     toast.className = `alert ${
       type === "success" ? "alert-success" : "alert-error"
-    } fixed top-4 right-4 w-auto max-w-xs z-50`;
+    } fixed top-4 right-4 w-auto max-w-xs z-50 shadow-lg transition-opacity duration-300 opacity-0`;
     toast.innerHTML = `<span>${message}</span>`;
     document.body.appendChild(toast);
 
+    // Fade in
+    requestAnimationFrame(() => {
+      toast.classList.remove("opacity-0");
+      toast.classList.add("opacity-100");
+    });
+
+    // Fade out
     setTimeout(() => {
-      toast.classList.add("opacity-0", "transition-opacity", "duration-300");
-      setTimeout(() => document.body.removeChild(toast), 300);
+      toast.classList.remove("opacity-100");
+      toast.classList.add("opacity-0");
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
     }, 3000);
   };
 
@@ -118,7 +130,7 @@ export default function NoteList({
                             bulletContent.match(/^([^:]+):\s*(.*)/);
 
                           if (labelMatch) {
-                            const [, label, value] = labelMatch; // Fixed: removed unused variable
+                            const [, label, value] = labelMatch;
                             return (
                               <div
                                 key={lineIdx}
@@ -174,7 +186,8 @@ export default function NoteList({
 
   const filteredNotes = notes.filter((note) => {
     const matchesSearch =
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      false ||
       note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (note.tags &&
         note.tags.some((tag) =>

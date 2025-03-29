@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Note, NoteTag } from "@/lib/types";
 import { useBusinessProfile } from "@/lib/business-profile-context";
 import { Tag, X, Save, AlertCircle } from "lucide-react";
@@ -29,9 +29,27 @@ export default function NoteForm({
     {}
   );
   const [showTagSelector, setShowTagSelector] = useState(false);
-  const { profile } = useBusinessProfile();
 
-  // Validation
+  // Get business profile context - we'll use getProfileId for better performance
+  const { profile, getProfileId } = useBusinessProfile();
+
+  // Prevent unnecessary re-renders with useRef for toast functionality
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use ref to track if the component is mounted
+  const isMountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Memoized validation
   useEffect(() => {
     const newErrors: { title?: string; content?: string } = {};
 
@@ -48,43 +66,72 @@ export default function NoteForm({
     setErrors(newErrors);
   }, [title, content]);
 
-  // Form validity check
-  const isValid =
-    title.trim() !== "" &&
-    content.trim() !== "" &&
-    Object.keys(errors).length === 0;
+  // Form validity check - memoized to prevent recalculation on every render
+  const isValid = useMemo(
+    () =>
+      title.trim() !== "" &&
+      content.trim() !== "" &&
+      Object.keys(errors).length === 0,
+    [title, content, errors]
+  );
+
+  // Is this form for editing an existing note?
   const isEditMode = !!note;
 
-  const handleTagToggle = (tagName: string) => {
+  // Optimized tag toggle with useCallback
+  const handleTagToggle = useCallback((tagName: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagName)
         ? prev.filter((t) => t !== tagName)
         : [...prev, tagName]
     );
-  };
+  }, []);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    const toast = document.createElement("div");
-    toast.className = `alert ${
-      type === "success" ? "alert-success" : "alert-error"
-    } fixed top-4 right-4 w-auto max-w-xs z-50 shadow-lg transition-opacity duration-300 opacity-0`;
-    toast.innerHTML = `<span>${message}</span>`;
-    document.body.appendChild(toast);
+  // Optimized toast function
+  const showToast = useCallback(
+    (message: string, type: "success" | "error") => {
+      // Clear any existing toast timeout
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
 
-    // Fade in
-    setTimeout(() => {
-      toast.classList.remove("opacity-0");
-      toast.classList.add("opacity-100");
-    }, 10);
+      // Remove any existing toasts
+      const existingToasts = document.querySelectorAll(".note-form-toast");
+      existingToasts.forEach((toast) => {
+        document.body.removeChild(toast);
+      });
 
-    // Fade out
-    setTimeout(() => {
-      toast.classList.remove("opacity-100");
-      toast.classList.add("opacity-0");
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-  };
+      // Create new toast
+      const toast = document.createElement("div");
+      toast.className = `note-form-toast alert ${
+        type === "success" ? "alert-success" : "alert-error"
+      } fixed top-4 right-4 w-auto max-w-xs z-50 shadow-lg transition-opacity duration-300 opacity-0`;
+      toast.innerHTML = `<span>${message}</span>`;
+      document.body.appendChild(toast);
 
+      // Fade in
+      requestAnimationFrame(() => {
+        toast.classList.remove("opacity-0");
+        toast.classList.add("opacity-100");
+      });
+
+      // Fade out
+      toastTimeoutRef.current = setTimeout(() => {
+        if (document.body.contains(toast)) {
+          toast.classList.remove("opacity-100");
+          toast.classList.add("opacity-0");
+          setTimeout(() => {
+            if (document.body.contains(toast)) {
+              document.body.removeChild(toast);
+            }
+          }, 300);
+        }
+      }, 3000);
+    },
+    []
+  );
+
+  // Optimized submit handler with proper cleanup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -103,31 +150,63 @@ export default function NoteForm({
       return;
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     try {
       setIsSubmitting(true);
+
+      // Get profile ID efficiently
+      const profileId = getProfileId?.() || profile?.id || "";
+
       const noteData = {
         title: title.trim(),
         content: content.trim(),
         tags: selectedTags,
         entityType: "general" as const,
-        createdBy: profile?.id || "",
+        createdBy: profileId,
       };
 
       await onSubmit(noteData);
+
+      // Only proceed with UI updates if component is still mounted
+      if (isMountedRef.current) {
+        // Success! Clear form or close
+        if (!isEditMode) {
+          setTitle("");
+          setContent("");
+          setSelectedTags([]);
+        }
+      }
     } catch (error) {
       console.error("Failed to save note:", error);
-      showToast(`Failed to ${isEditMode ? "update" : "create"} note.`, "error");
+
+      // Only show toast if component is still mounted
+      if (isMountedRef.current) {
+        showToast(
+          `Failed to ${isEditMode ? "update" : "create"} note.`,
+          "error"
+        );
+      }
     } finally {
-      setIsSubmitting(false);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const getTagByName = (tagName: string) => {
-    return tags.find((tag) => tag.name === tagName);
-  };
+  // Memoized tag lookup function
+  const getTagByName = useCallback(
+    (tagName: string) => {
+      return tags.find((tag) => tag.name === tagName);
+    },
+    [tags]
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Title Field */}
       <div className="space-y-1">
         <TextField
           label="Title"
@@ -149,6 +228,7 @@ export default function NoteForm({
         </div>
       </div>
 
+      {/* Content Field */}
       <div className="space-y-1">
         <TextField
           label="Note Content"
@@ -215,7 +295,7 @@ export default function NoteForm({
           )}
         </div>
 
-        {/* Tag Selector */}
+        {/* Tag Selector - only render content when visible for performance */}
         <div
           className={`overflow-hidden transition-all duration-300 ${
             showTagSelector
@@ -223,39 +303,40 @@ export default function NoteForm({
               : "max-h-0 opacity-0"
           }`}
         >
-          {tags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => handleTagToggle(tag.name)}
-                  className={`transition-all duration-200 badge badge-md ${
-                    selectedTags.includes(tag.name)
-                      ? "text-white shadow-sm transform hover:scale-105"
-                      : "badge-outline transform hover:scale-105 hover:shadow-sm"
-                  }`}
-                  style={{
-                    backgroundColor: selectedTags.includes(tag.name)
-                      ? tag.color
-                      : "transparent",
-                    borderColor: tag.color,
-                    color: selectedTags.includes(tag.name)
-                      ? "white"
-                      : tag.color,
-                  }}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-3">
-              <span className="text-sm text-base-content text-opacity-60">
-                No tags available. Create tags in tag management.
-              </span>
-            </div>
-          )}
+          {showTagSelector &&
+            (tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => handleTagToggle(tag.name)}
+                    className={`transition-all duration-200 badge badge-md ${
+                      selectedTags.includes(tag.name)
+                        ? "text-white shadow-sm transform hover:scale-105"
+                        : "badge-outline transform hover:scale-105 hover:shadow-sm"
+                    }`}
+                    style={{
+                      backgroundColor: selectedTags.includes(tag.name)
+                        ? tag.color
+                        : "transparent",
+                      borderColor: tag.color,
+                      color: selectedTags.includes(tag.name)
+                        ? "white"
+                        : tag.color,
+                    }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <span className="text-sm text-base-content text-opacity-60">
+                  No tags available. Create tags in tag management.
+                </span>
+              </div>
+            ))}
         </div>
       </div>
 

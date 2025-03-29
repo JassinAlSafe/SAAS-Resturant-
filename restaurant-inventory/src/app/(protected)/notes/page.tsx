@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Tag as TagIcon, Search, X, Loader2 } from "lucide-react";
 import { Note, NoteTag } from "@/lib/types";
-import { notesServiceSupabase as notesService } from "@/lib/services/notes-service-supabase";
+import { notesServiceSupabase as notesService } from "@/app/(protected)/notes/service/notes-service-supabase";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import NoteForm from "./NoteForm";
 import NoteList from "./NoteList";
@@ -448,8 +448,8 @@ export default function Notes() {
                   <Search className="h-12 w-12 mx-auto text-base-content text-opacity-30 mb-3" />
                   <h3 className="font-medium mb-2">No matching notes found</h3>
                   <p className="text-base-content text-opacity-70 mb-4">
-                    Try adjusting your search or filters to find what you&apos;re
-                    looking for
+                    Try adjusting your search or filters to find what
+                    you&apos;re looking for
                   </p>
                   <button
                     onClick={clearFilters}

@@ -1,25 +1,56 @@
 import { Note, NoteTag } from "@/lib/types";
 import { supabase } from "@/lib/supabase/browser-client";
 
-// Notes service
-export const notesService = {
-    // Get all notes
+// Cache for business profile ID to reduce redundant database calls
+const businessProfileCache = {
+    userId: null,
+    profileId: null,
+    timestamp: 0,
+    expiryMs: 5 * 60 * 1000, // Cache expires after 5 minutes
+};
+
+// Notes service with Supabase integration - optimized version
+export const notesServiceSupabase = {
+    // Get business profile ID with caching to prevent redundant queries
+    getBusinessProfileId: async (userId: string) => {
+        const now = Date.now();
+
+        // Return cached value if still valid
+        if (
+            businessProfileCache.userId === userId &&
+            businessProfileCache.profileId &&
+            now - businessProfileCache.timestamp < businessProfileCache.expiryMs
+        ) {
+            return businessProfileCache.profileId;
+        }
+
+        // Fetch the business profile ID
+        const { data, error } = await supabase
+            .from("business_profile_users")
+            .select("business_profile_id")
+            .eq("user_id", userId)
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error("No business profile found");
+
+        // Update cache
+        businessProfileCache.userId = userId;
+        businessProfileCache.profileId = data.business_profile_id;
+        businessProfileCache.timestamp = now;
+
+        return data.business_profile_id;
+    },
+
+    // Get all notes for the current user's business profile
     getNotes: async (): Promise<Note[]> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
-
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
             // Fetch notes for the business profile
             const { data, error } = await supabase
@@ -44,20 +75,12 @@ export const notesService = {
         entityId?: string
     ): Promise<Note[]> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
-
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
             // Start the query
             let query = supabase
@@ -87,20 +110,12 @@ export const notesService = {
     // Get notes by tag
     getNotesByTag: async (tag: string): Promise<Note[]> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
-
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
             // Fetch notes that contain the tag
             const { data, error } = await supabase
@@ -120,35 +135,28 @@ export const notesService = {
         }
     },
 
-    // Add a new note
+    // Add a new note - Optimized for performance
     addNote: async (
         note: Omit<Note, "id" | "createdAt" | "updatedAt">
     ): Promise<Note> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
-
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
             // Insert the new note
             const { data, error } = await supabase
                 .from("notes")
                 .insert({
+                    title: note.title || '',
                     content: note.content,
-                    tags: note.tags,
+                    tags: note.tags || [],
                     entity_type: note.entityType,
-                    entity_id: note.entityId,
-                    created_by: profileData.user.id,
+                    entity_id: note.entityId || null,
+                    created_by: userData.user.id,
                     business_profile_id: businessProfileId
                 })
                 .select()
@@ -157,7 +165,7 @@ export const notesService = {
             if (error) throw error;
             if (!data) throw new Error("Failed to create note");
 
-            // Transform from snake_case to camelCase
+            // Transform the actual response
             return transformNoteFromDB(data);
         } catch (error) {
             console.error("Error adding note:", error);
@@ -171,12 +179,9 @@ export const notesService = {
         note: Partial<Omit<Note, "id" | "createdAt" | "updatedAt">>
     ): Promise<Note> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
-
             // Prepare the update data
-            const updateData: any = {};
+            const updateData: Record<string, any> = {};
+            if (note.title !== undefined) updateData.title = note.title;
             if (note.content !== undefined) updateData.content = note.content;
             if (note.tags !== undefined) updateData.tags = note.tags;
             if (note.entityType !== undefined) updateData.entity_type = note.entityType;
@@ -218,23 +223,15 @@ export const notesService = {
         }
     },
 
-    // Get all note tags
+    // Get all note tags with caching
     getTags: async (): Promise<NoteTag[]> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
-
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
             // Fetch tags for the business profile
             const { data, error } = await supabase
@@ -258,29 +255,24 @@ export const notesService = {
         tag: Omit<NoteTag, "id" | "createdAt">
     ): Promise<NoteTag> => {
         try {
-            // Get the user's business profile ID
-            const { data: profileData } = await supabase.auth.getUser();
-            if (!profileData.user) throw new Error("User not authenticated");
+            // Get authenticated user
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData.user) throw new Error("User not authenticated");
 
-            const { data: businessData, error: businessError } = await supabase
-                .from("business_profile_users")
-                .select("business_profile_id")
-                .eq("user_id", profileData.user.id)
-                .single();
+            // Get business profile ID using the cached method
+            const businessProfileId = await notesServiceSupabase.getBusinessProfileId(userData.user.id);
 
-            if (businessError) throw businessError;
-            if (!businessData) throw new Error("No business profile found");
-
-            const businessProfileId = businessData.business_profile_id;
+            // Create the tag data
+            const tagData = {
+                name: tag.name,
+                color: tag.color,
+                business_profile_id: businessProfileId
+            };
 
             // Insert the new tag
             const { data, error } = await supabase
                 .from("note_tags")
-                .insert({
-                    name: tag.name,
-                    color: tag.color,
-                    business_profile_id: businessProfileId
-                })
+                .insert(tagData)
                 .select()
                 .single();
 
@@ -294,12 +286,21 @@ export const notesService = {
             throw error;
         }
     },
+
+    // Clear cache (useful for testing or when user changes)
+    clearCache: () => {
+        businessProfileCache.userId = null;
+        businessProfileCache.profileId = null;
+        businessProfileCache.timestamp = 0;
+    }
 };
 
 // Helper function to transform note from database format to application format
-function transformNoteFromDB(dbNote: any): Note {
+function transformNoteFromDB(dbNote: Record<string, any>): Note {
     return {
         id: dbNote.id,
+        // Use the title field from the database instead of empty string
+        title: dbNote.title || '',
         content: dbNote.content,
         tags: dbNote.tags || [],
         entityType: dbNote.entity_type,
@@ -311,7 +312,7 @@ function transformNoteFromDB(dbNote: any): Note {
 }
 
 // Helper function to transform note tag from database format to application format
-function transformNoteTagFromDB(dbTag: any): NoteTag {
+function transformNoteTagFromDB(dbTag: Record<string, any>): NoteTag {
     return {
         id: dbTag.id,
         name: dbTag.name,

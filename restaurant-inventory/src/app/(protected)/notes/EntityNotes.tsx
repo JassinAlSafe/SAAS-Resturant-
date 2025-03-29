@@ -23,7 +23,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { notesService } from "@/lib/services/notes-service";
+import { notesService } from "@/app/(protected)/notes/service/notes-service";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +31,7 @@ import {
   Tooltip,
   TooltipProvider,
   TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -57,6 +58,7 @@ export default function EntityNotes({
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,13 +99,18 @@ export default function EntityNotes({
     }
 
     try {
+      // Generate default title if empty
+      const title = noteTitle.trim() || `Note for ${entityName || entityType}`;
+
       const newNote = await notesService.addNote({
-        title: `Note for ${entityName || entityType}`,
+        // Now directly use the title field as it is supported in the database
+        title: title,
         content: noteContent,
         tags: selectedTags,
         entityType,
         entityId,
-        createdBy: "user-1", // In a real app, this would be the current user's ID
+        // In a real app, get the current user's ID
+        createdBy: "user-1",
       });
 
       setNotes([newNote, ...notes]);
@@ -124,7 +131,14 @@ export default function EntityNotes({
     }
 
     try {
+      // Generate default title if empty
+      const title =
+        noteTitle.trim() ||
+        selectedNote.title ||
+        `Note for ${entityName || entityType}`;
+
       const updatedNote = await notesService.updateNote(selectedNote.id, {
+        title: title,
         content: noteContent,
         tags: selectedTags,
       });
@@ -158,13 +172,33 @@ export default function EntityNotes({
     setIsNoteDialogOpen(false);
     setIsEditMode(false);
     setSelectedNote(null);
+    setNoteTitle("");
     setNoteContent("");
     setSelectedTags([]);
+  };
+
+  // Parse content to extract title and actual content - simplified since we now have a title field
+  const parseContent = (content: string) => {
+    // For backward compatibility, still check if content has an embedded title
+    const titleMatch = content.match(/^\*\*(.*?)\*\*\n\n([\s\S]*)$/);
+
+    if (titleMatch) {
+      return {
+        extractedTitle: titleMatch[1],
+        cleanContent: titleMatch[2],
+      };
+    }
+
+    return {
+      extractedTitle: "",
+      cleanContent: content,
+    };
   };
 
   // Open note dialog for adding a new note
   const openAddNoteDialog = () => {
     resetNoteForm();
+    setNoteTitle(`Note for ${entityName || entityType}`);
     setIsNoteDialogOpen(true);
     // Focus the textarea after dialog is open
     setTimeout(() => {
@@ -177,10 +211,16 @@ export default function EntityNotes({
   // Open note dialog for editing a note
   const openEditNoteDialog = (note: Note) => {
     setSelectedNote(note);
-    setNoteContent(note.content);
+
+    // Parse content to extract title and content
+    const { extractedTitle, cleanContent } = parseContent(note.content);
+
+    setNoteTitle(extractedTitle || note.title || "");
+    setNoteContent(cleanContent);
     setSelectedTags(note.tags);
     setIsEditMode(true);
     setIsNoteDialogOpen(true);
+
     // Focus the textarea after dialog is open
     setTimeout(() => {
       if (textareaRef.current) {
@@ -217,6 +257,24 @@ export default function EntityNotes({
     const now = new Date();
     const date = new Date(dateString);
     return now.getTime() - date.getTime() < 24 * 60 * 60 * 1000;
+  };
+
+  // Render note content with title field - simplified since title is now a separate field
+  const renderNoteContent = (note: Note) => {
+    // For backward compatibility, check if there might be a title in the content
+    const { extractedTitle, cleanContent } = parseContent(note.content);
+
+    return (
+      <>
+        {/* Prefer the database title field, fallback to extracted title if needed */}
+        {(note.title || extractedTitle) && (
+          <h3 className="font-medium text-lg mb-2">
+            {note.title || extractedTitle}
+          </h3>
+        )}
+        <div className="whitespace-pre-wrap">{cleanContent}</div>
+      </>
+    );
   };
 
   // Load notes and tags on component mount
@@ -301,11 +359,11 @@ export default function EntityNotes({
                   transition={{ duration: 0.2 }}
                   className="p-4 border rounded-lg bg-card shadow-sm hover:shadow-md transition-shadow"
                 >
-                  {/* Note content area */}
-                  <div className="mb-3 whitespace-pre-wrap">{note.content}</div>
+                  {/* Note content area with extracted title */}
+                  <div className="mb-3">{renderNoteContent(note)}</div>
 
                   {/* Tags and actions area */}
-                  <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex flex-wrap justify-between items-center gap-2 mt-4">
                     <div className="flex flex-wrap gap-1.5">
                       {note.tags.length > 0 ? (
                         note.tags.map((tag) => (
@@ -332,7 +390,7 @@ export default function EntityNotes({
                     <div className="flex items-center gap-4">
                       {/* Timestamp */}
                       <TooltipProvider>
-                        <Tooltip content={<p>{formatDate(note.createdAt)}</p>}>
+                        <Tooltip content={formatDate(note.createdAt)}>
                           <TooltipTrigger asChild>
                             <div className="flex items-center text-xs text-muted-foreground">
                               <Clock className="h-3 w-3 mr-1" />
@@ -342,13 +400,16 @@ export default function EntityNotes({
                               )}
                             </div>
                           </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatDate(note.createdAt)}</p>
+                          </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
 
                       {/* Actions */}
                       <div className="flex gap-1">
                         <TooltipProvider>
-                          <Tooltip content={<p>Edit note</p>}>
+                          <Tooltip content="Edit note">
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
@@ -359,6 +420,9 @@ export default function EntityNotes({
                                 <Edit className="h-3.5 w-3.5" />
                               </Button>
                             </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit note</p>
+                            </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
 
@@ -386,7 +450,7 @@ export default function EntityNotes({
                           </div>
                         ) : (
                           <TooltipProvider>
-                            <Tooltip content={<p>Delete note</p>}>
+                            <Tooltip content="Delete note">
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
@@ -397,6 +461,9 @@ export default function EntityNotes({
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete note</p>
+                              </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         )}
@@ -424,7 +491,21 @@ export default function EntityNotes({
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-5 py-4">
+            {/* Title Field (stored in content) */}
             <div className="relative">
+              <label className="text-sm font-medium mb-2 block">Title</label>
+              <input
+                type="text"
+                placeholder="Enter a title for your note..."
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+
+            {/* Content Field */}
+            <div className="relative">
+              <label className="text-sm font-medium mb-2 block">Content</label>
               <Textarea
                 ref={textareaRef}
                 placeholder="Write your note here..."
@@ -437,6 +518,8 @@ export default function EntityNotes({
                 {noteContent.length} characters
               </div>
             </div>
+
+            {/* Tags Field */}
             <div>
               <label className="text-sm font-medium mb-2 flex items-center gap-1.5">
                 <TagIcon className="h-3.5 w-3.5" />

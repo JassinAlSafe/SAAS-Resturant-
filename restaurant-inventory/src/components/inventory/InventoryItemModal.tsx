@@ -32,7 +32,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import EntityNotes from "@/components/EntityNotes";
+import EntityNotes from "@/app/(protected)/notes/EntityNotes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type InventoryItemModalProps = {
