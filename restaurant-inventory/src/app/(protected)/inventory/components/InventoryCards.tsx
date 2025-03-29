@@ -40,10 +40,10 @@ export function InventoryCards({
   const getStockStatusColor = (item: InventoryItem): string => {
     const status = getStockStatusLetter(item);
     if (status === "C")
-      return "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/30";
+      return "text-error border-error/30 bg-error/10";
     if (status === "B")
-      return "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/30";
-    return "text-green-600 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/30";
+      return "text-warning border-warning/30 bg-warning/10";
+    return "text-success border-success/30 bg-success/10";
   };
 
   if (items.length === 0) {
@@ -52,11 +52,11 @@ export function InventoryCards({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center py-16 bg-muted/10 rounded-lg border border-dashed border-muted"
+        className="text-center py-16 bg-base-200/20 rounded-lg border border-dashed border-base-300"
       >
-        <FiPackage className="mx-auto h-16 w-16 text-muted-foreground/50" />
+        <FiPackage className="mx-auto h-16 w-16 text-base-content/30" />
         <h3 className="mt-6 text-xl font-medium">No items found</h3>
-        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+        <p className="mt-2 text-sm text-base-content/60 max-w-md mx-auto">
           No inventory items match your current filters. Try adjusting your
           search criteria or category selection.
         </p>
@@ -78,7 +78,7 @@ export function InventoryCards({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
-            <Card className="overflow-hidden h-full flex flex-col bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 hover:shadow-md transition-all duration-200">
+            <Card className="overflow-hidden h-full flex flex-col bg-base-100 border-base-200 hover:shadow-md transition-all duration-200">
               <div className="relative">
                 <div className="absolute top-3 right-3 z-10">
                   <div
@@ -90,7 +90,7 @@ export function InventoryCards({
                     {stockStatus}
                   </div>
                 </div>
-                <div className="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden relative">
+                <div className="h-48 bg-base-200 flex items-center justify-center overflow-hidden relative">
                   {extendedItem.image_url ? (
                     <Image
                       src={extendedItem.image_url}
@@ -100,7 +100,7 @@ export function InventoryCards({
                       className="object-cover"
                     />
                   ) : (
-                    <FiImage className="h-16 w-16 text-muted-foreground/30" />
+                    <FiImage className="h-16 w-16 text-base-content/20" />
                   )}
                 </div>
               </div>
@@ -114,7 +114,7 @@ export function InventoryCards({
                     {item.name}
                   </h3>
                   {item.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-sm text-base-content/60 mt-1 line-clamp-2">
                       {item.description}
                     </p>
                   )}
@@ -122,22 +122,21 @@ export function InventoryCards({
 
                 <div className="mt-auto space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">SKU:</span>
+                    <span className="text-sm text-base-content/60">SKU:</span>
                     <span className="font-mono text-xs">
                       {item.id.substring(0, 8)}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-base-content/60">
                       Stock:
                     </span>
                     <span
                       className={cn(
                         "font-medium",
-                        stockStatus === "C" && "text-red-600 dark:text-red-400",
-                        stockStatus === "B" &&
-                          "text-amber-600 dark:text-amber-400"
+                        stockStatus === "C" && "text-error",
+                        stockStatus === "B" && "text-warning"
                       )}
                     >
                       {item.quantity} {item.unit}
@@ -145,21 +144,21 @@ export function InventoryCards({
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-base-content/60">
                       Price:
                     </span>
                     <span className="font-medium">
-                      {formatCurrency(item.cost_per_unit)}
+                      {formatCurrency(item.cost_per_unit || 0)}
                     </span>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-base-200 flex items-center justify-between">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditClick(item)}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                    className="text-primary hover:bg-primary/10"
                   >
                     <FiEdit2 className="h-4 w-4 mr-1" />
                     Edit
@@ -168,7 +167,7 @@ export function InventoryCards({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteClick(item)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="text-error hover:bg-error/10"
                   >
                     <FiTrash2 className="h-4 w-4 mr-1" />
                     Delete

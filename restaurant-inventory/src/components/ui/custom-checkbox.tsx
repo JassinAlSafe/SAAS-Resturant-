@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { FiCheck } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
 interface CustomCheckboxProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -29,10 +28,10 @@ const CustomCheckbox = React.forwardRef<HTMLDivElement, CustomCheckboxProps>(
       <div
         ref={ref}
         className={cn(
-          "h-5 w-5 rounded-md flex items-center justify-center",
+          "flex items-center justify-center",
           isPurchased || checked
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-400 hover:bg-blue-50 hover:text-blue-600",
+            ? "text-white"
+            : "text-transparent",
           !disabled && !isPurchased && "cursor-pointer",
           disabled && "opacity-50",
           className
@@ -44,7 +43,16 @@ const CustomCheckbox = React.forwardRef<HTMLDivElement, CustomCheckboxProps>(
         }}
         {...props}
       >
-        {(isPurchased || checked) && <FiCheck className="h-3 w-3" />}
+        <input 
+          type="checkbox" 
+          checked={checked || isPurchased}
+          onChange={() => {}}
+          disabled={disabled || isPurchased}
+          className={cn(
+            "checkbox checkbox-sm",
+            checked || isPurchased ? "checkbox-primary" : ""
+          )}
+        />
       </div>
     );
   }

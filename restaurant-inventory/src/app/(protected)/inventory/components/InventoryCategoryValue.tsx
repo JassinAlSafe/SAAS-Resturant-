@@ -19,7 +19,7 @@ export function InventoryCategoryValue() {
 
     items.forEach((item) => {
       const category = item.category || "Uncategorized";
-      const itemValue = item.quantity * item.cost_per_unit;
+      const itemValue = item.quantity * (item.cost_per_unit || 0);
 
       if (!categoryMap[category]) {
         categoryMap[category] = { totalValue: 0, itemCount: 0 };

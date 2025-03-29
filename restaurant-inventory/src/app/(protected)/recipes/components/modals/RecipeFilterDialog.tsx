@@ -1,20 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { FiX, FiFilter, FiCheck } from "react-icons/fi";
 import { Dish } from "@/lib/types";
-import { FiX, FiFilter } from "react-icons/fi";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface FilterCriteria {
   categories: string[];
@@ -123,170 +111,289 @@ export default function RecipeFilterDialog({
     });
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[85vh] p-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <div className="flex items-center gap-2">
-            <FiFilter className="h-5 w-5 text-gray-500" />
-            <DialogTitle className="text-xl">Filter Recipes</DialogTitle>
-          </div>
-          <DialogDescription className="text-gray-500 mt-1.5">
-            Filter recipes by category, allergens, price, and food cost.
-          </DialogDescription>
-        </DialogHeader>
+  if (!isOpen) return null;
 
-        <ScrollArea className="px-6 py-4">
-          <div className="space-y-6">
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-md shadow-lg max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-neutral-100 p-2.5 rounded-md">
+              <FiFilter className="h-5 w-5 text-neutral-700" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-neutral-900">
+                Filter Recipes
+              </h3>
+              <p className="text-neutral-500 text-sm mt-0.5">
+                Refine your recipe list with custom filters
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-neutral-100 transition-colors text-neutral-500"
+          >
+            <FiX className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-grow p-6">
+          <div className="space-y-8">
             {/* Categories */}
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-semibold text-gray-900">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-neutral-900 flex items-center">
                   Categories
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Select one or more categories to filter recipes
+                  {filters.categories.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs">
+                      {filters.categories.length} selected
+                    </span>
+                  )}
+                </h4>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Select categories to filter your recipes
                 </p>
               </div>
+
               <div className="flex flex-wrap gap-2">
                 {uniqueCategories.map((category) => (
-                  <Badge
+                  <button
                     key={category}
-                    variant={
-                      filters.categories.includes(category)
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer transition-colors hover:bg-gray-100"
                     onClick={() => toggleCategory(category)}
+                    className={`
+                      px-3 py-1.5 rounded-md text-sm font-medium transition-all
+                      ${
+                        filters.categories.includes(category)
+                          ? "bg-neutral-800 text-white border border-neutral-800"
+                          : "bg-neutral-50 text-neutral-700 border border-neutral-200 hover:bg-neutral-100"
+                      }
+                    `}
                   >
                     {category}
                     {filters.categories.includes(category) && (
-                      <FiX className="ml-1 h-3 w-3" />
+                      <FiCheck className="ml-1.5 inline-block h-3.5 w-3.5" />
                     )}
-                  </Badge>
+                  </button>
                 ))}
+                {uniqueCategories.length === 0 && (
+                  <span className="text-sm text-neutral-500 italic">
+                    No categories available
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Allergens */}
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-semibold text-gray-900">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-neutral-900 flex items-center">
                   Allergens
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Filter recipes containing specific allergens
+                  {filters.allergens.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs">
+                      {filters.allergens.length} selected
+                    </span>
+                  )}
+                </h4>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Filter recipes containing these allergens
                 </p>
               </div>
+
               <div className="flex flex-wrap gap-2">
                 {uniqueAllergens.map((allergen) => (
-                  <Badge
+                  <button
                     key={allergen}
-                    variant={
-                      filters.allergens.includes(allergen)
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer transition-colors hover:bg-gray-100"
                     onClick={() => toggleAllergen(allergen)}
+                    className={`
+                      px-3 py-1.5 rounded-md text-sm font-medium transition-all
+                      ${
+                        filters.allergens.includes(allergen)
+                          ? "bg-neutral-800 text-white border border-neutral-800"
+                          : "bg-neutral-50 text-neutral-700 border border-neutral-200 hover:bg-neutral-100"
+                      }
+                    `}
                   >
                     {allergen}
                     {filters.allergens.includes(allergen) && (
-                      <FiX className="ml-1 h-3 w-3" />
+                      <FiCheck className="ml-1.5 inline-block h-3.5 w-3.5" />
                     )}
-                  </Badge>
+                  </button>
                 ))}
+                {uniqueAllergens.length === 0 && (
+                  <span className="text-sm text-neutral-500 italic">
+                    No allergens available
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Price Range */}
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-semibold text-gray-900">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-neutral-900 flex items-center">
                   Price Range
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Filter recipes by their selling price
+                  {(filters.minPrice !== undefined ||
+                    filters.maxPrice !== undefined) && (
+                    <span className="ml-2 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs">
+                      Active
+                    </span>
+                  )}
+                </h4>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Set minimum and maximum price values
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minPrice || ""}
-                  onChange={(e) =>
-                    handleNumberChange("minPrice", e.target.value)
-                  }
-                  className="w-24"
-                />
-                <span className="text-gray-500">to</span>
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxPrice || ""}
-                  onChange={(e) =>
-                    handleNumberChange("maxPrice", e.target.value)
-                  }
-                  className="w-24"
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-neutral-600">
+                    Minimum Price
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
+                      kr
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full py-2 pl-10 pr-3 border border-neutral-300 rounded-md text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
+                      value={filters.minPrice ?? ""}
+                      onChange={(e) =>
+                        handleNumberChange("minPrice", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-neutral-600">
+                    Maximum Price
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
+                      kr
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full py-2 pl-10 pr-3 border border-neutral-300 rounded-md text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
+                      value={filters.maxPrice ?? ""}
+                      onChange={(e) =>
+                        handleNumberChange("maxPrice", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Food Cost Range */}
             <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-semibold text-gray-900">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-neutral-900 flex items-center">
                   Food Cost Range
-                </Label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Filter recipes by their food cost
+                  {(filters.minFoodCost !== undefined ||
+                    filters.maxFoodCost !== undefined) && (
+                    <span className="ml-2 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs">
+                      Active
+                    </span>
+                  )}
+                </h4>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Set minimum and maximum food cost values
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.minFoodCost || ""}
-                  onChange={(e) =>
-                    handleNumberChange("minFoodCost", e.target.value)
-                  }
-                  className="w-24"
-                />
-                <span className="text-gray-500">to</span>
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.maxFoodCost || ""}
-                  onChange={(e) =>
-                    handleNumberChange("maxFoodCost", e.target.value)
-                  }
-                  className="w-24"
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-neutral-600">
+                    Minimum Food Cost
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
+                      kr
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full py-2 pl-10 pr-3 border border-neutral-300 rounded-md text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
+                      value={filters.minFoodCost ?? ""}
+                      onChange={(e) =>
+                        handleNumberChange("minFoodCost", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-neutral-600">
+                    Maximum Food Cost
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
+                      kr
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="w-full py-2 pl-10 pr-3 border border-neutral-300 rounded-md text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-500 text-sm"
+                      value={filters.maxFoodCost ?? ""}
+                      onChange={(e) =>
+                        handleNumberChange("maxFoodCost", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="flex justify-between items-center p-4 border-t bg-gray-50">
-          <Button
-            variant="ghost"
+        <div className="p-6 border-t border-neutral-200 flex justify-between bg-neutral-50">
+          <button
             onClick={handleClearFilters}
-            className="text-gray-500"
             disabled={!hasActiveFilters}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors 
+              ${
+                hasActiveFilters
+                  ? "text-neutral-700 hover:bg-neutral-200"
+                  : "text-neutral-400 cursor-not-allowed"
+              }
+            `}
           >
-            Clear Filters
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
+            Clear All
+          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+            >
               Cancel
-            </Button>
-            <Button onClick={handleApplyFilters} disabled={!hasActiveFilters}>
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              disabled={!hasActiveFilters}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors
+                ${
+                  hasActiveFilters
+                    ? "bg-neutral-800 text-white hover:bg-neutral-900"
+                    : "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                }
+              `}
+            >
               Apply Filters
-            </Button>
+            </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

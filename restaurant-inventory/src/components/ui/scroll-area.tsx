@@ -1,47 +1,68 @@
 "use client";
 
 import * as React from "react";
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { cn } from "@/lib/utils";
 
-const ScrollArea = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
-      {children}
-    </ScrollAreaPrimitive.Viewport>
-    <ScrollBar />
-    <ScrollAreaPrimitive.Corner />
-  </ScrollAreaPrimitive.Root>
-));
-ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName;
+export interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * The orientation of the scroll area
+   * @default "vertical"
+   */
+  orientation?: "vertical" | "horizontal" | "both";
+  /**
+   * Maximum height of the scroll area
+   */
+  maxHeight?: string;
+}
 
-const ScrollBar = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
->(({ className, orientation = "vertical", ...props }, ref) => (
-  <ScrollAreaPrimitive.ScrollAreaScrollbar
-    ref={ref}
-    orientation={orientation}
-    className={cn(
-      "flex touch-none select-none transition-colors",
-      orientation === "vertical" &&
-        "h-full w-2.5 border-l border-l-transparent p-[1px]",
-      orientation === "horizontal" &&
-        "h-2.5 border-t border-t-transparent p-[1px]",
-      className
-    )}
-    {...props}
-  >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-gray-200 dark:bg-gray-800" />
-  </ScrollAreaPrimitive.ScrollAreaScrollbar>
-));
-ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName;
+/**
+ * ScrollArea component styled with DaisyUI/Tailwind classes
+ * Provides a scrollable area with customizable styles
+ */
+const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
+  (
+    {
+      className,
+      children,
+      orientation = "vertical",
+      maxHeight = "h-[400px]",
+      ...props
+    },
+    ref
+  ) => {
+    // Determine appropriate overflow classes based on orientation
+    const overflowClasses = {
+      vertical: "overflow-y-auto overflow-x-hidden",
+      horizontal: "overflow-x-auto overflow-y-hidden",
+      both: "overflow-auto",
+    }[orientation];
 
-export { ScrollArea, ScrollBar };
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          // Base styling
+          "relative rounded-md",
+          maxHeight,
+          overflowClasses,
+          // DaisyUI color theming
+          "bg-base-100 border border-base-200",
+          className
+        )}
+        style={{
+          // Custom scrollbar styling that works cross-browser
+          scrollbarWidth: "thin",
+          scrollbarColor:
+            "var(--fallback-bc, oklch(var(--bc)/0.3)) transparent",
+        }}
+        {...props}
+      >
+        <div className="h-full w-full">{children}</div>
+      </div>
+    );
+  }
+);
+
+ScrollArea.displayName = "ScrollArea";
+
+export { ScrollArea };

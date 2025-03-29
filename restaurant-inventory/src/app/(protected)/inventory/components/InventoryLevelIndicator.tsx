@@ -26,11 +26,11 @@ export function InventoryLevelIndicator({
   // Determine the color based on the percentage
   let color = "";
   if (percentage < 25) {
-    color = "bg-red-500";
+    color = "bg-error";
   } else if (percentage < 50) {
-    color = "bg-amber-500";
+    color = "bg-warning";
   } else {
-    color = "bg-emerald-500";
+    color = "bg-success";
   }
 
   // Size classes
@@ -56,18 +56,18 @@ export function InventoryLevelIndicator({
     <div className="w-full">
       {showLabels && (
         <div className="flex justify-between mb-1">
-          <span className={`${sizeClasses[size].text} text-slate-500 dark:text-slate-400`}>
+          <span className={`${sizeClasses[size].text} text-base-content/60`}>
             Min: {minStock}
           </span>
-          <span className={`${sizeClasses[size].text} font-medium text-slate-700 dark:text-slate-300`}>
+          <span className={`${sizeClasses[size].text} font-medium text-base-content`}>
             Current: {currentStock}
           </span>
-          <span className={`${sizeClasses[size].text} text-slate-500 dark:text-slate-400`}>
+          <span className={`${sizeClasses[size].text} text-base-content/60`}>
             Max: {maxStock}
           </span>
         </div>
       )}
-      <div className={`w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden ${sizeClasses[size].height}`}>
+      <div className={`w-full bg-base-300 rounded-full overflow-hidden ${sizeClasses[size].height}`}>
         <motion.div
           className={`${color} rounded-full ${sizeClasses[size].height}`}
           initial={{ width: 0 }}
@@ -77,7 +77,7 @@ export function InventoryLevelIndicator({
       </div>
       {!showLabels && (
         <div className="flex justify-end mt-1">
-          <span className={`${sizeClasses[size].text} text-slate-500 dark:text-slate-400`}>
+          <span className={`${sizeClasses[size].text} text-base-content/60`}>
             {Math.round(percentage)}%
           </span>
         </div>

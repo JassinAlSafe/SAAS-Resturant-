@@ -1,39 +1,44 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { BarChart3, History } from "lucide-react";
+import { History, Eye, Trash } from "lucide-react";
 
 interface SalesActionsProps {
-  onViewReports?: () => void;
   onViewHistory?: () => void;
+  onShowInventory?: () => void;
+  onClearAll?: () => void;
 }
 
 const SalesActions: React.FC<SalesActionsProps> = ({
-  onViewReports,
   onViewHistory,
+  onShowInventory,
+  onClearAll,
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onViewReports}
-        className="flex items-center gap-1.5"
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onShowInventory}
+        className="text-sm font-medium text-neutral-600 hover:text-orange-600 transition-colors flex items-center gap-1.5"
       >
-        <BarChart3 className="h-4 w-4" />
-        <span>View Reports</span>
-      </Button>
+        <Eye className="h-4 w-4" />
+        <span>Show Inventory</span>
+      </button>
 
-      <Button
-        variant="secondary"
-        size="sm"
+      <button
+        onClick={onClearAll}
+        className="text-sm font-medium text-neutral-600 hover:text-orange-600 transition-colors flex items-center gap-1.5"
+      >
+        <Trash className="h-4 w-4" />
+        <span>Clear All</span>
+      </button>
+
+      <button
         onClick={onViewHistory}
-        className="flex items-center gap-1.5"
+        className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors flex items-center gap-1.5"
       >
         <History className="h-4 w-4" />
-        <span>View History</span>
-      </Button>
+        <span>View Analytics</span>
+      </button>
     </div>
   );
 };

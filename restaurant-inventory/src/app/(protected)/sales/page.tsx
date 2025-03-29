@@ -1,21 +1,19 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Suspense } from "react";
-import { Loader2, Receipt } from "lucide-react";
+import { useState, useCallback, Suspense } from "react";
+import { Receipt, Calendar } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState, useCallback } from "react";
 
-// Add SalesPageProps type
+// Add SalesPageData type
 interface SalesPageData {
-  sales: Array<{ id: string; date: string; total: number }>;
+  sales: Array<{ id: string; date: string; total_amount: number }>;
 }
 
 // Dynamically import the components to improve initial page load performance
 const SalesPage = dynamic(() => import("./components/SalesPage"), {
   loading: () => (
     <div className="flex h-[400px] w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
     </div>
   ),
 });
@@ -25,7 +23,7 @@ const SalesHistoryView = dynamic(
   {
     loading: () => (
       <div className="flex h-[400px] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
       </div>
     ),
   }
@@ -33,100 +31,88 @@ const SalesHistoryView = dynamic(
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<string>("daily");
-  const [salesData, setSalesData] = useState<SalesPageData>({ sales: [] });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_salesData, setSalesData] = useState<SalesPageData>({ sales: [] });
 
-  const handleSalesDataUpdate = useCallback((data: SalesPageData) => {
-    setSalesData((prev) => {
-      // Only update if the data has actually changed
-      if (JSON.stringify(prev.sales) !== JSON.stringify(data.sales)) {
-        return data;
-      }
-      return prev;
-    });
-  }, []);
+  const handleSalesDataUpdate = useCallback(
+    (data: {
+      sales: Array<{ id: string; date: string; total_amount: number }>;
+    }) => {
+      setSalesData((prev) => {
+        // Only update if the data has actually changed
+        if (JSON.stringify(prev.sales) !== JSON.stringify(data.sales)) {
+          return data;
+        }
+        return prev;
+      });
+    },
+    []
+  );
 
   return (
-    <div className="h-full flex-1">
-      <header className="border-b">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="p-3 bg-primary rounded-xl">
-                <Receipt className="h-6 w-6 text-primary-foreground" />
-              </div>
-              {activeTab === "daily" && salesData.sales.length > 0 && (
-                <div className="absolute -top-2 -right-2 bg-primary text-[11px] text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                  {salesData.sales.length > 99 ? "99+" : salesData.sales.length}
-                </div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Sales Management
-              </h1>
-              <p className="text-muted-foreground">
-                Record and analyze your restaurant&apos;s sales data
-              </p>
-            </div>
-          </div>
+    <div className="container mx-auto py-6 max-w-6xl px-4">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Sales Management
+        </h1>
+        <p className="text-gray-600">
+          Record and analyze your restaurant&apos;s sales data
+        </p>
+      </div>
 
-          <div className="flex items-center gap-6">
-            <div className="text-sm text-muted-foreground">
-              Showing data for {salesData.sales.length}{" "}
-              {salesData.sales.length === 1 ? "sale" : "sales"}
-            </div>
-
-            <Tabs
-              defaultValue="daily"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-auto"
-            >
-              <TabsList className="bg-slate-100/80 rounded-full p-0.5">
-                <TabsTrigger
-                  value="daily"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs"
-                >
-                  Daily Sales
-                </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  className="rounded-full py-1.5 px-4 text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-xs"
-                >
-                  Sales History
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+      {/* Navigation tabs */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-full p-1 bg-gray-100 border-0 shadow-sm">
+          <button
+            onClick={() => setActiveTab("daily")}
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "daily"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            Daily Sales
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "history"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+          >
+            <Receipt className="h-4 w-4" />
+            Sales Analytics
+          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="h-[calc(100vh-5rem)]">
+      {/* Main content container */}
+      <div className="bg-white border-none shadow-sm rounded-xl overflow-hidden">
         {activeTab === "daily" ? (
           <Suspense
             fallback={
-              <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex h-[500px] w-full items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
               </div>
             }
           >
-            <SalesPage
-              onViewHistory={() => setActiveTab("history")}
-              onDataUpdate={handleSalesDataUpdate}
-            />
+            <SalesPage onDataUpdate={handleSalesDataUpdate} />
           </Suspense>
         ) : (
           <Suspense
             fallback={
-              <div className="flex h-full w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex h-[500px] w-full items-center justify-center">
+                <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
               </div>
             }
           >
             <SalesHistoryView />
           </Suspense>
         )}
-      </main>
+      </div>
     </div>
   );
 }

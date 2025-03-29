@@ -4,14 +4,15 @@ import { CategoryStat, DashboardStats } from '@/lib/types';
 import { dashboardService } from '@/lib/services/dashboard-service';
 import { ActivityItem } from '@/lib/services/dashboard/types';
 
-interface RecentActivity {
+// Improved type definitions
+export interface RecentActivity {
     action: string;
     item: string;
     timestamp: string;
     user: string;
 }
 
-interface InventoryAlert {
+export interface InventoryAlert {
     id: string;
     name: string;
     currentStock: number;
@@ -20,54 +21,63 @@ interface InventoryAlert {
     type: 'low_stock' | 'expiring';
 }
 
-// New type definitions for the dashboard service
-export interface DashboardSalesData {
-    currentMonthSales: number;
-    monthlySalesData: { month: string; sales: number }[];
-    salesGrowth: number;
+export interface TopSellingItem {
+    name: string;
+    quantity: number;
 }
 
-export interface RecentSale {
-    id: string;
-    date: string;
-    amount: number;
-    customer: string;
+export interface SalesDataPoint {
+    month: string;
+    sales: number;
 }
 
-export interface DashboardData {
-    salesData: DashboardSalesData;
-    stats: DashboardStats & { categoryStats?: CategoryStat[] }; // Make categoryStats optional
-    recentActivity: RecentActivity[];
-    recentSales: RecentSale[];
-    topSellingItems: { name: string; quantity: number }[];
-    inventoryAlerts: InventoryAlert[];
-    lastUpdated: string;
+interface LoadingState {
+    sales: boolean;
+    inventory: boolean;
+    activity: boolean;
+    stats: boolean;
+    overall: boolean;
+}
+
+interface ErrorState {
+    message: string | null;
+    code?: string;
+    timestamp?: number;
+    retryCount: number;
 }
 
 interface DashboardState {
     // Data
     stats: DashboardStats;
-    salesData: { month: string; sales: number }[];
+    salesData: SalesDataPoint[];
     categoryStats: CategoryStat[];
     recentActivity: RecentActivity[];
     inventoryAlerts: InventoryAlert[];
-    topSellingItems: { name: string; quantity: number }[];
+    topSellingItems: TopSellingItem[];
 
-    // Loading and error states
+    // State management
     isLoading: boolean;
-    error: string | null;
+    loadingState: LoadingState;
+    error: ErrorState | null;
     lastUpdated: number | null;
     shouldRefresh: boolean;
     fetchInProgress: boolean;
+    lastRefreshRequest: number;
 
     // Actions
     fetchDashboardData: () => Promise<void>;
+    fetchPartialData: (section: keyof LoadingState) => Promise<void>;
     resetData: () => void;
     setShouldRefresh: (value: boolean) => void;
+    cancelPendingRequests: () => void;
 
     // Selective update methods
-    updateSalesData: (salesData: { month: string; sales: number }[]) => void;
+    updateSalesData: (salesData: SalesDataPoint[]) => void;
     updateStats: (stats: Partial<DashboardStats>) => void;
+    updateInventoryAlerts: (alerts: InventoryAlert[]) => void;
+    updateCategoryStats: (stats: CategoryStat[]) => void;
+    updateActivity: (activity: RecentActivity[]) => void;
+    updateTopSellingItems: (items: TopSellingItem[]) => void;
 }
 
 const initialState = {
@@ -83,15 +93,26 @@ const initialState = {
     inventoryAlerts: [],
     topSellingItems: [],
     isLoading: true,
+    loadingState: {
+        sales: true,
+        inventory: true,
+        activity: true,
+        stats: true,
+        overall: true
+    },
     error: null,
     lastUpdated: null,
-    shouldRefresh: false, // Changed to false by default to prevent immediate fetching
-    fetchInProgress: false
+    shouldRefresh: false,
+    fetchInProgress: false,
+    lastRefreshRequest: 0
 };
 
-// Track last time shouldRefresh was set to true
-let lastRefreshRequest = 0;
+// Constraint settings
 const MIN_REFRESH_INTERVAL = 10000; // 10 seconds minimum between refresh requests
+const MAX_RETRY_ATTEMPTS = 3;
+
+// Track active request controller for cancellation
+let abortController: AbortController | null = null;
 
 export const useDashboardStore = create<DashboardState>()(
     persist(
@@ -102,12 +123,16 @@ export const useDashboardStore = create<DashboardState>()(
                 // Only apply throttling when setting to true
                 if (value === true) {
                     const now = Date.now();
+                    const lastRefreshRequest = get().lastRefreshRequest;
+
                     // Check if we're requesting refresh too frequently
                     if (now - lastRefreshRequest < MIN_REFRESH_INTERVAL) {
                         console.log(`Refresh requested too soon (${now - lastRefreshRequest}ms since last request), throttling`);
                         return; // Skip this refresh request
                     }
-                    lastRefreshRequest = now;
+
+                    // Update last refresh timestamp
+                    set({ lastRefreshRequest: now });
                 }
 
                 set({ shouldRefresh: value });
@@ -120,47 +145,65 @@ export const useDashboardStore = create<DashboardState>()(
                     return;
                 }
 
+                // Create new abort controller for this request
+                if (abortController) {
+                    abortController.abort();
+                }
+                abortController = new AbortController();
+
                 // Set initial loading and fetch states
-                set({ isLoading: get().lastUpdated === null, fetchInProgress: true });
+                const isFirstLoad = get().lastUpdated === null;
+                set({
+                    isLoading: isFirstLoad,
+                    fetchInProgress: true,
+                    loadingState: {
+                        ...get().loadingState,
+                        overall: true
+                    }
+                });
 
                 try {
                     // Use the dashboard service to fetch data
-                    const data = await dashboardService.fetchDashboardData();
+                    const data = await dashboardService.fetchDashboardData({
+                        signal: abortController.signal
+                    });
 
-                    // Create properly structured return object
+                    // Create properly structured return object with data validation
                     const dashboardData = {
                         stats: {
-                            totalInventoryValue: data.stats?.totalInventoryValue ?? 0,
-                            lowStockItems: data.stats?.lowStockItems ?? 0,
-                            monthlySales: data.salesData?.currentMonthSales ?? 0,
-                            salesGrowth: data.salesData?.salesGrowth ?? 0
+                            totalInventoryValue: Number(data.stats?.totalInventoryValue) || 0,
+                            lowStockItems: Number(data.stats?.lowStockItems) || 0,
+                            monthlySales: Number(data.salesData?.currentMonthSales) || 0,
+                            salesGrowth: Number(data.salesData?.salesGrowth) || 0
                         },
-                        salesData: data.salesData?.monthlySalesData || [],
-                        categoryStats: data.stats?.categoryStats || [],
-                        recentActivity: (data.recentActivity || []).map((activity: ActivityItem) => ({
+                        salesData: Array.isArray(data.salesData?.monthlySalesData) ? data.salesData.monthlySalesData : [],
+                        categoryStats: Array.isArray(data.stats?.categoryStats) ? data.stats.categoryStats : [],
+                        recentActivity: Array.isArray(data.recentActivity) ? data.recentActivity.map((activity: ActivityItem) => ({
                             action: activity.title || '',
                             item: activity.description || '',
                             timestamp: activity.formattedDate || '',
                             user: ''
-                        })),
-                        inventoryAlerts: data.inventoryAlerts || [],
-                        topSellingItems: data.topSellingItems || [],
+                        })) : [],
+                        inventoryAlerts: Array.isArray(data.inventoryAlerts) ? data.inventoryAlerts : [],
+                        topSellingItems: Array.isArray(data.topSellingItems) ? data.topSellingItems : [],
                     };
 
-                    // Update the store with fetched data (no mock data for new accounts)
+                    // Update the store with fetched data
                     set({
-                        stats: {
-                            totalInventoryValue: dashboardData.stats.totalInventoryValue,
-                            lowStockItems: dashboardData.stats.lowStockItems,
-                            monthlySales: dashboardData.stats.monthlySales,
-                            salesGrowth: dashboardData.stats.salesGrowth
-                        },
+                        stats: dashboardData.stats,
                         salesData: dashboardData.salesData,
                         categoryStats: dashboardData.categoryStats,
                         recentActivity: dashboardData.recentActivity,
                         inventoryAlerts: dashboardData.inventoryAlerts,
                         topSellingItems: dashboardData.topSellingItems,
                         isLoading: false,
+                        loadingState: {
+                            sales: false,
+                            inventory: false,
+                            activity: false,
+                            stats: false,
+                            overall: false
+                        },
                         fetchInProgress: false,
                         error: null,
                         lastUpdated: Date.now(),
@@ -168,41 +211,149 @@ export const useDashboardStore = create<DashboardState>()(
                     });
 
                     console.log('Dashboard data updated in store successfully');
-                } catch (error) {
+                } catch (error: unknown) {
+                    // Skip error handling for aborted requests
+                    if (error instanceof Error && error.name === 'AbortError') {
+                        console.log('Dashboard data fetch aborted');
+                        set({ fetchInProgress: false });
+                        return;
+                    }
+
                     console.error('Error fetching dashboard data:', error);
-                    
-                    // On error, show empty data instead of mock data
+
+                    const currentError = get().error;
+                    const retryCount = currentError ? currentError.retryCount : 0;
+                    const newRetryCount = retryCount + 1;
+
+                    // On error, keep existing data but update error state
                     set({
-                        stats: {
-                            totalInventoryValue: 0,
-                            lowStockItems: 0,
-                            monthlySales: 0,
-                            salesGrowth: 0
-                        },
-                        salesData: [],
-                        categoryStats: [],
-                        recentActivity: [],
-                        inventoryAlerts: [],
-                        topSellingItems: [],
                         isLoading: false,
+                        loadingState: {
+                            ...get().loadingState,
+                            overall: false
+                        },
                         fetchInProgress: false,
-                        error: 'Failed to load dashboard data. Please try again later.',
-                        lastUpdated: Date.now(),
+                        error: {
+                            message: error instanceof Error ? error.message : 'Failed to load dashboard data. Please try again later.',
+                            code: (error as any)?.code,
+                            timestamp: Date.now(),
+                            retryCount: newRetryCount
+                        },
                         shouldRefresh: false // Reset the refresh flag
                     });
-                    
-                    console.log('Using empty data due to fetch error');
+
+                    // Auto-retry if below max attempts
+                    if (newRetryCount < MAX_RETRY_ATTEMPTS) {
+                        console.log(`Auto-retry attempt ${newRetryCount}/${MAX_RETRY_ATTEMPTS} in ${2000 * newRetryCount}ms`);
+                        setTimeout(() => {
+                            if (!get().fetchInProgress) {
+                                get().setShouldRefresh(true);
+                            }
+                        }, 2000 * newRetryCount);
+                    }
+                } finally {
+                    abortController = null;
+                }
+            },
+
+            fetchPartialData: async (section: keyof LoadingState) => {
+                // Set loading state for specific section
+                set(state => ({
+                    loadingState: {
+                        ...state.loadingState,
+                        [section]: true
+                    }
+                }));
+
+                try {
+                    // Implement section-specific fetching logic
+                    switch (section) {
+                        case 'sales':
+                            const salesData = await dashboardService.fetchSalesData();
+                            set({
+                                salesData: salesData.monthlySalesData || [],
+                                stats: {
+                                    ...get().stats,
+                                    monthlySales: salesData.currentMonthSales || 0,
+                                    salesGrowth: salesData.salesGrowth || 0
+                                }
+                            });
+                            break;
+                        case 'inventory':
+                            const inventoryData = await dashboardService.fetchInventoryData();
+                            set({
+                                inventoryAlerts: inventoryData.alerts || [],
+                                categoryStats: inventoryData.categoryStats || [],
+                                stats: {
+                                    ...get().stats,
+                                    totalInventoryValue: inventoryData.totalValue || 0,
+                                    lowStockItems: inventoryData.lowStockCount || 0
+                                }
+                            });
+                            break;
+                        case 'activity':
+                            const activity = await dashboardService.fetchRecentActivity();
+                            set({
+                                recentActivity: activity.map((item: ActivityItem) => ({
+                                    action: item.title || '',
+                                    item: item.description || '',
+                                    timestamp: item.formattedDate || '',
+                                    user: ''
+                                }))
+                            });
+                            break;
+                        default:
+                            // If overall or stats, fetch everything
+                            await get().fetchDashboardData();
+                            return;
+                    }
+
+                    // Update last updated timestamp and reset error
+                    set(state => ({
+                        lastUpdated: Date.now(),
+                        loadingState: {
+                            ...state.loadingState,
+                            [section]: false
+                        },
+                        error: null
+                    }));
+                } catch (error: unknown) {
+                    console.error(`Error fetching ${section} data:`, error);
+                    set(state => ({
+                        loadingState: {
+                            ...state.loadingState,
+                            [section]: false
+                        },
+                        error: {
+                            message: `Failed to load ${section} data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                            timestamp: Date.now(),
+                            retryCount: state.error?.retryCount || 0
+                        }
+                    }));
                 }
             },
 
             resetData: () => {
+                // Cancel any pending requests
+                get().cancelPendingRequests();
+
+                // Reset to initial state but trigger a refresh
                 set({
                     ...initialState,
-                    shouldRefresh: true // Trigger a refresh after reset
+                    shouldRefresh: true, // Trigger a refresh after reset
+                    lastRefreshRequest: Date.now() // Update the timestamp
                 });
             },
 
-            updateSalesData: (salesData: { month: string; sales: number }[]) => {
+            cancelPendingRequests: () => {
+                if (abortController) {
+                    abortController.abort();
+                    abortController = null;
+                    set({ fetchInProgress: false });
+                }
+            },
+
+            updateSalesData: (salesData: SalesDataPoint[]) => {
                 set({ salesData });
             },
 
@@ -213,6 +364,22 @@ export const useDashboardStore = create<DashboardState>()(
                         ...partialStats
                     }
                 }));
+            },
+
+            updateInventoryAlerts: (alerts: InventoryAlert[]) => {
+                set({ inventoryAlerts: alerts });
+            },
+
+            updateCategoryStats: (stats: CategoryStat[]) => {
+                set({ categoryStats: stats });
+            },
+
+            updateActivity: (activity: RecentActivity[]) => {
+                set({ recentActivity: activity });
+            },
+
+            updateTopSellingItems: (items: TopSellingItem[]) => {
+                set({ topSellingItems: items });
             }
         }),
         {

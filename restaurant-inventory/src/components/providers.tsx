@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/services/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { CurrencyProvider } from "@/lib/currency";
 import { PermissionProvider } from "@/lib/permission-context";
@@ -11,15 +11,18 @@ import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Create a client
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000, // 1 minute
-        refetchOnWindowFocus: false,
-        retry: 1,
-      },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60 * 1000, // 1 minute
+            refetchOnWindowFocus: false,
+            retry: 1,
+          },
+        },
+      })
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

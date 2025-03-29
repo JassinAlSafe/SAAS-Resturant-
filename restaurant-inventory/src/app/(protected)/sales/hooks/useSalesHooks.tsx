@@ -9,6 +9,7 @@ import { Dish } from "../../../../lib/types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { salesService } from "../../../../lib/services/sales-service";
+import { useCurrency } from "../../../../lib/currency";
 
 // Re-export all hooks from a single file for more convenient imports
 export { useSales, useSalesEntry, useSalesFilter, useSaleNotes };
@@ -18,6 +19,7 @@ export function useSalesPage(initialDishes: Dish[] = []) {
   // Ref to track initialization and prevent duplicate loading
   const hasInitialized = useRef(false);
   const isComponentMounted = useRef(true);
+  const { formatCurrency } = useCurrency();
 
   // Initialize salesHook first since other hooks depend on it
   const salesHook = useSales();
@@ -240,6 +242,7 @@ export function useSalesPage(initialDishes: Dish[] = []) {
         toast.error("No items to submit", {
           description:
             "Please add at least one item with a quantity greater than zero.",
+          icon: "🛒",
         });
         return false;
       }
@@ -248,6 +251,7 @@ export function useSalesPage(initialDishes: Dish[] = []) {
       if (!entryHook.selectedDate || isNaN(entryHook.selectedDate.getTime())) {
         toast.error("Invalid date", {
           description: "Please select a valid date for the sales entry.",
+          icon: "📅",
         });
         return false;
       }
@@ -263,13 +267,31 @@ export function useSalesPage(initialDishes: Dish[] = []) {
         // Show success message with low stock alerts if any
         if (lowStockItems.length > 0) {
           toast.warning("Sales submitted with low stock alerts", {
-            description: `The following items are now below minimum stock levels: ${lowStockItems.join(
-              ", "
-            )}`,
+            description: `${lowStockItems.length} ingredients are now below minimum stock levels.`,
             duration: 6000,
+            icon: "⚠️",
+            action: {
+              label: "View Inventory",
+              onClick: () => {
+                window.location.href = "/inventory";
+              },
+            },
           });
         } else {
-          toast.success("Sales submitted successfully");
+          // Format total safely
+          const totalAmount = Object.entries(entryHook.salesEntries).reduce(
+            (total, [dishId, quantity]) => {
+              const dish = entryHook.dishes.find((d) => d.id === dishId);
+              return total + (dish && dish.price ? dish.price * quantity : 0);
+            },
+            0
+          );
+
+          toast.success("Sales submitted successfully", {
+            description: `Total sales: ${formatCurrency(totalAmount)}`,
+            icon: "💰",
+            duration: 6000,
+          });
         }
 
         // Refresh the sales list
@@ -277,7 +299,11 @@ export function useSalesPage(initialDishes: Dish[] = []) {
         entryHook.resetForm();
         return true;
       } else {
-        toast.error("Failed to submit sales");
+        toast.error("Failed to submit sales", {
+          description:
+            "There was an error submitting your sales data. Please try again.",
+          icon: "❌",
+        });
         return false;
       }
     } catch (error) {
@@ -285,12 +311,13 @@ export function useSalesPage(initialDishes: Dish[] = []) {
       toast.error("Submission error", {
         description:
           "An unexpected error occurred while submitting sales. Please try again.",
+        icon: "🔥",
       });
       return false;
     } finally {
       entryHook.setIsSubmitting(false);
     }
-  }, [entryHook, salesHook, checkLowStockAlerts]);
+  }, [entryHook, salesHook, checkLowStockAlerts, formatCurrency]);
 
   return {
     // Data

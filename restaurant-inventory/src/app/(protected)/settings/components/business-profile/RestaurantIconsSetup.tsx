@@ -13,8 +13,8 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, Loader2, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/services/auth-context";
+import { supabase } from "@/lib/supabase/browser-client";
 
 export function RestaurantIconsSetup() {
   const [isLoading, setIsLoading] = useState(false);

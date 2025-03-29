@@ -7,23 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { FiDownload, FiFileText, FiExternalLink } from "react-icons/fi";
 import { format } from "date-fns";
 import { useCurrency } from "@/lib/currency";
@@ -47,109 +30,145 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
   const renderStatusBadge = (status: Invoice["status"]) => {
     switch (status) {
       case "paid":
-        return <Badge className="bg-green-500">Paid</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Paid
+          </span>
+        );
       case "open":
-        return <Badge variant="outline">Pending</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+            Pending
+          </span>
+        );
       case "void":
-        return <Badge variant="secondary">Void</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+            Void
+          </span>
+        );
       case "uncollectible":
-        return <Badge variant="destructive">Failed</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            Failed
+          </span>
+        );
       default:
-        return <Badge>{status}</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {status}
+          </span>
+        );
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Billing History</CardTitle>
-        <CardDescription>
+    <Card className="bg-white border border-gray-200 rounded-lg shadow-sm">
+      <CardHeader className="border-b border-gray-100 bg-gray-50 rounded-t-lg pb-4">
+        <CardTitle className="text-lg font-bold text-gray-900">
+          Billing History
+        </CardTitle>
+        <CardDescription className="text-gray-600">
           View your past invoices and payment history
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         {invoices.length > 0 ? (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <table className="w-full border-collapse border-none">
+              <thead>
+                <tr className="bg-gray-50 text-left border-b border-gray-200">
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">
+                    Invoice
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">
+                    Date
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">
+                    Amount
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-gray-700 text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
                 {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">
+                  <tr
+                    key={invoice.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       {invoice.invoiceNumber}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
                       {format(new Date(invoice.invoiceDate), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                    <TableCell>{renderStatusBadge(invoice.status)}</TableCell>
-                    <TableCell className="text-right">
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {formatCurrency(invoice.amount)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      {renderStatusBadge(invoice.status)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
+                        <button
+                          className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-white bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 border-0 shadow-sm transition-colors"
                           onClick={() => openInvoiceDetails(invoice)}
                         >
-                          <FiFileText className="mr-1 h-4 w-4" />
+                          <FiFileText className="mr-1 h-3.5 w-3.5" />
                           View
-                        </Button>
+                        </button>
                         {invoice.pdf && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8"
-                            asChild
+                          <a
+                            className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 border-0 shadow-sm transition-colors"
+                            href={invoice.pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            <a
-                              href={invoice.pdf}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <FiDownload className="mr-1 h-4 w-4" />
-                              Download
-                            </a>
-                          </Button>
+                            <FiDownload className="mr-1 h-3.5 w-3.5" />
+                            Download
+                          </a>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-gray-500">
             No billing history available yet.
           </div>
         )}
       </CardContent>
 
-      {/* Invoice Details Dialog */}
-      <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Invoice {selectedInvoice?.invoiceNumber}</DialogTitle>
-            <DialogDescription>
+      {/* Invoice Details Modal/Dialog */}
+      <dialog
+        id="invoice_modal"
+        className={`modal ${isInvoiceDialogOpen ? "modal-open" : ""}`}
+      >
+        <div className="modal-box max-w-3xl bg-white rounded-lg shadow-xl border border-gray-200 p-0">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <h3 className="text-xl font-bold text-gray-900">
+              Invoice {selectedInvoice?.invoiceNumber}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
               Invoice details and line items
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
 
           {selectedInvoice && (
-            <div className="space-y-6">
+            <div className="px-6 py-5 space-y-6">
               {/* Invoice header */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 border-b pb-4">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 pb-5 border-b border-gray-200">
                 <div>
-                  <h3 className="text-lg font-bold">ShelfWise</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="text-lg font-bold text-gray-900">ShelfWise</h3>
+                  <p className="text-sm text-gray-600 mt-1">
                     123 Restaurant Ave
                     <br />
                     San Francisco, CA 94107
@@ -158,96 +177,149 @@ export function BillingHistory({ invoices }: BillingHistoryProps) {
                   </p>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-sm">
-                    <span className="font-medium">Invoice Number:</span>{" "}
-                    {selectedInvoice.invoiceNumber}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Invoice Date:</span>{" "}
-                    {format(
-                      new Date(selectedInvoice.invoiceDate),
-                      "MMMM d, yyyy"
-                    )}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Due Date:</span>{" "}
-                    {format(new Date(selectedInvoice.dueDate), "MMMM d, yyyy")}
-                  </div>
-                  <div className="mt-2">
-                    {renderStatusBadge(selectedInvoice.status)}
+                <div className="md:text-right">
+                  <div className="space-y-1">
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">
+                        Invoice Number:
+                      </span>{" "}
+                      <span className="text-gray-900">
+                        {selectedInvoice.invoiceNumber}
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">
+                        Invoice Date:
+                      </span>{" "}
+                      <span className="text-gray-900">
+                        {format(
+                          new Date(selectedInvoice.invoiceDate),
+                          "MMMM d, yyyy"
+                        )}
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">
+                        Due Date:
+                      </span>{" "}
+                      <span className="text-gray-900">
+                        {selectedInvoice.dueDate
+                          ? format(
+                              new Date(selectedInvoice.dueDate),
+                              "MMMM d, yyyy"
+                            )
+                          : "N/A"}
+                      </span>
+                    </div>
+                    <div className="mt-2">
+                      {renderStatusBadge(selectedInvoice.status)}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Invoice items */}
               <div>
-                <h4 className="font-medium mb-2">Invoice Items</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedInvoice.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.amount)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.amount * item.quantity)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <h4 className="font-medium text-gray-900 mb-3">
+                  Invoice Items
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border-none">
+                    <thead>
+                      <tr className="bg-gray-50 text-left border-b border-gray-200">
+                        <th className="px-4 py-2 text-sm font-medium text-gray-700">
+                          Description
+                        </th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-700 text-right">
+                          Quantity
+                        </th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-700 text-right">
+                          Amount
+                        </th>
+                        <th className="px-4 py-2 text-sm font-medium text-gray-700 text-right">
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {selectedInvoice.items?.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {item.description}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                            {item.quantity}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 font-medium text-right">
+                            {formatCurrency(item.amount * item.quantity)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Invoice total */}
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-4">
                 <div className="w-full max-w-xs space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(selectedInvoice.amount)}</span>
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="text-gray-900">
+                      {formatCurrency(selectedInvoice.amount)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span>Tax:</span>
-                    <span>{formatCurrency(0)}</span>
+                    <span className="text-gray-600">Tax:</span>
+                    <span className="text-gray-900">{formatCurrency(0)}</span>
                   </div>
-                  <div className="flex justify-between font-bold border-t pt-2">
-                    <span>Total:</span>
-                    <span>{formatCurrency(selectedInvoice.amount)}</span>
+                  <div className="flex justify-between font-medium text-base border-t border-gray-200 pt-3 mt-2">
+                    <span className="text-gray-900">Total:</span>
+                    <span className="text-orange-600">
+                      {formatCurrency(selectedInvoice.amount)}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Invoice actions */}
-              <div className="flex justify-end gap-2 pt-4">
-                {selectedInvoice.pdf && (
-                  <Button asChild>
-                    <a
-                      href={selectedInvoice.pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FiExternalLink className="mr-2 h-4 w-4" />
-                      Open PDF
-                    </a>
-                  </Button>
-                )}
-              </div>
+              {selectedInvoice.pdf && (
+                <div className="flex justify-end gap-2 pt-4">
+                  <a
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-full font-medium text-white bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 border-0 shadow-sm transition-colors"
+                    href={selectedInvoice.pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FiExternalLink className="mr-2 h-4 w-4" />
+                    Open PDF
+                  </a>
+                </div>
+              )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+            <button
+              className="inline-flex items-center justify-center px-4 py-2 rounded-full font-medium text-white bg-gradient-to-r from-gray-500 to-gray-400 hover:from-gray-600 hover:to-gray-500 border-0 shadow-sm transition-colors"
+              onClick={() => setIsInvoiceDialogOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button
+            onClick={() => setIsInvoiceDialogOpen(false)}
+            className="bg-transparent text-transparent"
+          >
+            Close
+          </button>
+        </form>
+      </dialog>
     </Card>
   );
 }

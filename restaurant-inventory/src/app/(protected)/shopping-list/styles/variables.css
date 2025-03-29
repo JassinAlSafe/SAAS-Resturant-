@@ -1,0 +1,37 @@
+/* CSS Variables fallbacks */
+:root {
+  /* Color variables */
+  --tw-primary-color: 87, 13, 248; /* DaisyUI primary color */
+  --tw-success-color: 54, 211, 153; /* DaisyUI success color */
+  --tw-warning-color: 251, 189, 35; /* DaisyUI warning color */
+  --tw-error-color: 248, 114, 114; /* DaisyUI error color */
+  --tw-info-color: 58, 191, 248; /* DaisyUI info color */
+
+  --tw-base-100: 255, 255, 255; /* White */
+  --tw-base-200: 242, 242, 242; /* Light gray */
+  --tw-base-300: 229, 230, 230; /* Gray */
+  --tw-base-content: 10, 10, 10; /* Near black */
+
+  /* Shadow variables */
+  --tw-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --tw-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --tw-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --tw-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --tw-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Border radius */
+  --rounded-box: 1rem;
+  --rounded-btn: 0.5rem;
+  --rounded-badge: 9999px;
+}
+
+/* Dark theme overrides */
+.dark {
+  --tw-base-100: 10, 10, 10; /* Near black */
+  --tw-base-200: 38, 38, 38; /* Dark gray */
+  --tw-base-300: 55, 55, 55; /* Medium gray */
+  --tw-base-content: 255, 255, 255; /* White */
+}

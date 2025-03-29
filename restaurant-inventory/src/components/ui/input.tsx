@@ -1,22 +1,51 @@
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+export interface InputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  variant?:
+    | "ghost"
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "info"
+    | "success"
+    | "warning"
+    | "error";
+  inputSize?: "xs" | "sm" | "md" | "lg" | "xl";
+}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, variant, inputSize = "md", ...props }, ref) => {
     return (
       <input
         type={type}
         className={cn(
-          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "input",
+          {
+            "input-ghost": variant === "ghost",
+            "input-primary": variant === "primary",
+            "input-secondary": variant === "secondary",
+            "input-accent": variant === "accent",
+            "input-info": variant === "info",
+            "input-success": variant === "success",
+            "input-warning": variant === "warning",
+            "input-error": variant === "error",
+            "input-xs": inputSize === "xs",
+            "input-sm": inputSize === "sm",
+            "input-md": inputSize === "md",
+            "input-lg": inputSize === "lg",
+            "input-xl": inputSize === "xl",
+          },
           className
         )}
         ref={ref}
         {...props}
       />
-    )
+    );
   }
-)
-Input.displayName = "Input"
+);
+Input.displayName = "Input";
 
-export { Input }
+export { Input };

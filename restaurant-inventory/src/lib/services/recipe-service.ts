@@ -1,392 +1,330 @@
-import { supabase } from '@/lib/supabase';
+// lib/services/recipe-service.ts
+import { supabase } from '@/lib/supabase/browser-client';
 import { Dish, DishIngredient } from '@/lib/types';
+import { getCurrentUser } from '../utils/Auth/auth-utils';
 
-// Database representation of dish ingredients
+/**
+ * Helper function to safely extract user from getCurrentUser result
+ */
+const extractUserFromAuthResult = async () => {
+    const result = await getCurrentUser();
+
+    if (!result || !result.user) {
+        throw new Error('User not authenticated');
+    }
+
+    return result.user;
+};
+
+// ===== Data Models =====
+
+/**
+ * Database representation of dish ingredients
+ */
 interface DbDishIngredient {
     dish_id: string;
     ingredient_id: string;
     quantity: number;
+    unit?: string;
 }
 
-interface RecipeWithIngredients {
+/**
+ * Database representation of a recipe
+ */
+interface DbRecipe {
     id: string;
     name: string;
-    description?: string;
+    description: string;
     price: number;
-    food_cost?: number;
-    category?: string;
-    allergies?: string[];
-    popularity?: number;
-    image_url?: string;
+    food_cost: number;
+    category: string;
+    allergies: string[];
+    popularity: number;
+    image_url: string;
+    user_id: string;
+    dish_id: string | null | undefined;
+    business_profile_id: string;
+    is_archived: boolean;
     created_at?: string;
     updated_at?: string;
-    is_archived?: boolean;
-    dish_id?: string;
-    dish_ingredients?: DbDishIngredient[];
-    ingredients?: {
-        ingredient_id: string;
-        quantity: number;
-    }[];
 }
 
-export const recipeService = {
+/**
+ * Define interface for ingredient data
+ */
+interface IngredientData {
+    id: string;
+    name?: string;
+    unit?: string;
+    cost?: number;
+    quantity?: number;
+    business_profile_id?: string;
+    category: string;
+}
+
+// ===== Error Handling =====
+
+/**
+ * Centralized error handling for service methods
+ */
+const handleServiceError = (error: unknown, operation: string): never => {
+    console.error(`Error in ${operation}:`, error);
+
+    if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        throw error;
+    }
+
+    console.error('Unknown error type:', typeof error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    throw new Error(`Unknown error occurred during ${operation}`);
+};
+
+// ===== Data Access Layer =====
+
+/**
+ * Repository methods for recipe data access
+ */
+const recipeRepository = {
     /**
-     * Get all recipes
+     * Find a recipe by ID for a specific user
      */
-    async getRecipes(includeArchived = false): Promise<Dish[]> {
-        try {
-            console.log('Fetching recipes...');
+    async findById(id: string, userId: string): Promise<DbRecipe | null> {
+        const { data, error } = await supabase
+            .from('recipes')
+            .select(`
+        id, name, description, price, food_cost, category, 
+        allergies, popularity, image_url, created_at, 
+        updated_at, dish_id, is_archived, user_id, business_profile_id
+      `)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .single();
 
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Build the query
-            let query = supabase
-                .from('recipes')
-                .select(`
-                    id,
-                    name,
-                    description,
-                    price,
-                    food_cost,
-                    category,
-                    allergies,
-                    popularity,
-                    image_url,
-                    created_at,
-                    updated_at,
-                    is_archived,
-                    dish_id
-                `)
-                .eq('user_id', user.id);
-
-            // Filter out archived recipes unless specifically requested
-            if (!includeArchived) {
-                // First try with is_archived column
-                try {
-                    query = query.or('is_archived.is.null,is_archived.eq.false');
-                } catch {
-                    // If the column doesn't exist, just continue without filtering
-                    console.log('is_archived column may not exist, continuing without filtering');
-                }
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error('Error fetching recipes:', error);
-                throw error;
-            }
-
-            if (!data) {
-                return [];
-            }
-
-            // Fetch ingredients for all recipes that have a dish_id
-            const dishIds = data
-                .filter(recipe => recipe.dish_id)
-                .map(recipe => recipe.dish_id);
-
-            let dishIngredientsMap: Record<string, DbDishIngredient[]> = {};
-
-            if (dishIds.length > 0) {
-                const { data: dishIngredients, error: ingredientsError } = await supabase
-                    .from('dish_ingredients')
-                    .select('dish_id, ingredient_id, quantity')
-                    .in('dish_id', dishIds);
-
-                if (ingredientsError) {
-                    console.error('Error fetching dish ingredients:', ingredientsError);
-                } else if (dishIngredients) {
-                    // Group ingredients by dish_id
-                    dishIngredientsMap = (dishIngredients as DbDishIngredient[]).reduce<Record<string, DbDishIngredient[]>>((acc, item) => {
-                        if (!acc[item.dish_id]) {
-                            acc[item.dish_id] = [];
-                        }
-                        acc[item.dish_id].push(item);
-                        return acc;
-                    }, {});
-                }
-            }
-
-            // Map the data to our Dish interface
-            return data.map((recipe: RecipeWithIngredients) => {
-                // Get ingredients for this recipe if it has a dish_id
-                const ingredients = recipe.dish_id
-                    ? (dishIngredientsMap[recipe.dish_id] || []).map(ingredient => ({
-                        ingredientId: ingredient.ingredient_id,
-                        quantity: ingredient.quantity
-                    }))
-                    : [];
-
-                return {
-                    id: recipe.id,
-                    name: recipe.name,
-                    description: recipe.description || '',
-                    price: recipe.price,
-                    foodCost: recipe.food_cost || 0,
-                    category: recipe.category || '',
-                    allergies: recipe.allergies || [],
-                    popularity: recipe.popularity || 0,
-                    imageUrl: recipe.image_url || '',
-                    ingredients: ingredients,
-                    createdAt: recipe.created_at || '',
-                    updatedAt: recipe.updated_at || '',
-                    isArchived: recipe.is_archived || false
-                };
-            });
-        } catch (error) {
-            console.error('Exception in getRecipes:', error);
-            throw error;
-        }
+        if (error) throw error;
+        return data;
     },
 
     /**
-     * Get recipe by ID
+     * Find all recipes for a user with optional archived filter
      */
-    async getRecipeById(id: string): Promise<Dish | null> {
-        try {
-            // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+    async findAllByUser(userId: string, includeArchived = false): Promise<DbRecipe[]> {
+        let query = supabase
+            .from('recipes')
+            .select(`
+        id, name, description, price, food_cost, category, 
+        allergies, popularity, image_url, created_at, 
+        updated_at, dish_id, is_archived, user_id, business_profile_id
+      `)
+            .eq('user_id', userId);
 
-            if (!user) {
-                console.error('No authenticated user found');
-                return null;
-            }
-
-            const { data: recipe, error } = await supabase
-                .from('recipes')
-                .select(`
-                    id,
-                    name,
-                    description,
-                    price,
-                    food_cost,
-                    category,
-                    allergies,
-                    popularity,
-                    image_url,
-                    created_at,
-                    updated_at,
-                    dish_id
-                `)
-                .eq('id', id)
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching recipe:', error);
-                throw error;
-            }
-
-            if (!recipe) return null;
-
-            // Fetch ingredients if the recipe has a dish_id
-            let dbIngredients: DbDishIngredient[] = [];
-            if (recipe.dish_id) {
-                const { data: dishIngredients, error: ingredientsError } = await supabase
-                    .from('dish_ingredients')
-                    .select('dish_id, ingredient_id, quantity')
-                    .eq('dish_id', recipe.dish_id);
-
-                if (ingredientsError) {
-                    console.error('Error fetching dish ingredients:', ingredientsError);
-                } else if (dishIngredients) {
-                    dbIngredients = dishIngredients as DbDishIngredient[];
-                }
-            }
-
-            // Transform DB data to our application model
-            return {
-                id: recipe.id,
-                name: recipe.name,
-                description: recipe.description,
-                price: recipe.price,
-                foodCost: recipe.food_cost,
-                category: recipe.category,
-                allergies: recipe.allergies,
-                popularity: recipe.popularity,
-                imageUrl: recipe.image_url,
-                ingredients: dbIngredients.map(item => ({
-                    ingredientId: item.ingredient_id,
-                    quantity: item.quantity
-                })),
-                createdAt: recipe.created_at || new Date().toISOString(),
-                updatedAt: recipe.updated_at || new Date().toISOString()
-            };
-        } catch (error) {
-            console.error('Exception in getRecipeById:', error);
-            return null;
+        if (!includeArchived) {
+            query = query.or('is_archived.is.null,is_archived.eq.false');
         }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
     },
 
     /**
-     * Add a new recipe
+     * Find ingredients for a dish
      */
-    async addRecipe(dish: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>): Promise<Dish | null> {
-        try {
-            // Get the authenticated user
-            const { data: { user } } = await supabase.auth.getUser();
+    async findIngredientsByDishId(dishId: string): Promise<DbDishIngredient[]> {
+        const { data, error } = await supabase
+            .from('dish_ingredients')
+            .select('dish_id, ingredient_id, quantity, unit')
+            .eq('dish_id', dishId);
 
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            console.log('Adding recipe:', dish.name, 'for user:', user.id);
-
-            // First, check if we need to create a dish record
-            let dishId: string | null = null;
-
-            if (dish.ingredients && dish.ingredients.length > 0) {
-                // Create a dish record first
-                const { data: dishData, error: dishError } = await supabase
-                    .from('dishes')
-                    .insert({
-                        name: dish.name,
-                        price: dish.price,
-                        business_profile_id: await this.getBusinessProfileId(user.id)
-                    })
-                    .select('id')
-                    .single();
-
-                if (dishError) {
-                    console.error('Error creating dish:', dishError);
-                    throw dishError;
-                }
-
-                dishId = dishData.id;
-                console.log('Created dish with ID:', dishId);
-            }
-
-            // Then, insert the recipe
-            const { data: recipe, error: recipeError } = await supabase
-                .from('recipes')
-                .insert({
-                    name: dish.name,
-                    description: dish.description,
-                    price: dish.price,
-                    food_cost: dish.foodCost || 0, // Ensure a default value
-                    category: dish.category,
-                    allergies: dish.allergies,
-                    popularity: dish.popularity,
-                    image_url: dish.imageUrl,
-                    user_id: user.id, // Include the user_id
-                    dish_id: dishId, // Link to the dish if created
-                    business_profile_id: await this.getBusinessProfileId(user.id) // Add business profile ID
-                })
-                .select()
-                .single();
-
-            if (recipeError) {
-                console.error('Error adding recipe:', recipeError);
-                // Clean up the dish if it was created
-                if (dishId) {
-                    await supabase.from('dishes').delete().eq('id', dishId);
-                }
-                throw recipeError;
-            }
-
-            if (!recipe) {
-                console.error('Recipe was not created');
-                // Clean up the dish if it was created
-                if (dishId) {
-                    await supabase.from('dishes').delete().eq('id', dishId);
-                }
-                throw new Error('Recipe creation failed');
-            }
-
-            console.log('Recipe created with ID:', recipe.id);
-
-            // Then, insert dish ingredients
-            if (dish.ingredients && dish.ingredients.length > 0 && dishId) {
-                // Get all ingredient IDs
-                const ingredientIds = dish.ingredients.map(ing => ing.ingredientId);
-
-                // Fetch ingredient data to get units
-                const { data: ingredientsData, error: ingredientsFetchError } = await supabase
-                    .from('ingredients')
-                    .select('id, unit, cost')
-                    .in('id', ingredientIds);
-
-                if (ingredientsFetchError) {
-                    console.error('Error fetching ingredients data:', ingredientsFetchError);
-                    // Clean up the recipe and dish
-                    await supabase.from('recipes').delete().eq('id', recipe.id);
-                    await supabase.from('dishes').delete().eq('id', dishId);
-                    throw ingredientsFetchError;
-                }
-
-                const ingredientsToInsert = dish.ingredients.map(ingredient => {
-                    // Find the corresponding ingredient to get its unit
-                    const ingredientData = ingredientsData.find(ing => ing.id === ingredient.ingredientId);
-
-                    return {
-                        dish_id: dishId,
-                        ingredient_id: ingredient.ingredientId,
-                        quantity: ingredient.quantity,
-                        unit: ingredientData?.unit || 'piece' // Provide a default unit as fallback
-                    };
-                });
-
-                console.log('Inserting dish ingredients:', ingredientsToInsert);
-
-                const { error: ingredientsError } = await supabase
-                    .from('dish_ingredients')
-                    .insert(ingredientsToInsert);
-
-                if (ingredientsError) {
-                    console.error('Error adding dish ingredients:', ingredientsError);
-                    // Attempt to delete the recipe and dish since ingredients failed
-                    await supabase.from('recipes').delete().eq('id', recipe.id);
-                    await supabase.from('dishes').delete().eq('id', dishId);
-                    throw ingredientsError;
-                }
-            }
-
-            // Return the complete dish
-            return {
-                id: recipe.id,
-                name: dish.name,
-                description: dish.description,
-                price: dish.price,
-                foodCost: dish.foodCost,
-                category: dish.category,
-                allergies: dish.allergies,
-                popularity: dish.popularity,
-                imageUrl: dish.imageUrl,
-                ingredients: dish.ingredients || [],
-                createdAt: recipe.created_at,
-                updatedAt: recipe.updated_at
-            };
-        } catch (error) {
-            // Enhanced error logging
-            console.error('Exception in addRecipe:', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-            } else {
-                console.error('Unknown error type:', typeof error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
-            }
-            throw error; // Re-throw the error so it's caught by the hook
-        }
+        if (error) throw error;
+        return data || [];
     },
 
     /**
-     * Helper method to get business profile ID
+     * Check if a dish has sales references
      */
-    async getBusinessProfileId(userId: string): Promise<string> {
+    async hasSalesReferences(dishId: string): Promise<boolean> {
+        const { data, error } = await supabase
+            .from('sales')
+            .select('id')
+            .eq('dish_id', dishId)
+            .limit(1);
+
+        if (error) throw error;
+        return (data && data.length > 0);
+    },
+
+    /**
+     * Create a new recipe
+     */
+    async createRecipe(recipe: Omit<DbRecipe, 'id'>): Promise<DbRecipe> {
+        const { data, error } = await supabase
+            .from('recipes')
+            .insert(recipe)
+            .select()
+            .single();
+
+        if (error) throw error;
+        if (!data) throw new Error('Recipe creation failed - no recipe returned from database');
+        return data;
+    },
+
+    /**
+     * Create a new dish
+     */
+    async createDish(dish: { name: string; price: number; business_profile_id: string }): Promise<{ id: string }> {
+        const { data, error } = await supabase
+            .from('dishes')
+            .insert(dish)
+            .select('id')
+            .single();
+
+        if (error) throw error;
+        if (!data || !data.id) throw new Error('Dish record was created but no ID was returned');
+        return data;
+    },
+
+    /**
+     * Add ingredients to a dish
+     */
+    async addDishIngredients(ingredients: DbDishIngredient[]): Promise<void> {
+        const { error } = await supabase
+            .from('dish_ingredients')
+            .insert(ingredients);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Update a recipe
+     */
+    async updateRecipe(id: string, userId: string, recipe: Partial<DbRecipe>): Promise<void> {
+        const { error } = await supabase
+            .from('recipes')
+            .update(recipe)
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Delete a recipe
+     */
+    async deleteRecipe(id: string, userId: string): Promise<void> {
+        const { error } = await supabase
+            .from('recipes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Delete dish ingredients
+     */
+    async deleteDishIngredients(dishId: string): Promise<void> {
+        const { error } = await supabase
+            .from('dish_ingredients')
+            .delete()
+            .eq('dish_id', dishId);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Delete a dish
+     */
+    async deleteDish(dishId: string): Promise<void> {
+        const { error } = await supabase
+            .from('dishes')
+            .delete()
+            .eq('id', dishId);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Find ingredients by their IDs
+     */
+    async findIngredientsByIds(ids: string[]): Promise<IngredientData[]> {
+        const { data, error } = await supabase
+            .from('ingredients')
+            .select('id, unit, cost, name, category')
+            .in('id', ids);
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    /**
+     * Find ingredients by name
+     */
+    async findIngredientsByNames(names: string[]): Promise<IngredientData[]> {
+        const { data, error } = await supabase
+            .from('ingredients')
+            .select('id, name, category')
+            .in('name', names);
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    /**
+     * Create new ingredients
+     */
+    async createIngredients(ingredients: Omit<IngredientData, 'id'>[]): Promise<IngredientData[]> {
+        const { data, error } = await supabase
+            .from('ingredients')
+            .insert(ingredients)
+            .select('id, name, category');
+
+        if (error) throw error;
+        return data || [];
+    }
+};
+
+// ===== Business Logic Helper Methods =====
+
+/**
+ * Maps a database recipe to the domain model
+ */
+const mapDbRecipeToDish = (recipe: DbRecipe, ingredients: DishIngredient[] = []): Dish => {
+    return {
+        id: recipe.id,
+        name: recipe.name,
+        description: recipe.description || '',
+        price: recipe.price,
+        foodCost: recipe.food_cost || 0,
+        category: recipe.category || '',
+        allergies: recipe.allergies || [],
+        popularity: recipe.popularity || 0,
+        imageUrl: recipe.image_url || '',
+        ingredients: ingredients,
+        createdAt: recipe.created_at || new Date().toISOString(),
+        updatedAt: recipe.updated_at || new Date().toISOString(),
+        isArchived: recipe.is_archived || false
+    };
+};
+
+/**
+ * Map dish ingredients from database to domain model
+ */
+const mapDbIngredientsToModel = (dbIngredients: DbDishIngredient[]): DishIngredient[] => {
+    return dbIngredients.map(item => ({
+        ingredientId: item.ingredient_id,
+        quantity: item.quantity,
+        unit: item.unit
+    }));
+};
+
+/**
+ * Ensures a business profile exists for a user
+ */
+const ensureBusinessProfileExists = async (userId: string): Promise<string> => {
+    try {
         // First try to get from business_profile_users table
         const { data: businessProfileData, error: profileError } = await supabase
             .from('business_profile_users')
@@ -394,7 +332,7 @@ export const recipeService = {
             .eq('user_id', userId)
             .single();
 
-        if (!profileError && businessProfileData) {
+        if (!profileError && businessProfileData?.business_profile_id) {
             return businessProfileData.business_profile_id;
         }
 
@@ -406,11 +344,301 @@ export const recipeService = {
             .order('created_at', { ascending: false })
             .limit(1);
 
-        if (!profilesError && businessProfiles && businessProfiles.length > 0) {
+        if (!profilesError && businessProfiles?.length > 0 && businessProfiles[0].id) {
             return businessProfiles[0].id;
         }
 
-        throw new Error('No business profile found for user');
+        // Last resort: query to check if any business profiles exist
+        const { data: allProfiles, error: allProfilesError } = await supabase
+            .from('business_profiles')
+            .select('id')
+            .limit(1);
+
+        if (!allProfilesError && allProfiles?.length > 0) {
+            return allProfiles[0].id;
+        }
+
+        // Create a default business profile
+        const { data: newProfile, error: createError } = await supabase
+            .from('business_profiles')
+            .insert({
+                user_id: userId,
+                name: 'Default Restaurant',
+                type: 'restaurant',
+                default_currency: 'USD'
+            })
+            .select('id')
+            .single();
+
+        if (!createError && newProfile?.id) {
+            return newProfile.id;
+        }
+
+        throw new Error('Failed to find or create a business profile');
+    } catch (error) {
+        console.error('Error in getBusinessProfileId:', error);
+
+        // Development fallback
+        if (process.env.NODE_ENV === 'development') {
+            const fallbackId = '15c2b5a0-04c7-44bc-b619-e39c7082f164';
+            console.warn('Using hardcoded fallback business profile ID for development:', fallbackId);
+            return fallbackId;
+        }
+
+        throw new Error('No business profile found and unable to create one');
+    }
+};
+
+/**
+ * Resolves ingredient IDs from names or IDs
+ */
+const resolveIngredientsByNameOrId = async (
+    ingredients: DishIngredient[],
+    businessProfileId: string
+): Promise<DishIngredient[]> => {
+    if (!ingredients || ingredients.length === 0) {
+        return [];
+    }
+
+    try {
+        // Separate ingredients that might be names vs IDs
+        const potentialNames = ingredients.filter(ing =>
+            typeof ing.ingredientId === 'string' && ing.ingredientId.length < 36);
+        const validIds = ingredients.filter(ing =>
+            typeof ing.ingredientId === 'string' && ing.ingredientId.length === 36);
+
+        // If no potential names, just return the valid IDs
+        if (potentialNames.length === 0) {
+            return validIds;
+        }
+
+        // Get the list of names to look up
+        const ingredientNames = potentialNames.map(ing => ing.ingredientId as string);
+
+        // Look up existing ingredients by name
+        const existingIngredients = await recipeRepository.findIngredientsByNames(ingredientNames);
+
+        // Create a map of name -> id for found ingredients
+        const nameToIdMap: Record<string, string> = {};
+        existingIngredients.forEach(ing => {
+            if (ing.name) {
+                nameToIdMap[ing.name.toLowerCase()] = ing.id;
+            }
+        });
+
+        // Collect ingredients that need to be created
+        const ingredientsToCreate = potentialNames
+            .filter(ing => !nameToIdMap[(ing.ingredientId as string).toLowerCase()])
+            .map(ing => ({
+                name: ing.ingredientId,
+                unit: ing.unit || 'piece',
+                cost: 0,
+                quantity: 0,
+                business_profile_id: businessProfileId,
+                category: 'Other'
+            }));
+
+        // Create any missing ingredients
+        if (ingredientsToCreate.length > 0) {
+            const newIngredients = await recipeRepository.createIngredients(ingredientsToCreate);
+
+            // Add the new ingredients to our map
+            newIngredients.forEach(ing => {
+                if (ing.name) {
+                    nameToIdMap[ing.name.toLowerCase()] = ing.id;
+                }
+            });
+        }
+
+        // Map all potential names to their actual IDs
+        const resolvedNameIngredients = potentialNames.map(ing => {
+            const resolvedId = nameToIdMap[(ing.ingredientId as string).toLowerCase()];
+            if (resolvedId) {
+                return { ...ing, ingredientId: resolvedId };
+            }
+            return ing;
+        });
+
+        // Filter to only include ingredients with valid UUIDs
+        const validResolvedIngredients = resolvedNameIngredients.filter(ing => {
+            const isValidUuid = typeof ing.ingredientId === 'string' &&
+                ing.ingredientId.length === 36 &&
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ing.ingredientId);
+            return isValidUuid;
+        });
+
+        // Combine with the valid IDs and return
+        return [...validIds, ...validResolvedIngredients];
+    } catch (error) {
+        console.error('Error resolving ingredients:', error);
+        // Return only the valid IDs we already collected
+        return ingredients.filter(ing =>
+            typeof ing.ingredientId === 'string' &&
+            ing.ingredientId.length === 36);
+    }
+};
+
+// ===== Recipe Service =====
+
+export const recipeService = {
+    /**
+     * Get all recipes for the current user
+     */
+    async getRecipes(includeArchived = false): Promise<Dish[]> {
+        try {
+            const user = await extractUserFromAuthResult();
+
+            const recipes = await recipeRepository.findAllByUser(user.id, includeArchived);
+
+            // Extract dish IDs for fetching ingredients
+            const dishIds = recipes
+                .filter(recipe => recipe.dish_id)
+                .map(recipe => recipe.dish_id!);
+
+            // Build map of dish_id -> ingredients
+            const dishIngredientsMap: Record<string, DishIngredient[]> = {};
+
+            if (dishIds.length > 0) {
+                // Fetch all ingredients in a single query
+                const allIngredients = await Promise.all(
+                    dishIds.map(id => recipeRepository.findIngredientsByDishId(id))
+                ).then(results => results.flat());
+
+                // Group by dish_id
+                allIngredients.forEach(ingredient => {
+                    if (!dishIngredientsMap[ingredient.dish_id]) {
+                        dishIngredientsMap[ingredient.dish_id] = [];
+                    }
+                    dishIngredientsMap[ingredient.dish_id].push({
+                        ingredientId: ingredient.ingredient_id,
+                        quantity: ingredient.quantity,
+                        unit: ingredient.unit
+                    });
+                });
+            }
+
+            // Map to domain model
+            return recipes.map(recipe => {
+                const ingredients = recipe.dish_id
+                    ? dishIngredientsMap[recipe.dish_id] || []
+                    : [];
+
+                return mapDbRecipeToDish(recipe, ingredients);
+            });
+        } catch (error) {
+            return handleServiceError(error, 'getRecipes');
+        }
+    },
+
+    /**
+     * Get a recipe by ID
+     */
+    async getRecipeById(id: string): Promise<Dish | null> {
+        try {
+            const user = await extractUserFromAuthResult();
+
+            const recipe = await recipeRepository.findById(id, user.id);
+            if (!recipe) return null;
+
+            // Fetch ingredients if the recipe has a dish_id
+            let ingredients: DishIngredient[] = [];
+            if (recipe.dish_id) {
+                const dbIngredients = await recipeRepository.findIngredientsByDishId(recipe.dish_id);
+                ingredients = mapDbIngredientsToModel(dbIngredients);
+            }
+
+            return mapDbRecipeToDish(recipe, ingredients);
+        } catch (error) {
+            handleServiceError(error, 'getRecipeById');
+            return null; // Only reach here if handleServiceError is modified to not throw
+        }
+    },
+
+    /**
+     * Add a new recipe
+     */
+    async addRecipe(dish: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>): Promise<Dish | null> {
+        try {
+            const user = await extractUserFromAuthResult();
+
+            // Get the business profile ID
+            const businessProfileId = await ensureBusinessProfileExists(user.id);
+
+            // Validate essential data
+            if (!dish.name) throw new Error('Recipe name is required');
+            if (typeof dish.price !== 'number' || dish.price <= 0) throw new Error('Valid recipe price is required');
+
+            // Create a dish record if we have ingredients
+            let dishId: string | null = null;
+            if (dish.ingredients && dish.ingredients.length > 0) {
+                const dishData = await recipeRepository.createDish({
+                    name: dish.name,
+                    price: dish.price,
+                    business_profile_id: businessProfileId
+                });
+                dishId = dishData.id;
+            }
+
+            // Prepare recipe data
+            const recipeData = {
+                name: dish.name,
+                description: dish.description || '',
+                price: dish.price,
+                food_cost: dish.foodCost || 0,
+                category: dish.category || '',
+                allergies: dish.allergies || [],
+                popularity: dish.popularity || 0,
+                image_url: dish.imageUrl || '',
+                user_id: user.id,
+                dish_id: dishId,
+                business_profile_id: businessProfileId,
+                is_archived: dish.isArchived === undefined ? false : dish.isArchived
+            };
+
+            // Create the recipe
+            const recipe = await recipeRepository.createRecipe(recipeData);
+
+            // Handle ingredients if present
+            if (dish.ingredients?.length > 0 && dishId) {
+                // Resolve ingredients by name or ID
+                const resolvedIngredients = await resolveIngredientsByNameOrId(
+                    dish.ingredients,
+                    businessProfileId
+                );
+
+                if (resolvedIngredients.length > 0) {
+                    // Get ingredient data for units
+                    const ingredientIds = resolvedIngredients
+                        .filter(ing => ing.ingredientId)
+                        .map(ing => ing.ingredientId);
+
+                    const ingredientsData = await recipeRepository.findIngredientsByIds(ingredientIds);
+
+                    // Prepare dish_ingredients
+                    const dishIngredients = resolvedIngredients
+                        .filter(ing => ing.ingredientId)
+                        .map(ingredient => {
+                            const ingredientData = ingredientsData?.find(ing => ing.id === ingredient.ingredientId);
+
+                            return {
+                                dish_id: dishId!,
+                                ingredient_id: ingredient.ingredientId,
+                                quantity: ingredient.quantity || 1,
+                                unit: ingredient.unit || ingredientData?.unit || 'piece'
+                            };
+                        });
+
+                    if (dishIngredients.length > 0) {
+                        await recipeRepository.addDishIngredients(dishIngredients);
+                    }
+                }
+            }
+
+            // Return the complete dish
+            return this.getRecipeById(recipe.id);
+        } catch (error) {
+            return handleServiceError(error, 'addRecipe');
+        }
     },
 
     /**
@@ -418,248 +646,99 @@ export const recipeService = {
      */
     async updateRecipe(id: string, dish: Omit<Dish, 'id' | 'createdAt' | 'updatedAt'>): Promise<Dish | null> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
+            const user = await extractUserFromAuthResult();
 
             // Update the recipe
-            const { error } = await supabase
-                .from('recipes')
-                .update({
-                    name: dish.name,
-                    description: dish.description,
-                    price: dish.price,
-                    food_cost: dish.foodCost,
-                    category: dish.category,
-                    allergies: dish.allergies,
-                    popularity: dish.popularity,
-                    image_url: dish.imageUrl,
-                    is_archived: dish.isArchived,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', id)
-                .eq('user_id', user.id);
-
-            if (error) {
-                console.error('Error updating recipe:', error);
-                throw error;
-            }
+            await recipeRepository.updateRecipe(id, user.id, {
+                name: dish.name,
+                description: dish.description,
+                price: dish.price,
+                food_cost: dish.foodCost,
+                category: dish.category,
+                allergies: dish.allergies,
+                popularity: dish.popularity,
+                image_url: dish.imageUrl,
+                is_archived: dish.isArchived,
+                updated_at: new Date().toISOString()
+            });
 
             // Get the updated recipe
             return this.getRecipeById(id);
         } catch (error) {
-            console.error('Exception in updateRecipe:', error);
-            throw error;
+            return handleServiceError(error, 'updateRecipe');
         }
     },
 
     /**
      * Delete a recipe
      */
-    async deleteRecipe(id: string): Promise<boolean> {
+    async deleteRecipe(id: string): Promise<{ success: boolean, hasSalesReferences: boolean }> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // First check if this recipe is referenced in sales
-            const { data: salesData, error: salesError } = await supabase
-                .from('sales')
-                .select('id')
-                .eq('dish_id', id)
-                .limit(1);
-
-            if (salesError) {
-                console.error('Error checking sales references:', salesError);
-                throw new Error(`Error checking sales: ${salesError.message}`);
-            }
-
-            // If the recipe is used in sales, prevent deletion
-            if (salesData && salesData.length > 0) {
-                throw new Error('Cannot delete this recipe because it is referenced in sales records. Remove the sales records first or archive the recipe instead.');
-            }
+            const user = await extractUserFromAuthResult();
 
             // Get the recipe to find its dish_id
-            const { data: recipe, error: recipeError } = await supabase
-                .from('recipes')
-                .select('dish_id')
-                .eq('id', id)
-                .single();
+            const recipe = await recipeRepository.findById(id, user.id);
+            if (!recipe) throw new Error('Recipe not found');
 
-            if (recipeError) {
-                console.error('Error getting recipe:', recipeError);
-                throw new Error(`Error getting recipe: ${recipeError.message}`);
-            }
-
-            // If the recipe has a dish_id, delete its ingredients first
-            if (recipe && recipe.dish_id) {
-                const { error: ingredientsError } = await supabase
-                    .from('dish_ingredients')
-                    .delete()
-                    .eq('dish_id', recipe.dish_id);
-
-                if (ingredientsError) {
-                    console.error('Error deleting recipe ingredients:', ingredientsError);
-                    throw new Error(`Error deleting recipe ingredients: ${ingredientsError.message}`);
-                }
-
-                // Delete the dish
-                const { error: dishError } = await supabase
-                    .from('dishes')
-                    .delete()
-                    .eq('id', recipe.dish_id);
-
-                if (dishError) {
-                    console.error('Error deleting dish:', dishError);
-                    throw new Error(`Error deleting dish: ${dishError.message}`);
+            // Check if the dish is referenced in sales
+            if (recipe.dish_id) {
+                const hasSalesReferences = await recipeRepository.hasSalesReferences(recipe.dish_id);
+                if (hasSalesReferences) {
+                    return { success: false, hasSalesReferences: true };
                 }
             }
 
-            // Then delete the recipe
-            const { error } = await supabase
-                .from('recipes')
-                .delete()
-                .eq('id', id)
-                .eq('user_id', user.id); // Ensure the user owns this recipe
+            // Delete the recipe first
+            await recipeRepository.deleteRecipe(id, user.id);
 
-            if (error) {
-                console.error('Error deleting recipe:', error);
-
-                // Check for foreign key violation specifically
-                if (error.message && error.message.includes('violates foreign key constraint')) {
-                    throw new Error('This recipe cannot be deleted because it is referenced by other records in the system. Consider archiving it instead.');
-                }
-
-                throw new Error(`Database error: ${error.message}`);
+            // If the recipe has a dish_id, delete its ingredients and the dish
+            if (recipe.dish_id) {
+                await recipeRepository.deleteDishIngredients(recipe.dish_id);
+                await recipeRepository.deleteDish(recipe.dish_id);
             }
 
-            return true;
+            return { success: true, hasSalesReferences: false };
         } catch (error) {
-            console.error('Exception in deleteRecipe:', error);
-            // Create a proper error object with a message
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-            } else {
-                // Handle non-Error objects
-                console.error('Non-standard error:', String(error));
-            }
-            // Always throw an Error object with a message
-            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe deletion');
+            handleServiceError(error, 'deleteRecipe');
+            return { success: false, hasSalesReferences: false };
         }
     },
 
     /**
      * Archive a recipe instead of deleting it
-     * This is useful for recipes that are referenced in sales and can't be deleted
      */
     async archiveRecipe(id: string): Promise<boolean> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            const user = await extractUserFromAuthResult();
 
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Update the recipe to mark it as archived
-            const { error } = await supabase
-                .from('recipes')
-                .update({
-                    is_archived: true,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', id)
-                .eq('user_id', user.id); // Ensure the user owns this recipe
-
-            if (error) {
-                console.error('Error archiving recipe:', error);
-
-                // If the column doesn't exist, we'll get an error
-                if (error.message && error.message.includes('column "is_archived" of relation "recipes" does not exist')) {
-                    throw new Error('The archive feature is not available. Please contact your administrator to enable this feature.');
-                }
-
-                throw new Error(`Database error: ${error.message}`);
-            }
+            await recipeRepository.updateRecipe(id, user.id, {
+                is_archived: true,
+                updated_at: new Date().toISOString()
+            });
 
             return true;
         } catch (error) {
-            console.error('Exception in archiveRecipe:', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-            } else {
-                console.error('Non-standard error:', String(error));
-            }
-            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe archiving');
+            handleServiceError(error, 'archiveRecipe');
+            return false;
         }
     },
 
     /**
-     * Unarchive a recipe to make it active again
+     * Unarchive a recipe
      */
     async unarchiveRecipe(id: string): Promise<boolean> {
         try {
-            // Get the authenticated user
-            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            const user = await extractUserFromAuthResult();
 
-            if (authError) {
-                console.error('Authentication error:', authError);
-                throw new Error(`Authentication failed: ${authError.message}`);
-            }
-
-            if (!user) {
-                console.error('No authenticated user found');
-                throw new Error('User not authenticated');
-            }
-
-            // Update the recipe to mark it as unarchived
-            const { error } = await supabase
-                .from('recipes')
-                .update({
-                    is_archived: false,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', id)
-                .eq('user_id', user.id); // Ensure the user owns this recipe
-
-            if (error) {
-                console.error('Error unarchiving recipe:', error);
-                throw new Error(`Database error: ${error.message}`);
-            }
+            await recipeRepository.updateRecipe(id, user.id, {
+                is_archived: false,
+                updated_at: new Date().toISOString()
+            });
 
             return true;
         } catch (error) {
-            console.error('Exception in unarchiveRecipe:', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-            } else {
-                console.error('Non-standard error:', String(error));
-            }
-            throw error instanceof Error ? error : new Error('Unknown error occurred during recipe unarchiving');
+            handleServiceError(error, 'unarchiveRecipe');
+            return false;
         }
     },
 
@@ -673,28 +752,21 @@ export const recipeService = {
             // Get all ingredient IDs
             const ingredientIds = ingredients.map(ing => ing.ingredientId);
 
-            // Get ingredient costs from database - ensure we only use columns that exist
-            const { data, error } = await supabase
-                .from('ingredients')
-                .select('id, cost')
-                .in('id', ingredientIds);
+            // Get ingredient costs
+            const ingredientData = await recipeRepository.findIngredientsByIds(ingredientIds);
 
-            if (error) {
-                console.error('Error calculating recipe cost:', error);
-                throw error;
-            }
-
-            // Calculate total cost
-            return ingredients.reduce((total, recipeIng) => {
-                const ingredient = data.find(ing => ing.id === recipeIng.ingredientId);
-                if (ingredient) {
-                    return total + (ingredient.cost * recipeIng.quantity);
+            // Calculate total cost using our helper with safety checks
+            let total = 0;
+            for (const recipeIng of ingredients) {
+                const ingredient = ingredientData.find(ing => ing.id === recipeIng.ingredientId);
+                if (ingredient && ingredient.cost !== undefined) {
+                    total += (ingredient.cost * (recipeIng.quantity || 1));
                 }
-                return total;
-            }, 0);
+            }
+            return total;
         } catch (error) {
-            console.error('Exception in calculateRecipeCost:', error);
-            throw error;
+            handleServiceError(error, 'calculateRecipeCost');
+            return 0;
         }
     }
-}; 
+};

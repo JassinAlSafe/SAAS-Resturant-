@@ -206,7 +206,7 @@ export function PaymentMethods({
   };
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm rounded-xl">
       <CardHeader>
         <CardTitle>Payment Methods</CardTitle>
         <CardDescription>
@@ -221,8 +221,8 @@ export function PaymentMethods({
               {paymentMethods.map((method) => (
                 <div
                   key={method.id}
-                  className={`flex items-center justify-between p-4 rounded-md border ${
-                    method.isDefault ? "bg-primary/5 border-primary" : ""
+                  className={`flex items-center justify-between p-4 rounded-xl border ${
+                    method.isDefault ? "bg-orange-50 border-orange-200" : ""
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -237,7 +237,7 @@ export function PaymentMethods({
                       </div>
                     </div>
                     {method.isDefault && (
-                      <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                      <span className="ml-2 text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">
                         Default
                       </span>
                     )}
@@ -247,6 +247,7 @@ export function PaymentMethods({
                       <Button
                         variant="outline"
                         size="sm"
+                        className="rounded-full"
                         onClick={() => handleSetDefault(method.id)}
                         disabled={isLoading}
                       >
@@ -256,8 +257,8 @@ export function PaymentMethods({
                     )}
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-600"
+                      size="sm"
+                      className="h-8 w-8 text-red-600 rounded-full"
                       onClick={() => {
                         setPaymentMethodToDelete(method);
                         setIsDeleteDialogOpen(true);
@@ -278,7 +279,11 @@ export function PaymentMethods({
           )}
 
           {/* Add payment method button */}
-          <Button onClick={() => setIsAddDialogOpen(true)} disabled={isLoading}>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            disabled={isLoading}
+            className="rounded-full"
+          >
             <FiPlus className="mr-2 h-4 w-4" />
             Add Payment Method
           </Button>
@@ -386,10 +391,15 @@ export function PaymentMethods({
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
               disabled={isLoading}
+              className="rounded-full"
             >
               Cancel
             </Button>
-            <Button onClick={handleAddPaymentMethod} disabled={isLoading}>
+            <Button
+              onClick={handleAddPaymentMethod}
+              disabled={isLoading}
+              className="rounded-full bg-orange-500 hover:bg-orange-600"
+            >
               {isLoading ? "Adding..." : "Add Payment Method"}
             </Button>
           </DialogFooter>

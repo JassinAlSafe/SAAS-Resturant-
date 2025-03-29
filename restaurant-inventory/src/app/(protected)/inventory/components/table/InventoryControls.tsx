@@ -36,7 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 
-interface InventoryControlsProps {
+export interface InventoryControlsProps {
   compactMode: boolean;
   setCompactMode: (mode: boolean) => void;
   sortConfig: {
@@ -56,6 +56,9 @@ interface InventoryControlsProps {
   onExport?: () => void;
   onImport?: () => void;
   onPrint?: () => void;
+  isMobile?: boolean;
+  renderSortIndicator?: (column: string) => React.ReactNode;
+  handleHeaderClick?: (column: string) => void;
 }
 
 export function InventoryControls({
@@ -75,6 +78,9 @@ export function InventoryControls({
   onExport,
   onImport,
   onPrint,
+  isMobile,
+  renderSortIndicator,
+  handleHeaderClick,
 }: InventoryControlsProps) {
   const router = useRouter();
 

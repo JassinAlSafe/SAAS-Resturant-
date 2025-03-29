@@ -1,25 +1,19 @@
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { format } from "date-fns";
 import { SaleData, SummaryData } from "./types";
+import { useState } from "react";
+import SalesTable from "../SalesTable";
+import { Sale } from "@/lib/types";
 
 const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#A569BD",
-  "#EC7063",
+  "#F97316", // orange-500
+  "#FB923C", // orange-400
+  "#FDBA74", // orange-300
+  "#FED7AA", // orange-200
+  "#FFEDD5", // orange-100
+  "#EA580C", // orange-600
 ];
 
 interface SalesAnalysisTabsProps {
@@ -35,6 +29,10 @@ export function SalesAnalysisTabs({
   summaryData,
   formatCurrency,
 }: SalesAnalysisTabsProps) {
+  const [activeTab, setActiveTab] = useState<
+    "categories" | "items" | "transactions"
+  >("categories");
+
   const pieChartData = Object.entries(summaryData.categoryTotals).map(
     ([name, value]) => ({
       name,
@@ -43,41 +41,75 @@ export function SalesAnalysisTabs({
   );
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Tabs defaultValue="categories" className="w-full">
-        <div className="border-b px-4">
-          <TabsList className="h-12">
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="items">Top Items</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          </TabsList>
-        </div>
+    <div className="bg-white border border-gray-100 shadow-sm rounded-xl">
+      {/* Tab navigation */}
+      <div className="flex justify-center pt-5 px-6 mb-4">
+        <div className="inline-flex rounded-full p-1 bg-orange-50/50 border border-gray-100 shadow-sm">
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "categories"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("categories")}
+          >
+            Categories
+          </button>
 
-        <TabsContent value="categories" className="p-6">
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "items"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("items")}
+          >
+            Top Items
+          </button>
+
+          <button
+            className={`flex items-center gap-2 px-5 py-2.5 font-medium text-sm rounded-full transition-colors ${
+              activeTab === "transactions"
+                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white shadow-sm"
+                : "text-gray-600 hover:text-orange-500 hover:bg-orange-50/50"
+            }`}
+            onClick={() => setActiveTab("transactions")}
+          >
+            Transactions
+          </button>
+        </div>
+      </div>
+
+      {/* Tab content container */}
+      <div className="px-5 pb-5">
+        {/* Categories Tab Content */}
+        {activeTab === "categories" && (
           <CategoryAnalysis
             isLoading={isLoading}
             pieChartData={pieChartData}
             categoryTotals={summaryData.categoryTotals}
             formatCurrency={formatCurrency}
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="items" className="p-6">
+        {/* Items Tab Content */}
+        {activeTab === "items" && (
           <TopItemsAnalysis
             isLoading={isLoading}
             salesData={salesData}
             formatCurrency={formatCurrency}
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="transactions" className="p-6">
+        {/* Transactions Tab Content */}
+        {activeTab === "transactions" && (
           <TransactionHistory
             isLoading={isLoading}
             salesData={salesData}
             formatCurrency={formatCurrency}
           />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 }
@@ -98,8 +130,8 @@ function CategoryAnalysis({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Sales by Category</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-lg font-medium text-gray-900">Sales by Category</h3>
+        <p className="text-sm text-gray-500">
           Distribution of sales across different categories
         </p>
       </div>
@@ -107,7 +139,7 @@ function CategoryAnalysis({
       <div className="h-[400px]">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center">
-            <Skeleton className="h-[350px] w-full" />
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
           </div>
         ) : pieChartData.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -152,20 +184,29 @@ function CategoryAnalysis({
             </div>
 
             <div className="overflow-y-auto max-h-[300px] pr-2">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background">
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Sales</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full border-collapse">
+                <thead className="sticky top-0 bg-white">
+                  <tr>
+                    <th className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sales
+                    </th>
+                    <th className="py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Items
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
                   {Object.entries(categoryTotals)
                     .sort((a, b) => b[1].sales - a[1].sales)
                     .map(([category, data], index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">
+                      <tr
+                        key={index}
+                        className="hover:bg-orange-50/30 transition-colors"
+                      >
+                        <td className="py-3 font-medium">
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
@@ -175,21 +216,23 @@ function CategoryAnalysis({
                             />
                             {category}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </td>
+                        <td className="py-3 text-right font-medium text-orange-600">
                           {formatCurrency(data.sales)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {data.items}
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-xs">
+                            {data.items}
+                          </span>
+                        </td>
+                      </tr>
                     ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
             No data available for the selected period
           </div>
         )}
@@ -209,83 +252,101 @@ function TopItemsAnalysis({
   salesData,
   formatCurrency,
 }: TopItemsAnalysisProps) {
+  // Calculate top selling items
+  const topItems = salesData.reduce((acc: Record<string, number>, sale) => {
+    sale.items.forEach((item) => {
+      const itemName = item.name;
+      if (!acc[itemName]) {
+        acc[itemName] = 0;
+      }
+      acc[itemName] += item.quantity;
+    });
+    return acc;
+  }, {});
+
+  // Convert to array and sort
+  const sortedItems = Object.entries(topItems)
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 10);
+
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Top Selling Items</h3>
-        <p className="text-sm text-muted-foreground">
-          Most popular items by quantity and revenue
+        <h3 className="text-lg font-medium text-gray-900">Top Selling Items</h3>
+        <p className="text-sm text-gray-500">
+          Most popular items by quantity sold
         </p>
       </div>
 
-      {isLoading ? (
-        <Skeleton className="h-[350px] w-full" />
-      ) : salesData.length > 0 ? (
-        <div className="overflow-y-auto max-h-[400px]">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background">
-              <TableRow>
-                <TableHead className="w-[40%]">Item</TableHead>
-                <TableHead className="w-[20%]">Category</TableHead>
-                <TableHead className="text-right w-[20%]">Quantity</TableHead>
-                <TableHead className="text-right w-[20%]">Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {salesData
-                .flatMap((sale) => sale.items)
-                .reduce<
-                  Array<{
-                    dish_name: string;
-                    quantity: number;
-                    total: number;
-                    category: string;
-                  }>
-                >((acc, item) => {
-                  const existing = acc.find(
-                    (i) => i.dish_name === item.dish_name
-                  );
-                  if (existing) {
-                    existing.quantity += item.quantity;
-                    existing.total += item.total;
-                  } else {
-                    acc.push({
-                      dish_name: item.dish_name,
-                      quantity: item.quantity,
-                      total: item.total,
-                      category: item.category,
-                    });
-                  }
-                  return acc;
-                }, [])
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 10)
-                .map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {item.dish_name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-primary/5">
-                        {item.category || "Uncategorized"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
+      <div className="overflow-hidden rounded-lg border border-gray-100">
+        {isLoading ? (
+          <div className="w-full h-[400px] flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
+          </div>
+        ) : sortedItems.length > 0 ? (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rank
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Item
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Quantity Sold
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {sortedItems.map((item, index) => {
+                // Find the category for this item from any sale
+                const category =
+                  salesData
+                    .find((sale) =>
+                      sale.items.some((i) => i.name === item.name)
+                    )
+                    ?.items.find((i) => i.name === item.name)?.category ||
+                  "Unknown";
+
+                return (
+                  <tr
+                    key={index}
+                    className="hover:bg-orange-50/30 transition-colors"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-7 w-7 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {item.name}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-orange-600">
                       {item.quantity}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.total)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="w-full h-[200px] flex items-center justify-center text-muted-foreground">
-          No data available for the selected period
-        </div>
-      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Badge className="bg-orange-50 text-orange-600 hover:bg-orange-50 font-normal">
+                        {category}
+                      </Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="w-full h-[400px] flex items-center justify-center text-gray-500">
+            No data available for the selected period
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -299,66 +360,52 @@ interface TransactionHistoryProps {
 function TransactionHistory({
   isLoading,
   salesData,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   formatCurrency,
 }: TransactionHistoryProps) {
+  // Convert the sales data to the expected format for SalesTable
+  const adaptSalesToTableFormat = (data: SaleData[]): Sale[] => {
+    return data.map((sale) => ({
+      id: sale.id,
+      date: sale.date,
+      amount: sale.total,
+      items: sale.items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      paymentMethod: sale.paymentMethod,
+    }));
+  };
+
+  const salesForTable = adaptSalesToTableFormat(salesData);
+
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Transaction History</h3>
-        <p className="text-sm text-muted-foreground">
-          Detailed list of all transactions
+        <h3 className="text-lg font-medium text-gray-900">
+          Transaction History
+        </h3>
+        <p className="text-sm text-gray-500">
+          Detailed view of all transactions in the period
         </p>
       </div>
 
-      {isLoading ? (
-        <Skeleton className="h-[350px] w-full" />
-      ) : salesData.length > 0 ? (
-        <div className="overflow-y-auto max-h-[400px]">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background">
-              <TableRow>
-                <TableHead className="w-[25%]">Date</TableHead>
-                <TableHead className="w-[55%]">Items</TableHead>
-                <TableHead className="text-right w-[20%]">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {salesData
-                .sort(
-                  (a, b) =>
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                )
-                .map((sale, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {format(new Date(sale.date), "EEEE, MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1.5 max-w-md">
-                        {sale.items.map((item, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="mb-1 bg-primary/5 whitespace-nowrap"
-                          >
-                            {item.dish_name} × {item.quantity}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(sale.total)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="w-full h-[200px] flex items-center justify-center text-muted-foreground">
-          No data available for the selected period
-        </div>
-      )}
+      <div>
+        {isLoading ? (
+          <div className="w-full h-[400px] flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
+          </div>
+        ) : salesForTable.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-gray-100">
+            <SalesTable sales={salesForTable} />
+          </div>
+        ) : (
+          <div className="w-full h-[400px] flex items-center justify-center text-gray-500">
+            No transactions in the selected period
+          </div>
+        )}
+      </div>
     </div>
   );
 }

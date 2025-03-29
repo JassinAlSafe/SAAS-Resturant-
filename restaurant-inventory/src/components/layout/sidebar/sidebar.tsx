@@ -8,39 +8,35 @@ import { SidebarUserProfile } from "./components/SidebarUserProfile";
 import { SidebarCollapseButton } from "./components/SidebarCollapseButton";
 import { MobileSidebar } from "./components/MobileSidebar";
 import { AppHeader } from "./components/AppHeader";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBusinessProfile } from "@/lib/business-profile-context";
 import { useMediaQueries } from "@/hooks/use-media-query";
 import { navItems } from "./nav-items"; // Import navItems directly
 import { useUser } from "@/hooks/use-user";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { SettingsIcon, HelpCircleIcon } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 import Link from "next/link";
 
 // Custom hook for sidebar state management
 const useSidebarState = () => {
-  // Initialize state from localStorage if available, otherwise default to true (open)
-  const [open, setOpen] = React.useState(() => {
-    if (typeof window !== "undefined") {
+  // Initialize with a default state (closed) to avoid hydration mismatch
+  const [open, setOpen] = React.useState(false);
+  const [initialized, setInitialized] = React.useState(false);
+
+  // Use useEffect to update state from localStorage after initial render
+  React.useEffect(() => {
+    if (!initialized) {
       const savedState = localStorage.getItem("sidebar_state");
-      return savedState !== null ? savedState === "true" : true;
+      setOpen(savedState !== null ? savedState === "true" : true);
+      setInitialized(true);
     }
-    return true;
-  });
+  }, [initialized]);
 
   // Toggle sidebar open/closed
   const toggleSidebar = React.useCallback(() => {
     setOpen((prev) => {
       const newState = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("sidebar_state", String(newState));
-      }
+      localStorage.setItem("sidebar_state", String(newState));
       return newState;
     });
   }, []);
@@ -83,8 +79,8 @@ export function Sidebar({ children }: SidebarProps) {
       {!isMobile && (
         <aside
           className={cn(
-            "fixed top-0 left-0 h-full z-40 transition-all duration-200 ease-in-out",
-            "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
+            "fixed top-0 left-0 h-full z-40 transition-all duration-300 ease-in-out",
+            "bg-white border-r border-gray-200 shadow-sm",
             open ? "w-64" : "w-16"
           )}
           style={{ pointerEvents: "auto" }}
@@ -106,8 +102,8 @@ export function Sidebar({ children }: SidebarProps) {
             </div>
 
             {/* Navigation - Main Menu */}
-            <div className="flex-1 overflow-y-auto py-4">
-              <div className={cn(open ? "px-4 mb-2" : "px-0 mb-2")}>
+            <div className="flex-1 overflow-y-auto py-3">
+              <div className={cn(open ? "px-5 mb-2" : "px-0 mb-2")}>
                 <p
                   className={cn(
                     "text-xs font-medium text-gray-500 uppercase tracking-wider",
@@ -125,41 +121,16 @@ export function Sidebar({ children }: SidebarProps) {
               />
             </div>
 
-            {/* Other Section */}
-            <div className="px-4 py-2">
-              <p
-                className={cn(
-                  "text-xs font-medium text-gray-500 uppercase tracking-wider mb-2",
-                  !open && "text-center"
-                )}
-              >
-                {open ? "OTHER" : ""}
-              </p>
-              <div className="space-y-1">
-                <Link
-                  href="/settings"
-                  className={cn(
-                    "flex w-full items-center px-3 py-2 text-sm font-medium rounded-md",
-                    "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
-                    !open && "justify-center px-2"
-                  )}
-                >
-                  <SettingsIcon className={cn("h-5 w-5", open && "mr-2")} />
-                  {open && "Settings"}
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800",
-                    !open && "justify-center px-2"
-                  )}
-                >
-                  <HelpCircleIcon className={cn("h-5 w-5", open && "mr-2")} />
-                  {open && "Help Center"}
-                </Button>
+            {/* Settings Icon */}
+            {!open && (
+              <div className="flex justify-center mb-2">
+                <Tooltip content="Settings" position="right">
+                  <Link href="/settings">
+                    <SettingsIcon className="h-5 w-5 text-gray-600 hover:text-gray-900" />
+                  </Link>
+                </Tooltip>
               </div>
-            </div>
+            )}
 
             {/* User Profile */}
             <SidebarUserProfile
@@ -175,25 +146,18 @@ export function Sidebar({ children }: SidebarProps) {
       {isMobile && (
         <>
           {/* Mobile Menu Button */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="fixed top-4 left-4 z-40">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setOpenMobile(!openMobile)}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                  >
-                    <MenuIcon className="h-5 w-5" />
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                Open Menu
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip content="Open Menu" position="right">
+            <div className="fixed top-4 left-4 z-40">
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={() => setOpenMobile(!openMobile)}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
+              >
+                <MenuIcon className="h-5 w-5" />
+              </Button>
+            </div>
+          </Tooltip>
 
           {/* Mobile Sidebar Component */}
           <MobileSidebar

@@ -9,11 +9,14 @@ interface BillingWrapperProps {
   isLoading?: boolean;
 }
 
-export function BillingWrapper({ children, isLoading = false }: BillingWrapperProps) {
+export function BillingWrapper({
+  children,
+  isLoading = false,
+}: BillingWrapperProps) {
   // If loading, show skeleton UI
   if (isLoading) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm rounded-xl">
         <CardHeader>
           <Skeleton className="h-8 w-48" />
         </CardHeader>

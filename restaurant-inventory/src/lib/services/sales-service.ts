@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/browser-client';
 import { Dish, Sale } from '@/lib/types';
 import { format } from 'date-fns';
 

@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FiAlertCircle } from "react-icons/fi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import EntityNotes from "@/components/EntityNotes";
+import EntityNotes from "@/app/(protected)/notes/EntityNotes";
 
 interface SupplierModalProps {
   isOpen: boolean;

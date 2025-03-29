@@ -39,13 +39,28 @@ export async function middleware(request: NextRequest) {
   // Get the pathname from the URL
   const { pathname, search } = request.nextUrl;
   const path = pathname + search;
-  
+
   console.log(`Middleware processing: ${path}`);
+
+  // Create the response early so we can modify headers
+  const response = NextResponse.next({
+    request,
+  });
+
+  // Define path patterns for different route types
+  const authCallbackPattern = /^\/auth\/callback/;
+  const publicPattern = /^\/(api|_next\/static|_next\/image|favicon\.ico|.*\.(svg|png|jpg|jpeg|gif|webp)$)/;
+
+  // Important: Special handling for auth callback to ensure it works properly
+  if (authCallbackPattern.test(pathname)) {
+    console.log('Auth callback request detected, permitting access');
+    return response;
+  }
 
   // Skip middleware for public paths and static assets
   if (
     publicPaths.some((publicPath) => pathname.startsWith(publicPath)) ||
-    pathname.match(/\.(jpg|jpeg|png|gif|svg|ico|css|js)$/)
+    publicPattern.test(pathname)
   ) {
     console.log(`Skipping middleware for public path: ${pathname}`);
     return NextResponse.next();
@@ -59,29 +74,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Create a Supabase client for auth checks
+  // Create a Supabase client with the correct SSR pattern
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => request.cookies.get(name)?.value,
-        set: () => {}, 
-        remove: () => {}, 
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // First set on the request object
+            request.cookies.set(name, value);
+
+            // Then set on the response object
+            response.cookies.set(name, value, options);
+          });
+        },
       },
     }
   );
 
   // Get the user's session
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // Create a response object that we'll modify based on auth status
-  const response = NextResponse.next();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // If user is authenticated
-  if (session) {
+  if (user) {
     // Set a cookie to indicate authentication status (for client-side checks)
     response.cookies.set("is-authenticated", "true", {
       httpOnly: false, // Make it accessible to JavaScript
@@ -92,7 +113,7 @@ export async function middleware(request: NextRequest) {
     });
 
     // Set user ID cookie for client-side access
-    response.cookies.set("user-id", session.user.id, {
+    response.cookies.set("user-id", user.id, {
       httpOnly: false, // Make it accessible to JavaScript
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -134,9 +155,9 @@ export async function middleware(request: NextRequest) {
   // If user is trying to access a protected path, redirect to login
   if (protectedPaths.some((protectedPath) => pathname.startsWith(protectedPath))) {
     console.log(`Unauthenticated user trying to access protected path: ${pathname}, redirecting to login`);
-    const redirectUrl = new URL("/login", request.url);
-    redirectUrl.searchParams.set("redirectTo", encodeURIComponent(path));
-    return NextResponse.redirect(redirectUrl);
+    const url = new URL("/login", request.url);
+    url.searchParams.set("redirectTo", encodeURIComponent(path));
+    return NextResponse.redirect(url);
   }
 
   // User is not authenticated but accessing a public or auth path, allow access
@@ -153,6 +174,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

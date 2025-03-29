@@ -1,8 +1,6 @@
 "use client";
 
 import { FileBarChart2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 interface EmptyStateProps {
   title?: string;
@@ -18,19 +16,24 @@ export function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <Card className="flex flex-col items-center justify-center p-8 text-center">
-      <div className="p-3 bg-primary/10 rounded-xl mb-4">
-        <FileBarChart2 className="h-8 w-8 text-primary" />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 py-10">
+      <div className="flex flex-col items-center justify-center text-center px-6">
+        <div className="p-4 bg-blue-50 rounded-xl mb-5 border border-blue-100 w-16 h-16 flex items-center justify-center">
+          <FileBarChart2 className="h-8 w-8 text-blue-500" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+        <p className="text-sm text-gray-500 mt-2 mb-6 max-w-md">
+          {description}
+        </p>
+        {onAction && (
+          <button
+            onClick={onAction}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium shadow-sm hover:shadow transition-all duration-200"
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-sm text-muted-foreground mt-2 mb-4 max-w-sm">
-        {description}
-      </p>
-      {onAction && (
-        <Button variant="outline" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
-    </Card>
+    </div>
   );
 }

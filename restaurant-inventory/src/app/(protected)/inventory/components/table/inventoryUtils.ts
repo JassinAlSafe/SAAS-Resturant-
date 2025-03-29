@@ -1,4 +1,4 @@
-import { InventoryItem } from "@/lib/types";
+import { InventoryItem, GroupedInventoryItem } from "@/lib/types";
 
 // Helper function to pluralize units correctly
 export const formatUnit = (quantity: number, unit: string): string => {
@@ -21,22 +21,40 @@ export const formatUnit = (quantity: number, unit: string): string => {
         : pluralRules[unit.toLowerCase()] || `${unit}s`;
 };
 
-// Calculate reorder level if not provided
-export const getReorderLevel = (item: InventoryItem): number => {
-    return item.reorder_point || item.minimum_stock_level || 5; // Default to 5 if not specified
+// Check if item is out of stock
+export const isOutOfStock = (item: InventoryItem): boolean => {
+    return item.quantity <= 0;
 };
 
 // Check if item is low on stock
 export const isLowStock = (item: InventoryItem): boolean => {
-    return (
-        item.quantity > 0 &&
-        item.quantity <= (item.reorder_point || item.minimum_stock_level || 5)
-    );
+    // If we have a reorder point or minimum stock level, use that
+    if (
+        (item.reorder_point && item.quantity <= item.reorder_point) ||
+        (item.minimum_stock_level && item.quantity <= item.minimum_stock_level)
+    ) {
+        return true;
+    }
+
+    // Default threshold is 20% of max stock if defined, otherwise 5 units
+    const maxStock = item.max_stock || 25;
+    const threshold = Math.max(5, maxStock * 0.2);
+    return item.quantity <= threshold;
 };
 
-// Check if item is out of stock
-export const isOutOfStock = (item: InventoryItem): boolean => {
-    return item.quantity === 0;
+// Get reorder level if not provided
+export const getReorderLevel = (item: InventoryItem): number => {
+    // If we have a reorder point or minimum stock level, use that
+    if (item.reorder_point) {
+        return item.reorder_point;
+    }
+    if (item.minimum_stock_level) {
+        return item.minimum_stock_level;
+    }
+
+    // Default threshold is 20% of max stock if defined, otherwise 5 units
+    const maxStock = item.max_stock || 25;
+    return Math.max(5, maxStock * 0.2);
 };
 
 // Get stock status letter
@@ -49,26 +67,41 @@ export const getStockStatusLetter = (item: InventoryItem): string => {
 
 // Get stock status color
 export const getStockStatusColor = (item: InventoryItem): string => {
-    const status = getStockStatusLetter(item);
-    if (status === "C")
-        return "text-red-600 bg-red-50 dark:bg-red-900/20 border-red-200/40 dark:border-red-800/30";
-    if (status === "B")
-        return "text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200/40 dark:border-amber-800/30";
-    return "text-green-600 bg-green-50 dark:bg-green-900/20 border-green-200/40 dark:border-green-800/30";
+    if (isOutOfStock(item)) {
+        return "text-error border-error/30 bg-error/10";
+    }
+    if (isLowStock(item)) {
+        return "text-warning border-warning/30 bg-warning/10";
+    }
+    return "text-success border-success/30 bg-success/10";
+};
+
+// Calculate cost per unit
+export const calculateCostPerUnit = (item: InventoryItem): number => {
+    if (item.quantity <= 0 || !item.cost_per_unit) {
+        return 0;
+    }
+    return item.cost_per_unit;
+};
+
+// Calculate total inventory value
+export const calculateInventoryValue = (items: GroupedInventoryItem[]): number => {
+    return items.reduce((total, item) => {
+        return total + item.totalQuantity * item.cost;
+    }, 0);
 };
 
 // Calculate inventory statistics
 export const calculateInventoryStats = (
     items: InventoryItem[],
-    selectedItems: string[],
-    formatCurrency: (value: number) => string
+    selectedItems: string[]
 ) => {
     return {
         totalItems: items.length,
-        totalValue: items.reduce(
-            (sum, item) => sum + item.cost_per_unit * item.quantity,
-            0
-        ),
+        totalValue: items.reduce((total, item) => {
+            const itemValue = item.quantity * (item.cost_per_unit || 0);
+            return total + itemValue;
+        }, 0),
         lowStockItems: items.filter((item) => isLowStock(item)).length,
         outOfStockItems: items.filter((item) => isOutOfStock(item)).length,
         inStockItems: items.filter(
@@ -79,8 +112,8 @@ export const calculateInventoryStats = (
         selectedItemsValue: selectedItems.length > 0
             ? selectedItems.reduce((sum, id) => {
                 const item = items.find((i) => i.id === id);
-                return sum + (item ? item.cost_per_unit * item.quantity : 0);
+                return sum + (item ? calculateCostPerUnit(item) * item.quantity : 0);
             }, 0)
             : 0
     };
-}; 
+};

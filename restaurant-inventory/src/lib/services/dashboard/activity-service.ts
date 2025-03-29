@@ -26,7 +26,7 @@ const CACHE_TTL = 30000;
 /**
  * Fetch recent activities for the dashboard with caching
  */
-export async function fetchRecentActivity(): Promise<ActivityItem[]> {
+export async function fetchRecentActivity(_options?: { signal?: AbortSignal }): Promise<ActivityItem[]> {
     try {
         // Check if we have valid cached data
         if (

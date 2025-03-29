@@ -1,32 +1,109 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+type TooltipProps = {
+  children: React.ReactNode;
+  content: React.ReactNode;
+  position?: "top" | "bottom" | "left" | "right";
+  color?:
+    | "neutral"
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "info"
+    | "success"
+    | "warning"
+    | "error";
+  open?: boolean;
+  className?: string;
+  contentClassName?: string;
+};
 
-const TooltipProvider = TooltipPrimitive.Provider
+// Provider component for context
+const TooltipContext = React.createContext<{ open: boolean }>({ open: false });
 
-const Tooltip = TooltipPrimitive.Root
+const TooltipProvider = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <TooltipContext.Provider value={{ open: false }}>
+      {children}
+    </TooltipContext.Provider>
+  );
+};
 
-const TooltipTrigger = TooltipPrimitive.Trigger
+// Trigger component
+type TooltipTriggerProps = {
+  children: React.ReactNode;
+  asChild?: boolean;
+};
 
-const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
-      )}
-      {...props}
-    />
-  </TooltipPrimitive.Portal>
-))
-TooltipContent.displayName = TooltipPrimitive.Content.displayName
+const TooltipTrigger = React.forwardRef<HTMLDivElement, TooltipTriggerProps>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ({ children, asChild }, ref) => {
+    return <div ref={ref}>{children}</div>;
+  }
+);
+TooltipTrigger.displayName = "TooltipTrigger";
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+// Content component
+type TooltipContentProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
+  ({ children, className }, ref) => {
+    return (
+      <div ref={ref} className={cn("tooltip-content", className)}>
+        {children}
+      </div>
+    );
+  }
+);
+TooltipContent.displayName = "TooltipContent";
+
+// Main tooltip component
+const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
+  (
+    {
+      children,
+      content,
+      position = "top",
+      color,
+      open = false,
+      className,
+      contentClassName,
+    },
+    ref
+  ) => {
+    const positionClass = position ? `tooltip-${position}` : "";
+    const colorClass = color ? `tooltip-${color}` : "";
+    const openClass = open ? "tooltip-open" : "";
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "tooltip",
+          positionClass,
+          colorClass,
+          openClass,
+          className
+        )}
+        data-tip={typeof content === "string" ? content : undefined}
+      >
+        {typeof content !== "string" && (
+          <div className="tooltip-content">
+            <div className={cn(contentClassName)}>{content}</div>
+          </div>
+        )}
+        {children}
+      </div>
+    );
+  }
+);
+
+Tooltip.displayName = "Tooltip";
+
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

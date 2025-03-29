@@ -48,15 +48,15 @@ export function InventoryStatsDashboard({
     >
       {/* Total Items Card */}
       <motion.div variants={item}>
-        <Card className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="p-2 rounded-md bg-blue-50 text-blue-600">
+        <Card className="flex items-center gap-4 p-4 border border-base-300 bg-base-100 shadow-sm">
+          <div className="p-2 rounded-md bg-primary/10 text-primary">
             <Package size={20} />
           </div>
           <div>
-            <div className="text-sm text-slate-500">Total Items</div>
+            <div className="text-sm text-base-content/60">Total Items</div>
             <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold">{stats.totalItems}</div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xl font-semibold text-base-content">{stats.totalItems}</div>
+              <div className="text-xs text-base-content/40">
                 {stats.categories} categories
               </div>
             </div>
@@ -66,17 +66,17 @@ export function InventoryStatsDashboard({
 
       {/* Inventory Value Card */}
       <motion.div variants={item}>
-        <Card className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="p-2 rounded-md bg-green-50 text-green-600">
+        <Card className="flex items-center gap-4 p-4 border border-base-300 bg-base-100 shadow-sm">
+          <div className="p-2 rounded-md bg-success/10 text-success">
             <DollarSign size={20} />
           </div>
           <div>
-            <div className="text-sm text-slate-500">Inventory Value</div>
+            <div className="text-sm text-base-content/60">Inventory Value</div>
             <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold">
+              <div className="text-xl font-semibold text-base-content">
                 {formatCurrency(stats.totalValue)}
               </div>
-              <div className="text-xs text-slate-400">Total cost</div>
+              <div className="text-xs text-base-content/40">Total cost</div>
             </div>
           </div>
         </Card>
@@ -84,17 +84,17 @@ export function InventoryStatsDashboard({
 
       {/* In Stock Card */}
       <motion.div variants={item}>
-        <Card className="flex items-center gap-4 p-4 border border-slate-200 border-l-4 border-l-green-500 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="p-2 rounded-md bg-green-50 text-green-600">
+        <Card className="flex items-center gap-4 p-4 border border-base-300 border-l-4 border-l-success bg-base-100 shadow-sm">
+          <div className="p-2 rounded-md bg-success/10 text-success">
             <Check size={20} />
           </div>
           <div>
-            <div className="text-sm text-slate-500">In Stock</div>
+            <div className="text-sm text-base-content/60">In Stock</div>
             <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-green-600">
+              <div className="text-xl font-semibold text-success">
                 {stats.inStockItems}
               </div>
-              <div className="text-xs text-green-500">
+              <div className="text-xs text-success/70">
                 {stats.totalItems > 0
                   ? Math.round((stats.inStockItems / stats.totalItems) * 100)
                   : 0}
@@ -107,21 +107,21 @@ export function InventoryStatsDashboard({
 
       {/* Low Stock Card */}
       <motion.div variants={item}>
-        <Card className="flex items-center gap-4 p-4 border border-slate-200 border-l-4 border-l-amber-500 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="p-2 rounded-md bg-amber-50 text-amber-600">
+        <Card className="flex items-center gap-4 p-4 border border-base-300 border-l-4 border-l-warning bg-base-100 shadow-sm">
+          <div className="p-2 rounded-md bg-warning/10 text-warning">
             <AlertTriangle size={20} />
           </div>
           <div>
-            <div className="text-sm text-slate-500">Low Stock</div>
+            <div className="text-sm text-base-content/60">Low Stock</div>
             <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-amber-600">
+              <div className="text-xl font-semibold text-warning">
                 {stats.lowStockItems}
               </div>
-              <div className="text-xs text-amber-500">
+              <div className="text-xs text-warning/70">
                 {stats.totalItems > 0
                   ? Math.round((stats.lowStockItems / stats.totalItems) * 100)
                   : 0}
-                % needs reordering
+                % of inventory
               </div>
             </div>
           </div>
@@ -130,21 +130,21 @@ export function InventoryStatsDashboard({
 
       {/* Out of Stock Card */}
       <motion.div variants={item}>
-        <Card className="flex items-center gap-4 p-4 border border-slate-200 border-l-4 border-l-red-500 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="p-2 rounded-md bg-red-50 text-red-600">
+        <Card className="flex items-center gap-4 p-4 border border-base-300 border-l-4 border-l-error bg-base-100 shadow-sm">
+          <div className="p-2 rounded-md bg-error/10 text-error">
             <Ban size={20} />
           </div>
           <div>
-            <div className="text-sm text-slate-500">Out of Stock</div>
+            <div className="text-sm text-base-content/60">Out of Stock</div>
             <div className="flex items-baseline gap-2">
-              <div className="text-xl font-semibold text-red-600">
+              <div className="text-xl font-semibold text-error">
                 {stats.outOfStockItems}
               </div>
-              <div className="text-xs text-red-500">
+              <div className="text-xs text-error/70">
                 {stats.totalItems > 0
                   ? Math.round((stats.outOfStockItems / stats.totalItems) * 100)
                   : 0}
-                % depleted
+                % of inventory
               </div>
             </div>
           </div>

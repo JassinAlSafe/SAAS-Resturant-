@@ -14,66 +14,29 @@ import {
   LineElement,
 } from "chart.js";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertCircle,
-  RefreshCw,
-  Calendar,
-  Download,
-  FileBarChart2,
-  Filter,
-  MoreHorizontal,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 
 // Components
 import {
   SalesAnalyticsView,
   InventoryUsageView,
-  DateRangeSelector,
   ExecutiveDashboard,
+  ReportsTabs,
+  ReportsWrapper,
+  ReportsHeader,
 } from "./components";
+import { ReportFilters } from "./components/ReportsFilter";
+import { ActiveFilterPills } from "./components/ActiveFilterPills";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 // Hooks
 import { useReports } from "./hooks/useReports";
 
-// Add a direct import for TabType to ensure it's recognized
-import { TabType } from "./types";
-
-// Register ChartJS components
+// Register ChartJS components once
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -86,22 +49,111 @@ ChartJS.register(
   LineElement
 );
 
+// Loading component for the Suspense fallback
+function ReportsLoadingState() {
+  return (
+    <div className="container mx-auto py-6 space-y-6 max-w-6xl px-4">
+      <div className="flex flex-col gap-4 text-center">
+        <Skeleton className="h-10 w-1/3 mx-auto" />
+        <Skeleton className="h-5 w-2/3 mx-auto" />
+      </div>
+
+      <Card className="border-none shadow-sm rounded-xl">
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-2 text-center">
+                <Skeleton className="h-4 w-20 mb-2 mx-auto" />
+                <div className="flex justify-center">
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center">
+        <Skeleton className="h-12 w-full max-w-2xl rounded-full bg-orange-100/30" />
+      </div>
+
+      <Card className="border-none shadow-sm rounded-xl">
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Error display component
+function ErrorDisplay({ error, onRetry }) {
+  return (
+    <div className="container mx-auto max-w-6xl px-4 py-8">
+      <ReportsWrapper
+        title="Error Loading Reports"
+        description="We encountered an issue while loading your report data."
+      >
+        <div className="flex flex-col items-center justify-center py-8">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <p className="text-gray-700 mb-4">
+            {typeof error === "object" && error !== null && "message" in error
+              ? (error as { message: string }).message
+              : "Failed to load report data"}
+          </p>
+          <button
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full shadow-sm hover:bg-blue-600 transition-colors"
+            onClick={onRetry}
+          >
+            <RefreshCw size={16} />
+            Try again
+          </button>
+        </div>
+      </ReportsWrapper>
+    </div>
+  );
+}
+
+// Stat card component
+function StatCard({ title, value, subtext, link, linkText }) {
+  return (
+    <ReportsWrapper>
+      <div className="p-5 flex flex-col">
+        <span className="text-gray-500 text-sm font-medium">{title}</span>
+        <span className="text-2xl font-bold mt-1">{value}</span>
+        <div className="flex items-center mt-1.5">
+          {subtext ? (
+            <span className={subtext.className}>{subtext.text}</span>
+          ) : null}
+          {link ? (
+            <a href={link} className="text-blue-500 text-sm">
+              {linkText}
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </ReportsWrapper>
+  );
+}
+
 function ReportsContent() {
   const [currentTime, setCurrentTime] = useState("--:--:--");
+  const [filters, setFilters] = useState<ReportFilters>({
+    searchTerm: "",
+    category: "all",
+    minAmount: undefined,
+    maxAmount: undefined,
+  });
 
+  // Time update effect
   useEffect(() => {
-    // Set initial time
-    setCurrentTime(format(new Date(), "HH:mm:ss"));
-
-    // Update time every second
-    const timer = setInterval(() => {
-      setCurrentTime(format(new Date(), "HH:mm:ss"));
-    }, 1000);
-
+    const updateTime = () => setCurrentTime(format(new Date(), "HH:mm:ss"));
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Use our custom hook to manage state and data
+  // Report data hook
   const {
     activeTab,
     setActiveTab: setActiveTabState,
@@ -120,275 +172,147 @@ function ReportsContent() {
     getPercentageChange,
   } = useReports();
 
-  if (error) {
+  // Memoized handlers
+  const handleFilterChange = useCallback((newFilters: ReportFilters) => {
+    setFilters(newFilters);
+    console.log("Filters changed:", newFilters);
+  }, []);
+
+  const handleRemoveFilter = useCallback((key: keyof ReportFilters) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev };
+      if (key === "category") {
+        newFilters.category = "all";
+      } else if (key === "searchTerm") {
+        newFilters.searchTerm = "";
+      } else {
+        newFilters[key] = undefined;
+      }
+      return newFilters;
+    });
+  }, []);
+
+  const handleExportReport = useCallback(() => {
+    toast.success("Report exported successfully");
+  }, []);
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
     return (
-      <div className="container mx-auto max-w-6xl">
-        <Alert variant="destructive" className="my-8">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {typeof error === "object" && "message" in error
-              ? (error as { message: string }).message
-              : "Failed to load report data"}
-          </AlertDescription>
-          <Button
-            variant="outline"
-            onClick={refetchData}
-            className="mt-4 flex items-center gap-2"
-          >
-            <RefreshCw size={14} />
-            Try again
-          </Button>
-        </Alert>
-      </div>
+      filters.searchTerm ||
+      filters.category !== "all" ||
+      filters.minAmount ||
+      filters.maxAmount
     );
+  }, [filters]);
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={refetchData} />;
   }
 
   return (
-    <div className="container mx-auto max-w-6xl py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-      {/* Header section with improved layout */}
-      <div className="space-y-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl">
-              <FileBarChart2 className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Reports & Analytics
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                View unified sales, inventory, and business analytics
-              </p>
-            </div>
-          </div>
+    <div className="container mx-auto py-6 space-y-6 max-w-6xl px-4">
+      {/* Page header */}
+      <ReportsHeader
+        currentTime={currentTime}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        customDateRange={customDateRange}
+        setCustomDateRange={setCustomDateRange}
+        onExport={handleExportReport}
+        onFilterChange={handleFilterChange}
+        activeTab={activeTab}
+      />
 
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-md text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{currentTime}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Data is refreshed every 5 minutes</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+      {/* Stats Overview Cards */}
+      {executiveSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard
+            title="Total Sales"
+            value={formatCurrency(executiveSummary.currentSales)}
+            subtext={{
+              className: `text-sm ${
+                executiveSummary.salesGrowth >= 0
+                  ? "text-green-500"
+                  : "text-red-500"
+              }`,
+              text: `${
+                executiveSummary.salesGrowth >= 0 ? "+" : ""
+              }${executiveSummary.salesGrowth.toFixed(1)}%`,
+            }}
+          />
 
-            <div className="flex items-center gap-2">
-              <DateRangeSelector
-                dateRange={dateRange}
-                setDateRange={setDateRange}
-                customDateRange={customDateRange}
-                setCustomDateRange={setCustomDateRange}
-              />
+          <StatCard
+            title="Low Stock Items"
+            value={executiveSummary.lowStockCount}
+            link="/inventory?filter=low-stock"
+            linkText="View items"
+          />
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="relative">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem
-                    onClick={refetchData}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span>Refresh data</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="flex items-center gap-2"
-                    onClick={() => {
-                      toast.info("Coming soon", {
-                        description:
-                          "Export functionality will be available in the next update.",
-                      });
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Export report</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="flex items-center gap-2"
-                    onClick={() => {
-                      toast.info("Coming soon", {
-                        description:
-                          "Filter functionality will be available in the next update.",
-                      });
-                    }}
-                  >
-                    <Filter className="h-4 w-4" />
-                    <span>Advanced filters</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <StatCard
+            title="Out of Stock Items"
+            value={executiveSummary.outOfStockCount}
+            link="/shopping-list"
+            linkText="Go to Shopping List"
+          />
         </div>
+      )}
 
-        {/* Quick Stats Section */}
-        {executiveSummary && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-white relative overflow-hidden border border-border/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-              <CardHeader className="pb-2">
-                <CardDescription>Total Sales</CardDescription>
-                <CardTitle className="text-2xl">
-                  {formatCurrency(executiveSummary.currentSales)}
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="pt-0">
-                <Badge
-                  variant={
-                    executiveSummary.salesGrowth >= 0
-                      ? "default"
-                      : "destructive"
-                  }
-                  className="font-normal"
-                >
-                  {executiveSummary.salesGrowth >= 0 ? "+" : ""}
-                  {executiveSummary.salesGrowth.toFixed(1)}% vs last period
-                </Badge>
-              </CardFooter>
-            </Card>
+      {/* Active Filters */}
+      {hasActiveFilters && (
+        <div className="mb-6">
+          <ActiveFilterPills
+            filters={filters}
+            onRemoveFilter={handleRemoveFilter}
+            activeTab={activeTab}
+          />
+        </div>
+      )}
 
-            <Card className="bg-white relative overflow-hidden border border-border/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent" />
-              <CardHeader className="pb-2">
-                <CardDescription>Profit Margin</CardDescription>
-                <CardTitle className="text-2xl">
-                  {executiveSummary.profitMargin.toFixed(1)}%
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="pt-0">
-                <p className="text-xs text-muted-foreground">
-                  Based on cost and revenue analysis
-                </p>
-              </CardFooter>
-            </Card>
-
-            <Card className="bg-white relative overflow-hidden border border-border/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent" />
-              <CardHeader className="pb-2">
-                <CardDescription>Low Stock Items</CardDescription>
-                <CardTitle className="text-2xl">
-                  {executiveSummary.lowStockCount}
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="pt-0">
-                <Button
-                  variant="link"
-                  className="px-0 h-auto font-normal"
-                  asChild
-                >
-                  <a href="/inventory?filter=low-stock">View items →</a>
-                </Button>
-              </CardFooter>
-            </Card>
-
-            <Card className="bg-white relative overflow-hidden border border-border/40">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-transparent" />
-              <CardHeader className="pb-2">
-                <CardDescription>Out of Stock Items</CardDescription>
-                <CardTitle className="text-2xl">
-                  {executiveSummary.outOfStockCount}
-                </CardTitle>
-              </CardHeader>
-              <CardFooter className="pt-0">
-                <Button
-                  variant="link"
-                  className="px-0 h-auto font-normal"
-                  asChild
-                >
-                  <a href="/shopping-list">Go to Shopping List →</a>
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-        )}
+      {/* Tabs */}
+      <div className="flex justify-center">
+        <ReportsTabs activeTab={activeTab} onTabChange={setActiveTabState} />
       </div>
 
-      <Separator />
-
-      {/* Improved Tabs UI */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          // Fix the type mismatch by ensuring value is treated as TabType
-          if (
-            value === "sales" ||
-            value === "inventory" ||
-            value === "executive"
-          ) {
-            setActiveTabState(value);
-          }
-        }}
-        className="space-y-8"
+      {/* Tab Content */}
+      <ReportsWrapper
+        isLoading={!executiveSummary && activeTab === "executive"}
       >
-        <div className="flex justify-center">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="executive" className="rounded-md">
-              Executive
-            </TabsTrigger>
-            <TabsTrigger value="sales" className="rounded-md">
-              Sales
-            </TabsTrigger>
-            <TabsTrigger value="inventory" className="rounded-md">
-              Inventory
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="executive" className="space-y-6">
-          {executiveSummary ? (
-            <ExecutiveDashboard
-              salesData={{
-                currentSales: executiveSummary.currentSales,
-                previousSales: executiveSummary.previousSales,
-                salesGrowth: executiveSummary.salesGrowth,
-                profitMargin: executiveSummary.profitMargin,
-              }}
-              inventoryData={{
-                lowStockCount: executiveSummary.lowStockCount,
-                outOfStockCount: executiveSummary.outOfStockCount,
-                criticalItems: executiveSummary.criticalItems,
-              }}
-              topDishes={executiveSummary.topDishes as string[]}
-              formatCurrency={formatCurrency}
-            />
-          ) : (
-            <div className="h-40 flex justify-center items-center">
-              <div className="flex flex-col items-center">
-                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-                <p className="text-muted-foreground">
-                  Loading dashboard data...
-                </p>
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="sales" className="space-y-6">
-          <SalesAnalyticsView
-            salesData={salesData || { labels: [], datasets: [] }}
-            topDishesData={topDishesData || { labels: [], datasets: [] }}
+        {activeTab === "executive" && executiveSummary && (
+          <ExecutiveDashboard
+            salesData={{
+              currentSales: executiveSummary.currentSales,
+              previousSales: executiveSummary.previousSales,
+              salesGrowth: executiveSummary.salesGrowth,
+              profitMargin: executiveSummary.profitMargin,
+            }}
+            inventoryData={{
+              lowStockCount: executiveSummary.lowStockCount,
+              outOfStockCount: executiveSummary.outOfStockCount,
+              criticalItems: executiveSummary.criticalItems,
+            }}
+            topDishes={executiveSummary.topDishes as string[]}
             formatCurrency={formatCurrency}
-            previousPeriodData={previousPeriodData}
-            getPercentageChange={getPercentageChange}
-            dateRange={dateRange}
           />
-        </TabsContent>
+        )}
 
-        <TabsContent value="inventory" className="space-y-6">
+        {activeTab === "sales" && (
+          <SalesAnalyticsView
+            salesData={(salesData as any) || { labels: [], datasets: [] }}
+            topDishesData={
+              (topDishesData as any) || { labels: [], datasets: [] }
+            }
+            formatCurrency={formatCurrency}
+            previousPeriodData={previousPeriodData || undefined}
+            getPercentageChange={getPercentageChange}
+            dateRange={String(dateRange || "7d")}
+          />
+        )}
+
+        {activeTab === "inventory" && (
           <InventoryUsageView
             inventoryUsageData={
-              inventoryUsageData || {
+              (inventoryUsageData as any) || {
                 labels: [],
                 datasets: [],
                 inventory: [],
@@ -396,34 +320,40 @@ function ReportsContent() {
             }
             onRefresh={refetchData}
           />
-        </TabsContent>
-      </Tabs>
+        )}
+      </ReportsWrapper>
     </div>
   );
 }
 
 export default function Reports() {
   return (
-    <ErrorBoundary
-      fallback={({ error, reset }) => (
-        <div className="container mx-auto py-8 px-4">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Something went wrong</AlertTitle>
-            <AlertDescription className="space-y-4">
-              <p>
-                {error.message ||
-                  "An unexpected error occurred in the Reports page"}
-              </p>
-              <Button variant="outline" onClick={reset}>
-                Try again
-              </Button>
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
-    >
-      <ReportsContent />
-    </ErrorBoundary>
+    <Suspense fallback={<ReportsLoadingState />}>
+      <ErrorBoundary
+        fallback={({ error, reset }) => (
+          <div className="container mx-auto py-8 px-4">
+            <ReportsWrapper
+              title="Something went wrong"
+              description={
+                error.message ||
+                "An unexpected error occurred in the Reports page"
+              }
+            >
+              <div className="flex justify-center my-4">
+                <button
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full shadow-sm hover:bg-blue-600 transition-colors"
+                  onClick={reset}
+                >
+                  <RefreshCw size={16} />
+                  Try again
+                </button>
+              </div>
+            </ReportsWrapper>
+          </div>
+        )}
+      >
+        <ReportsContent />
+      </ErrorBoundary>
+    </Suspense>
   );
 }

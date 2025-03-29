@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarThemeToggle } from "./SidebarThemeToggle";
 import { UserData } from "@/hooks/use-user";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
 interface AppHeaderProps {
@@ -27,30 +22,23 @@ export function AppHeader({
   setOpenMobile,
   user,
 }: AppHeaderProps) {
-  const [notificationCount, setNotificationCount] = React.useState(3);
+  const [notificationCount] = React.useState(3);
 
   return (
-    <header className="sticky top-0 z-10 h-16 px-4 border-b border-border/40 flex items-center justify-between bg-background/80 backdrop-blur-xs">
+    <header className="sticky top-0 z-10 h-16 px-4 border-b border-gray-200 flex items-center justify-between bg-background/80 backdrop-blur-xs">
       {/* Left side */}
       <div className="flex items-center gap-2">
         {isMobile && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setOpenMobile(!openMobile)}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10"
-                >
-                  <MenuIcon className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                Open Menu
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip content="Open Menu" position="right">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOpenMobile(!openMobile)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-primary/10"
+            >
+              <MenuIcon className="h-5 w-5" />
+            </Button>
+          </Tooltip>
         )}
         <div className="relative w-64 lg:w-72 hidden md:block">
           <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -64,32 +52,27 @@ export function AppHeader({
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10 relative"
+        <Tooltip content="Notifications" position="bottom">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-primary/10 relative"
+          >
+            <BellIcon className="h-5 w-5" />
+            {notificationCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
               >
-                <BellIcon className="h-5 w-5" />
-                {notificationCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-                  >
-                    {notificationCount}
-                  </Badge>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              Notifications
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+                {notificationCount}
+              </Badge>
+            )}
+          </Button>
+        </Tooltip>
 
-        <SidebarThemeToggle />
+        <div className="flex items-center justify-center">
+          <SidebarThemeToggle />
+        </div>
 
         {/* User greeting - only visible on larger screens */}
         <div className="hidden md:block">

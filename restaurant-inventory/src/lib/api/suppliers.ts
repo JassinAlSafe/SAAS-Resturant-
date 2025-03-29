@@ -1,5 +1,5 @@
 import { Supplier } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 
 export async function fetchSuppliers() {
     const { data, error } = await supabase

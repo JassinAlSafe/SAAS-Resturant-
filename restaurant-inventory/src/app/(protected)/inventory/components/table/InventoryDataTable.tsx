@@ -1,264 +1,412 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { InventoryItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { TableHeader } from "./TableHeader";
-import { TableItem } from "./TableItem";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ImageIcon, Pencil, Trash } from "lucide-react";
+import { ProxyImage } from "@/components/ui/proxy-image";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/components/ui/table";
 
 interface InventoryDataTableProps {
   items: InventoryItem[];
-  compactMode: boolean;
   selectedItems: string[];
-  expandedItems: Record<string, boolean>;
   onEditClick: (item: InventoryItem) => void;
   onDeleteClick: (item: InventoryItem) => void;
-  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void;
   toggleItemSelection: (itemId: string) => void;
   toggleAllItems: () => void;
-  toggleExpanded: (itemId: string) => void;
   formatCurrency: (value: number) => string;
-  sortField?: string;
-  sortDirection?: "asc" | "desc";
-  handleSort?: (field: string) => void;
+  isMobile?: boolean;
+  renderSortIndicator?: (column: string) => React.ReactNode;
+  handleHeaderClick?: (column: string) => void;
+}
+
+// Extended InventoryItem type to include possible image_url
+interface ExtendedInventoryItem extends InventoryItem {
+  image_url?: string;
 }
 
 export function InventoryDataTable({
   items,
-  compactMode,
   selectedItems,
-  expandedItems,
   onEditClick,
   onDeleteClick,
   onUpdateQuantity,
   toggleItemSelection,
   toggleAllItems,
-  toggleExpanded,
   formatCurrency,
-  sortField = "name",
-  sortDirection = "asc",
-  handleSort = () => {},
+  isMobile,
+  renderSortIndicator,
+  handleHeaderClick,
 }: InventoryDataTableProps) {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Category filter state
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  // Reset to first page when items change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [items.length, sortField, sortDirection]);
+  // Remove selectedIds state and use selectedItems from props instead
+  const selectedIdsMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    selectedItems.forEach((id) => (map[id] = true));
+    return map;
+  }, [selectedItems]);
 
-  // Calculate pagination values
-  const totalPages = Math.ceil(items.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, items.length);
-  const currentItems = items.slice(startIndex, endIndex);
-
-  // Page navigation functions
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  // Format product ID to be more user-friendly
+  const formatProductId = (id: string) => {
+    return `${id.substring(0, 4)}-${id.substring(4, 8)}`;
   };
 
-  const goToFirstPage = () => goToPage(1);
-  const goToPreviousPage = () => goToPage(currentPage - 1);
-  const goToNextPage = () => goToPage(currentPage + 1);
-  const goToLastPage = () => goToPage(totalPages);
+  // Filter items by category if needed
+  const filteredItems = activeCategory
+    ? items.filter((item) => item.category === activeCategory)
+    : items;
+
+  // Extract unique categories for quick filters
+  const categories = [...new Set(items.map((item) => item.category))].sort();
+
+  // Handle selection change
+  const handleSelectionChange = (itemId: string) => {
+    toggleItemSelection(itemId);
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Table Container */}
-      <div
-        className={cn(
-          "rounded-lg border-t border-b border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-200 flex-1",
-          compactMode ? "bg-slate-50/50" : "bg-white dark:bg-slate-950"
-        )}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            {/* Table Header */}
-            <thead>
-              <tr
-                className={cn(
-                  "border-b",
-                  compactMode
-                    ? "bg-slate-100/80"
-                    : "bg-slate-50/80 dark:bg-slate-900/30"
-                )}
+    <div className="flex flex-col h-full space-y-6">
+      {/* Category Filter Buttons */}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-gray-500 mr-2 flex items-center">
+            Filter by:
+          </span>
+          <Button
+            variant={activeCategory === null ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveCategory(null)}
+            className="text-xs"
+          >
+            All Categories
+            <Badge className="ml-2 bg-white text-gray-800" variant="outline">
+              {items.length}
+            </Badge>
+          </Button>
+          {categories.map((category) => {
+            const categoryCount = items.filter(
+              (item) => item.category === category
+            ).length;
+
+            return (
+              <Button
+                key={category}
+                variant={activeCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveCategory(category)}
+                className="text-xs"
               >
-                <th className="w-[40px] px-4 py-4 text-left">
+                {category}
+                <Badge
+                  className="ml-2 bg-white text-gray-800"
+                  variant="outline"
+                >
+                  {categoryCount}
+                </Badge>
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Traditional Table Approach */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        {/* Table Info Header */}
+        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <div className="text-sm text-gray-500">
+            Showing {filteredItems.length} unique products
+            {filteredItems.length < items.length && (
+              <> (from {items.length} total entries)</>
+            )}
+            . Similar items have been grouped together.
+          </div>
+        </div>
+
+        {/* The Table */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50 text-gray-600">
+                <TableHead className="w-12 p-3">
                   <div className="flex items-center justify-center">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      checked={
-                        selectedItems.length === items.length &&
-                        items.length > 0
-                      }
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       onChange={toggleAllItems}
+                      checked={
+                        filteredItems.length > 0 &&
+                        filteredItems.every((item) => selectedIdsMap[item.id])
+                      }
+                      aria-label="Select all items"
                     />
                   </div>
-                </th>
-                {!compactMode && (
-                  <th className="w-[60px] px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    #
-                  </th>
-                )}
-                {!compactMode && (
-                  <th className="w-[120px] px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                    SKU
-                  </th>
-                )}
-                <th className="px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
-                  <TableHeader
-                    label="Item"
-                    field="name"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    handleSort={handleSort}
-                  />
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
-                  <TableHeader
-                    label="Category"
-                    field="category"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    handleSort={handleSort}
-                  />
-                </th>
-                <th className="px-4 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer whitespace-nowrap">
-                  <TableHeader
-                    label="Price"
-                    field="cost_per_unit"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    handleSort={handleSort}
-                  />
-                </th>
-                <th className="px-4 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
-                  <TableHeader
-                    label="Stock"
-                    field="quantity"
-                    sortField={sortField}
-                    sortDirection={sortDirection}
-                    handleSort={handleSort}
-                  />
-                </th>
-                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="w-[100px] px-4 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
+                </TableHead>
+                <TableHead className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  ID
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("name")}
+                >
+                  <div className="flex items-center">
+                    Name
+                    {renderSortIndicator?.("name")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("category")}
+                >
+                  <div className="flex items-center">
+                    Category
+                    {renderSortIndicator?.("category")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("quantity")}
+                >
+                  <div className="flex items-center">
+                    Quantity
+                    {renderSortIndicator?.("quantity")}
+                  </div>
+                </TableHead>
+                <TableHead className="p-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Unit Type
+                </TableHead>
+                <TableHead
+                  className="p-3 text-right text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("cost")}
+                >
+                  <div className="flex items-center justify-end">
+                    Cost
+                    {renderSortIndicator?.("cost")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="p-3 text-right text-xs font-medium uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleHeaderClick?.("value")}
+                >
+                  <div className="flex items-center justify-end">
+                    Total Value
+                    {renderSortIndicator?.("value")}
+                  </div>
+                </TableHead>
+                <TableHead className="p-3 text-right text-xs font-medium uppercase tracking-wider">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <ImageIcon className="h-10 w-10 text-gray-400" />
+                      <p className="text-gray-500">No inventory items found</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredItems.map((item) => {
+                  const extendedItem = item as ExtendedInventoryItem;
+                  const totalValue = item.quantity * (item.cost_per_unit || 0);
+                  const isLowStock = item.quantity <= (item.reorder_level || 0);
 
-            {/* Table Body */}
-            <tbody
-              className={cn(
-                "divide-y",
-                compactMode
-                  ? "divide-slate-100"
-                  : "divide-slate-200 dark:divide-slate-800"
+                  return (
+                    <TableRow
+                      key={item.id}
+                      className={cn(
+                        "group border-b border-gray-200 hover:bg-gray-50/80",
+                        (item.cost_per_unit || 0) === 0 && "bg-gray-50/70",
+                        item.quantity < 0 && "bg-red-50/50",
+                        isLowStock && "bg-amber-50/50"
+                      )}
+                    >
+                      <TableCell className="p-3">
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={!!selectedIdsMap[item.id]}
+                            onChange={() => handleSelectionChange(item.id)}
+                            aria-label={`Select ${item.name}`}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <Tooltip content={`Product ID: ${item.id}`}>
+                          <span className="text-xs font-mono text-gray-500">
+                            {formatProductId(item.id)}
+                          </span>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 shrink-0 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
+                            {extendedItem.image_url ? (
+                              <div className="w-full h-full">
+                                <ProxyImage
+                                  src={extendedItem.image_url}
+                                  alt={item.name}
+                                  width={40}
+                                  height={40}
+                                  className="object-contain w-full h-full"
+                                />
+                              </div>
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <ImageIcon className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {item.name}
+                            {item.description && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {item.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <span className="text-gray-600">{item.category}</span>
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900">
+                            {item.quantity}
+                          </span>
+                          <div className="hidden group-hover:flex items-center space-x-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(
+                                  item.id,
+                                  Math.max(0, item.quantity - 1)
+                                );
+                              }}
+                            >
+                              <span className="sr-only">Decrease</span>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                              >
+                                <path d="M5 12h14" />
+                              </svg>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateQuantity(item.id, item.quantity + 1);
+                              }}
+                            >
+                              <span className="sr-only">Increase</span>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                              >
+                                <path d="M5 12h14" />
+                                <path d="M12 5v14" />
+                              </svg>
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-3">
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 bg-gray-50 text-gray-600"
+                        >
+                          {item.unit}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
+                        <span className="font-medium">
+                          {(item.cost_per_unit || 0) === 0
+                            ? "—"
+                            : formatCurrency(item.cost_per_unit || 0)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
+                        <span
+                          className={cn(
+                            "font-medium",
+                            totalValue === 0 && "text-gray-400",
+                            totalValue < 0 && "text-red-600",
+                            totalValue > 1000 && "text-green-600"
+                          )}
+                        >
+                          {totalValue === 0 ? "—" : formatCurrency(totalValue)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="p-3 text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center justify-center gap-1 text-gray-600 hover:text-gray-900"
+                            onClick={() => onEditClick(item)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span>Edit</span>
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex items-center justify-center gap-1 text-red-600 hover:text-red-800"
+                            onClick={() => onDeleteClick(item)}
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span>Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
-            >
-              {currentItems.map((item, index) => (
-                <TableItem
-                  key={item.id}
-                  item={item}
-                  index={startIndex + index + 1}
-                  isExpanded={expandedItems[item.id] || false}
-                  isSelected={selectedItems.includes(item.id)}
-                  compactMode={compactMode}
-                  onEditClick={onEditClick}
-                  onDeleteClick={onDeleteClick}
-                  onUpdateQuantity={onUpdateQuantity}
-                  toggleItemSelection={toggleItemSelection}
-                  toggleExpanded={toggleExpanded}
-                  formatCurrency={formatCurrency}
-                />
-              ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
-
-      {/* Pagination Controls */}
-      {items.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-          <div className="flex-1">
-            Showing {startIndex + 1} to {endIndex} of {items.length} items
-            {selectedItems.length > 0 && ` (${selectedItems.length} selected)`}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
-                onClick={goToFirstPage}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              <span className="px-3 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300">
-                {currentPage} / {totalPages}
-              </span>
-
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 text-slate-500 border-slate-200"
-                onClick={goToLastPage}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-
-              <select
-                className="ml-2 h-8 rounded-md border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 px-2 text-xs text-slate-700 dark:text-slate-300"
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-              >
-                <option value={5}>5 per page</option>
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

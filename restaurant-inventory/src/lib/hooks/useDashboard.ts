@@ -1,23 +1,27 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useDashboardStore } from '@/lib/stores/dashboard-store';
 import { useCurrency } from '@/lib/hooks/useCurrency';
 
-// Default refresh interval in milliseconds (10 minutes)
-const DEFAULT_REFRESH_INTERVAL = 10 * 60 * 1000;
+// Constants for configuration
+const DEFAULT_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const GLOBAL_MIN_REFRESH_INTERVAL = 15000; // 15 seconds minimum between refreshes
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 5000; // 5 seconds
 
-// Global variable to track initial fetch across all components
-let globalInitialFetchDone = false;
-
-// Global timestamp to track the last refresh across all components
-let globalLastRefreshTime = 0;
-
-// Global minimum time between refreshes (15 seconds)
-const GLOBAL_MIN_REFRESH_INTERVAL = 15000;
+// Use a React-friendly singleton pattern instead of globals
+const dashboardState = {
+    initialFetchDone: false,
+    lastRefreshTime: 0,
+    retryCount: 0,
+    activeInstances: 0
+};
 
 /**
- * Custom hook for dashboard data management with improved refresh cycle handling
+ * Enhanced hook for dashboard data management with improved refresh handling,
+ * error recovery, and performance optimizations
  */
 export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFRESH_INTERVAL) => {
+    // Access store state and actions
     const {
         stats,
         salesData,
@@ -34,57 +38,76 @@ export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFR
         setShouldRefresh
     } = useDashboardStore();
 
-    // Get currency formatting from our custom hook
+    // Currency formatting
     const { formatCurrency, currencySymbol } = useCurrency();
 
-    // Track component state with refs to avoid unnecessary rerenders
-    const isInitialMount = useRef(!globalInitialFetchDone);
-    const isRefreshingRef = useRef(false);
+    // Component state with refs to prevent unnecessary renders
+    const componentId = useRef(`dashboard-${Math.random().toString(36).substring(2, 9)}`);
+    const isInitialMount = useRef(!dashboardState.initialFetchDone);
     const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const localLastRefreshTime = useRef(globalLastRefreshTime);
-    
-    // Track local state for better debugging
+    const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const localLastRefreshTime = useRef(dashboardState.lastRefreshTime);
+
+    // Tracking state for debugging and UI feedback
     const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number | null>(null);
     const [refreshCount, setRefreshCount] = useState(0);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [retryAttempt, setRetryAttempt] = useState(0);
+    const [isInitialLoad, setIsInitialLoad] = useState(isInitialMount.current);
 
-    // Check if we have meaningful data
-    const hasData = useCallback(() => {
+    // Track component instances for better cleanup
+    useEffect(() => {
+        dashboardState.activeInstances++;
+
+        return () => {
+            dashboardState.activeInstances--;
+
+            // Reset global state if no instances remain
+            if (dashboardState.activeInstances === 0) {
+                dashboardState.retryCount = 0;
+            }
+        };
+    }, []);
+
+    // Check if we have meaningful data - memoized for performance
+    const hasData = useMemo(() => {
         // Check if we have any sales data
-        const hasSalesData = salesData && salesData.length > 0;
-        
-        // Check if we have any stats data
+        const hasSalesData = salesData?.length > 0;
+
+        // Check if we have any stats data with real values
         const hasStatsData = stats && (
-            stats.totalInventoryValue > 0 || 
-            stats.lowStockItems > 0 || 
+            stats.totalInventoryValue > 0 ||
+            stats.lowStockItems > 0 ||
             stats.monthlySales > 0 ||
             stats.salesGrowth !== 0
         );
-        
-        // Check if we have any category stats
-        const hasCategoryData = categoryStats && categoryStats.length > 0;
-        
-        // Check if we have any activity data
-        const hasActivityData = recentActivity && recentActivity.length > 0;
-        
-        // Check if we have any inventory alerts
-        const hasAlertData = inventoryAlerts && inventoryAlerts.length > 0;
-        
-        // Check if we have any top selling items
-        const hasTopSellingData = topSellingItems && topSellingItems.length > 0;
-        
-        // Return true if we have any meaningful data
-        return hasSalesData || hasStatsData || hasCategoryData || 
-               hasActivityData || hasAlertData || hasTopSellingData;
+
+        // Check if we have any other data types
+        const hasCategoryData = categoryStats?.length > 0;
+        const hasActivityData = recentActivity?.length > 0;
+        const hasAlertData = inventoryAlerts?.length > 0;
+        const hasTopSellingData = topSellingItems?.length > 0;
+
+        return hasSalesData || hasStatsData || hasCategoryData ||
+            hasActivityData || hasAlertData || hasTopSellingData;
     }, [salesData, stats, categoryStats, recentActivity, inventoryAlerts, topSellingItems]);
 
-    // Format stats for display
-    const formattedStats = {
+    // Format stats for display - memoized to prevent unnecessary recalculation
+    const formattedStats = useMemo(() => ({
         totalInventoryValue: formatCurrency(stats.totalInventoryValue || 0),
         lowStockItems: stats.lowStockItems || 0,
         monthlySales: formatCurrency(stats.monthlySales || 0),
         salesGrowth: `${stats.salesGrowth >= 0 ? '+' : ''}${stats.salesGrowth || 0}%`
-    };
+    }), [stats, formatCurrency]);
+
+    // Calculate data freshness state
+    const dataState = useMemo(() => {
+        if (!lastUpdated) return 'stale';
+        const ageInMs = Date.now() - lastUpdated;
+
+        if (ageInMs < refreshInterval * 0.5) return 'fresh';
+        if (ageInMs < refreshInterval) return 'aging';
+        return 'stale';
+    }, [lastUpdated, refreshInterval]);
 
     // Helper function to check if data is stale
     const isDataStale = useCallback(() => {
@@ -92,100 +115,132 @@ export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFR
         return Date.now() - lastUpdated > refreshInterval;
     }, [lastUpdated, refreshInterval]);
 
-    // Function to refresh data
-    const refreshData = useCallback(async (force = false) => {
+    // Enhanced refresh function with retry logic
+    const refreshData = useCallback(async (force = false, isRetry = false) => {
+        // Clear any existing retry timeouts
+        if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+        }
+
         // Skip if already fetching
         if (fetchInProgress) {
             console.log('Skipping refresh - fetch already in progress');
-            return;
+            return false;
         }
-        
+
         // Get current time
         const now = Date.now();
-        
-        // Check global throttling (unless forced)
-        if (!force && now - globalLastRefreshTime < GLOBAL_MIN_REFRESH_INTERVAL) {
-            console.log(`Global throttling active (${now - globalLastRefreshTime}ms since last refresh)`);
-            return;
+
+        // Apply throttling (unless forced)
+        if (!force && !isRetry && now - dashboardState.lastRefreshTime < GLOBAL_MIN_REFRESH_INTERVAL) {
+            console.log(`Throttling active (${now - dashboardState.lastRefreshTime}ms < ${GLOBAL_MIN_REFRESH_INTERVAL}ms)`);
+            return false;
         }
-        
-        // Update global refresh time
-        globalLastRefreshTime = now;
+
+        // Update tracking state
+        dashboardState.lastRefreshTime = now;
+        localLastRefreshTime.current = now;
         setLastRefreshAttempt(now);
         setRefreshCount(prev => prev + 1);
-        
+
+        if (isRetry) {
+            setRetryAttempt(prev => prev + 1);
+        } else {
+            setRetryAttempt(0);
+        }
+
         try {
-            // Trigger fetch in the store
+            // Fetch data from the store
             await fetchDashboardData();
-            
-            // Update initial fetch flag if this is the first successful fetch
+
+            // Reset retry count on success
+            dashboardState.retryCount = 0;
+
+            // Mark initial fetch as done if this was the first one
             if (isInitialMount.current) {
-                globalInitialFetchDone = true;
+                dashboardState.initialFetchDone = true;
                 isInitialMount.current = false;
                 setIsInitialLoad(false);
             }
-            
-            // Store the local refresh time
-            localLastRefreshTime.current = now;
-        } catch (error) {
-            console.error('Error refreshing dashboard data:', error);
+
+            return true;
+        } catch (err) {
+            console.error('Error refreshing dashboard data:', err);
+
+            // Implement retry logic
+            if (!isRetry && dashboardState.retryCount < MAX_RETRY_ATTEMPTS) {
+                dashboardState.retryCount++;
+                console.log(`Scheduling retry attempt ${dashboardState.retryCount}/${MAX_RETRY_ATTEMPTS} in ${RETRY_DELAY}ms`);
+
+                retryTimeoutRef.current = setTimeout(() => {
+                    refreshData(true, true);
+                }, RETRY_DELAY);
+            } else if (isRetry) {
+                console.log(`Retry attempt ${dashboardState.retryCount}/${MAX_RETRY_ATTEMPTS} failed`);
+            }
+
+            return false;
         }
     }, [fetchDashboardData, fetchInProgress]);
 
-    // Initial fetch effect - runs only once across all instances
+    // Initial data fetch
     useEffect(() => {
         const loadInitialData = async () => {
             if (isInitialMount.current) {
-                console.log('Initial dashboard data load starting');
-                await refreshData(true); // Force refresh on initial load
+                console.log(`Initial dashboard data load starting (${componentId.current})`);
+                await refreshData(true);
             }
         };
-        
+
         loadInitialData();
+
+        return () => {
+            // Clear any timeouts
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+            }
+        };
     }, [refreshData]);
 
     // Auto-refresh effect
     useEffect(() => {
-        // Only set up auto-refresh if enabled
         if (!autoRefresh) return;
-        
-        // Function to check and refresh data if needed
+
         const checkAndRefresh = async () => {
-            // Skip if already fetching
             if (fetchInProgress) return;
-            
-            // Check if data is stale
+
             if (isDataStale()) {
-                console.log('Data is stale, refreshing...');
+                console.log('Data is stale, auto-refreshing...');
                 await refreshData();
             }
         };
-        
+
         // Initial check
         checkAndRefresh();
-        
-        // Set up interval for future checks
+
+        // Set up polling interval
         const intervalId = setInterval(checkAndRefresh, Math.min(refreshInterval, 60000));
-        
-        // Clean up on unmount
+
         return () => {
             clearInterval(intervalId);
-            if (refreshTimeoutRef.current) {
-                clearTimeout(refreshTimeoutRef.current);
-                refreshTimeoutRef.current = null;
-            }
         };
     }, [autoRefresh, refreshInterval, isDataStale, refreshData, fetchInProgress]);
 
-    // Effect to respond to shouldRefresh flag changes
+    // Handle explicit refresh requests
     useEffect(() => {
         if (shouldRefresh && !fetchInProgress) {
-            console.log('shouldRefresh flag detected, triggering refresh');
-            refreshData();
+            console.log('Refresh requested via store flag');
+            refreshData().then(() => {
+                // Reset the refresh flag
+                setShouldRefresh(false);
+            });
         }
-    }, [shouldRefresh, refreshData, fetchInProgress]);
+    }, [shouldRefresh, refreshData, fetchInProgress, setShouldRefresh]);
 
-    // Return everything needed by components
     return {
         stats: formattedStats,
         rawStats: stats,
@@ -197,11 +252,13 @@ export const useDashboard = (autoRefresh = false, refreshInterval = DEFAULT_REFR
         isLoading,
         isInitialLoad,
         error,
-        refresh: refreshData,
-        hasData: hasData(),
+        refresh: () => refreshData(true),
+        hasData,
         lastUpdated,
+        dataState,
         refreshCount,
         lastRefreshAttempt,
+        retryAttempt,
         currencySymbol
     };
 };

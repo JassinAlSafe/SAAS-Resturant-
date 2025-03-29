@@ -14,7 +14,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Loader2, ArrowRight, Check, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { Separator } from "@/components/ui/separator";
 import { useBusinessProfile } from "@/lib/business-profile-context";
 import { ThemeTest } from "@/components/theme-test";

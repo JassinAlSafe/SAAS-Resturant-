@@ -25,7 +25,8 @@ export const shadcnPlugin = plugin(
             },
             extend: {
                 fontFamily: {
-                    sans: ['var(--font-lufga)', 'sans-serif'],
+                    sans: ['var(--font-satoshi)', 'system-ui', 'sans-serif'],
+                    headline: ['var(--font-cabinet-grotesk)', 'system-ui', 'sans-serif'],
                 },
                 colors: {
                     border: 'hsl(var(--border))',

@@ -51,7 +51,7 @@ export function CurrentSubscription({
   // Safety check - if subscription is null or undefined, show error
   if (!subscription) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Current Plan</CardTitle>
           <CardDescription>Subscription data unavailable</CardDescription>
@@ -69,7 +69,7 @@ export function CurrentSubscription({
   // Make sure subscription.plan exists, return early if not
   if (!subscription.plan) {
     return (
-      <Card>
+      <Card className="border-none shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle>Current Plan</CardTitle>
           <CardDescription>Plan details unavailable</CardDescription>
@@ -169,22 +169,46 @@ export function CurrentSubscription({
   const renderStatusBadge = () => {
     switch (subscription.status) {
       case "active":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-green-500 to-green-400 text-white">
+            Active
+          </Badge>
+        );
       case "trialing":
-        return <Badge className="bg-blue-500">Trial</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-blue-500 to-blue-400 text-white">
+            Trial
+          </Badge>
+        );
       case "canceled":
-        return <Badge variant="destructive">Canceled</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-red-500 to-red-400 text-white">
+            Canceled
+          </Badge>
+        );
       case "past_due":
-        return <Badge variant="destructive">Past Due</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-red-500 to-red-400 text-white">
+            Past Due
+          </Badge>
+        );
       case "paused":
-        return <Badge variant="secondary">Paused</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-gray-500 to-gray-400 text-white">
+            Paused
+          </Badge>
+        );
       default:
-        return <Badge>{subscription.status}</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-gray-500 to-gray-400 text-white">
+            {subscription.status}
+          </Badge>
+        );
     }
   };
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm rounded-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -243,7 +267,10 @@ export function CurrentSubscription({
                   {Math.round(progressPercentage)}% complete
                 </span>
               </div>
-              <Progress value={progressPercentage} className="h-2" />
+              <Progress
+                value={progressPercentage}
+                className="h-2 bg-orange-50"
+              />
             </div>
           </div>
 
@@ -263,8 +290,8 @@ export function CurrentSubscription({
           {/* Renewal notice */}
           {subscription.status === "active" &&
             !subscription.cancelAtPeriodEnd && (
-              <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md text-sm">
-                <FiAlertCircle className="text-blue-500 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 bg-orange-50 rounded-md text-sm">
+                <FiAlertCircle className="text-orange-500 shrink-0 mt-0.5" />
                 <div>
                   Your subscription will automatically renew on{" "}
                   <strong>
@@ -281,8 +308,8 @@ export function CurrentSubscription({
 
           {/* Cancellation notice */}
           {subscription.cancelAtPeriodEnd && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md text-sm">
-              <FiAlertCircle className="text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 bg-orange-50/70 rounded-md text-sm">
+              <FiAlertCircle className="text-orange-500 shrink-0 mt-0.5" />
               <div>
                 Your subscription is set to cancel on{" "}
                 <strong>
@@ -298,8 +325,8 @@ export function CurrentSubscription({
 
           {/* Paused subscription notice */}
           {subscription.status === "paused" && subscription.resumesAt && (
-            <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-md text-sm">
-              <FiAlertCircle className="text-purple-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 bg-orange-50/50 rounded-md text-sm">
+              <FiAlertCircle className="text-orange-500 shrink-0 mt-0.5" />
               <div>
                 Your subscription is paused. It will automatically resume on{" "}
                 <strong>
@@ -311,8 +338,12 @@ export function CurrentSubscription({
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Button variant="outline" asChild>
+          <div className="flex flex-wrap gap-3 pt-2 justify-center md:justify-start">
+            <Button
+              variant="outline"
+              asChild
+              className="rounded-full bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white border-0 shadow-sm"
+            >
               <a href="#plans">Change Plan</a>
             </Button>
 
@@ -323,6 +354,7 @@ export function CurrentSubscription({
                     variant="outline"
                     onClick={() => setIsPauseDialogOpen(true)}
                     disabled={isLoading}
+                    className="rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400 hover:from-yellow-600 hover:to-yellow-500 text-white border-0 shadow-sm"
                   >
                     <FiPause className="mr-2 h-4 w-4" />
                     Pause Subscription
@@ -331,6 +363,7 @@ export function CurrentSubscription({
                     variant="outline"
                     onClick={() => setIsCancelDialogOpen(true)}
                     disabled={isLoading}
+                    className="rounded-full bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white border-0 shadow-sm"
                   >
                     Cancel Plan
                   </Button>
@@ -342,6 +375,7 @@ export function CurrentSubscription({
                 variant="default"
                 onClick={handleResumeSubscription}
                 disabled={isLoading}
+                className="rounded-full bg-gradient-to-r from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white border-0 shadow-sm"
               >
                 <FiPlay className="mr-2 h-4 w-4" />
                 Resume Subscription
@@ -366,13 +400,13 @@ export function CurrentSubscription({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>
+            <AlertDialogCancel disabled={isLoading} className="rounded-full">
               Keep Subscription
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancelSubscription}
               disabled={isLoading}
-              className="bg-red-500 hover:bg-red-600"
+              className="bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white border-0 rounded-full shadow-sm"
             >
               {isLoading ? "Canceling..." : "Yes, Cancel Subscription"}
             </AlertDialogAction>
@@ -393,10 +427,13 @@ export function CurrentSubscription({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading} className="rounded-full">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handlePauseSubscription}
               disabled={isLoading}
+              className="rounded-full bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white border-0 shadow-sm"
             >
               {isLoading ? "Pausing..." : "Yes, Pause Subscription"}
             </AlertDialogAction>

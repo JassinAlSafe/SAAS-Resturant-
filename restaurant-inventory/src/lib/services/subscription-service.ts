@@ -5,7 +5,7 @@ import {
     Invoice,
     InvoiceItem
 } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../supabase/browser-client";
 
 // Track the billing interval for proper price display
 let billingInterval: 'monthly' | 'yearly' = 'monthly';
@@ -58,7 +58,7 @@ const mapDbToInvoice = (invoice: Record<string, unknown>): Invoice => ({
 const mapDbToSubscription = async (sub: Record<string, unknown>): Promise<Subscription> => {
     // Update billing interval based on subscription
     billingInterval = (sub.billing_interval as 'monthly' | 'yearly') || 'monthly';
-    
+
     // Fetch the plan details
     const { data: planData } = await supabase
         .from('subscription_plans')
@@ -92,18 +92,18 @@ export const subscriptionService = {
             // Update billing interval for proper price display
             billingInterval = interval;
             console.log(`Getting subscription plans with ${interval} billing interval`);
-            
+
             // Fetch subscription plans from the database
             const { data, error } = await supabase
                 .from('subscription_plans')
                 .select('*')
                 .order('priority', { ascending: true });
-                
+
             if (error) {
                 console.error('Error fetching subscription plans:', error);
                 throw error;
             }
-            
+
             // If no plans found in the database, return empty array
             if (!data || data.length === 0) {
                 console.log('No subscription plans found in database, using fallback mock data');
@@ -173,9 +173,9 @@ export const subscriptionService = {
                     }
                 ];
             }
-            
+
             console.log(`Found ${data.length} subscription plans in database`);
-            
+
             // Map database records to SubscriptionPlan objects
             return data.map(plan => {
                 const mappedPlan = mapDbToSubscriptionPlan(plan);
@@ -194,9 +194,9 @@ export const subscriptionService = {
     async getSubscription(userId: string): Promise<Subscription | null> {
         try {
             if (!userId) throw new Error('User ID is required');
-            
+
             console.log(`Fetching subscription for user: ${userId}`);
-            
+
             // First, get the business profile ID for this user
             const { data: profileData, error: profileError } = await supabase
                 .from('business_profile_users')
@@ -205,7 +205,7 @@ export const subscriptionService = {
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
             if (profileError) {
                 console.error('Error fetching business profile:', profileError);
                 if (profileError.code === 'PGRST116') {
@@ -214,15 +214,15 @@ export const subscriptionService = {
                 }
                 throw profileError;
             }
-            
+
             if (!profileData || !profileData.business_profile_id) {
                 console.log('No business profile ID found for user');
                 return null;
             }
-            
+
             const businessProfileId = profileData.business_profile_id;
             console.log(`Found business profile ID: ${businessProfileId}`);
-            
+
             // Get subscription from the subscriptions table
             const { data: subscriptionData, error: subscriptionError } = await supabase
                 .from('subscriptions')
@@ -231,32 +231,32 @@ export const subscriptionService = {
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .maybeSingle();
-                
+
             // Also get subscription info from the business_profiles table as a fallback
             const { data: profileSubscriptionData, error: profileSubscriptionError } = await supabase
                 .from('business_profiles')
                 .select('subscription_id, subscription_plan, subscription_status, subscription_current_period_end, subscription_price_id')
                 .eq('id', businessProfileId)
                 .single();
-                
+
             if (subscriptionError && subscriptionError.code !== 'PGRST116') {
                 console.error('Error fetching subscription:', subscriptionError);
             }
-            
+
             if (profileSubscriptionError) {
                 console.error('Error fetching profile subscription data:', profileSubscriptionError);
             }
-            
+
             // If we have subscription data from the subscriptions table, use that
             if (subscriptionData) {
                 console.log('Found subscription in subscriptions table:', subscriptionData.id);
                 return await mapDbToSubscription(subscriptionData);
             }
-            
+
             // If we have subscription data from the business_profiles table, use that as fallback
             if (profileSubscriptionData && profileSubscriptionData.subscription_id) {
                 console.log('Found subscription in business_profiles table:', profileSubscriptionData.subscription_id);
-                
+
                 // Create a properly typed subscription object with all required fields
                 const subscription: Subscription = {
                     id: profileSubscriptionData.subscription_id,
@@ -270,10 +270,10 @@ export const subscriptionService = {
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
-                
+
                 return subscription;
             }
-            
+
             console.log('No subscription found for user');
             return null;
         } catch (error) {
@@ -294,7 +294,7 @@ export const subscriptionService = {
 
             // Update billing interval for proper price display
             billingInterval = billingIntervalParam;
-            
+
             // Get the plan details
             const { data: planData, error: planError } = await supabase
                 .from('subscription_plans')

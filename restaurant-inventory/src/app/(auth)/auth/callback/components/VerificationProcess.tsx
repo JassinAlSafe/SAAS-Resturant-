@@ -1,19 +1,28 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { memo } from "react";
 
-export function VerificationProcess() {
+/**
+ * VerificationProcess Component
+ *
+ * Displays a loading spinner and message while verification is in progress
+ */
+export const VerificationProcess = memo(() => {
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 py-8">
-      <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      <p className="text-center text-gray-600 dark:text-gray-300">
-        Verifying your email...
-      </p>
-      <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-        This should only take a moment.
-      </p>
+    <div className="flex flex-col items-center space-y-4 text-center">
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div>
+        <p className="text-lg font-medium text-gray-900 dark:text-white">
+          Verifying your email
+        </p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Please wait while we verify your email address...
+        </p>
+      </div>
     </div>
   );
-}
+});
+
+VerificationProcess.displayName = "VerificationProcess";
 
 export default VerificationProcess;

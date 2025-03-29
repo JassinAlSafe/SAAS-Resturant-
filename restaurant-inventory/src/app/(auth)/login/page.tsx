@@ -1,27 +1,26 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
-import { useTransition } from "@/components/ui/transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FiArrowLeft } from "react-icons/fi";
 import { gsap } from "gsap";
 import { LoginTransition } from "@/components/auth/LoginTransition";
 import { AuthBackground } from "@/components/auth/AuthBackground";
-import { supabase } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface AuthError {
-  message: string;
-}
+// Create Supabase browser client for email verification
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,17 +32,17 @@ export default function LoginPage() {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [emailForResend, setEmailForResend] = useState("");
-  const router = useRouter();
-  const { theme } = useTheme();
+  const { setTheme } = useTheme();
   const { signIn } = useAuth();
   const { error: showError, success: showSuccess } = useNotificationHelpers();
-  const { startTransition } = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // Ensure light theme is set on page load
   useEffect(() => {
+    setTheme("light");
     setIsPageLoaded(true);
-  }, []);
+  }, [setTheme]);
 
   // Initial entrance animation - only run after page is loaded
   useEffect(() => {
@@ -84,7 +83,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(email, password);
-      
+
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -108,7 +107,7 @@ export default function LoginPage() {
         ease: "power2.out",
       });
 
-      const authError = error as AuthError;
+      const authError = error as { message: string };
       if (authError.message?.includes("Email not confirmed")) {
         setNeedsEmailConfirmation(true);
         setEmailForResend(email);
@@ -166,10 +165,10 @@ export default function LoginPage() {
     // Get redirect URL from query params if available
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTo = urlParams.get("redirectTo");
-    
+
     // Force a hard navigation to dashboard to ensure a full page reload
     // This helps clear any stale state and ensures proper redirection
-    if (redirectTo && redirectTo.startsWith('/')) {
+    if (redirectTo && redirectTo.startsWith("/")) {
       window.location.href = redirectTo;
     } else {
       window.location.href = "/dashboard";
@@ -202,7 +201,7 @@ export default function LoginPage() {
   }, [showSuccess, showError]);
 
   return (
-    <div className="relative min-h-screen flex">
+    <div className="relative min-h-screen flex bg-gray-50">
       {/* Left side - pattern */}
       <div className="hidden lg:block w-1/2 relative">
         <AuthBackground />
@@ -212,33 +211,33 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
         <div
           ref={cardRef}
-          className="w-full max-w-md mx-auto rounded-xl shadow-lg bg-white dark:bg-slate-900 overflow-hidden"
+          className="w-full max-w-md mx-auto rounded-lg shadow-sm bg-white overflow-hidden"
         >
           {/* Form content */}
-          <div className="p-6 md:p-8">
-            <div className="space-y-2 mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="p-8 md:p-10">
+            <div className="mb-8">
+              <h1 className="text-3xl font-medium text-slate-900 mb-3">
                 Welcome!
               </h1>
-              <div className="flex gap-1 text-base text-slate-600 dark:text-slate-400">
+              <div className="text-base text-slate-600">
                 <Link
                   href="/signup"
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
+                  className="text-orange-600 hover:text-orange-700"
                 >
                   Create a free account
                 </Link>
-                <span>or log in to get started</span>
+                <span> or log in to get started</span>
               </div>
             </div>
 
             {needsEmailConfirmation && (
-              <Alert className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertTitle className="text-amber-800 dark:text-amber-300">
+              <Alert className="mb-6 bg-amber-50 border border-amber-200 rounded-md">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <AlertTitle className="text-amber-800 font-medium">
                   Email confirmation required
                 </AlertTitle>
-                <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
-                  <p className="mb-2">
+                <AlertDescription className="text-amber-700">
+                  <p className="mb-3">
                     Please check your email and confirm your account before
                     logging in.
                   </p>
@@ -248,11 +247,11 @@ export default function LoginPage() {
                       size="sm"
                       onClick={handleResendConfirmation}
                       disabled={resendingEmail || resendSuccess}
-                      className="h-8 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-800/50"
+                      className="h-9 px-4 text-sm border-amber-300 hover:bg-amber-100 rounded-md"
                     >
                       {resendingEmail ? (
                         <>
-                          <div className="animate-spin mr-1 h-3 w-3 border-2 border-amber-600 border-t-transparent rounded-full" />
+                          <div className="animate-spin mr-2 h-3 w-3 border-2 border-amber-600 border-t-transparent rounded-full" />
                           Sending...
                         </>
                       ) : resendSuccess ? (
@@ -267,10 +266,10 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5" ref={formRef}>
-              <div className="space-y-2">
+              <div className="mb-6">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="block text-base font-medium text-slate-700 mb-2"
                 >
                   Email
                 </Label>
@@ -282,20 +281,20 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading || !isPageLoaded}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-12 px-4 py-3 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
                   <Label
                     htmlFor="password"
-                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                    className="block text-base font-medium text-slate-700"
                   >
                     Password
                   </Label>
                   <Link
                     href="/forgot-password"
-                    className="text-sm text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                    className="text-sm text-slate-600 hover:text-slate-900"
                     tabIndex={!isPageLoaded ? -1 : undefined}
                   >
                     Forgot password?
@@ -309,13 +308,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading || !isPageLoaded}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-12 px-4 py-3 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-xs"
+                className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-md font-medium"
                 disabled={isLoading || !isPageLoaded}
               >
                 {isLoading ? (
@@ -330,39 +329,37 @@ export default function LoginPage() {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+                  <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">
-                    Or continue with
+                  <span className="bg-white px-4 text-slate-500">
+                    OR CONTINUE WITH
                   </span>
                 </div>
               </div>
 
               <Button
                 variant="outline"
-                className="w-full h-11 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors"
+                className="w-full h-11 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors flex items-center justify-center"
                 type="button"
               >
                 <Image
                   src="/assets/logo/google-icon-logo-svgrepo-com.svg"
                   alt="Google"
-                  width={18}
-                  height={18}
-                  className="mr-2 opacity-75"
+                  width={20}
+                  height={20}
+                  className="mr-2"
                 />
-                <span className="text-sm font-medium">
-                  Continue with Google
-                </span>
+                <span>Continue with Google</span>
               </Button>
             </form>
 
-            <div className="text-center mt-8">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="text-center mt-6">
+              <p className="text-slate-600">
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/signup"
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
+                  className="text-orange-600 hover:text-orange-700"
                   tabIndex={!isPageLoaded ? -1 : undefined}
                 >
                   Create a free account

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { gsap } from "gsap";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,26 +27,41 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  CheckCircle, 
-  ArrowRight, 
-  Store, 
-  DollarSign, 
+import {
+  CheckCircle,
+  ArrowRight,
+  Store,
+  DollarSign,
   MapPin,
   Phone,
   Globe,
-  Loader2
+  Loader2,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // Define the form schema with validation
 const formSchema = z.object({
-  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  businessName: z
+    .string()
+    .min(2, "Business name must be at least 2 characters"),
   currency: z.string().min(1, "Please select a currency"),
   address: z.string().optional(),
   phone: z.string().optional(),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
+  website: z
+    .string()
+    .url("Please enter a valid URL")
+    .optional()
+    .or(z.literal("")),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -94,55 +109,62 @@ export default function OnboardingPage() {
   useEffect(() => {
     const fetchBusinessProfile = async () => {
       if (!user) return;
-      
+
       try {
         // First check if there are multiple business profiles and get the most recent one
         const { data: profiles, error: profilesError } = await supabase
-          .from('business_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
+          .from("business_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
         if (profilesError) {
           console.error("Error fetching business profiles:", profilesError);
           return;
         }
-        
+
         // If multiple profiles exist, clean up duplicates
         if (profiles && profiles.length > 1) {
-          console.log(`Found ${profiles.length} business profiles, using the most recent one`);
+          console.log(
+            `Found ${profiles.length} business profiles, using the most recent one`
+          );
           const mostRecentProfile = profiles[0];
           setBusinessId(mostRecentProfile.id);
-          
+
           // Delete the older duplicates
-          const idsToDelete = profiles.slice(1).map(p => p.id);
+          const idsToDelete = profiles.slice(1).map((p) => p.id);
           if (idsToDelete.length > 0) {
             const { error: deleteError } = await supabase
-              .from('business_profiles')
+              .from("business_profiles")
               .delete()
-              .in('id', idsToDelete);
-              
+              .in("id", idsToDelete);
+
             if (deleteError) {
               console.error("Error deleting duplicate profiles:", deleteError);
             } else {
-              console.log(`Successfully deleted ${idsToDelete.length} duplicate profiles`);
+              console.log(
+                `Successfully deleted ${idsToDelete.length} duplicate profiles`
+              );
             }
           }
-          
+
           // Set form values from the most recent profile
           if (mostRecentProfile) {
             form.setValue("businessName", mostRecentProfile.name || "");
-            form.setValue("currency", mostRecentProfile.default_currency || "USD");
+            form.setValue(
+              "currency",
+              mostRecentProfile.default_currency || "USD"
+            );
             form.setValue("address", mostRecentProfile.address || "");
             form.setValue("phone", mostRecentProfile.phone || "");
             form.setValue("website", mostRecentProfile.website || "");
           }
-        } 
+        }
         // If only one profile exists, use it
         else if (profiles && profiles.length === 1) {
           const profile = profiles[0];
           setBusinessId(profile.id);
-          
+
           // Set form values
           form.setValue("businessName", profile.name || "");
           form.setValue("currency", profile.default_currency || "USD");
@@ -175,7 +197,7 @@ export default function OnboardingPage() {
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       // Create a simplified business profile with minimal fields to avoid RLS issues
@@ -191,7 +213,7 @@ export default function OnboardingPage() {
 
       // Use direct Supabase call with minimal fields
       let response;
-      
+
       if (businessId) {
         // Update existing business profile
         response = await supabase
@@ -258,14 +280,20 @@ export default function OnboardingPage() {
         {step === 1 ? (
           <Card className="border-2 border-primary/10">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Complete Your Setup</CardTitle>
+              <CardTitle className="text-2xl font-bold">
+                Complete Your Setup
+              </CardTitle>
               <CardDescription>
-                Let&apos;s set up your business profile to get started with inventory management
+                Let&apos;s set up your business profile to get started with
+                inventory management
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={form.control}
                     name="businessName"
@@ -275,7 +303,10 @@ export default function OnboardingPage() {
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Store className="h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="Your Restaurant Name" {...field} />
+                            <Input
+                              placeholder="Your Restaurant Name"
+                              {...field}
+                            />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -327,7 +358,10 @@ export default function OnboardingPage() {
                           <FormControl>
                             <div className="flex items-center space-x-2">
                               <MapPin className="h-5 w-5 text-muted-foreground" />
-                              <Input placeholder="Business Address" {...field} />
+                              <Input
+                                placeholder="Business Address"
+                                {...field}
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -362,7 +396,10 @@ export default function OnboardingPage() {
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Globe className="h-5 w-5 text-muted-foreground" />
-                            <Input placeholder="https://yourrestaurant.com" {...field} />
+                            <Input
+                              placeholder="https://yourrestaurant.com"
+                              {...field}
+                            />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -388,11 +425,7 @@ export default function OnboardingPage() {
                     )}
                   />
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -415,14 +448,18 @@ export default function OnboardingPage() {
               <div className="flex justify-center mb-4">
                 <CheckCircle className="h-16 w-16 text-green-500" />
               </div>
-              <CardTitle className="text-2xl font-bold text-center">Setup Complete!</CardTitle>
+              <CardTitle className="text-2xl font-bold text-center">
+                Setup Complete!
+              </CardTitle>
               <CardDescription className="text-center">
-                Your business profile has been set up successfully. You&apos;re now ready to start managing your inventory.
+                Your business profile has been set up successfully. You&apos;re
+                now ready to start managing your inventory.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
               <p className="text-center text-muted-foreground">
-                You can always update your business details in the settings page.
+                You can always update your business details in the settings
+                page.
               </p>
               <div className="flex flex-col w-full space-y-3">
                 <Button

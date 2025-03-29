@@ -1,37 +1,46 @@
-"use client"
+"use client";
 
-import { SelectItem } from "@/components/ui/select"
+import { SelectItem } from "@/components/ui/select";
 
-import { SelectContent } from "@/components/ui/select"
+import { SelectContent } from "@/components/ui/select";
 
-import { SelectValue } from "@/components/ui/select"
+import { SelectValue } from "@/components/ui/select";
 
-import { SelectTrigger } from "@/components/ui/select"
+import { SelectTrigger } from "@/components/ui/select";
 
-import { Select } from "@/components/ui/select"
+import { Select } from "@/components/ui/select";
 
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { useTheme } from "next-themes"
-import { Moon, Sun, Monitor } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { useTheme } from "next-themes";
+import { Moon, Sun, Monitor } from "lucide-react";
 
 export default function AppearanceSettings() {
-  const { theme, setTheme } = useTheme()
-  const [fontSize, setFontSize] = useState("medium")
+  const { theme, setTheme } = useTheme();
+  const [fontSize, setFontSize] = useState("medium");
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Theme</CardTitle>
-          <CardDescription>Customize the appearance of the application.</CardDescription>
+          <CardDescription>
+            Customize the appearance of the application.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -39,15 +48,21 @@ export default function AppearanceSettings() {
             <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
-                className={`flex flex-col items-center justify-center gap-2 p-4 ${theme === "light" ? "border-primary" : ""}`}
-                onClick={() => setTheme("light")}
+                className={`flex flex-col items-center justify-center gap-2 p-4 ${
+                  theme === "bumblebee" ? "border-primary" : ""
+                }`}
+                onClick={() => setTheme("bumblebee")}
               >
-                <Sun className="h-6 w-6" />
+                <span className="h-6 w-6 flex items-center justify-center text-yellow-400">
+                  🐝
+                </span>
                 <span>Light</span>
               </Button>
               <Button
                 variant="outline"
-                className={`flex flex-col items-center justify-center gap-2 p-4 ${theme === "dark" ? "border-primary" : ""}`}
+                className={`flex flex-col items-center justify-center gap-2 p-4 ${
+                  theme === "dark" ? "border-primary" : ""
+                }`}
                 onClick={() => setTheme("dark")}
               >
                 <Moon className="h-6 w-6" />
@@ -55,7 +70,9 @@ export default function AppearanceSettings() {
               </Button>
               <Button
                 variant="outline"
-                className={`flex flex-col items-center justify-center gap-2 p-4 ${theme === "system" ? "border-primary" : ""}`}
+                className={`flex flex-col items-center justify-center gap-2 p-4 ${
+                  theme === "system" ? "border-primary" : ""
+                }`}
                 onClick={() => setTheme("system")}
               >
                 <Monitor className="h-6 w-6" />
@@ -68,14 +85,22 @@ export default function AppearanceSettings() {
 
           <div className="space-y-2">
             <Label>Font Size</Label>
-            <RadioGroup value={fontSize} onValueChange={setFontSize} className="grid grid-cols-3 gap-2">
+            <RadioGroup
+              value={fontSize}
+              onValueChange={setFontSize}
+              className="grid grid-cols-3 gap-2"
+            >
               <Label
                 htmlFor="font-small"
                 className={`flex cursor-pointer items-center justify-center rounded-md border p-4 ${
                   fontSize === "small" ? "border-primary" : ""
                 }`}
               >
-                <RadioGroupItem value="small" id="font-small" className="sr-only" />
+                <RadioGroupItem
+                  value="small"
+                  id="font-small"
+                  className="sr-only"
+                />
                 <span className="text-sm">Small</span>
               </Label>
               <Label
@@ -84,7 +109,11 @@ export default function AppearanceSettings() {
                   fontSize === "medium" ? "border-primary" : ""
                 }`}
               >
-                <RadioGroupItem value="medium" id="font-medium" className="sr-only" />
+                <RadioGroupItem
+                  value="medium"
+                  id="font-medium"
+                  className="sr-only"
+                />
                 <span>Medium</span>
               </Label>
               <Label
@@ -93,7 +122,11 @@ export default function AppearanceSettings() {
                   fontSize === "large" ? "border-primary" : ""
                 }`}
               >
-                <RadioGroupItem value="large" id="font-large" className="sr-only" />
+                <RadioGroupItem
+                  value="large"
+                  id="font-large"
+                  className="sr-only"
+                />
                 <span className="text-lg">Large</span>
               </Label>
             </RadioGroup>
@@ -104,26 +137,32 @@ export default function AppearanceSettings() {
           <div className="space-y-2">
             <Label>Accent Color</Label>
             <div className="grid grid-cols-6 gap-2">
-              {["slate", "red", "orange", "green", "blue", "purple"].map((color) => (
-                <div
-                  key={color}
-                  className={`h-10 cursor-pointer rounded-md border ${color === "blue" ? "ring-2 ring-primary ring-offset-2" : ""}`}
-                  style={{
-                    backgroundColor:
-                      color === "slate"
-                        ? "#64748b"
-                        : color === "red"
+              {["slate", "red", "orange", "green", "blue", "purple"].map(
+                (color) => (
+                  <div
+                    key={color}
+                    className={`h-10 cursor-pointer rounded-md border ${
+                      color === "blue"
+                        ? "ring-2 ring-primary ring-offset-2"
+                        : ""
+                    }`}
+                    style={{
+                      backgroundColor:
+                        color === "slate"
+                          ? "#64748b"
+                          : color === "red"
                           ? "#ef4444"
                           : color === "orange"
-                            ? "#f97316"
-                            : color === "green"
-                              ? "#22c55e"
-                              : color === "blue"
-                                ? "#3b82f6"
-                                : "#a855f7",
-                  }}
-                />
-              ))}
+                          ? "#f97316"
+                          : color === "green"
+                          ? "#22c55e"
+                          : color === "blue"
+                          ? "#3b82f6"
+                          : "#a855f7",
+                    }}
+                  />
+                )
+              )}
             </div>
           </div>
         </CardContent>
@@ -135,13 +174,17 @@ export default function AppearanceSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Layout Preferences</CardTitle>
-          <CardDescription>Customize the layout of the application.</CardDescription>
+          <CardDescription>
+            Customize the layout of the application.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Compact Mode</Label>
-              <div className="text-sm text-muted-foreground">Reduce spacing and padding throughout the interface</div>
+              <div className="text-sm text-muted-foreground">
+                Reduce spacing and padding throughout the interface
+              </div>
             </div>
             <Switch />
           </div>
@@ -149,7 +192,9 @@ export default function AppearanceSettings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Sticky Header</Label>
-              <div className="text-sm text-muted-foreground">Keep the header visible when scrolling</div>
+              <div className="text-sm text-muted-foreground">
+                Keep the header visible when scrolling
+              </div>
             </div>
             <Switch defaultChecked />
           </div>
@@ -157,7 +202,9 @@ export default function AppearanceSettings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Show Quick Actions</Label>
-              <div className="text-sm text-muted-foreground">Display quick action buttons in the header</div>
+              <div className="text-sm text-muted-foreground">
+                Display quick action buttons in the header
+              </div>
             </div>
             <Switch defaultChecked />
           </div>
@@ -165,7 +212,9 @@ export default function AppearanceSettings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Animations</Label>
-              <div className="text-sm text-muted-foreground">Enable animations throughout the interface</div>
+              <div className="text-sm text-muted-foreground">
+                Enable animations throughout the interface
+              </div>
             </div>
             <Switch defaultChecked />
           </div>
@@ -178,13 +227,17 @@ export default function AppearanceSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Custom Branding</CardTitle>
-          <CardDescription>Customize the branding of your restaurant.</CardDescription>
+          <CardDescription>
+            Customize the branding of your restaurant.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Use Custom Branding</Label>
-              <div className="text-sm text-muted-foreground">Apply your restaurant&apos;s branding to the interface</div>
+              <div className="text-sm text-muted-foreground">
+                Apply your restaurant&apos;s branding to the interface
+              </div>
             </div>
             <Switch defaultChecked />
           </div>
@@ -228,6 +281,5 @@ export default function AppearanceSettings() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
-

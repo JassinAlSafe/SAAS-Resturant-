@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { usePermission } from "@/lib/permission-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { User } from "@/lib/types";

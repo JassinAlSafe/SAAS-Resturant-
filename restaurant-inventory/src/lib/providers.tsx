@@ -3,7 +3,7 @@
 import { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/services/auth-context";
 import { NotificationProvider } from "@/lib/notification-context";
 import { ThemeProvider } from "@/components/theme-provider";
 

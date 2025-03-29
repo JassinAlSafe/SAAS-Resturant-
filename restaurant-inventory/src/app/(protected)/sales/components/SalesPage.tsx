@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Loader2, Receipt } from "lucide-react";
+import { AlertCircle, FileBarChart2 } from "lucide-react";
 import { toast } from "sonner";
 import SalesEntryForm from "./SalesEntryForm";
 import SaleNotesModal from "./SaleNotesModal";
 import { useSalesPage } from "../hooks/useSalesHooks";
 import { Dish } from "@/lib/types";
 import { SaleEntry } from "../types";
+
+// Override default toast settings for this component
+import { Toaster } from "sonner";
 
 // Create a custom hook for the circuit breaker to isolate it
 function useRenderGuard() {
@@ -64,7 +66,9 @@ function useAuth(): AuthHook {
     // Dynamic import for auth context
     const loadAuth = async () => {
       try {
-        const { useAuth: importedUseAuth } = await import("@/lib/auth-context");
+        const { useAuth: importedUseAuth } = await import(
+          "@/lib/services/auth-context"
+        );
         const auth = importedUseAuth();
         setAuthState(auth);
       } catch {
@@ -86,15 +90,9 @@ interface SalesPageProps {
       total_amount: number;
     }>;
   }) => void;
-  onViewHistory?: () => void;
 }
 
-export default function SalesPage({
-  onDataUpdate,
-  onViewHistory,
-}: SalesPageProps) {
-  // onViewHistory is used in the parent component for tab navigation
-
+export default function SalesPage({ onDataUpdate }: SalesPageProps) {
   // Move all Hooks to the top
   const renderGuardActive = useRenderGuard();
   const salesPage = useSalesPage();
@@ -145,6 +143,7 @@ export default function SalesPage({
         {
           description:
             "Some ingredients are below minimum stock levels after recent sales.",
+          icon: "⚠️",
           action: {
             label: "View",
             onClick: () => setActiveTab("entry"),
@@ -174,19 +173,22 @@ export default function SalesPage({
   if (renderGuardActive) {
     return (
       <div className="p-8 text-center">
-        <h2 className="text-xl font-semibold mb-2">
-          Sales Module Temporarily Unavailable
-        </h2>
-        <p className="text-muted-foreground mb-4">
-          We&apos;ve detected an issue with this page. Please try refreshing the
-          browser.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-primary text-white rounded-md"
-        >
-          Refresh Page
-        </button>
+        <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-8 border-none">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-3">
+            Sales Module Temporarily Unavailable
+          </h2>
+          <p className="text-neutral-500 mb-5">
+            We&apos;ve detected an issue with this page. Please try refreshing
+            the browser.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-full hover:bg-orange-600 transition-colors font-medium"
+          >
+            Refresh Page
+          </button>
+        </div>
       </div>
     );
   }
@@ -194,21 +196,26 @@ export default function SalesPage({
   // Loading state
   if (salesPage.isLoading) {
     return (
-      <div className="w-full">
-        <Card className="border-0 shadow-none rounded-none">
-          <div className="p-12 flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-                <Receipt className="h-12 w-12 text-muted-foreground/20" />
-              </div>
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="p-8 flex justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center justify-center min-h-[60vh] bg-white rounded-xl shadow-sm p-10 border-none max-w-3xl w-full"
+        >
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center justify-center animate-pulse">
+              <FileBarChart2 className="h-16 w-16 text-neutral-200" />
             </div>
-            <p className="text-muted-foreground mt-4">Loading sales data...</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              This may take a moment
-            </p>
+            <div className="h-8 w-8 rounded-full border-4 border-orange-200 border-t-orange-500 animate-spin"></div>
           </div>
-        </Card>
+          <h3 className="text-xl font-medium mb-2 text-neutral-900 text-center">
+            Loading Sales Data
+          </h3>
+          <p className="text-neutral-500 text-center max-w-md">
+            Please wait while we fetch your sales information.
+          </p>
+        </motion.div>
       </div>
     );
   }
@@ -216,26 +223,39 @@ export default function SalesPage({
   // Error state
   if (salesPage.error) {
     return (
-      <div className="w-full">
-        <Card className="border-0 shadow-none rounded-none border-destructive/20">
-          <div className="p-8 text-center">
-            <p className="text-destructive">Unable to load sales data</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Please try again later
-            </p>
+      <div className="p-8 flex justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-xl shadow-sm p-8 border-none text-center max-w-md mx-auto"
+        >
+          <div className="mb-6 p-4 bg-red-50 rounded-lg flex items-center justify-center gap-2 text-red-500">
+            <AlertCircle className="h-6 w-6" />
+            <span>Unable to Load Sales Data</span>
           </div>
-        </Card>
+          <p className="text-neutral-500 mb-5">
+            We encountered an error while loading your sales information. Please
+            try again later.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-full hover:bg-orange-600 transition-colors font-medium"
+          >
+            Reload Page
+          </button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="h-full w-full flex flex-col"
-    >
-      <Card className="flex-1 border-0 shadow-none rounded-none bg-background">
+    <div className="w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <SalesEntryForm
           dishes={salesPage.dishes.map((dish: Dish) => ({
             ...dish,
@@ -264,7 +284,7 @@ export default function SalesPage({
           onLoadPreviousDay={salesPage.loadPreviousDayTemplate}
           hasPreviousDayTemplate={salesPage.hasPreviousDayTemplate}
         />
-      </Card>
+      </motion.div>
 
       {salesPage.selectedSale && (
         <SaleNotesModal
@@ -279,6 +299,6 @@ export default function SalesPage({
           }}
         />
       )}
-    </motion.div>
+    </div>
   );
 }

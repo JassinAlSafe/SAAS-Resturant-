@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../supabase/browser-client";
 import { User } from "@/lib/types";
 
 // Define the permission structure

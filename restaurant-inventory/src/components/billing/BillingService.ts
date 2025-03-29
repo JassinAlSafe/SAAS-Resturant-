@@ -46,24 +46,66 @@ export interface PortalSessionParams {
   returnUrl?: string;
 }
 
+export interface PaymentIntentParams {
+  priceId: string;
+  businessProfileId: string;
+}
+
+export interface CreateSubscriptionParams {
+  setupIntentId: string;
+  paymentMethodId: string;
+  priceId: string;
+  customerId: string;
+  businessProfileId: string;
+}
+
+export interface SetupIntentResponse {
+  clientSecret: string;
+  customerId: string;
+  setupIntentId: string;
+  priceId: string;
+  productName: string;
+  interval?: string;
+  amount: number | null;
+  currency: string;
+}
+
+export interface SubscriptionResponse {
+  subscriptionId: string;
+  status: string;
+  clientSecret?: string;
+}
+
 /**
  * Create a Stripe checkout session for subscription
  */
 export async function createCheckoutSession(params: CheckoutSessionParams): Promise<{ url: string }> {
-  const response = await fetch('/api/billing/create-checkout-session', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
+  console.log("Creating checkout session with params:", params);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create checkout session');
+  try {
+    const response = await fetch('/api/billing/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    console.log("Checkout session response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response from create-checkout-session:", errorData);
+      throw new Error(errorData.error || 'Failed to create checkout session');
+    }
+
+    const data = await response.json();
+    console.log("Checkout session created successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Exception in createCheckoutSession:", error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**
@@ -108,14 +150,54 @@ export async function getSubscription(businessId: string): Promise<Subscription>
 }
 
 /**
+ * Create a payment intent for subscription using Stripe Elements
+ */
+export async function createPaymentIntent(params: PaymentIntentParams): Promise<SetupIntentResponse> {
+  const response = await fetch('/api/billing/create-payment-intent', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create payment intent');
+  }
+
+  return response.json();
+}
+
+/**
+ * Create a subscription after payment method is confirmed
+ */
+export async function createSubscription(params: CreateSubscriptionParams): Promise<SubscriptionResponse> {
+  const response = await fetch('/api/billing/create-subscription', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create subscription');
+  }
+
+  return response.json();
+}
+
+/**
  * Format currency amount for display
  */
 export function formatCurrency(amount: number | null, currency: string = 'USD'): string {
   if (amount === null) return 'N/A';
-  
+
   // Convert from cents to dollars for display
   const dollars = amount / 100;
-  
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
@@ -127,12 +209,12 @@ export function formatCurrency(amount: number | null, currency: string = 'USD'):
  */
 export function formatInterval(interval: string | undefined, count: number | undefined): string {
   if (!interval) return 'N/A';
-  
+
   const intervalStr = interval.charAt(0).toUpperCase() + interval.slice(1);
-  
+
   if (count && count > 1) {
     return `${count} ${intervalStr}s`;
   }
-  
+
   return intervalStr + 'ly';
 }

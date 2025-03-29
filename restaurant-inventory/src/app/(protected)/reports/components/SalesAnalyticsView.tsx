@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,11 +22,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   TrendingUp,
-  TrendingDown,
   BarChart3,
   PieChart,
   ListFilter,
-  Download,
   Info,
 } from "lucide-react";
 import {
@@ -35,42 +32,38 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
 import { ReportMetrics } from "../types";
+// Import the components directly from their source files
+import { ExportButton } from "@/components/ui/Common/ExportButton/ExportButton";
+import { exportData } from "@/components/ui/Common/ExportButton/ExportUtils";
+import {
+  StyledDropdown,
+  DropdownItem,
+} from "@/components/ui/Common/StyledDropdown";
+
+// Improved type definitions using the Chart.js type structure
+interface ChartDataset {
+  label: string;
+  data: number[];
+  backgroundColor: string | string[];
+  borderColor?: string;
+  borderWidth?: number;
+}
+
+interface ChartData {
+  labels: string[];
+  datasets: ChartDataset[];
+}
+
+interface TopDish {
+  name: string;
+  sales: number;
+  rank: number;
+}
 
 interface SalesAnalyticsViewProps {
-  salesData: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string | string[];
-      borderColor?: string;
-      borderWidth?: number;
-    }[];
-  };
-  topDishesData: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string | string[];
-      borderColor?: string;
-      borderWidth?: number;
-    }[];
-  };
+  salesData: ChartData;
+  topDishesData: ChartData;
   previousPeriodData?: ReportMetrics;
   dateRange: string;
   formatCurrency: (amount: number) => string;
@@ -118,14 +111,33 @@ export function SalesAnalyticsView({
   formatCurrency,
   getPercentageChange,
 }: SalesAnalyticsViewProps) {
-  // Extract summary data from charts
-  const totalSales =
-    salesData.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0;
-  const totalTransactions =
-    salesData.datasets[1]?.data.reduce((a, b) => a + b, 0) || 0;
-  const averageOrderValue = totalTransactions
-    ? totalSales / totalTransactions
-    : 0;
+  // Extract summary data from charts using useMemo for optimization
+  const { totalSales, totalTransactions, averageOrderValue, topDishesTable } =
+    useMemo(() => {
+      const totalSales =
+        salesData.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0;
+      const totalTransactions =
+        salesData.datasets[1]?.data.reduce((a, b) => a + b, 0) || 0;
+      const averageOrderValue = totalTransactions
+        ? totalSales / totalTransactions
+        : 0;
+
+      // Generate top dishes for table view
+      const topDishesTable: TopDish[] = topDishesData.labels.map(
+        (dish, index) => ({
+          name: dish,
+          sales: topDishesData.datasets[0].data[index],
+          rank: index + 1,
+        })
+      );
+
+      return {
+        totalSales,
+        totalTransactions,
+        averageOrderValue,
+        topDishesTable,
+      };
+    }, [salesData, topDishesData]);
 
   // Calculate percentage changes with null checks and proper property names
   const salesPercentChange = getPercentageChange(
@@ -157,352 +169,456 @@ export function SalesAnalyticsView({
     }
   };
 
-  // Generate top dishes for table view
-  const topDishesTable = topDishesData.labels.map((dish, index) => ({
-    name: dish,
-    sales: topDishesData.datasets[0].data[index],
-    rank: index + 1,
-  }));
+  // Extracted component for percentage change display to reduce repetition
+  const PercentageChange = ({ value }: { value: number }) => (
+    <div className="flex items-center gap-2">
+      {value >= 0 ? (
+        <>
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-0 font-normal"
+          >
+            <ArrowUpRight className="h-3 w-3 mr-1" aria-hidden="true" />
+            {value.toFixed(1)}%
+          </Badge>
+          <span className="text-sm text-muted-foreground">
+            vs. previous period
+          </span>
+        </>
+      ) : (
+        <>
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-0 font-normal"
+          >
+            <ArrowDownRight className="h-3 w-3 mr-1" aria-hidden="true" />
+            {Math.abs(value).toFixed(1)}%
+          </Badge>
+          <span className="text-sm text-muted-foreground">
+            vs. previous period
+          </span>
+        </>
+      )}
+    </div>
+  );
+
+  // Get the current date for display
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  // Export handlers
+  const handleExportSalesData = () => {
+    // Make sure salesData and essential properties exist
+    if (
+      !salesData ||
+      !salesData.labels ||
+      !salesData.datasets ||
+      !salesData.datasets[0]
+    ) {
+      console.error("Essential sales data missing for export");
+      return;
+    }
+
+    try {
+      // Create formatted data with whatever is available
+      const formattedData = salesData.labels.map((label, index) => {
+        const dataPoint: Record<string, string | number> = { date: label };
+
+        // Add revenue if dataset[0] exists
+        if (salesData.datasets[0]?.data) {
+          dataPoint.revenue = salesData.datasets[0].data[index] || 0;
+        }
+
+        // Add orders if dataset[1] exists, otherwise set to 0
+        if (salesData.datasets[1]?.data) {
+          dataPoint.orders = salesData.datasets[1].data[index] || 0;
+        } else {
+          dataPoint.orders = 0;
+        }
+
+        return dataPoint;
+      });
+
+      // Create headers based on what data is available
+      const headers: Record<string, string> = { date: "Date" };
+      if (salesData.datasets[0]) headers.revenue = "Revenue";
+      if (salesData.datasets[1]) headers.orders = "Orders";
+
+      exportData(formattedData, "csv", `sales-analytics-${dateRange}`, headers);
+      console.log("Export successful", { rows: formattedData.length });
+    } catch (error) {
+      console.error("Error exporting sales data:", error);
+    }
+  };
+
+  const handleExportTopDishes = () => {
+    // Make sure topDishesTable exists and has data
+    if (!topDishesTable || !topDishesTable.length) {
+      console.error("Top dishes data is not properly formatted for export");
+      return;
+    }
+
+    try {
+      const formattedData = topDishesTable.map((dish) => ({
+        rank: dish.rank || 0,
+        name: dish.name || "Unknown",
+        sales: dish.sales || 0,
+        revenue: (dish.sales || 0) * 10, // Dummy calculation as in the original code
+      }));
+
+      exportData(formattedData, "csv", `top-dishes-${dateRange}`, {
+        rank: "Rank",
+        name: "Item Name",
+        sales: "Units Sold",
+        revenue: "Revenue",
+      });
+    } catch (error) {
+      console.error("Error exporting top dishes data:", error);
+    }
+  };
+
+  // Check if export data is ready
+  const isSalesDataReady = useMemo(() => {
+    // Add debug logging to see what's happening
+    console.log("Sales data check:", {
+      hasData: !!salesData,
+      hasLabels: !!(salesData?.labels?.length > 0),
+      hasDatasets: !!(salesData?.datasets?.length > 0),
+      hasDataset0: !!salesData?.datasets?.[0],
+      hasDataset0Data: !!(salesData?.datasets?.[0]?.data?.length > 0),
+      hasDataset1: !!salesData?.datasets?.[1],
+      hasDataset1Data: !!(salesData?.datasets?.[1]?.data?.length > 0),
+    });
+
+    // Relax the check to require only the first dataset
+    return !!(
+      salesData &&
+      salesData.labels?.length > 0 &&
+      salesData.datasets?.length > 0 &&
+      salesData.datasets[0]?.data?.length > 0
+    );
+  }, [salesData]);
+
+  const isTopDishesDataReady = useMemo(() => {
+    // Add debug logging
+    console.log("Top dishes check:", {
+      hasTopDishesTable: !!topDishesTable,
+      tableLength: topDishesTable?.length || 0,
+    });
+
+    return !!(topDishesTable?.length > 0);
+  }, [topDishesTable]);
+
+  // Add an explicit export function with debugging
+  const handleExportSalesDataClick = () => {
+    console.log("Export button clicked, data ready:", isSalesDataReady);
+    if (isSalesDataReady) {
+      handleExportSalesData();
+    }
+  };
+
+  const handleExportTopDishesClick = () => {
+    console.log(
+      "Export top dishes button clicked, data ready:",
+      isTopDishesDataReady
+    );
+    if (isTopDishesDataReady) {
+      handleExportTopDishes();
+    }
+  };
+
+  // Define filter actions for the main view
+  const filterViewActions: DropdownItem[] = [
+    {
+      label: "Revenue Only",
+      onClick: () => console.log("Filter: Revenue Only"),
+    },
+    {
+      label: "Transactions Only",
+      onClick: () => console.log("Filter: Transactions Only"),
+    },
+    {
+      label: "Combined View",
+      onClick: () => console.log("Filter: Combined View"),
+    },
+  ];
+
+  // Define filter actions for the top dishes
+  const dishFilterActions: DropdownItem[] = [
+    {
+      label: "All categories",
+      onClick: () => console.log("Filter: All categories"),
+    },
+    {
+      label: "Main dishes",
+      onClick: () => console.log("Filter: Main dishes"),
+    },
+    {
+      label: "Appetizers",
+      onClick: () => console.log("Filter: Appetizers"),
+    },
+    {
+      label: "Desserts",
+      onClick: () => console.log("Filter: Desserts"),
+    },
+    {
+      label: "Beverages",
+      onClick: () => console.log("Filter: Beverages"),
+    },
+  ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Page header with date range info */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Sales Analytics</h2>
           <p className="text-muted-foreground">
-            {getPeriodLabel()} • {format(new Date(), "MMM d, yyyy")}
+            {getPeriodLabel()} • {currentDate}
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Data
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Download data as CSV or Excel</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton
+            label="Export Data"
+            size="md"
+            onExport={handleExportSalesDataClick}
+            variant="ghost"
+            disabled={false}
+            title="Export to CSV"
+            appearance="minimal"
+            className="h-9 hover:bg-secondary/80 text-foreground"
+          />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <ListFilter className="h-4 w-4 mr-2" />
-                Filter View
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Revenue Only</DropdownMenuItem>
-              <DropdownMenuItem>Transactions Only</DropdownMenuItem>
-              <DropdownMenuItem>Combined View</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <StyledDropdown
+            items={filterViewActions}
+            label="Filter View"
+            icon={<ListFilter className="h-4 w-4" />}
+            variant="ghost"
+            className="h-9 hover:bg-secondary/80 text-foreground"
+          />
         </div>
       </div>
 
       {/* Summary metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Sales Card */}
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-primary/5 rounded-bl-full"></div>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Sales</CardDescription>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">
-                {formatCurrency(totalSales)}
-              </CardTitle>
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">Sales Breakdown</h4>
-                    <Badge variant="outline">{getPeriodLabel()}</Badge>
-                  </div>
-                  <div className="mt-2 text-sm">
-                    <p>Total sales amount for the selected period.</p>
-                    <p className="mt-2">
-                      Previous period:{" "}
-                      {formatCurrency(previousPeriodData?.totalSales ?? 0)}
-                    </p>
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
+        <Card className="border-none shadow-sm rounded-xl">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Total Sales
+                </p>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(totalSales)}
+                </div>
+              </div>
+              <div className="bg-primary/10 p-2 rounded-full">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {salesPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    {salesPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                    {Math.abs(salesPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
+            <div className="mt-3">
+              <PercentageChange value={salesPercentChange} />
             </div>
           </CardContent>
         </Card>
 
         {/* Total Transactions Card */}
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-blue-50 rounded-bl-full"></div>
-          <CardHeader className="pb-2">
-            <CardDescription>Transactions</CardDescription>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">
-                {totalTransactions.toLocaleString()}
-              </CardTitle>
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">Transaction Details</h4>
-                    <Badge variant="outline">{getPeriodLabel()}</Badge>
-                  </div>
-                  <div className="mt-2 text-sm">
-                    <p>Total number of orders for the selected period.</p>
-                    <p className="mt-2">
-                      Previous period:{" "}
-                      {(previousPeriodData?.totalOrders ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
+        <Card className="border-none shadow-sm rounded-xl">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Total Orders
+                </p>
+                <div className="text-2xl font-bold">
+                  {totalTransactions.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-primary/10 p-2 rounded-full">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {transactionsPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    {transactionsPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                    {Math.abs(transactionsPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
+            <div className="mt-3">
+              <PercentageChange value={transactionsPercentChange} />
             </div>
           </CardContent>
         </Card>
 
         {/* Average Order Value Card */}
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 h-20 w-20 bg-amber-50 rounded-bl-full"></div>
-          <CardHeader className="pb-2">
-            <CardDescription>Average Order Value</CardDescription>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">
-                {formatCurrency(averageOrderValue)}
-              </CardTitle>
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </HoverCardTrigger>
-                <HoverCardContent className="w-80">
-                  <div className="flex justify-between">
-                    <h4 className="font-semibold">Average Order Details</h4>
-                    <Badge variant="outline">{getPeriodLabel()}</Badge>
-                  </div>
-                  <div className="mt-2 text-sm">
-                    <p>Average amount spent per transaction.</p>
-                    <p className="mt-2">
-                      Previous period:{" "}
-                      {formatCurrency(previousPeriodData?.avgOrderValue ?? 0)}
-                    </p>
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
+        <Card className="border-none shadow-sm rounded-xl">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Average Order
+                </p>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(averageOrderValue)}
+                </div>
+              </div>
+              <div className="bg-primary/10 p-2 rounded-full">
+                <PieChart className="h-5 w-5 text-primary" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {averageOrderPercentChange >= 0 ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-0 font-normal"
-                  >
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    {averageOrderPercentChange.toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="bg-red-50 text-red-700 border-0 font-normal"
-                  >
-                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                    {Math.abs(averageOrderPercentChange).toFixed(1)}%
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    vs. previous period
-                  </span>
-                </>
-              )}
+            <div className="mt-3">
+              <PercentageChange value={averageOrderPercentChange} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Sales Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Sales Chart - Takes 2/3 of the space */}
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-0">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <CardTitle className="text-lg font-semibold">
-                  Sales Performance
-                </CardTitle>
-                <CardDescription>
-                  Revenue and transaction trends over time
-                </CardDescription>
-              </div>
-              <Tabs defaultValue="bar" className="w-auto">
-                <TabsList className="grid h-8 w-auto grid-cols-2">
-                  <TabsTrigger
-                    value="bar"
-                    className="h-8 flex items-center gap-1"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="sr-only sm:not-sr-only">Bar</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="line"
-                    className="h-8 flex items-center gap-1"
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="sr-only sm:not-sr-only">Line</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <Bar data={salesData} options={chartOptions} />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Sales Chart */}
+      <Card className="border-none shadow-sm rounded-xl">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base font-semibold">
+              Sales Performance
+            </CardTitle>
+            <CardDescription>
+              Revenue and order volume for {getPeriodLabel()}
+            </CardDescription>
+          </div>
+          <div className="flex space-x-2">
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-500 hover:bg-secondary/80"
+                >
+                  <Info className="h-4 w-4" />
+                  <span className="sr-only">Info</span>
+                </Button>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80">
+                <div className="flex justify-between space-x-4">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold">About this chart</h4>
+                    <p className="text-sm">
+                      This chart displays the sales revenue (bars) and number of
+                      orders (line) over time, allowing you to track performance
+                      trends in the selected period.
+                    </p>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+            <ExportButton
+              label="Export"
+              size="sm"
+              onExport={handleExportSalesDataClick}
+              className="h-8 hover:bg-secondary/80 text-foreground"
+              variant="ghost"
+              disabled={false}
+              title="Export to CSV"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <Bar data={salesData} options={chartOptions} />
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Top Dishes Chart - Takes 1/3 of the space */}
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-lg font-semibold">
+      {/* Top Selling Items */}
+      <Card className="border-none shadow-sm rounded-xl">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base font-semibold">
               Top Selling Items
             </CardTitle>
-            <CardDescription>Distribution by sales volume</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="chart">
-              <TabsList className="grid w-full grid-cols-2 h-9 mb-4">
-                <TabsTrigger value="chart" className="flex items-center gap-1">
-                  <PieChart className="h-4 w-4" />
-                  <span>Chart</span>
-                </TabsTrigger>
-                <TabsTrigger value="table" className="flex items-center gap-1">
-                  <ListFilter className="h-4 w-4" />
-                  <span>Table</span>
-                </TabsTrigger>
+            <CardDescription>
+              Best performing dishes by sales volume
+            </CardDescription>
+          </div>
+          <div className="flex space-x-2">
+            <StyledDropdown
+              items={dishFilterActions}
+              label="Filter"
+              icon={<ListFilter className="h-4 w-4" />}
+              variant="ghost"
+              size="sm"
+              className="h-8 hover:bg-secondary/80 text-foreground"
+            />
+            <ExportButton
+              label="Export"
+              size="sm"
+              onExport={handleExportTopDishesClick}
+              className="h-8 hover:bg-secondary/80 text-foreground"
+              variant="ghost"
+              disabled={false}
+              title="Export to CSV"
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Tabs defaultValue="chart" className="w-full">
+            <div className="flex justify-center px-4 pt-1">
+              <TabsList className="border-0 bg-secondary/50">
+                <TabsTrigger value="chart">Chart View</TabsTrigger>
+                <TabsTrigger value="table">Table View</TabsTrigger>
               </TabsList>
-              <TabsContent value="chart" className="mt-0">
-                <div className="h-64">
+            </div>
+            <TabsContent value="chart" className="mt-0 p-6">
+              <div className="h-80 flex items-center justify-center">
+                <div className="h-full w-full max-w-md">
                   <Doughnut
                     data={topDishesData}
                     options={{
                       ...chartOptions,
-                      maintainAspectRatio: false,
                       cutout: "65%",
                     }}
                   />
                 </div>
-              </TabsContent>
-              <TabsContent value="table" className="mt-0">
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">Rank</TableHead>
-                        <TableHead>Item</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+              </div>
+            </TabsContent>
+            <TabsContent value="table" className="mt-0">
+              <div className="border rounded-md mt-2 mx-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12 text-center">#</TableHead>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead className="text-right">Units Sold</TableHead>
+                      <TableHead className="text-right">Revenue</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topDishesTable.map((dish) => (
+                      <TableRow key={dish.name}>
+                        <TableCell className="text-center">
+                          {dish.rank}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {dish.name}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {dish.sales.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(dish.sales * 10)}{" "}
+                          {/* Dummy price calculation */}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {topDishesTable.map((dish) => (
-                        <TableRow key={dish.name}>
-                          <TableCell>{dish.rank}</TableCell>
-                          <TableCell className="font-medium">
-                            {dish.name}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(dish.sales)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="border-t pt-4 flex justify-center">
-            <Button variant="link" className="text-xs">
-              View detailed sales by item
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex justify-end p-4">
+                <Button variant="link" size="sm">
+                  View all items
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

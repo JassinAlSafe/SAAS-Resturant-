@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import EntityNotes from "@/components/EntityNotes";
+import EntityNotes from "@/app/(protected)/notes/EntityNotes";
 
 interface SaleNotesModalProps {
   isOpen: boolean;

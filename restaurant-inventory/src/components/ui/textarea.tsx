@@ -3,14 +3,40 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  variant?:
+    | "ghost"
+    | "primary"
+    | "secondary"
+    | "accent"
+    | "info"
+    | "success"
+    | "warning"
+    | "error";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, variant, size = "md", ...props }, ref) => {
     return (
       <textarea
         className={cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          "textarea",
+          {
+            "textarea-ghost": variant === "ghost",
+            "textarea-primary": variant === "primary",
+            "textarea-secondary": variant === "secondary",
+            "textarea-accent": variant === "accent",
+            "textarea-info": variant === "info",
+            "textarea-success": variant === "success",
+            "textarea-warning": variant === "warning",
+            "textarea-error": variant === "error",
+            "textarea-xs": size === "xs",
+            "textarea-sm": size === "sm",
+            "textarea-md": size === "md",
+            "textarea-lg": size === "lg",
+            "textarea-xl": size === "xl",
+          },
           className
         )}
         ref={ref}

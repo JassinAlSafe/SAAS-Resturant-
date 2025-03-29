@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon } from "lucide-react";
+import { Moon } from "lucide-react";
 
 export function ThemeTest() {
   const { theme, setTheme } = useTheme();
@@ -14,10 +14,12 @@ export function ThemeTest() {
       <div className="flex gap-2">
         <Button
           variant="outline"
-          onClick={() => setTheme("light")}
+          onClick={() => setTheme("bumblebee")}
           className="flex items-center gap-2"
         >
-          <Sun className="h-4 w-4" />
+          <span className="h-4 w-4 flex items-center justify-center text-yellow-400">
+            🐝
+          </span>
           Light
         </Button>
         <Button

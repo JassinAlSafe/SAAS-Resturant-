@@ -20,22 +20,22 @@ export function SidebarHeader({
   return (
     <div
       className={cn(
-        "flex items-center border-b border-gray-200 dark:border-gray-800",
-        open ? "px-4 py-5" : "px-0 py-5"
+        "flex items-center border-b border-gray-200",
+        open ? "px-5 py-4" : "px-0 py-4"
       )}
     >
       <Link
         href="/dashboard"
         className={cn(
-          "flex items-center gap-3 transition-all duration-200 hover:opacity-80",
+          "flex items-center gap-3 transition-all duration-200 hover:opacity-90",
           !open && "justify-center w-full"
         )}
       >
         {!logoUrl ? (
           <div
             className={cn(
-              "flex items-center justify-center rounded-md bg-teal-500/10 text-teal-500 shadow-xs",
-              open ? "h-8 w-8" : "h-8 w-8"
+              "flex items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-sm",
+              open ? "h-10 w-10" : "h-10 w-10"
             )}
           >
             <BookOpenIcon className="h-5 w-5" />
@@ -43,23 +43,26 @@ export function SidebarHeader({
         ) : (
           <div
             className={cn(
-              "rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 shadow-xs",
-              open ? "h-8 w-8" : "h-8 w-8"
+              "rounded-lg overflow-hidden border border-gray-200 shadow-sm",
+              open ? "h-10 w-10" : "h-10 w-10"
             )}
           >
             <Image
               src={logoUrl}
-              alt={businessName}
-              width={32}
-              height={32}
+              alt={`${businessName} logo`}
+              width={40}
+              height={40}
               className="h-full w-full object-cover"
             />
           </div>
         )}
         {open && (
           <div className="flex flex-col">
-            <span className="font-semibold text-gray-900 dark:text-white text-sm">
+            <span className="text-sm font-semibold text-gray-900">
               {businessName}
+            </span>
+            <span className="text-xs text-gray-500 mt-0.5">
+              Restaurant Manager
             </span>
           </div>
         )}

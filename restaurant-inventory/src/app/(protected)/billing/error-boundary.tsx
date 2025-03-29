@@ -3,7 +3,8 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FiAlertTriangle } from "react-icons/fi";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -48,6 +49,14 @@ export class ErrorBoundary extends Component<
     });
   }
 
+  handleRetry = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+  };
+
   render(): ReactNode {
     if (this.state.hasError) {
       // Render fallback UI
@@ -56,7 +65,7 @@ export class ErrorBoundary extends Component<
           <Card className="border-red-200">
             <CardHeader>
               <CardTitle className="flex items-center text-red-600">
-                <FiAlertTriangle className="mr-2" />
+                <AlertTriangle className="mr-2 h-5 w-5" />
                 Billing Page Error
               </CardTitle>
             </CardHeader>
@@ -88,6 +97,23 @@ export class ErrorBoundary extends Component<
                   <li>Clear your browser cache</li>
                   <li>If the problem persists, please contact support</li>
                 </ul>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={this.handleRetry}
+                  className="mr-2"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Try Again
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
               </div>
             </CardContent>
           </Card>

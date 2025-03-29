@@ -1,63 +1,37 @@
-import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState, useMemo, type FC } from "react";
 import { Line } from "react-chartjs-2";
 import {
-  RefreshCw,
   PackageOpen,
   Filter,
   Download,
-  Search,
-  ArrowUpDown,
   MoreHorizontal,
-  AlertTriangle,
   Clock,
-  ChevronDown,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportsFilter, ReportFilters } from "./ReportsFilter";
+import { RefreshButton } from "@/components/ui/Common/RefreshButton";
+import {
+  ActionsButton,
+  ActionItem,
+} from "@/components/ui/Common/ActionsButton";
+import { DropdownItem } from "@/components/ui/Common/StyledDropdown";
+import { InventoryTable } from "./InventoryTable";
 
-interface InventoryItem {
+// Type Definitions
+export type InventoryStatus = "normal" | "low" | "critical" | "depleted";
+
+export interface InventoryItem {
   id: string;
   name: string;
   category: string;
@@ -65,27 +39,29 @@ interface InventoryItem {
   unit: string;
   usageRate: number;
   depleteDate: string;
-  status: "normal" | "low" | "critical" | "depleted";
+  status: InventoryStatus;
   cost: number;
 }
 
+export interface InventoryUsageData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor: string;
+    borderWidth: number;
+    tension?: number;
+  }[];
+  inventory: InventoryItem[];
+}
+
 interface InventoryUsageViewProps {
-  inventoryUsageData: {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      backgroundColor: string;
-      borderColor: string;
-      borderWidth: number;
-      tension?: number;
-    }[];
-    inventory: InventoryItem[];
-  };
+  inventoryUsageData: InventoryUsageData;
   onRefresh: () => void;
 }
 
-// Chart configuration
+// Chart configuration - moved outside component to prevent recreation on renders
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -132,46 +108,224 @@ const chartOptions = {
   },
 };
 
-export function InventoryUsageView({
+// Helper functions - moved outside component for reusability
+const calculateStockLevel = (status: InventoryStatus): number => {
+  switch (status) {
+    case "normal":
+      return Math.min(100, Math.max(70, Math.random() * 30 + 70));
+    case "low":
+      return Math.min(69, Math.max(30, Math.random() * 30 + 30));
+    case "critical":
+      return Math.min(29, Math.max(5, Math.random() * 20 + 5));
+    case "depleted":
+      return 0;
+    default:
+      return 100;
+  }
+};
+
+const getStatusBadge = (status: InventoryStatus) => {
+  switch (status) {
+    case "normal":
+      return (
+        <Badge
+          variant="outline"
+          className="bg-green-50 text-green-600 border-0"
+        >
+          Normal
+        </Badge>
+      );
+    case "low":
+      return (
+        <Badge
+          variant="outline"
+          className="bg-amber-50 text-amber-600 border-0"
+        >
+          Low
+        </Badge>
+      );
+    case "critical":
+      return (
+        <Badge variant="outline" className="bg-red-50 text-red-600 border-0">
+          Critical
+        </Badge>
+      );
+    case "depleted":
+      return <Badge variant="destructive">Depleted</Badge>;
+    default:
+      return <Badge variant="outline">Unknown</Badge>;
+  }
+};
+
+const getProgressColor = (status: InventoryStatus): string => {
+  switch (status) {
+    case "normal":
+      return "bg-green-500";
+    case "low":
+      return "bg-amber-500";
+    case "critical":
+      return "bg-red-500";
+    case "depleted":
+      return "bg-gray-300";
+    default:
+      return "bg-blue-500";
+  }
+};
+
+// Reusable Card Components
+const StatusCard: FC<{
+  count: number;
+  color: string;
+  label: string;
+}> = ({ count, color, label }) => (
+  <Card className="border-none shadow-sm rounded-xl">
+    <CardContent className="pt-6">
+      <div className="flex items-center text-gray-500 mb-2">
+        <div className={`bg-${color}-100 p-1 rounded mr-2`}>
+          <div className={`w-2 h-2 bg-${color}-500 rounded-full`} />
+        </div>
+        {label}
+      </div>
+      <div className="text-2xl font-bold">
+        {count || 0}{" "}
+        <span className="text-sm font-normal text-gray-500">items</span>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Critical Item Component
+const CriticalItemCard: FC<{
+  item: InventoryItem;
+}> = ({ item }) => (
+  <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+    <div className="flex justify-between items-center mb-1">
+      <h4 className="font-medium">{item.name}</h4>
+      {getStatusBadge(item.status)}
+    </div>
+    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+      <span>{item.category}</span>
+      <span>•</span>
+      <span>
+        {item.quantity} {item.unit}
+      </span>
+    </div>
+    <div className="flex items-center gap-2 mb-1 text-xs">
+      <Clock className="h-3.5 w-3.5 text-gray-500" />
+      <span>
+        {item.status === "depleted"
+          ? "Currently out of stock"
+          : `Depletes in ${item.depleteDate}`}
+      </span>
+    </div>
+    <div className="w-full bg-gray-200 h-1.5 rounded-full">
+      <div
+        className={`${getProgressColor(item.status)} h-1.5 rounded-full`}
+        style={{ width: `${calculateStockLevel(item.status)}%` }}
+      ></div>
+    </div>
+  </div>
+);
+
+export const InventoryUsageView: FC<InventoryUsageViewProps> = ({
   inventoryUsageData,
   onRefresh,
-}: InventoryUsageViewProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isRefreshing, setIsRefreshing] = useState(false);
+}) => {
+  // State
+  const [filters, setFilters] = useState<ReportFilters>({
+    searchTerm: "",
+    category: "all",
+    minAmount: undefined,
+    maxAmount: undefined,
+  });
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // Mock categories (would come from actual data in a real scenario)
-  const categories = [
-    "all",
-    "meat",
-    "produce",
-    "dairy",
-    "dry goods",
-    "beverages",
-    "spices",
-    "seafood",
+  // Action configurations
+  const actionItems: ActionItem[] = [
+    {
+      label: "Add Test Data",
+      icon: <PackageOpen className="h-4 w-4" />,
+      onClick: () =>
+        toast.info("Test data added", {
+          description: "Sample inventory data has been added for demonstration",
+        }),
+    },
+    {
+      label: "Export Inventory Report",
+      icon: <Download className="h-4 w-4" />,
+      onClick: () => toast.info("Export functionality coming soon"),
+    },
+    {
+      label: "Advanced Filters",
+      icon: <Filter className="h-4 w-4" />,
+      onClick: () => toast.info("Advanced filters coming soon"),
+    },
   ];
 
-  // Filter inventory items based on search query and filters
-  const filteredInventory = inventoryUsageData.inventory.filter((item) => {
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "all" || item.category === categoryFilter;
-    const matchesStatus =
-      statusFilter === "all" || item.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  const getItemActions = (item: InventoryItem): DropdownItem[] => [
+    {
+      label: "View Details",
+      onClick: () => toast.info(`Viewing details for ${item.name}`),
+    },
+    {
+      label: "Edit Item",
+      onClick: () => toast.info(`Editing ${item.name}`),
+    },
+    {
+      label: "-", // Separator
+      onClick: () => {},
+      isSeparator: true,
+    },
+    {
+      label: "Adjust Stock",
+      onClick: () => toast.info(`Adjusting stock for ${item.name}`),
+    },
+  ];
 
-  // Get counts for each status
-  const statusCounts = inventoryUsageData.inventory.reduce((acc, item) => {
-    acc[item.status] = (acc[item.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Memoized derived data to prevent recalculations on each render
+  const statusCounts = useMemo(() => {
+    return inventoryUsageData.inventory.reduce((acc, item) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [inventoryUsageData.inventory]);
 
-  // Handle refresh
+  const filteredInventory = useMemo(() => {
+    return inventoryUsageData.inventory.filter((item) => {
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(filters.searchTerm.toLowerCase());
+      const matchesCategory =
+        filters.category === "all" || item.category === filters.category;
+      const matchesStatus =
+        statusFilter === "all" || item.status === statusFilter;
+      const matchesAmount =
+        (filters.minAmount === undefined ||
+          item.quantity >= filters.minAmount) &&
+        (filters.maxAmount === undefined || item.quantity <= filters.maxAmount);
+      return matchesSearch && matchesCategory && matchesStatus && matchesAmount;
+    });
+  }, [
+    inventoryUsageData.inventory,
+    filters.searchTerm,
+    filters.category,
+    filters.minAmount,
+    filters.maxAmount,
+    statusFilter,
+  ]);
+
+  const criticalItems = useMemo(
+    () =>
+      inventoryUsageData.inventory
+        .filter(
+          (item) => item.status === "critical" || item.status === "depleted"
+        )
+        .slice(0, 5),
+    [inventoryUsageData.inventory]
+  );
+
+  // Event handlers
   const handleRefresh = () => {
     setIsRefreshing(true);
     onRefresh();
@@ -185,208 +339,77 @@ export function InventoryUsageView({
     }, 1000);
   };
 
-  // Handle add test data
+  const handleFilterChange = (newFilters: ReportFilters) => {
+    setFilters(newFilters);
+  };
+
   const handleAddTestData = () => {
     toast.info("Test data added", {
       description: "Sample inventory data has been added for demonstration",
     });
   };
 
-  // Calculate stock level percentage for progress bars
-  const calculateStockLevel = (item: InventoryItem) => {
-    switch (item.status) {
-      case "normal":
-        return Math.min(100, Math.max(70, Math.random() * 30 + 70));
-      case "low":
-        return Math.min(69, Math.max(30, Math.random() * 30 + 30));
-      case "critical":
-        return Math.min(29, Math.max(5, Math.random() * 20 + 5));
-      case "depleted":
-        return 0;
-      default:
-        return 100;
-    }
-  };
-
-  // Get status badge variant
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "normal":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-green-50 text-green-700 border-0"
-          >
-            Normal
-          </Badge>
-        );
-      case "low":
-        return (
-          <Badge
-            variant="outline"
-            className="bg-amber-50 text-amber-700 border-0"
-          >
-            Low
-          </Badge>
-        );
-      case "critical":
-        return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-0">
-            Critical
-          </Badge>
-        );
-      case "depleted":
-        return <Badge variant="destructive">Depleted</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  // Get progress bar classes based on status
-  const getProgressColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "bg-green-500";
-      case "low":
-        return "bg-amber-500";
-      case "critical":
-        return "bg-red-500";
-      case "depleted":
-        return "bg-gray-300";
-      default:
-        return "bg-blue-500";
-    }
-  };
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header with title and actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Inventory Usage</h2>
-          <p className="text-muted-foreground">
+          <p className="text-gray-500">
             Monitor stock levels and consumption trends
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")}
-            />
-            {isRefreshing ? "Refreshing..." : "Refresh Data"}
-          </Button>
+          <RefreshButton
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+            className="h-9 hover:bg-secondary/80 text-foreground"
+            variant="ghost"
+          />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <MoreHorizontal className="h-4 w-4 mr-2" />
-                Actions
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Inventory Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                className="flex items-center"
-                onClick={handleAddTestData}
-              >
-                <PackageOpen className="h-4 w-4 mr-2" />
-                Add Test Data
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center">
-                <Download className="h-4 w-4 mr-2" />
-                Export Inventory Report
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex items-center">
-                <Filter className="h-4 w-4 mr-2" />
-                Advanced Filters
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ReportsFilter
+            activeTab="inventory"
+            onFilterChange={handleFilterChange}
+          />
+
+          <ActionsButton
+            actions={actionItems}
+            label="Actions"
+            icon={<MoreHorizontal className="h-4 w-4" />}
+            className="h-9 hover:bg-secondary/80 text-foreground"
+            variant="ghost"
+          />
         </div>
       </div>
 
       {/* Inventory Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center">
-              <div className="bg-green-100 p-1 rounded mr-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full" />
-              </div>
-              Normal Stock
-            </CardDescription>
-            <CardTitle className="text-2xl">
-              {statusCounts.normal || 0}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                items
-              </span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center">
-              <div className="bg-amber-100 p-1 rounded mr-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full" />
-              </div>
-              Low Stock
-            </CardDescription>
-            <CardTitle className="text-2xl">
-              {statusCounts.low || 0}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                items
-              </span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-white border-red-100">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center">
-              <div className="bg-red-100 p-1 rounded mr-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full" />
-              </div>
-              Critical Stock
-            </CardDescription>
-            <CardTitle className="text-2xl">
-              {statusCounts.critical || 0}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                items
-              </span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-gray-50 to-white border-gray-100">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center">
-              <div className="bg-gray-100 p-1 rounded mr-2">
-                <div className="w-2 h-2 bg-gray-500 rounded-full" />
-              </div>
-              Depleted Items
-            </CardDescription>
-            <CardTitle className="text-2xl">
-              {statusCounts.depleted || 0}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                items
-              </span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <StatusCard
+          count={statusCounts.normal || 0}
+          color="green"
+          label="Normal Stock"
+        />
+        <StatusCard
+          count={statusCounts.low || 0}
+          color="amber"
+          label="Low Stock"
+        />
+        <StatusCard
+          count={statusCounts.critical || 0}
+          color="red"
+          label="Critical Stock"
+        />
+        <StatusCard
+          count={statusCounts.depleted || 0}
+          color="gray"
+          label="Depleted Items"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Usage Trend Chart */}
-        <Card className="lg:col-span-2">
+        <Card className="border-none shadow-sm rounded-xl lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
               Inventory Usage Trends
@@ -401,7 +424,7 @@ export function InventoryUsageView({
         </Card>
 
         {/* Critical Items Preview */}
-        <Card>
+        <Card className="border-none shadow-sm rounded-xl">
           <CardHeader className="pb-3">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg font-semibold">
@@ -418,54 +441,13 @@ export function InventoryUsageView({
           </CardHeader>
           <CardContent className="px-2">
             <div className="max-h-[280px] overflow-auto pr-2">
-              {inventoryUsageData.inventory
-                .filter(
-                  (item) =>
-                    item.status === "critical" || item.status === "depleted"
-                )
-                .slice(0, 5)
-                .map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="mb-3 p-3 bg-muted/50 rounded-lg border border-border/30"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <h4 className="font-medium">{item.name}</h4>
-                      {getStatusBadge(item.status)}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <span>{item.category}</span>
-                      <span>•</span>
-                      <span>
-                        {item.quantity} {item.unit}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-1 text-xs">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>
-                        {item.status === "depleted"
-                          ? "Currently out of stock"
-                          : `Depletes in ${item.depleteDate}`}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full",
-                          getProgressColor(item.status)
-                        )}
-                        style={{ width: `${calculateStockLevel(item)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-              {inventoryUsageData.inventory.filter(
-                (item) =>
-                  item.status === "critical" || item.status === "depleted"
-              ).length === 0 && (
-                <div className="py-8 text-center text-muted-foreground">
-                  <PackageOpen className="mx-auto h-8 w-8 mb-2 text-muted-foreground/60" />
+              {criticalItems.length > 0 ? (
+                criticalItems.map((item) => (
+                  <CriticalItemCard key={item.id} item={item} />
+                ))
+              ) : (
+                <div className="py-8 text-center text-gray-500">
+                  <PackageOpen className="mx-auto h-8 w-8 mb-2 text-gray-400" />
                   <p>No critical items found</p>
                   <p className="text-sm">
                     All inventory levels are within acceptable ranges
@@ -474,10 +456,11 @@ export function InventoryUsageView({
               )}
             </div>
           </CardContent>
-          <CardFooter className="border-t pt-3">
+          <CardFooter className="border-t pt-3 flex justify-center">
             <Button
-              variant="link"
-              className="w-full text-xs"
+              variant="ghost"
+              size="sm"
+              className="text-xs w-full hover:bg-secondary/80 text-foreground"
               onClick={() => toast.info("Coming soon!")}
             >
               View All Critical Items
@@ -486,9 +469,9 @@ export function InventoryUsageView({
         </Card>
       </div>
 
-      {/* Inventory Table */}
-      <Card>
-        <CardHeader>
+      {/* Inventory Table Card */}
+      <Card className="border-none shadow-sm rounded-xl">
+        <CardHeader className="pb-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-lg font-semibold">
@@ -500,10 +483,11 @@ export function InventoryUsageView({
             </div>
 
             <Tabs
-              defaultValue="all"
+              defaultValue={statusFilter}
               onValueChange={(value) => setStatusFilter(value)}
+              className="w-full sm:w-auto"
             >
-              <TabsList>
+              <TabsList className="w-full bg-secondary/50 border-0">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="normal">Normal</TabsTrigger>
                 <TabsTrigger value="low">Low</TabsTrigger>
@@ -511,138 +495,22 @@ export function InventoryUsageView({
               </TabsList>
             </Tabs>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <div className="relative w-full sm:w-96">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search inventory items..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category === "all"
-                      ? "All Categories"
-                      : category.charAt(0).toUpperCase() + category.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardHeader>
-
         <CardContent>
-          <div className="border rounded-md overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Usage Rate</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInventory.length > 0 ? (
-                  filteredInventory.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>
-                        {item.quantity} {item.unit}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span>{item.usageRate}</span>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div>
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className="text-xs">Units used per day</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(item.status)}
-                        <div className="w-full mt-1.5 bg-muted h-1 rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              getProgressColor(item.status)
-                            )}
-                            style={{ width: `${calculateStockLevel(item)}%` }}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      {searchQuery ||
-                      categoryFilter !== "all" ||
-                      statusFilter !== "all" ? (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <Search className="h-6 w-6 mb-2" />
-                          <p>No matching inventory items found</p>
-                          <p className="text-sm">
-                            Try adjusting your search or filters
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <PackageOpen className="h-6 w-6 mb-2" />
-                          <p>No inventory items available</p>
-                          <Button variant="link" onClick={handleAddTestData}>
-                            Add test data
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {/* The new inventory table component */}
+          <InventoryTable
+            items={inventoryUsageData.inventory}
+            filteredItems={filteredInventory}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            onAddTestData={handleAddTestData}
+            getItemActions={getItemActions}
+            getStatusBadge={getStatusBadge}
+            getProgressColor={getProgressColor}
+            calculateStockLevel={calculateStockLevel}
+          />
         </CardContent>
-
-        <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t p-4 text-sm text-muted-foreground">
-          <div className="mb-3 sm:mb-0">
-            Showing {filteredInventory.length} of{" "}
-            {inventoryUsageData.inventory.length} items
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );
-}
+};

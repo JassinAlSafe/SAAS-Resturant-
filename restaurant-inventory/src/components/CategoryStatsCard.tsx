@@ -7,7 +7,6 @@ import {
   FiMoreHorizontal,
   FiFilter,
 } from "react-icons/fi";
-import Card from "./Card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,83 +65,80 @@ export default function CategoryStatsCard({
   });
 
   return (
-    <Card className="shadow-xs hover:shadow-md transition-all">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="font-semibold">{title}</h3>
+    <div className="bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <DropdownMenu align="end">
+            <DropdownMenuTrigger>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 flex items-center justify-center"
+                className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:bg-orange-50"
               >
                 <FiFilter className="h-4 w-4" />
                 <span className="sr-only">Sort</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent className="w-48">
               <DropdownMenuLabel>Sort By</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => handleSort("name")}
-              >
-                <span>Category Name</span>
-                {sortBy === "name" && (
-                  <span>
-                    {sortDirection === "asc" ? (
-                      <FiChevronUp className="h-4 w-4" />
-                    ) : (
-                      <FiChevronDown className="h-4 w-4" />
-                    )}
-                  </span>
-                )}
+              <DropdownMenuItem onClick={() => handleSort("name")}>
+                <div className="flex items-center justify-between w-full">
+                  <span>Category Name</span>
+                  {sortBy === "name" && (
+                    <span>
+                      {sortDirection === "asc" ? (
+                        <FiChevronUp className="h-4 w-4" />
+                      ) : (
+                        <FiChevronDown className="h-4 w-4" />
+                      )}
+                    </span>
+                  )}
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => handleSort("count")}
-              >
-                <span>Item Count</span>
-                {sortBy === "count" && (
-                  <span>
-                    {sortDirection === "asc" ? (
-                      <FiChevronUp className="h-4 w-4" />
-                    ) : (
-                      <FiChevronDown className="h-4 w-4" />
-                    )}
-                  </span>
-                )}
+              <DropdownMenuItem onClick={() => handleSort("count")}>
+                <div className="flex items-center justify-between w-full">
+                  <span>Item Count</span>
+                  {sortBy === "count" && (
+                    <span>
+                      {sortDirection === "asc" ? (
+                        <FiChevronUp className="h-4 w-4" />
+                      ) : (
+                        <FiChevronDown className="h-4 w-4" />
+                      )}
+                    </span>
+                  )}
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="flex items-center justify-between cursor-pointer"
-                onClick={() => handleSort("change")}
-              >
-                <span>Change</span>
-                {sortBy === "change" && (
-                  <span>
-                    {sortDirection === "asc" ? (
-                      <FiChevronUp className="h-4 w-4" />
-                    ) : (
-                      <FiChevronDown className="h-4 w-4" />
-                    )}
-                  </span>
-                )}
+              <DropdownMenuItem onClick={() => handleSort("change")}>
+                <div className="flex items-center justify-between w-full">
+                  <span>Change</span>
+                  {sortBy === "change" && (
+                    <span>
+                      {sortDirection === "asc" ? (
+                        <FiChevronUp className="h-4 w-4" />
+                      ) : (
+                        <FiChevronDown className="h-4 w-4" />
+                      )}
+                    </span>
+                  )}
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <DropdownMenu align="end">
+            <DropdownMenuTrigger>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 flex items-center justify-center"
+                className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:bg-orange-50"
               >
                 <FiMoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">More options</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent>
               <DropdownMenuItem onClick={onViewAll}>
                 View all categories
               </DropdownMenuItem>
@@ -156,20 +152,22 @@ export default function CategoryStatsCard({
           {sortedCategories.map((category) => (
             <div
               key={category.id}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-orange-50/50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
-                    "h-9 w-9 rounded-full flex items-center justify-center",
+                    "h-9 w-9 rounded-lg flex items-center justify-center",
                     category.color
                   )}
                 >
                   {category.icon}
                 </div>
                 <div>
-                  <div className="font-medium text-sm">{category.name}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="font-medium text-sm text-gray-900">
+                    {category.name}
+                  </div>
+                  <div className="text-xs text-gray-500">
                     {category.count} items
                   </div>
                 </div>
@@ -181,7 +179,7 @@ export default function CategoryStatsCard({
                     ? "text-green-600"
                     : category.change < 0
                     ? "text-red-600"
-                    : "text-muted-foreground"
+                    : "text-gray-500"
                 )}
               >
                 {category.change > 0 ? (
@@ -196,17 +194,17 @@ export default function CategoryStatsCard({
         </div>
       </div>
       {onViewAll && (
-        <div className="p-3 border-t">
+        <div className="flex justify-center p-3 border-t border-gray-100">
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs"
+            className="w-full text-xs text-orange-500 hover:text-orange-600 hover:bg-orange-50"
             onClick={onViewAll}
           >
             View All Categories
           </Button>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

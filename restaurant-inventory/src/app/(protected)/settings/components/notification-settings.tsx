@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CustomCheckbox } from "@/components/ui/custom-checkbox";
 import { Bell, Mail, Smartphone, Loader2, Clock } from "lucide-react";
 import { useNotificationSettings } from "../hooks/useNotificationSettings";
 
@@ -167,7 +167,7 @@ export default function NotificationSettings() {
             <TabsContent value="inventory" className="mt-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="low-stock"
                     checked={preferences.inventoryAlerts}
                     onCheckedChange={(checked) =>
@@ -185,7 +185,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="critical-stock"
                     checked={preferences.inventoryAlerts}
                     onCheckedChange={(checked) =>
@@ -206,7 +206,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="expiring-items"
                     checked={preferences.inventoryAlerts}
                     onCheckedChange={(checked) =>
@@ -227,7 +227,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox id="price-changes" checked={false} disabled />
+                  <CustomCheckbox id="price-changes" checked={false} disabled />
                   <div className="grid gap-1.5 leading-none">
                     <Label
                       htmlFor="price-changes"
@@ -242,7 +242,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="delivery-notifications"
                     checked={preferences.orderUpdates}
                     onCheckedChange={(checked) =>
@@ -267,7 +267,7 @@ export default function NotificationSettings() {
             <TabsContent value="sales" className="mt-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="daily-summary"
                     checked={preferences.orderUpdates}
                     onCheckedChange={(checked) =>
@@ -288,7 +288,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="weekly-report"
                     checked={preferences.orderUpdates}
                     onCheckedChange={(checked) =>
@@ -309,7 +309,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox id="sales-targets" checked={false} disabled />
+                  <CustomCheckbox id="sales-targets" checked={false} disabled />
                   <div className="grid gap-1.5 leading-none">
                     <Label
                       htmlFor="sales-targets"
@@ -324,7 +324,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="sales-anomalies"
                     checked={preferences.orderUpdates}
                     onCheckedChange={(checked) =>
@@ -349,7 +349,7 @@ export default function NotificationSettings() {
             <TabsContent value="system" className="mt-4 space-y-4">
               <div className="space-y-4">
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="marketing-emails"
                     checked={preferences.marketingEmails}
                     onCheckedChange={(checked) =>
@@ -370,7 +370,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="system-updates"
                     checked={preferences.securityAlerts}
                     onCheckedChange={(checked) =>
@@ -391,7 +391,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="billing-notifications"
                     checked={preferences.billingNotifications}
                     onCheckedChange={(checked) =>
@@ -412,7 +412,7 @@ export default function NotificationSettings() {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox
+                  <CustomCheckbox
                     id="security-alerts"
                     checked={preferences.securityAlerts}
                     onCheckedChange={(checked) =>

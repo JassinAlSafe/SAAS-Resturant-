@@ -1,49 +1,56 @@
 "use client";
 
+import { Plus, RefreshCw, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FiPlus, FiRefreshCw, FiDownload } from "react-icons/fi";
 
 interface ShoppingListActionsProps {
   onAddClick: () => void;
-  onRefreshClick: () => void;
+  onGenerateClick: () => void;
   onExportClick: () => void;
+  isGenerating?: boolean;
 }
 
 export default function ShoppingListActions({
   onAddClick,
-  onRefreshClick,
+  onGenerateClick,
   onExportClick,
+  isGenerating = false,
 }: ShoppingListActionsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button
-        variant="outline"
-        size="sm"
+    <div className="flex items-center gap-3">
+      <button
         onClick={onExportClick}
-        className="border-gray-200 text-gray-700 hover:bg-gray-50"
+        className="flex items-center justify-center gap-2 h-10 px-4 border border-gray-200 rounded-lg text-gray-700 bg-white hover:bg-gray-50"
       >
-        <FiDownload className="mr-2 h-4 w-4" />
-        Export Excel
-      </Button>
+        <Download className="h-5 w-5" />
+        <span>Export</span>
+      </button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRefreshClick}
-        className="border-gray-200 text-gray-700 hover:bg-gray-50"
+      <button
+        onClick={onGenerateClick}
+        disabled={isGenerating}
+        className="flex items-center justify-center gap-2 h-10 px-4 border border-blue-200 rounded-lg text-blue-600 bg-white hover:bg-blue-50 disabled:opacity-70"
       >
-        <FiRefreshCw className="mr-2 h-4 w-4" />
-        Refresh Items
-      </Button>
+        {isGenerating ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Generating...</span>
+          </>
+        ) : (
+          <>
+            <RefreshCw className="h-5 w-5" />
+            <span>Generate List</span>
+          </>
+        )}
+      </button>
 
-      <Button
-        size="sm"
+      <button
         onClick={onAddClick}
-        className="bg-blue-600 hover:bg-blue-700 text-white"
+        className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-white bg-orange-500 hover:bg-orange-600"
       >
-        <FiPlus className="mr-2 h-4 w-4" />
-        Add Item
-      </Button>
+        <Plus className="h-5 w-5" />
+        <span>Add Item</span>
+      </button>
     </div>
   );
 }

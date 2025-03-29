@@ -56,7 +56,7 @@ export const navItems: NavItem[] = [
     {
         name: "Administration",
         icon: SettingsIcon,
-        className: "mt-6 pt-6 border-t border-gray-200 dark:border-gray-800 opacity-90",
+        className: "mt-6 border-t border-gray-200 ",
         items: [
             { name: "Users", href: "/users", icon: UserIcon },
             { name: "Billing", href: "/billing", icon: BillingIcon },

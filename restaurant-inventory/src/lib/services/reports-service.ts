@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/browser-client";
 import { DateRange } from "react-day-picker";
 import { format, eachDayOfInterval, parseISO } from "date-fns";
 import { ChartData } from "chart.js";

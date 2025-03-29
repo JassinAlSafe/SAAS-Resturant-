@@ -24,7 +24,7 @@ import { supplierService } from "@/lib/services/supplier-service";
 import { useCurrency } from "@/lib/currency-context";
 import { InventoryItem, Supplier } from "@/lib/types";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/Common/calendar/calendar";
 import { CalendarIcon } from "lucide-react";
 import {
   Popover,
@@ -32,7 +32,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import EntityNotes from "@/components/EntityNotes";
+import EntityNotes from "@/app/(protected)/notes/EntityNotes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type InventoryItemModalProps = {

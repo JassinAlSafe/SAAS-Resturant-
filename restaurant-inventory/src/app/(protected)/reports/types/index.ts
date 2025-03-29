@@ -67,6 +67,7 @@ export interface SalesMetricCardProps {
     positive: boolean;
     previousValue?: string;
     tooltip?: string;
+    className?: string;
 }
 
 export interface InventoryRowProps {
@@ -76,16 +77,6 @@ export interface InventoryRowProps {
     depletion: string;
     depleted: boolean;
     warning?: boolean;
-}
-
-export interface PageHeaderProps {
-    activeTab: TabType;
-    setActiveTab: (tab: TabType) => void;
-    handleExportReport: () => void;
-    dateRange: DateRange | undefined;
-    setDateRange: (range: DateRange | undefined) => void;
-    customDateRange: DateRange | undefined;
-    setCustomDateRange: (range: DateRange | undefined) => void;
 }
 
 export interface DateRangeSelectorProps {

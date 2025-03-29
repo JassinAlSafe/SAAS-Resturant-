@@ -1,12 +1,12 @@
 "use client";
 
-import { Dish, Ingredient, DishIngredient } from "@/lib/types";
+import { Dish, Ingredient } from "@/lib/types";
 import { useRecipeForm } from "../hooks/useRecipeForm";
 import Card from "@/components/Card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCurrency } from "@/lib/currency-context";
+import { useCurrency } from "@/lib/currency";
 import {
   Select,
   SelectContent,
@@ -143,7 +143,7 @@ export default function RecipeForm({
                         colSpan={4}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        No ingredients added yet. Click "Add Ingredient" to
+                        No ingredients added yet. Click &quot;Add Ingredient&quot; to
                         start.
                       </TableCell>
                     </TableRow>

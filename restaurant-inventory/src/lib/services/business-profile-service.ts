@@ -1,5 +1,5 @@
 import { BusinessProfile } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../supabase/browser-client";
 
 // Define the database schema structure
 interface BusinessProfileDatabase {

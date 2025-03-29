@@ -1,39 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { Sale } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/lib/currency";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { salesService } from "@/lib/services/sales-service";
-import {
-  FiMessageSquare,
-  FiEdit2,
-  FiTrash2,
-  FiCheckCircle,
-  FiXCircle,
-} from "react-icons/fi";
 import { format } from "date-fns";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { Trash2, FileText } from "lucide-react";
 
 interface SalesTableProps {
   sales: Sale[];
@@ -48,81 +20,14 @@ export default function SalesTable({
   onRefresh,
   canEdit = true,
 }: SalesTableProps) {
-  // Get currency formatter
   const { formatCurrency } = useCurrency();
 
-  // State for editing
-  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
-  const [editingQuantity, setEditingQuantity] = useState<number>(0);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Handle edit start
-  const handleStartEdit = (sale: Sale) => {
-    setEditingSaleId(sale.id);
-    setEditingQuantity(sale.quantity);
-  };
-
-  // Handle edit cancel
-  const handleCancelEdit = () => {
-    setEditingSaleId(null);
-    setEditingQuantity(0);
-  };
-
-  // Handle edit save
-  const handleSaveEdit = async (sale: Sale) => {
-    if (editingQuantity === sale.quantity) {
-      handleCancelEdit();
-      return;
-    }
-
-    if (editingQuantity <= 0) {
-      toast.error("Quantity must be greater than zero");
-      return;
-    }
-
-    setIsSaving(true);
-
+  const handleDelete = async (sale: Sale) => {
     try {
-      // Calculate new amount
-      const unitPrice = sale.totalAmount / sale.quantity;
-      const updatedSale = {
-        ...sale,
-        quantity: editingQuantity,
-        totalAmount: unitPrice * editingQuantity,
-      };
-
-      // Update the sale in the database
-      const success = await salesService.updateSale(updatedSale);
-
-      if (success) {
-        toast.success("Sale updated successfully");
-        // Refresh the sales list
-        if (onRefresh) {
-          onRefresh();
-        }
-      } else {
-        toast.error("Failed to update sale");
-      }
-    } catch (error) {
-      console.error("Error updating sale:", error);
-      toast.error("An error occurred while updating sale");
-    } finally {
-      setIsSaving(false);
-      setEditingSaleId(null);
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (saleId: string) => {
-    setIsDeleting(saleId);
-
-    try {
-      const success = await salesService.deleteSale(saleId);
+      const success = await salesService.deleteSale(sale.id);
 
       if (success) {
         toast.success("Sale deleted successfully");
-        // Refresh the sales list
         if (onRefresh) {
           onRefresh();
         }
@@ -132,164 +37,105 @@ export default function SalesTable({
     } catch (error) {
       console.error("Error deleting sale:", error);
       toast.error("An error occurred while deleting sale");
-    } finally {
-      setIsDeleting(null);
     }
   };
 
+  if (sales.length === 0) {
+    return (
+      <div className="bg-orange-50/30 rounded-xl p-10 text-center">
+        <p className="text-neutral-600">
+          No sales found matching your filters.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Dish</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sales.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center py-8 text-muted-foreground"
-              >
-                No sales found matching your filters.
-              </TableCell>
-            </TableRow>
-          ) : (
-            sales.map((sale) => (
-              <TableRow
+    <div className="border-none shadow-sm rounded-xl bg-white overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-orange-50">
+              <th className="py-4 px-6 text-left text-xs uppercase tracking-wider text-neutral-500 font-medium">
+                Date
+              </th>
+              <th className="py-4 px-6 text-left text-xs uppercase tracking-wider text-neutral-500 font-medium">
+                Dish
+              </th>
+              <th className="py-4 px-6 text-left text-xs uppercase tracking-wider text-neutral-500 font-medium">
+                Quantity
+              </th>
+              <th className="py-4 px-6 text-left text-xs uppercase tracking-wider text-neutral-500 font-medium">
+                Total
+              </th>
+              {(canEdit || onViewNotes) && (
+                <th className="py-4 px-6 text-right text-xs uppercase tracking-wider text-neutral-500 font-medium">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {sales.map((sale, index) => (
+              <tr
                 key={sale.id}
-                className={
-                  editingSaleId === sale.id ? "bg-muted/20" : undefined
-                }
+                className={`hover:bg-orange-50/30 transition-colors ${
+                  index !== sales.length - 1
+                    ? "border-b border-orange-50/50"
+                    : ""
+                }`}
+                onClick={() => onViewNotes && onViewNotes(sale)}
+                style={{ cursor: onViewNotes ? "pointer" : "default" }}
               >
-                <TableCell>{format(new Date(sale.date), "PP")}</TableCell>
-                <TableCell className="font-medium">
+                <td className="py-4 px-6 text-neutral-700">
+                  {format(new Date(sale.date), "PP")}
+                </td>
+                <td className="py-4 px-6 font-medium text-neutral-900">
                   {sale.dishName || "Unknown Dish"}
-                </TableCell>
-                <TableCell>
-                  {editingSaleId === sale.id ? (
-                    <Input
-                      type="number"
-                      min="1"
-                      value={editingQuantity}
-                      onChange={(e) =>
-                        setEditingQuantity(parseInt(e.target.value) || 0)
-                      }
-                      className="w-20 h-8"
-                    />
-                  ) : (
-                    sale.quantity
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingSaleId === sale.id
-                    ? formatCurrency(
-                        (sale.totalAmount / sale.quantity) * editingQuantity
-                      )
-                    : formatCurrency(sale.totalAmount)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    {editingSaleId === sale.id ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleSaveEdit(sale)}
-                          disabled={isSaving}
-                          className="h-8 w-8 text-green-600"
-                          title="Save changes"
+                </td>
+                <td className="py-4 px-6 text-neutral-700">
+                  <span className="inline-flex items-center justify-center bg-orange-50 text-orange-600 rounded-full px-2.5 py-0.5 text-sm">
+                    {sale.quantity}
+                  </span>
+                </td>
+                <td className="py-4 px-6 font-medium text-orange-600">
+                  {formatCurrency(sale.totalAmount)}
+                </td>
+                {(canEdit || onViewNotes) && (
+                  <td className="py-4 px-6 text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      {onViewNotes && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewNotes(sale);
+                          }}
+                          className="p-2 text-neutral-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors"
+                          title="View Notes"
                         >
-                          <FiCheckCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleCancelEdit}
-                          disabled={isSaving}
-                          className="h-8 w-8 text-muted-foreground"
-                          title="Cancel changes"
+                          <FileText className="h-4 w-4" />
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(sale);
+                          }}
+                          className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                          title="Delete"
                         >
-                          <FiXCircle className="h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {onViewNotes && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => onViewNotes(sale)}
-                            title="View notes"
-                          >
-                            <FiMessageSquare className="h-4 w-4" />
-                          </Button>
-                        )}
-
-                        {canEdit && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600"
-                              onClick={() => handleStartEdit(sale)}
-                              title="Edit sale"
-                            >
-                              <FiEdit2 className="h-4 w-4" />
-                            </Button>
-
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  title="Delete sale"
-                                >
-                                  <FiTrash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Delete Sale Record
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this sale
-                                    record? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(sale.id)}
-                                    disabled={isDeleting === sale.id}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    {isDeleting === sale.id
-                                      ? "Deleting..."
-                                      : "Delete"}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

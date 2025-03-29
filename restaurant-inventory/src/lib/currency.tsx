@@ -48,7 +48,7 @@ interface CurrencyProviderProps {
 
 export function CurrencyProvider({
   children,
-  defaultCurrency = "SEK", // Changed default to SEK
+  defaultCurrency = "SEK", // Default to SEK
 }: CurrencyProviderProps) {
   const [currency, setCurrency] = useState<Currency>(
     CURRENCIES[defaultCurrency]

@@ -11,16 +11,16 @@ import {
 } from "react-icons/fi";
 
 interface CategoryIconProps {
-  categoryName: string;
+  category: string;
   className?: string;
 }
 
 export const CategoryIcon = ({
-  categoryName,
+  category,
   className = "h-5 w-5 text-white",
 }: CategoryIconProps) => {
   // Map category names to appropriate icons
-  switch (categoryName) {
+  switch (category) {
     case "Meat":
       return <FiShoppingBag className={className} />;
     case "Produce":

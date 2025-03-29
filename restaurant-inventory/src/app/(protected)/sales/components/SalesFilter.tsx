@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/Common/calendar/calendar";
 import {
   Popover,
   PopoverContent,
@@ -10,13 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -54,10 +47,10 @@ export default function SalesFilter({
   };
 
   // Handle shift selection
-  const handleShiftChange = (value: string) => {
+  const handleShiftChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({
       ...getCurrentFilters(),
-      shift: value as ShiftType,
+      shift: e.target.value as ShiftType,
     });
   };
 
@@ -91,82 +84,97 @@ export default function SalesFilter({
 
   return (
     <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-x-4 md:space-y-0">
-      <div className="grid gap-2">
-        <Label>Start Date</Label>
+      <div className="grid gap-1.5">
+        <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Start Date
+        </Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant={"outline"}
+              variant="outline"
               className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !startDate && "text-muted-foreground"
+                "w-full md:w-[200px] justify-start text-left bg-white rounded border-base-300",
+                !startDate && "text-neutral-400"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 h-4 w-4 text-neutral-500" />
               {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent
+            className="w-auto p-0 bg-white rounded-lg shadow-lg"
+            align="start"
+          >
             <Calendar
               mode="single"
               selected={startDate}
               onSelect={(date) => handleDateSelect("start", date)}
               initialFocus
+              className="bg-white"
             />
           </PopoverContent>
         </Popover>
       </div>
 
-      <div className="grid gap-2">
-        <Label>End Date</Label>
+      <div className="grid gap-1.5">
+        <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          End Date
+        </Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant={"outline"}
+              variant="outline"
               className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !endDate && "text-muted-foreground"
+                "w-full md:w-[200px] justify-start text-left bg-white rounded border-base-300",
+                !endDate && "text-neutral-400"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-2 h-4 w-4 text-neutral-500" />
               {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent
+            className="w-auto p-0 bg-white rounded-lg shadow-lg"
+            align="start"
+          >
             <Calendar
               mode="single"
               selected={endDate}
               onSelect={(date) => handleDateSelect("end", date)}
               initialFocus
+              className="bg-white"
             />
           </PopoverContent>
         </Popover>
       </div>
 
-      <div className="grid gap-2">
-        <Label>Shift</Label>
-        <Select value={shift} onValueChange={handleShiftChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select shift" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Shifts</SelectItem>
-            <SelectItem value="Breakfast">Breakfast</SelectItem>
-            <SelectItem value="Lunch">Lunch</SelectItem>
-            <SelectItem value="Dinner">Dinner</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid gap-1.5">
+        <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Shift
+        </Label>
+        <select
+          value={shift}
+          onChange={handleShiftChange}
+          className="select select-bordered w-full md:w-[150px] h-10 bg-white"
+        >
+          <option value="All">All Shifts</option>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+        </select>
       </div>
 
-      <div className="grid gap-2 flex-1">
-        <Label>Search</Label>
+      <div className="grid gap-1.5 flex-1">
+        <Label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Search
+        </Label>
         <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
           <Input
             placeholder="Search by dish name..."
             value={localSearchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            className="pl-8"
+            className="pl-10 bg-white rounded border-base-300"
           />
         </div>
       </div>
@@ -174,9 +182,8 @@ export default function SalesFilter({
       {(startDate || endDate || shift || localSearchTerm) && (
         <Button
           variant="ghost"
-          size="icon"
           onClick={clearFilters}
-          className="h-10 w-10"
+          className="btn btn-circle btn-sm btn-ghost"
         >
           <X className="h-4 w-4" />
         </Button>

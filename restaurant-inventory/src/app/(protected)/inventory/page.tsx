@@ -1,69 +1,45 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { InventoryDataTable } from "./components/table/InventoryDataTable";
-import { InventoryCards } from "./components/InventoryCards";
-import InventoryFilters from "./components/InventoryFilters";
+/**
+ * Inventory Management Page
+ *
+ * This page displays and manages the inventory items for a restaurant.
+ * It includes features for:
+ * - Viewing items in table or card view
+ * - Filtering and sorting inventory
+ * - Adding, editing and deleting items
+ * - Batch operations on multiple items
+ * - Quick quantity updates
+ */
+
+import { useState, useEffect, useMemo } from "react";
 import InventoryHeader from "./components/InventoryHeader";
 import { InventoryStats } from "./components/InventoryStats";
+import { InventoryFiltersWrapper } from "./components/InventoryFilters";
 import InventoryLoading from "./components/InventoryLoading";
 import { InventoryModals } from "./components/modals";
-import { BatchOperations } from "./components/BatchOperations";
-import { InventoryItem, Supplier } from "@/lib/types";
-import { useToast } from "@/components/ui/use-toast";
+import { InventoryContent } from "./components/InventoryContent";
+import { BatchOperations } from "@/components/ui/batch-operations/batch-operations";
 import { useInventoryManager } from "./hooks/useInventoryStore";
-import { motion } from "framer-motion";
+import { useInventoryFilters } from "./hooks/useInventoryFilters";
+import { useInventoryModals } from "./hooks/useInventoryModals";
+import { useInventoryBatchOperations } from "./hooks/useInventoryBatchOperations";
 import { usePermission } from "@/lib/permission-context";
 import { useCurrency } from "@/lib/currency";
 import { supplierService } from "@/lib/services/supplier-service";
-
-// Interface for form data that includes both snake_case and camelCase properties
-interface InventoryFormData
-  extends Omit<InventoryItem, "id" | "created_at" | "updated_at"> {
-  reorderLevel?: number;
-  expiryDate?: string;
-}
-
-// New interface for grouped inventory items
-interface GroupedInventoryItem extends Omit<InventoryItem, "id" | "quantity"> {
-  ids: string[]; // All item IDs in this group
-  totalQuantity: number; // Combined quantity
-  latestUpdate: string; // Date of most recent update
-  batchCount: number; // Number of distinct batches/entries
-  // We keep the original items for reference when needed
-  originalItems: InventoryItem[];
-}
+import { Supplier } from "@/lib/types";
+import {
+  groupInventoryItems,
+  isGroupLowStock,
+  isGroupOutOfStock,
+} from "./utils/inventoryUtils";
+import { InventoryFormData } from "./types";
 
 export default function Inventory() {
-  const { toast } = useToast();
-  const { userRole } = usePermission();
   const { formatCurrency } = useCurrency();
+  const { userRole } = usePermission();
   const [mounted, setMounted] = useState(false);
-
-  // Ensure component is mounted before using client-side only values
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const {
-    items,
-    categories,
-    isLoading,
-    addItem: addInventoryItem,
-    updateItem: updateInventoryItem,
-    deleteItem: deleteInventoryItem,
-    setCategoryFilter,
-    setSearchQuery,
-    setSortField: setSortFieldTyped,
-    setSortDirection,
-    categoryFilter,
-    searchQuery,
-    sortField,
-    sortDirection,
-  } = useInventoryManager();
-
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
   const [subscriptionError, setSubscriptionError] = useState<
@@ -74,148 +50,87 @@ export default function Inventory() {
   );
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Use grouped items for filtering
-  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<InventoryItem | null>(null);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  // Ensure component is mounted before using client-side only values
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // State for InventoryDataTable
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [compactMode] = useState(false);
+  // Get inventory items from the store
+  const {
+    items,
+    categories,
+    isLoading,
+    addItem: addInventoryItem,
+    updateItem: updateInventoryItem,
+    deleteItem: deleteInventoryItem,
+  } = useInventoryManager();
 
-  // Group similar inventory items
+  // Group inventory items
   const groupedItems = useMemo(() => {
-    // Create a map to group items by a combination of name and category
-    const groupMap = new Map<string, GroupedInventoryItem>();
-
-    items.forEach((item) => {
-      // Create a unique key for grouping (adjust this based on what makes items "the same")
-      const groupKey = `${item.name.toLowerCase()}_${item.category.toLowerCase()}`;
-
-      if (!groupMap.has(groupKey)) {
-        // Create a new group with this item as the first entry
-        groupMap.set(groupKey, {
-          ...item,
-          ids: [item.id],
-          totalQuantity: item.quantity,
-          latestUpdate: item.updated_at,
-          batchCount: 1,
-          originalItems: [item],
-        });
-      } else {
-        // Add this item to an existing group
-        const group = groupMap.get(groupKey)!;
-        group.ids.push(item.id);
-        group.totalQuantity += item.quantity;
-        group.batchCount += 1;
-
-        // Keep track of the most recent update
-        if (new Date(item.updated_at) > new Date(group.latestUpdate)) {
-          group.latestUpdate = item.updated_at;
-        }
-
-        group.originalItems.push(item);
-      }
-    });
-
-    // Convert the map back to an array for display
-    return Array.from(groupMap.values());
+    return groupInventoryItems(items);
   }, [items]);
 
-  // Filter grouped items based on search query, selected category, and low stock filter
-  const filteredGroupedItems = useMemo(() => {
-    let result = [...groupedItems];
+  // Set up filters and sorting
+  const {
+    categoryFilter,
+    setCategoryFilter,
+    searchQuery,
+    setSearchQuery,
+    sortField,
+    setSortField,
+    sortDirection,
+    setSortDirection,
+    showLowStockOnly,
+    setShowLowStockOnly,
+    filteredGroupedItems,
+    sortedFilteredItems,
+  } = useInventoryFilters(groupedItems);
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.name.toLowerCase().includes(query) ||
-          item.category.toLowerCase().includes(query)
-      );
+  // Set up modals
+  const {
+    isAddModalOpen,
+    isEditModalOpen,
+    isDeleteModalOpen,
+    currentItem,
+    openAddModal,
+    closeAddModal,
+    openEditModal,
+    closeEditModal,
+    openDeleteModal,
+    closeDeleteModal,
+    handleAddItem,
+    handleUpdateItem,
+    handleDeleteItem,
+  } = useInventoryModals(
+    (itemData) => addInventoryItem(itemData as InventoryFormData),
+    (id, item) => updateInventoryItem(id, item as InventoryFormData),
+    async (id, name) => {
+      await deleteInventoryItem(id, name);
+      // Return void to match the expected type
+      return;
     }
+  );
 
-    // Filter by category
-    if (categoryFilter !== "all") {
-      result = result.filter((item) => item.category === categoryFilter);
-    }
+  // Initialize modal states
+  useEffect(() => {
+    if (!mounted) return;
 
-    // Filter by low stock
-    if (showLowStockOnly) {
-      result = result.filter((item) => {
-        const reorderLevel = item.reorder_level || 5;
-        const isItemLowStock =
-          item.totalQuantity <= reorderLevel && item.totalQuantity > 0;
-        const isItemOutOfStock = item.totalQuantity === 0;
-        return isItemLowStock || isItemOutOfStock;
-      });
-    }
+    // Reset modal states
+    closeAddModal();
+    closeEditModal();
+    closeDeleteModal();
+  }, [mounted, closeAddModal, closeEditModal, closeDeleteModal]);
 
-    return result;
-  }, [groupedItems, searchQuery, categoryFilter, showLowStockOnly]);
+  // Set up batch operations
+  const {
+    selectedItems,
+    toggleItemSelection,
+    toggleAllItems,
+    clearSelection,
+    batchActions,
+  } = useInventoryBatchOperations(items, deleteInventoryItem);
 
-  // Memoize the filtered and sorted items
-  const sortedFilteredItems = useMemo(() => {
-    const result = [...filteredGroupedItems];
-
-    // Apply sorting
-    return result.sort((a, b) => {
-      // Safely get values with fallbacks
-      const aValue = a[sortField as keyof GroupedInventoryItem];
-      const bValue = b[sortField as keyof GroupedInventoryItem];
-
-      // Handle undefined or null values
-      if (aValue == null && bValue == null) return 0;
-      if (aValue == null) return sortDirection === "asc" ? -1 : 1;
-      if (bValue == null) return sortDirection === "asc" ? 1 : -1;
-
-      // Handle string comparisons
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc"
-          ? aValue.toLowerCase().localeCompare(bValue.toLowerCase())
-          : bValue.toLowerCase().localeCompare(aValue.toLowerCase());
-      }
-
-      // Handle number comparisons
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-      }
-
-      // Handle date comparisons
-      if (aValue instanceof Date && bValue instanceof Date) {
-        return sortDirection === "asc"
-          ? aValue.getTime() - bValue.getTime()
-          : bValue.getTime() - aValue.getTime();
-      }
-
-      // Default string comparison for other types
-      const aStr = String(aValue);
-      const bStr = String(bValue);
-      return sortDirection === "asc"
-        ? aStr.localeCompare(bStr)
-        : bStr.localeCompare(aStr);
-    });
-  }, [filteredGroupedItems, sortField, sortDirection]);
-
-  // Helper function to check if a grouped item is low on stock
-  const isGroupLowStock = (item: GroupedInventoryItem): boolean => {
-    const reorderLevel = item.reorder_level || 5;
-    return item.totalQuantity <= reorderLevel && item.totalQuantity > 0;
-  };
-
-  // Helper function to check if a grouped item is out of stock
-  const isGroupOutOfStock = (item: GroupedInventoryItem): boolean => {
-    return item.totalQuantity === 0;
-  };
-
-  // Calculate inventory statistics - client side only
+  // Calculate inventory statistics - client side only to avoid hydration issues
   const lowStockCount = mounted
     ? groupedItems.filter((item) => isGroupLowStock(item)).length
     : 0;
@@ -224,59 +139,45 @@ export default function Inventory() {
     ? groupedItems.filter((item) => isGroupOutOfStock(item)).length
     : 0;
 
-  // Use useCallback for event handlers
-  const toggleItemSelection = useCallback((itemId: string) => {
-    setSelectedItems((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId]
-    );
-  }, []);
+  // Calculate inventory value on client side only to avoid hydration mismatch
+  const totalInventoryValue = useMemo(() => {
+    if (!mounted) return 0;
+    // Calculate total value based on items, not grouped items
+    return items.reduce((total, item) => total + item.cost * item.quantity, 0);
+  }, [items, mounted]);
 
-  const toggleAllItems = useCallback(() => {
-    if (selectedItems.length === filteredGroupedItems.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(filteredGroupedItems.map((item) => item.ids[0]));
+  // Handler for quick quantity updates
+  const handleQuickQuantityUpdate = async (
+    itemId: string,
+    newQuantity: number
+  ) => {
+    const itemToUpdate = items.find((item) => item.id === itemId);
+    if (!itemToUpdate) return;
+
+    try {
+      await updateInventoryItem(itemId, { quantity: newQuantity });
+    } catch (error: unknown) {
+      // In a real app, handle this error with a notification or error state
+      console.error("Failed to update quantity:", error);
     }
-  }, [selectedItems.length, filteredGroupedItems]);
+  };
 
-  const toggleExpanded = useCallback((itemId: string) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
-  }, []);
-
-  const handleSort = useCallback(
-    (field: string) => {
-      if (field === sortField) {
-        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-      } else {
-        setSortFieldTyped(field as keyof InventoryItem);
-        setSortDirection("asc");
-      }
-    },
-    [sortField, sortDirection, setSortFieldTyped]
-  );
+  // Retry functions
+  const retryCategories = () => setCategoriesError(undefined);
+  const retrySubscription = () => setSubscriptionError(undefined);
 
   // Fetch suppliers
   useEffect(() => {
     const fetchSuppliers = async () => {
-      try {
-        // Skip if we already have suppliers
-        if (suppliers.length > 0) {
-          console.log("Using cached suppliers, skipping fetch");
-          return;
-        }
+      if (suppliers.length > 0) return;
 
+      try {
         setIsLoadingSuppliers(true);
-        console.time("fetchSuppliers");
         const supplierData = await supplierService.getSuppliers();
-        console.timeEnd("fetchSuppliers");
         setSuppliers(supplierData);
-      } catch (error) {
-        console.error("Error fetching suppliers:", error);
+      } catch (error: unknown) {
+        // In a real app, handle this error with a notification or error state
+        console.error("Failed to fetch suppliers:", error);
       } finally {
         setIsLoadingSuppliers(false);
       }
@@ -285,303 +186,11 @@ export default function Inventory() {
     fetchSuppliers();
   }, [suppliers.length]);
 
-  // Mock subscription setup - in a real app, this would connect to your real-time service
+  // Mock subscription setup
   useEffect(() => {
-    // Simulate subscription to real-time updates
-    const setupSubscription = () => {
-      try {
-        // This would be your actual subscription logic
-        setIsSubscribed(true);
-        setSubscriptionError(undefined);
-      } catch (err) {
-        setSubscriptionError("Failed to connect to real-time updates");
-        setIsSubscribed(false);
-        console.error("Subscription error:", err);
-      }
-    };
-
-    setupSubscription();
-
-    // Cleanup function
-    return () => {
-      // Cleanup subscription
-    };
+    setIsSubscribed(true);
+    return () => {}; // Cleanup function
   }, []);
-
-  // Modal handlers with useCallback
-  const openAddModal = useCallback(() => setIsAddModalOpen(true), []);
-  const closeAddModal = useCallback(() => setIsAddModalOpen(false), []);
-
-  const openEditModal = useCallback((groupedItem: GroupedInventoryItem) => {
-    // Use the most recently updated item in the group for editing
-    const mostRecentItem = groupedItem.originalItems.sort(
-      (a, b) =>
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    )[0];
-
-    setCurrentItem(mostRecentItem);
-    setIsEditModalOpen(true);
-  }, []);
-
-  const closeEditModal = useCallback(() => setIsEditModalOpen(false), []);
-
-  const openDeleteModal = useCallback((groupedItem: GroupedInventoryItem) => {
-    // For deletion, we'll need to handle deletion of all related items or select a specific one
-    // For now, just use the first item in the group
-    setCurrentItem(groupedItem.originalItems[0]);
-    setIsDeleteModalOpen(true);
-  }, []);
-
-  const closeDeleteModal = useCallback(() => setIsDeleteModalOpen(false), []);
-
-  // Retry functions with useCallback
-  const retryCategories = useCallback(() => {
-    setCategoriesError(undefined);
-    // Logic to retry fetching categories
-  }, []);
-
-  const retrySubscription = useCallback(() => {
-    setSubscriptionError(undefined);
-    // Logic to retry setting up subscription
-  }, []);
-
-  // Handle form submissions with useCallback and proper error handling
-  const handleAddItem = useCallback(
-    async (itemData: InventoryFormData) => {
-      try {
-        console.log("Adding inventory item:", itemData);
-
-        // Convert form data to the format expected by the API
-        const apiData = {
-          name: itemData.name,
-          description: itemData.description,
-          category: itemData.category,
-          quantity: itemData.quantity || 0,
-          unit: itemData.unit,
-          cost: itemData.cost || 0,
-          reorder_level: itemData.reorder_level || 0,
-          supplier_id: itemData.supplier_id || undefined,
-          location: itemData.location || undefined,
-          expiry_date: itemData.expiry_date || undefined,
-          image_url: itemData.image_url || undefined,
-        };
-
-        // Call the addItem method from our store
-        const result = await addInventoryItem(apiData);
-
-        if (result) {
-          toast({
-            title: "Item Added",
-            description: `${itemData.name} has been added to inventory.`,
-          });
-          closeAddModal();
-        } else {
-          throw new Error("Failed to add item");
-        }
-      } catch (error) {
-        console.error("Error adding item:", error);
-        toast({
-          title: "Error",
-          description: "Failed to add item. Please try again.",
-          variant: "destructive",
-        });
-      }
-    },
-    [addInventoryItem, toast, closeAddModal]
-  );
-
-  const handleUpdateItem = useCallback(
-    async (itemData: InventoryFormData) => {
-      if (!currentItem) return;
-      try {
-        console.log("Updating inventory item:", currentItem.id, itemData);
-
-        // Convert form data to the format expected by the API
-        const apiData = {
-          name: itemData.name,
-          description: itemData.description,
-          category: itemData.category,
-          quantity: itemData.quantity || 0,
-          unit: itemData.unit,
-          cost: itemData.cost || 0,
-          reorder_level: itemData.reorder_level || 0,
-          supplier_id: itemData.supplier_id || undefined,
-          location: itemData.location || undefined,
-          expiry_date: itemData.expiry_date || undefined,
-          image_url: itemData.image_url || undefined,
-        };
-
-        // Call the updateItem method from our store
-        const result = await updateInventoryItem(currentItem.id, apiData);
-
-        if (result) {
-          toast({
-            title: "Item Updated",
-            description: `${itemData.name} has been updated.`,
-          });
-          closeEditModal();
-        } else {
-          throw new Error("Failed to update item");
-        }
-      } catch (error) {
-        console.error("Error updating item:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update item. Please try again.",
-          variant: "destructive",
-        });
-      }
-    },
-    [currentItem, updateInventoryItem, toast, closeEditModal]
-  );
-
-  const handleQuickQuantityUpdate = useCallback(
-    async (itemId: string, newQuantity: number) => {
-      const itemToUpdate = items.find((item) => item.id === itemId);
-      if (!itemToUpdate) return;
-
-      try {
-        console.log("Quick updating quantity:", itemId, newQuantity);
-
-        // Call the updateItem method from our store
-        const result = await updateInventoryItem(itemId, {
-          quantity: newQuantity,
-        });
-
-        if (result) {
-          toast({
-            title: "Quantity Updated",
-            description: `${itemToUpdate.name} quantity updated to ${newQuantity} ${itemToUpdate.unit}.`,
-          });
-        } else {
-          throw new Error("Failed to update quantity");
-        }
-      } catch (error) {
-        console.error("Error updating quantity:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update quantity. Please try again.",
-          variant: "destructive",
-        });
-      }
-    },
-    [items, updateInventoryItem, toast]
-  );
-
-  // Add type conversion wrapper for setSortField
-  const setSortField = (field: string) => {
-    setSortFieldTyped(field as keyof InventoryItem);
-  };
-
-  // Create wrapped delete handler to match expected function signature in components
-  const handleDeleteItem = () => {
-    if (!currentItem) return;
-    deleteInventoryItem(currentItem.id, currentItem.name);
-    closeDeleteModal();
-  };
-
-  // Handle batch operations
-  const handleDeleteSelected = async (itemIds: string[]) => {
-    try {
-      // Delete each item one by one
-      for (const itemId of itemIds) {
-        const item = items.find(i => i.id === itemId);
-        if (item) {
-          await deleteInventoryItem(itemId, item.name);
-        }
-      }
-      
-      toast({
-        title: "Success",
-        description: `Deleted ${itemIds.length} items successfully`,
-        variant: "default",
-      });
-      
-      // Clear selection after successful deletion
-      setSelectedItems([]);
-      return Promise.resolve();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete selected items",
-        variant: "destructive",
-      });
-      return Promise.reject(error);
-    }
-  };
-
-  const handleUpdateCategory = async (itemIds: string[], category: string) => {
-    try {
-      // Update each item one by one
-      for (const itemId of itemIds) {
-        const item = items.find(i => i.id === itemId);
-        if (item) {
-          await updateInventoryItem(itemId, {
-            ...item,
-            category,
-          });
-        }
-      }
-      
-      toast({
-        title: "Success",
-        description: `Updated category for ${itemIds.length} items`,
-        variant: "default",
-      });
-      
-      return Promise.resolve();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update categories",
-        variant: "destructive",
-      });
-      return Promise.reject(error);
-    }
-  };
-
-  const handleExportSelected = (itemIds: string[]) => {
-    const selectedData = items.filter(item => itemIds.includes(item.id));
-    
-    // Convert to CSV
-    const headers = ["Name", "Category", "Quantity", "Unit", "Cost", "Reorder Level"];
-    const csvContent = [
-      headers.join(","),
-      ...selectedData.map(item => 
-        [
-          item.name,
-          item.category,
-          item.quantity,
-          item.unit,
-          item.cost_per_unit || item.cost,
-          item.reorder_level
-        ].join(",")
-      )
-    ].join("\n");
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `inventory_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const clearSelection = () => {
-    setSelectedItems([]);
-  };
-
-  // Calculate inventory value on client side only to avoid hydration mismatch
-  const totalInventoryValue = useMemo(() => {
-    if (!mounted) return 0;
-    return items.reduce((total, item) => {
-      return total + item.quantity * item.cost;
-    }, 0);
-  }, [items, mounted]);
 
   if (isLoading || isLoadingSuppliers) {
     return <InventoryLoading />;
@@ -598,159 +207,71 @@ export default function Inventory() {
         isSubscribed={isSubscribed}
       />
 
+
       {/* Stats */}
       <InventoryStats
-        totalItems={groupedItems.length}
+        totalItems={groupedItems?.length || 0}
         lowStockItems={lowStockCount}
         outOfStockItems={outOfStockCount}
         totalValue={totalInventoryValue}
       />
 
       {/* Filters */}
-      <InventoryFilters
+      <InventoryFiltersWrapper
         searchTerm={searchQuery}
         onSearchChange={setSearchQuery}
         selectedCategory={categoryFilter}
         onCategoryChange={setCategoryFilter}
         categories={categories}
+        sortField={sortField}
+        setSortField={(field: string) => {
+          // Use type assertion since we know the field names match
+          setSortField(field as typeof sortField);
+        }}
+        sortDirection={sortDirection}
+        setSortDirection={setSortDirection}
         showLowStock={showLowStockOnly}
         onLowStockChange={setShowLowStockOnly}
         lowStockCount={lowStockCount}
         outOfStockCount={outOfStockCount}
-        sortField={sortField}
-        setSortField={setSortField}
-        sortDirection={sortDirection}
-        setSortDirection={setSortDirection}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onAddClick={openAddModal}
       />
 
-      {/* 
-        Performance Optimizations:
-        1. Using useMemo for filtered and sorted items to avoid recalculation on every render
-        2. Using useCallback for event handlers to prevent unnecessary re-renders
-        3. Using React.memo for components to skip rendering when props haven't changed
-        4. Using virtualization for large lists to only render visible items
-        5. Implementing pagination to limit the number of items rendered at once
-      */}
-
       {/* Inventory Content */}
       <div className="rounded-lg">
-        {filteredGroupedItems.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="p-8"
-          >
-            <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-lg border shadow-xs">
-              <div className="mx-auto h-16 w-16 text-muted-foreground/50 mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium mb-2">No items found</h3>
-              <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                {searchQuery || categoryFilter !== "all" || showLowStockOnly
-                  ? "No items match your current filters. Try adjusting your search criteria."
-                  : "Your inventory is empty. Add your first item to get started."}
-              </p>
-              {!searchQuery &&
-                categoryFilter === "all" &&
-                !showLowStockOnly && (
-                  <Button onClick={openAddModal} className="gap-1.5">
-                    <Plus className="h-4 w-4" />
-                    Add Your First Item
-                  </Button>
-                )}
-            </div>
-          </motion.div>
-        ) : (
-          <div className="mb-6">
-            {viewMode === "table" ? (
-              <div>
-                <div className="bg-amber-50 border border-amber-200 rounded-md px-4 py-3 mb-4 text-sm text-amber-800 flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-5 h-5 mr-2 shrink-0"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m-6 3.75 3 3m0 0 3-3m-3 3V1.5m6 9h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75"
-                    />
-                  </svg>
-                  <span>
-                    Showing {filteredGroupedItems.length} unique products (from{" "}
-                    {items.length} total entries). Similar items have been
-                    grouped together.
-                  </span>
-                </div>
-                <InventoryDataTable
-                  items={
-                    sortedFilteredItems.map((group) => ({
-                      ...group,
-                      id: group.ids[0], // Using first ID for compatibility
-                      quantity: group.totalQuantity,
-                      updated_at: group.latestUpdate,
-                      // Add any additional properties used by the table component
-                    })) as InventoryItem[]
-                  }
-                  compactMode={compactMode}
-                  selectedItems={selectedItems}
-                  expandedItems={expandedItems}
-                  onEditClick={(item) =>
-                    openEditModal(item as unknown as GroupedInventoryItem)
-                  }
-                  onDeleteClick={(item) =>
-                    openDeleteModal(item as unknown as GroupedInventoryItem)
-                  }
-                  onUpdateQuantity={handleQuickQuantityUpdate}
-                  toggleItemSelection={toggleItemSelection}
-                  toggleAllItems={toggleAllItems}
-                  toggleExpanded={toggleExpanded}
-                  formatCurrency={formatCurrency}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  handleSort={handleSort}
-                />
-              </div>
-            ) : (
-              <InventoryCards
-                items={
-                  sortedFilteredItems.map((group) => ({
-                    ...group,
-                    id: group.ids[0], // Using first ID for compatibility
-                    quantity: group.totalQuantity,
-                    updated_at: group.latestUpdate,
-                  })) as InventoryItem[]
-                }
-                onEditClick={(item) =>
-                  openEditModal(item as unknown as GroupedInventoryItem)
-                }
-                onDeleteClick={(item) =>
-                  openDeleteModal(item as unknown as GroupedInventoryItem)
-                }
-              />
-            )}
-          </div>
-        )}
+        <InventoryContent
+          items={items}
+          groupedItems={groupedItems}
+          filteredGroupedItems={filteredGroupedItems || []}
+          sortedFilteredItems={sortedFilteredItems || []}
+          viewMode={viewMode}
+          onEditClick={(item) => {
+            // Convert the item to GroupedInventoryItem if needed
+            const groupedItem = groupedItems.find((g) =>
+              g.ids.includes(item.id)
+            );
+            if (groupedItem) {
+              openEditModal(groupedItem);
+            }
+          }}
+          onDeleteClick={(item) => {
+            // Convert the item to GroupedInventoryItem if needed
+            const groupedItem = groupedItems.find((g) =>
+              g.ids.includes(item.id)
+            );
+            if (groupedItem) {
+              openDeleteModal(groupedItem);
+            }
+          }}
+          onUpdateQuantity={handleQuickQuantityUpdate}
+          selectedItems={selectedItems}
+          toggleItemSelection={toggleItemSelection}
+          toggleAllItems={toggleAllItems}
+          formatCurrency={formatCurrency}
+          openAddModal={openAddModal}
+        />
       </div>
 
       {/* Modals */}
@@ -768,15 +289,13 @@ export default function Inventory() {
         suppliers={suppliers as Supplier[]}
         userRole={userRole as "admin" | "manager" | "staff"}
       />
-      
+
       {/* Batch Operations */}
       <BatchOperations
-        selectedItems={selectedItems}
-        items={items}
+        selectedIds={selectedItems}
+        actions={batchActions}
         onClearSelection={clearSelection}
-        onDeleteSelected={handleDeleteSelected}
-        onUpdateCategory={handleUpdateCategory}
-        onExportSelected={handleExportSelected}
+        selectionLabel="Item"
       />
     </div>
   );

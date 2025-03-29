@@ -1,16 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { LogOutIcon, UserIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LogOutIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface SidebarUserProfileProps {
   open: boolean;
@@ -28,86 +21,71 @@ export function SidebarUserProfile({
   user,
   handleLogout,
 }: SidebarUserProfileProps) {
+  // Mock notification data - in a real app, this would come from a notifications service
+  const notifications = { count: 1 };
+  const hasNotifications = notifications.count > 0;
+
   return (
-    <div className="mt-auto border-t border-gray-200 dark:border-gray-800">
+    <div className="mt-auto">
       {/* User Profile Section */}
       {open ? (
-        <div className="p-4">
+        <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
+            <Avatar className="h-9 w-9 border border-gray-200 shadow-sm">
               <AvatarImage src={user.image} alt={user.name} />
-              <AvatarFallback className="bg-teal-50 text-teal-500 dark:bg-teal-900/20">
-                {user.name[0]}
+              <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-500 text-white">
+                {user.name?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium leading-none text-gray-900 dark:text-white truncate">
+              <p className="text-sm font-medium leading-none text-gray-900 truncate">
                 {user.name}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
+              <p className="text-xs text-gray-500 truncate mt-1.5">
                 {user.email}
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-gray-600 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-900/20 transition-colors"
+          <button
+            className={cn(
+              "w-full flex items-center justify-start text-gray-700 hover:text-red-600 hover:bg-red-50/80",
+              "transition-colors rounded-md py-2 px-3 text-sm font-medium"
+            )}
             onClick={handleLogout}
           >
             <LogOutIcon className="mr-2 h-4 w-4" />
             Sign Out
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <Avatar className="h-8 w-8 border border-gray-200 dark:border-gray-700">
-                  <AvatarImage src={user.image} alt={user.name} />
-                  <AvatarFallback className="bg-teal-50 text-teal-500 dark:bg-teal-900/20">
-                    {user.name[0]}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="flex items-center gap-2 p-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.image} alt={user.name} />
-                  <AvatarFallback className="bg-teal-50 text-teal-500 dark:bg-teal-900/20">
-                    {user.name[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium leading-none truncate">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <UserIcon className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer text-gray-600 hover:text-red-600 hover:bg-red-50 dark:text-gray-400 dark:hover:text-red-500 dark:hover:bg-red-900/20"
-              >
-                <LogOutIcon className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex flex-col items-center p-0 mt-auto">
+          {/* Avatar with notification badge */}
+          <div className="relative mb-1 mt-2">
+            <Avatar className="h-12 w-12 border border-gray-200 shadow-sm">
+              <AvatarImage src={user.image} alt={user.name} />
+              <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-500 text-white">
+                {user.name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            {/* Notification indicator */}
+            {hasNotifications && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 flex items-center justify-center text-[11px] text-white font-medium">
+                {notifications.count}
+              </span>
+            )}
+          </div>
+          
+          {/* User name */}
+          <p className="text-sm font-medium text-gray-900 mb-4">{user.name}</p>
+          
+          {/* Sign Out button as just an icon */}
+          <button
+            className="text-red-600 hover:text-red-700 mb-3"
+            onClick={handleLogout}
+            aria-label="Sign Out"
+          >
+            <LogOutIcon className="h-5 w-5" />
+          </button>
         </div>
       )}
     </div>

@@ -3,17 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/services/auth-context";
 import { useNotificationHelpers } from "@/lib/notification-context";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { FiArrowLeft } from "react-icons/fi";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { gsap } from "gsap";
 import { Progress } from "@/components/ui/progress";
@@ -53,7 +51,7 @@ export default function SignupPage() {
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordFeedback, setPasswordFeedback] = useState("");
-  const { theme } = useTheme();
+  const { setTheme } = useTheme();
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -68,10 +66,11 @@ export default function SignupPage() {
     },
   });
 
-  // Set page loaded state
+  // Ensure light theme is set on page load
   useEffect(() => {
+    setTheme("light");
     setIsPageLoaded(true);
-  }, []);
+  }, [setTheme]);
 
   // Initial entrance animation - only run after page is loaded
   useEffect(() => {
@@ -142,7 +141,7 @@ export default function SignupPage() {
     } else {
       feedback.push("Add numbers");
     }
-    
+
     // Contains special characters
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       strength += 10;
@@ -209,110 +208,85 @@ export default function SignupPage() {
     }
   };
 
-  // If signup is complete, show success message
+  // This is the updated verification success view within the SignupPage component
+
   if (signupComplete) {
     return (
       <div className="relative min-h-screen flex">
         {/* Left side - pattern */}
-        <div className="hidden lg:block w-1/2 relative">
+        <div className="hidden lg:block w-1/2 relative bg-gray-50">
           <AuthBackground />
         </div>
 
-        {/* Right side - success message */}
-        <div className="w-full lg:w-1/2 bg-white dark:bg-slate-900 flex flex-col">
-          {/* Back to website link */}
-          <Link
-            href="/"
-            className="absolute top-8 left-8 text-sm text-slate-500 hover:text-slate-600 flex items-center gap-2 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-            Back to website
-          </Link>
-
-          {/* Logo - positioned in top right */}
-          <div className="absolute top-8 right-8">
-            <div className="relative h-8 w-8">
-              <Image
-                src={
-                  theme === "dark"
-                    ? "/assets/brand/logo-light.png"
-                    : "/assets/brand/logo-dark.png"
-                }
-                alt="ShelfWise Logo"
-                fill
-                className="object-contain"
-                priority
-              />
+        {/* Right side - verification message */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-white">
+          <div className="w-full max-w-md mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl font-medium text-slate-900 mb-2">
+                Verify Your Email
+              </h1>
+              <p className="text-slate-600">
+                We&apos;ve sent a verification link to{" "}
+                <strong>{userEmail}</strong>
+              </p>
             </div>
-          </div>
 
-          {/* Success content - centered vertically and horizontally */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-[440px] px-8">
-              <div className="space-y-2 mb-8">
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                  Verify Your Email
-                </h1>
-                <p className="text-slate-600 dark:text-slate-400">
-                  We&apos;ve sent a verification link to{" "}
-                  <strong>{userEmail}</strong>
-                </p>
-              </div>
-
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg mb-6">
-                <div className="flex items-start gap-2">
-                  <Info className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-green-700 dark:text-green-300">
-                    <p className="font-medium mb-1">Next steps:</p>
-                    <ol className="list-decimal pl-4 space-y-2">
-                      <li>
-                        Check your email inbox (and spam folder) for the
-                        verification link
-                      </li>
-                      <li>Click the link to verify your email address</li>
-                      <li>
-                        Complete your business profile setup in the onboarding process
-                      </li>
-                    </ol>
-                    <p className="mt-2">
-                      The verification link will expire in 1 hour. Please verify your email 
-                      to access all features of your account.
-                    </p>
-                  </div>
+            <div className="mb-8 p-4 bg-green-50 rounded-md border-0">
+              <div className="flex gap-3">
+                <div className="shrink-0 text-green-500 mt-1">
+                  <Info className="h-5 w-5" />
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={() => router.push("/login")}
-                  className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-xs"
-                >
-                  Go to Login
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Open email client if possible
-                    window.open(`mailto:${userEmail}`);
-                  }}
-                  className="w-full h-11 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 transition-colors"
-                >
-                  Open Email App
-                </Button>
-                <div className="pt-2">
-                  <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-                    Didn&apos;t receive the email?{" "}
-                    <Button
-                      variant="link"
-                      onClick={() => router.push("/auth/callback")}
-                      className="p-0 h-auto text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
-                    >
-                      Resend verification link
-                    </Button>
+                <div>
+                  <p className="text-green-800 font-medium mb-2">Next steps:</p>
+                  <ol className="list-decimal ml-5 text-green-700 space-y-2">
+                    <li>
+                      Check your email inbox (and spam folder) for the
+                      verification link
+                    </li>
+                    <li>Click the link to verify your email address</li>
+                    <li>
+                      Complete your business profile setup in the onboarding
+                      process
+                    </li>
+                  </ol>
+                  <p className="text-green-700 mt-3 text-sm">
+                    The verification link will expire in 1 hour. Please verify
+                    your email to access all features of your account.
                   </p>
                 </div>
               </div>
             </div>
+
+            <Button
+              onClick={() => router.push("/login")}
+              className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-md font-medium mb-3"
+            >
+              Go to Login
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.open(`mailto:${userEmail}`);
+              }}
+              className="w-full h-11 mb-6 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors"
+            >
+              Open Email App
+            </Button>
+
+            <p className="text-center text-slate-600">
+              Didn&apos;t receive the email?{" "}
+              <button
+                onClick={() =>
+                  router.push(
+                    `/auth/verification?email=${encodeURIComponent(userEmail)}`
+                  )
+                }
+                className="text-orange-600 hover:text-orange-700 font-medium"
+              >
+                Resend verification link
+              </button>
+            </p>
           </div>
         </div>
       </div>
@@ -322,65 +296,38 @@ export default function SignupPage() {
   return (
     <div className="relative min-h-screen flex">
       {/* Left side - pattern */}
-      <div className="hidden lg:block w-1/2 relative">
+      <div className="hidden lg:block w-1/2 relative bg-gray-50">
         <AuthBackground />
       </div>
 
-      {/* Right side - signup form */}
-      <div
-        className="w-full lg:w-1/2 bg-white dark:bg-slate-900 flex flex-col"
-        ref={cardRef}
-      >
-        {/* Back to website link */}
-        <Link
-          href="/"
-          className="absolute top-8 left-8 text-sm text-slate-500 hover:text-slate-600 flex items-center gap-2 transition-colors dark:text-slate-400 dark:hover:text-slate-300"
-        >
-          <FiArrowLeft className="h-4 w-4" />
-          Back to website
-        </Link>
-
-        {/* Logo - positioned in top right */}
-        <div className="absolute top-8 right-8">
-          <div className="relative h-8 w-8">
-            <Image
-              src={
-                theme === "dark"
-                  ? "/assets/brand/logo-light.png"
-                  : "/assets/brand/logo-dark.png"
-              }
-              alt="ShelfWise Logo"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* Form content - centered vertically and horizontally */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-[440px] px-8">
-            <div className="space-y-2 mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+      {/* Right side - form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-white">
+        <div ref={cardRef} className="w-full max-w-md mx-auto">
+          {/* Form content */}
+          <div className="p-8 md:p-10">
+            <div className="mb-6">
+              <h1 className="text-2xl font-medium text-slate-900 mb-2">
                 Welcome!
               </h1>
-              <div className="flex gap-1 text-base text-slate-600 dark:text-slate-400">
-                <span>Create a free account to get started</span>
-              </div>
+              <p className="text-slate-600">
+                Create a free account to get started
+              </p>
             </div>
 
-            {/* Security notice */}
-            <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-              <div className="flex items-start gap-2">
-                <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <p className="font-medium mb-1">
-                    Email verification required
+            {/* Email verification info box */}
+            <div className="mb-8 p-4 bg-blue-50 rounded-md border-0">
+              <div className="flex gap-3">
+                <div className="shrink-0 text-blue-500">
+                  <Info className="h-5 w-5" />
+                </div>
+                <div className="text-sm text-blue-700">
+                  <p>
+                    <strong>Email verification required</strong>
                   </p>
                   <p>
                     For your security, you&apos;ll need to verify your email
                     address before accessing all features. After signing up,
-                    check your inbox for a verification link from us.
+                    check your inbox for a verification link.
                   </p>
                 </div>
               </div>
@@ -391,10 +338,10 @@ export default function SignupPage() {
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-5"
             >
-              <div className="space-y-2">
+              <div className="mb-6">
                 <Label
                   htmlFor="name"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="block text-base text-slate-700 mb-2"
                 >
                   Full Name
                 </Label>
@@ -402,18 +349,19 @@ export default function SignupPage() {
                   id="name"
                   placeholder="John Doe"
                   {...form.register("name")}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-11 px-4 py-2 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
                 {form.formState.errors.name && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm mt-1">
                     {form.formState.errors.name.message}
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
+
+              <div className="mb-6">
                 <Label
                   htmlFor="email"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="block text-base text-slate-700 mb-2"
                 >
                   Email
                 </Label>
@@ -422,18 +370,19 @@ export default function SignupPage() {
                   type="email"
                   placeholder="your.email@example.com"
                   {...form.register("email")}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-11 px-4 py-2 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
                 {form.formState.errors.email && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm mt-1">
                     {form.formState.errors.email.message}
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
+
+              <div className="mb-6">
                 <Label
                   htmlFor="password"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="block text-base text-slate-700 mb-2"
                 >
                   Password
                 </Label>
@@ -442,14 +391,14 @@ export default function SignupPage() {
                   type="password"
                   placeholder="••••••••"
                   {...form.register("password")}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-11 px-4 py-2 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
 
                 {/* Password strength indicator */}
                 {form.watch("password") && (
-                  <div className="space-y-1 mt-1">
+                  <div className="space-y-1 mt-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-xs text-slate-500">
                         Password strength
                       </span>
                       <span className="text-xs font-medium">
@@ -477,22 +426,23 @@ export default function SignupPage() {
                       }`}
                     />
                     {passwordFeedback && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         {passwordFeedback}
                       </p>
                     )}
                   </div>
                 )}
                 {form.formState.errors.password && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm mt-1">
                     {form.formState.errors.password.message}
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
+
+              <div className="mb-6">
                 <Label
                   htmlFor="confirmPassword"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                  className="block text-base text-slate-700 mb-2"
                 >
                   Confirm Password
                 </Label>
@@ -501,10 +451,10 @@ export default function SignupPage() {
                   type="password"
                   placeholder="••••••••"
                   {...form.register("confirmPassword")}
-                  className="h-11 px-3.5 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs"
+                  className="w-full h-11 px-4 py-2 rounded-md bg-white border border-slate-300 focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                 />
                 {form.formState.errors.confirmPassword && (
-                  <p className="text-red-500 text-sm">
+                  <p className="text-red-500 text-sm mt-1">
                     {form.formState.errors.confirmPassword.message}
                   </p>
                 )}
@@ -512,7 +462,7 @@ export default function SignupPage() {
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black dark:hover:bg-white/90 rounded-lg font-medium shadow-xs"
+                className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-md font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -526,12 +476,12 @@ export default function SignupPage() {
               </Button>
             </form>
 
-            <div className="text-center mt-8">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+            <div className="text-center mt-6">
+              <p className="text-slate-600">
                 Already have an account?{" "}
                 <Link
                   href="/login"
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-500 dark:hover:text-blue-400"
+                  className="text-orange-600 hover:text-orange-700"
                 >
                   Sign in
                 </Link>

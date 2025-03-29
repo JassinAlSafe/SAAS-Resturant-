@@ -163,9 +163,9 @@ export default function SalesHistoryView() {
   }, [salesData, startDate, endDate]);
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="p-5 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Sales History
@@ -175,8 +175,7 @@ export default function SalesHistoryView() {
           </p>
         </div>
         <Button
-          variant="outline"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-full"
           onClick={handleExportExcel}
           disabled={isLoading || salesData.length === 0}
         >
@@ -200,7 +199,7 @@ export default function SalesHistoryView() {
       />
 
       {/* Sales Overview Chart */}
-      <div className="rounded-lg border bg-card">
+      <div className="bg-white border-none shadow-sm rounded-xl">
         <div className="p-6">
           <h2 className="text-lg font-medium">Sales Overview</h2>
           <p className="text-sm text-muted-foreground">
